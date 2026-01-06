@@ -1,0 +1,115 @@
+{% extends "core/base.html" %}
+{% load static %}
+{% block content %}
+<div class="container mt-5">
+  <h2 class="mb-4 text-primary"><i class="bi bi-search"></i> Buscar Paciente</h2>
+
+  <form method="post" class="mb-4 p-4 bg-light rounded shadow-sm">
+    {% csrf_token %}
+    <div class="mb-3">
+      <label for="dni" class="form-label fw-bold">DNI del paciente:</label>
+      <input type="text" class="form-control form-control-lg" name="dni" placeholder="Ej: 30123456" required>
+    </div>
+    <button type="submit" class="btn btn-primary btn-lg">
+      <i class="bi bi-search"></i> Buscar
+    </button>
+  </form>
+
+  {% if messages %}
+    {% for message in messages %}
+      <div class="alert alert-warning shadow-sm"><i class="bi bi-exclamation-circle"></i> {{ message }}</div>
+    {% endfor %}
+  {% endif %}
+
+  {% if paciente %}
+    <div class="card shadow-sm border-success mb-4">
+      <div class="card-body">
+        <h5 class="card-title text-success">
+          <i class="bi bi-person-fill"></i> {{ paciente.nombre }} {{ paciente.apellido }}
+        </h5>
+        <p class="card-text"><strong>DNI:</strong> {{ paciente.dni }}</p>
+    
+      </div>
+    </div>
+
+    <h4 class="mb-3 text-secondary">Cargar Estudio</h4>
+    <form method="post" enctype="multipart/form-data">
+      {% csrf_token %}
+      {{ form.as_p }}
+      <button type="submit" name="guardar_estudio" class="btn btn-success">
+        <i class="bi bi-save"></i> Guardar Estudio
+      </button>
+    </form>
+  {% endif %}
+    {% if estudios %}
+  <h4 class="mt-5 text-primary"><i class="bi bi-folder2-open"></i> Estudios cargados</h4>
+  <div class="table-responsive">
+    <table class="table table-bordered table-striped table-hover mt-3">
+      <thead class="table-light">
+        <tr>
+          <th>Tipo</th>
+          <th>Fecha</th>
+          <th>Descripción</th>
+          <th>Archivo</th>
+          <th>Acciones</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for estudio in estudios %}
+        <tr>
+          <td>{{ estudio.get_tipo_display }}</td>
+          <td>{{ estudio.fecha }}</td>
+          <td>{{ estudio.descripcion|default:"-" }}</td>
+          <td>
+            {% if estudio.archivo %}
+  <a href="{{ estudio.archivo.url }}" target="_blank" class="btn btn-success btn-sm">
+    <i class="bi bi-eye"></i> Ver
+  </a>
+  <a href="{{ estudio.archivo.url }}" download class="btn btn-outline-primary btn-sm">
+    <i class="bi bi-file-earmark-arrow-down"></i> Descargar
+  </a>
+{% else %}
+  <span class="text-muted">No adjunto</span>
+{% endif %}
+
+          </td>
+          <td>
+            <form method="post" action="{% url 'eliminar_estudio' estudio.id %}" onsubmit="return confirm('¿Estás seguro que deseas eliminar este estudio?')">
+              {% csrf_token %}
+              <button type="submit" class="btn btn-outline-danger btn-sm">
+                <i class="bi bi-trash"></i> Eliminar
+              </button>
+            </form>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+{% endif %}
+
+  <a href="{% url 'core:IndexAdmin' %}" class="btn btn-outline-secondary mt-4">
+    <i class="bi bi-arrow-left"></i> Volver al menú
+  </a>
+</div>
+
+<!-- Modal de éxito -->
+{% if modal_exito %}
+<div class="modal fade show" id="modalExito" tabindex="-1" style="display:block; background-color: rgba(0,0,0,0.5);" aria-modal="true" role="dialog">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content border-success shadow-lg">
+      <div class="modal-header bg-success text-white">
+        <h5 class="modal-title"><i class="bi bi-check-circle-fill"></i> ¡Estudio cargado con éxito!</h5>
+      </div>
+      <div class="modal-body">
+        El estudio se guardó correctamente. ¿Deseás cargar otro estudio?
+      </div>
+      <div class="modal-footer">
+        <a href="?seleccionar={{ paciente.id }}" class="btn btn-success">Sí, cargar otro</a>
+        <a href="{% url 'core:IndexAdmin' %}" class="btn btn-secondary">Volver al menú</a>
+      </div>
+    </div>
+  </div>
+</div>
+{% endif %}
+{% endblock %}

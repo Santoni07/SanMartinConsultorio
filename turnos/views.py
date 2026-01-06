@@ -1,0 +1,134 @@
+from django.shortcuts import render, redirect, get_object_or_404
+from .forms import  SeleccionMedicoForm
+from .models import Turnos
+from paciente.models import Paciente
+from medicos.models import Medico
+from datetime import datetime, timedelta, time
+from django.contrib import messages
+
+def seleccionar_paciente(request):
+    paciente = None
+    if request.method == 'POST':
+        dni = request.POST.get('dni')
+        try:
+            paciente = Paciente.objects.get(dni=dni)
+        except Paciente.DoesNotExist:
+            messages.warning(request, f"No se encontró un paciente con DNI {dni}")
+    elif request.method == 'GET' and 'seleccionar' in request.GET:
+        paciente_id = request.GET.get('seleccionar')
+        request.session['paciente_id'] = paciente_id
+        return redirect('turnos:seleccionar_medico')
+
+    return render(request, 'turnos/seleccionar_paciente.html', {'paciente': paciente})
+
+
+def seleccionar_medico(request):
+    if 'paciente_id' not in request.session:
+        return redirect('turnos:seleccionar_paciente')
+
+    if request.method == 'POST':
+        form = SeleccionMedicoForm(request.POST)
+        if form.is_valid():
+            request.session['especialidad_id'] = form.cleaned_data['especialidad'].id
+            request.session['medico_id'] = form.cleaned_data['medico'].id
+            return redirect('turnos:ver_disponibilidad')
+    else:
+        form = SeleccionMedicoForm()
+
+    return render(request, 'turnos/seleccionar_medico.html', {'form': form})
+
+
+def ver_disponibilidad(request):
+    if 'paciente_id' not in request.session or 'medico_id' not in request.session:
+        return redirect('turnos:seleccionar_paciente')
+
+    medico_id = request.session['medico_id']
+    medico = get_object_or_404(Medico, id=medico_id)
+
+    offset = int(request.GET.get('offset', 0))
+    hoy = datetime.today().date() + timedelta(days=offset)
+
+    dias = [hoy + timedelta(days=i) for i in range(6)]
+    horarios = [time(h, m) for h in range(7, 21) for m in (0, 20, 40)]
+
+    disponibilidad = {}
+    for dia in dias:
+        turnos_dia = Turnos.objects.filter(medico=medico, fecha=dia)
+        dia_data = []
+
+        for hora in horarios:
+            hora_str = hora.strftime('%H:%M')
+            turno = next((t for t in turnos_dia if t.hora.strftime('%H:%M') == hora_str), None)
+            
+
+            if turno:
+                dia_data.append({
+                    'hora': hora,
+                    'estado': 'ocupado',
+                    'paciente': turno.paciente,
+                    'observaciones': turno.observaciones,
+                    'turno_id': turno.id,
+                })
+            else:
+                dia_data.append({
+                    'hora': hora,
+                    'estado': 'libre',
+                })
+
+        disponibilidad[dia] = dia_data
+
+
+    return render(request, 'turnos/disponibilidad.html', {
+        'medico': medico,
+        'disponibilidad': disponibilidad,
+        'horarios': horarios,
+        'offset': offset,
+    })
+
+def reservar_turno(request):
+    if request.method == 'POST':
+        fecha_str = request.POST.get('fecha')
+        hora_str = request.POST.get('hora')
+        observaciones = request.POST.get('observaciones', '')
+
+        if not fecha_str or not hora_str:
+            messages.error(request, "Faltan datos de fecha u hora.")
+            return redirect('turnos:ver_disponibilidad')
+        print("DEBUG - fecha_str:", fecha_str)
+        print("DEBUG - hora_str:", hora_str)
+
+        try:
+            fecha = datetime.strptime(fecha_str, '%Y-%m-%d').date()
+            hora = datetime.strptime(hora_str, '%H:%M').time()
+        except ValueError:
+            messages.error(request, "Error en el formato de fecha u hora.")
+            return redirect('turnos:ver_disponibilidad')
+
+        ya_existe = Turnos.objects.filter(
+            medico_id=request.session['medico_id'],
+            fecha=fecha,
+            hora=hora
+        ).exists()
+
+        if not ya_existe:
+            Turnos.objects.create(
+                especialidad_id=request.session['especialidad_id'],
+                medico_id=request.session['medico_id'],
+                paciente_id=request.session['paciente_id'],
+                fecha=fecha,
+                hora=hora,
+                observaciones=observaciones
+            )
+            messages.success(request, "Turno reservado correctamente.")
+        else:
+            messages.warning(request, "Ese turno ya fue reservado.")
+
+    return redirect('turnos:ver_disponibilidad')
+
+
+
+def eliminar_turno(request, turno_id):
+    turno = get_object_or_404(Turnos, id=turno_id)
+    turno.delete()
+    messages.success(request, "Turno eliminado.")
+    return redirect('turnos:ver_disponibilidad')

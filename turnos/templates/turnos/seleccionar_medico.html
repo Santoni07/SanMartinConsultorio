@@ -1,0 +1,20 @@
+{% extends 'core/base.html' %}
+
+{% block content %}
+<div class="container mt-5">
+  <h2 class="mb-4 text-primary"><i class="bi bi-hospital"></i> Seleccionar Especialidad y Médico</h2>
+
+<form method="post">
+    {% csrf_token %}
+    {{ form.as_p }}
+    <button class="btn btn-primary">Enviar</button>
+</form>
+  <a href="{% url 'core:IndexAdmin' %}" class="btn btn-primary mt-4">Volver al menú principal</a>
+</div>
+
+<script>
+  document.getElementById("id_especialidad").addEventListener("change", function () {
+    document.getElementById("form-especialidad-medico").submit();
+  });
+</script>
+{% endblock %}

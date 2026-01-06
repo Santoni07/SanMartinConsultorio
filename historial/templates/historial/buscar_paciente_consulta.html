@@ -1,0 +1,49 @@
+{% extends 'core/base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="container mt-5">
+    <h2 class="text-center mb-4">Buscar Paciente para Consulta Médica</h2>
+
+    <form method="get" action="">
+        <div class="row justify-content-center">
+            <div class="col-md-6">
+                <input type="text" name="q" class="form-control" placeholder="Buscar por nombre, apellido o DNI" value="{{ request.GET.q }}">
+            </div>
+            <div class="col-auto">
+                <button type="submit" class="btn btn-primary">Buscar</button>
+            </div>
+        </div>
+    </form>
+
+    {% if pacientes %}
+        <div class="mt-4">
+            <h5>Resultados:</h5>
+            <table class="table table-hover mt-3">
+                <thead class="table-light">
+                    <tr>
+                        <th>Nombre</th>
+                        <th>DNI</th>
+                        <th>Acción</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for paciente in pacientes %}
+                    <tr>
+                        <td>{{ paciente.nombre }} {{ paciente.apellido }}</td>
+                        <td>{{ paciente.dni }}</td>
+                        <td>
+                            <a href="{% url 'cargar_consulta_paciente' paciente.id %}" class="btn btn-success btn-sm">
+                                Seleccionar
+                            </a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    {% elif request.GET.q %}
+        <div class="alert alert-warning mt-4">No se encontraron pacientes con ese criterio.</div>
+    {% endif %}
+</div>
+{% endblock %}

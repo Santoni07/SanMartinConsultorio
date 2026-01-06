@@ -1,0 +1,370 @@
+{% extends 'core/base.html' %}
+{% load static %}
+{% block title %}Consultorio Medico San Martin{% endblock %}
+
+
+ 
+        {% block headers %}
+          <!-- ======= Header ======= -->
+          <header id="header" class="fixed-top">
+            <div class="container d-flex align-items-center">
+        
+            
+        
+              <nav id="navbar" class="navbar order-last order-lg-0">
+                
+                <ul> 
+                    
+                
+                    <li><a class="nav-link scrollto active" href="#hero">Inicio</a></li>
+
+                    <li><a class="nav-link scrollto" href="#about">Conocenos</a></li>
+                    <li><a class="nav-link scrollto" href="#services">Servicios</a></li>
+                    <li><a class="nav-link scrollto" href="#departments">Especialidades</a></li>
+                    <li><a class="nav-link scrollto" href="#doctors">Profesionales</a></li>
+              
+                    <li class="nav-item"><a class="nav-link scrollto" href="#contact">Contacto</a></li>
+                
+
+                
+                  {% if not request.user.is_authenticated %}
+                    <li class="nav-item"><a class="nav-link scrollto" href="{% url 'login' %}" >Accede</a></li>
+                    <li class="nav-item"><a class="nav-link scrollto" href="{% url 'signup' %}" >Registrarse</a></li>
+                  {% else %}
+                  <li class="nav-item">
+                      <a class="nav-link" href="{% url 'logout' %}" onclick="event.preventDefault(); document.getElementById('logout-form').submit();">
+                          Salir
+                      </a>
+                      <form id="logout-form" method="post" action="{% url 'logout' %}" style="display: none;">
+                          {% csrf_token %}
+                      </form>
+                  </li>
+                  {% endif %}
+                </ul>     
+                <i class="bi bi-list mobile-nav-toggle"></i>
+              </nav><!-- .navbar -->
+        
+              <a href="#appointment" class="appointment-btn scrollto" style="margin-left: 300px"><span class="d-none d-md-inline">Haz tu</span>Consulta</a>
+        
+            </div>
+          </header>
+          
+          <!-- End Header -->
+        
+        {% endblock %}
+        
+        {% block hero %}
+        <!--  Hero -->
+        <section id="hero" class="d-flex align-items-center">
+          <div class="container text-left">
+            <h1 class="mb-4">Bienvenidos al Centro Medico</h1>
+            <h2 class="container text-left" style="max-width: 50%;"> <!-- Utiliza mx-auto para centrar horizontalmente -->
+              En Centro Médico San Martín, nos enorgullece ofrecer atención médica de la más alta calidad. <br>
+              Nuestro equipo de médicos altamente calificados y experimentados está comprometido con brindar el mejor cuidado posible a nuestros pacientes. <br>
+            </h2>
+            <br>
+            <a href="#about" class="btn btn-primary btn-lg">Conocenos</a>
+          </div>
+        </section>
+        </section><!-- End Hero -->
+        <div class="why-us mb-5">
+          <br>
+        </div>
+        {% endblock %}
+        <main id="main">
+        {% block about %}
+        <!-- ======= About Section ======= -->
+        <section id="about" class="about">
+          <div class="container-fluid">
+
+            <div class="row">
+              <div class="col-xl-5 col-lg-6 video-box d-flex justify-content-center align-items-stretch position-relative">
+                <a href="https://www.youtube.com/watch?v=sfSDT0AgSGY" class="glightbox play-btn mb-4"></a>
+              </div>
+
+              <div class="col-xl-7 col-lg-6 icon-boxes d-flex flex-column align-items-stretch justify-content-center py-5 px-lg-5">
+                <h3>Al Servicio de la Comunidad</h3>
+                <p>Desde el Centro Medico San Martin, buscamos ser una empresa líder con sentido social brindando  soluciones a través de la actividad física, obteniendo el máximo bienestar físico, mental, emocional y deportivo mediante un  equipo interdisciplinario.<br>
+                  Implementamos programas de prevención y promoción de la salud así como manejo integral de patologías susceptibles de mejoría con actividad física adecuada.<br>
+                  Promover el desarrollo de una cultura física y deportiva sana en toda la población.<br>
+                  Tambien trabajamos para promover, desarrollar, integrar, implementar programas técnico científicos con la intención de mejorar el rendimiento deportivo de talentos y promesas y deportistas elites..<br></p>
+
+              
+
+              </div>
+            </div>
+
+          </div>
+        </section><!-- End About Section -->
+        {% endblock %} 
+        {% block count %}
+        <!-- ======= Counts Section ======= -->
+        <section id="counts" class="counts">
+          <div class="container">
+
+            <div class="row justify-content-center">
+
+              <div class="col-lg-3 col-md-6">
+                <div class="count-box">
+                  <i class="fas fa-user-md"></i>
+                  <span data-purecounter-start="0" data-purecounter-end="{{ medicos_count}}" data-purecounter-duration="1" class="purecounter"></span>
+                  <p>Doctores</p>
+                </div>
+              </div>
+
+              <div class="col-lg-3 col-md-6 mt-5 mt-md-0">
+                <div class="count-box">
+                  <i class="far fa-hospital"></i>
+                  <span data-purecounter-start="0" data-purecounter-end="{{ especialidades_count }}" data-purecounter-duration="1" class="purecounter"></span>
+                  <p>Especialidades</p>
+                </div>
+              </div>
+            
+
+            
+              </div>
+
+            </div>
+
+          </div>
+        </section><!-- End Counts Section -->
+        {% endblock %}  
+      
+        {% block services %}
+        <!-- ======= Sección de Servicios ======= -->
+        
+        <section id="services" class="services">
+          <div class="container">
+        
+            <div class="section-title">
+              <h2>Servicios</h2>
+              <p>Conoce todos nuestros Servicios</p>
+            </div>
+        
+            {% for servicio in Servicios %}
+            <div class="card card-custom" style="width: 18rem; border: 1px solid #dee2e6; border-radius: 10px; overflow: hidden;">
+              <img src="{% if servicio.imagen %}{{ servicio.imagen.url }}{% else %}ruta_por_defecto_de_la_imagen{% endif %}" class="card-img-top" alt="{{ servicio.nombre }}">
+              <div class="card-body" style="background-color: #c0bebe; border: 1px solid #dee2e6; padding: 20px; text-align: center;">
+                <h5 class="card-title">{{ servicio.nombre }}</h5>
+                <p class="card-text">{{ servicio.descripcion }}</p>
+              </div>
+            </div>
+            {% endfor %}
+            
+        
+          </div>
+        </section><!-- Fin de la Sección de Servicios -->
+        {% endblock %}
+        {% block departamentos %}
+        <!-- ======= Departments Section -->
+        <section id="departments" class="departments">
+          <div class="container">
+              <div class="section-title">
+                  <h2>Especialidades</h2>
+                  <p>Descubre cómo cada área contribuye a brindar atención de calidad y cuidado personalizado.</p>
+              </div>
+              <div class="row gy-4">
+                  <div class="col-lg-3">
+                      <ul class="nav nav-tabs flex-column">
+                          {% for especialidad in especialidades %}
+                          <li class="nav-item">
+                              <a class="nav-link{% if forloop.first %} active show{% endif %}" data-bs-toggle="tab" href="#tab-{{ especialidad.id }}">{{ especialidad.nombre }}</a>
+                          </li>
+                          {% endfor %}
+                      </ul>
+                  </div>
+                  <div class="col-lg-9">
+                      <div class="tab-content">
+                          {% for especialidad in especialidades %}
+                          <div class="tab-pane{% if forloop.first %} active show{% endif %}" id="tab-{{ especialidad.id }}">
+                              <div class="row gy-4">
+                                  <div class="col-lg-8 details order-2 order-lg-1">
+                                      <h3>{{ especialidad.nombre }}</h3>
+                                      <p class="fst-italic">{{ especialidad.descripcion }}</p>
+                                  </div>
+                                  <div class="col-lg-4 text-center order-1 order-lg-2">
+                                      <img src="{{ especialidad.img.url }}" alt="{{ especialidad.nombre }}" class="img-fluid">
+                                  </div>
+                              </div>
+                          </div>
+                          {% endfor %}
+                      </div>
+                  </div>
+              </div>
+          </div>
+        </section>
+        <!--End Departments Section -->
+        {% endblock %}
+        {% block Doctores %}
+        <!-- ======= Doctors Section ======= -->
+        <section id="doctors" class="doctors">
+          <div class="container">
+            <div class="section-title">
+              <h2>Nuestros Profesionales</h2>
+              <p>Conoce a nuestro equipo de profesionales altamente capacitados que están comprometidos con tu salud y bienestar.</p>
+            </div>
+            <div class="row">
+              {% for medico in medicos %}
+                <div class="col-lg-6">
+                  <div class="member d-flex align-items-start">
+                    <div class="pic"><img src="{{ medico.img.url }}" class="img-fluid" alt="{{ medico.nombre }} {{ medico.apellido }}"></div>
+                    <div class="member-info">
+                      <h4>{{ medico.nombre }} {{ medico.apellido }}</h4>
+                      <span>{{ medico.especialidad.nombre }}</span>
+                      <p>Matricula N° {{ medico.matricula }}</p>
+                      <p>{{ medico.email }}</p>
+                      <div class="social">
+                        <!-- Agrega enlaces a las redes sociales si es necesario -->
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              {% endfor %}
+            </div>
+          </div>
+        </section>
+        <!-- End Doctors Section -->
+        {% endblock %}
+        {% block contacto %}
+        <!-- ======= Contact Section ======= -->
+        <section id="contact" class="contact">
+            <div class="container">
+
+              <div class="section-title">
+                <h2>Contacto</h2>
+                <p>Magnam dolores commodi suscipit. Necessitatibus eius consequatur ex aliquid fuga eum quidem. Sit sint consectetur velit. Quisquam quos quisquam cupiditate. Et nemo qui impedit suscipit alias ea. Quia fugiat sit in iste officiis commodi quidem hic quas.</p>
+              </div>
+            </div>
+
+          
+
+            <div class="container">
+              <div class="row mt-5">
+
+                <div class="col-lg-4">
+                  <div class="info">
+                    <div class="address">
+                      <i class="bi bi-geo-alt"></i>
+                      <h4>Ubicacion:</h4>
+                      <p>Av Cornelio Savedra 343, Cordoba Argentina</p>
+                    </div>
+
+                    <div class="email">
+                      <i class="bi bi-envelope"></i>
+                      <h4>Email:</h4>
+                      <p>centro.medico.sanMartin@hotmail.com</p>
+                    </div>
+
+                    <div class="phone">
+                      <i class="bi bi-phone"></i>
+                      <h4>Call:</h4>
+                      <p>35113817760</p>
+                    </div>
+
+                  </div>
+
+                </div>
+
+                <div class="col-lg-8 mt-5 mt-lg-0">
+
+                  
+              
+                </div>
+
+              </div>
+
+            </div>
+          </section><!-- End Contact Section -->
+        {% endblock %}  
+        {% block consulta %}
+        <!-- ======= Appointment Section ======= -->
+        <section id="appointment" class="appointment section-bg">
+          <div class="container">
+
+            <div class="section-title">
+              <h2>Haz tu Consulta</h2>
+              <p>"Haz tu consulta y obtén respuestas personalizadas de nuestro equipo médico altamente calificado."</p>
+            </div>
+
+            <form action="forms/appointment.php" method="post" role="form" class="php-email-form">
+              <div class="row">
+                <div class="col-md-4 form-group">
+                  <input type="text" name="name" class="form-control" id="name" placeholder="Nombre" data-rule="minlen:4" data-msg="Please enter at least 4 chars">
+                  <div class="validate"></div>
+                </div>
+                <div class="col-md-4 form-group mt-3 mt-md-0">
+                  <input type="email" class="form-control" name="email" id="email" placeholder="Email" data-rule="email" data-msg="Please enter a valid email">
+                  <div class="validate"></div>
+                </div>
+                <div class="col-md-4 form-group mt-3 mt-md-0">
+                  <input type="tel" class="form-control" name="phone" id="phone" placeholder="Telefono" data-rule="minlen:4" data-msg="Please enter at least 4 chars">
+                  <div class="validate"></div>
+                </div>
+              </div>
+              
+
+              <div class="form-group mt-3">
+                <textarea class="form-control" name="message" rows="5" placeholder="Message (Optional)"></textarea>
+                <div class="validate"></div>
+              </div>
+              <div class="mb-3">
+                <div class="loading">Loading</div>
+                <div class="error-message"></div>
+                <div class="sent-message">Your appointment request has been sent successfully. Thank you!</div>
+              </div>
+              <div class="text-center"><button type="submit">Enviar Consulta</button></div>
+            </form>
+
+          </div>
+        </section><!-- End Appointment Section -->
+        {% endblock %}    
+        </main><!-- End #main -->
+        {% block footer %}
+        <!-- ======= Footer ======= -->
+        <footer id="footer">
+
+          <div class="footer-top">
+            <div class="container">
+              <div class="row">
+
+                <div class="col-lg-3 col-md-6 footer-contact">
+                  <h3>Medilab</h3>
+                  
+                </div>
+
+                <div class="col-lg-2 col-md-6 footer-links">
+                  <h4>Politicas</h4>
+                  <ul>
+                    
+                    <li><i class="bx bx-chevron-right"></i> <a href="#">Terminos del Servicio</a></li>
+                    <li><i class="bx bx-chevron-right"></i> <a href="#">Politica de Privacidad</a></li>
+                  </ul>
+                </div>
+
+
+              </div>
+            </div>
+          </div>
+
+          <div class="container d-md-flex py-4">
+
+            <div class="me-md-auto text-center text-md-start">
+              <div class="copyright">
+                &copy; Copyright <strong><span>Medilab</span></strong>. All Rights Reserved
+              </div>
+              
+            </div>
+            <div class="social-links text-center text-md-right pt-3 pt-md-0">
+            
+              <a href="#" class="facebook"><i class="bx bxl-facebook"></i></a>
+              <a href="#" class="instagram"><i class="bx bxl-instagram"></i></a>
+              
+            
+            </div>
+          </div>
+        </footer><!-- End Footer -->
+        {% endblock %}
+
+  
+
+

@@ -1,0 +1,29 @@
+{% extends 'core/base.html' %}
+{% load static %}
+{% block title %}Cargar Paciente{% endblock %}
+{% block content %}
+
+<main role="main">
+  <div class="container">
+    <div class="row mt-3">
+      <div class="col-md-9 mx-auto">
+        <div>
+        
+            <form action="" method="post" enctype="multipart/form-data">{% csrf_token %}
+                <table>
+                    {{ form.as_table}}
+                </table>
+                <br>
+                <input type="submit" value="Cargar" />
+            </form>
+        
+        </div>
+      </div>
+    </div>
+  </div>
+</main>
+<div class="d-flex justify-content-center align-items-center mt-2">
+
+  <a href="{% url 'core:IndexAdmin' %}" class="btn btn-success">Volver</a>
+</div>
+{% endblock %}

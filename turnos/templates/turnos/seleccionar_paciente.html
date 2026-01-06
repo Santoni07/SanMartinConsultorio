@@ -1,0 +1,42 @@
+{% extends 'core/base.html' %}
+{% block content %}
+<div class="container mt-5">
+  <h2 class="mb-4 text-primary"><i class="bi bi-search"></i> Buscar Paciente</h2>
+
+  <form method="post" class="mb-4 p-4 bg-light rounded shadow-sm">
+    {% csrf_token %}
+    <div class="mb-3">
+      <label for="dni" class="form-label fw-bold">DNI del paciente:</label>
+      <input type="text" class="form-control form-control-lg" name="dni" placeholder="Ej: 30123456" required>
+    </div>
+    <button type="submit" class="btn btn-primary btn-lg">
+      <i class="bi bi-search"></i> Buscar
+    </button>
+  </form>
+
+  {% if messages %}
+    {% for message in messages %}
+      <div class="alert alert-warning shadow-sm"><i class="bi bi-exclamation-circle"></i> {{ message }}</div>
+    {% endfor %}
+  {% endif %}
+
+  {% if paciente %}
+    <div class="card shadow-sm border-success">
+      <div class="card-body">
+        <h5 class="card-title text-success">
+          <i class="bi bi-person-fill"></i> {{ paciente.nombre }} {{ paciente.apellido }}
+        </h5>
+        <p class="card-text"><strong>DNI:</strong> {{ paciente.dni }}</p>
+        <a href="?seleccionar={{ paciente.id }}" class="btn btn-success">
+          <i class="bi bi-check-circle"></i> Seleccionar
+        </a>
+      </div>
+    </div>
+  {% else %}
+    <a href="{% url 'paciente:create' %}" class="btn btn-outline-success mt-4">
+      <i class="bi bi-person-plus"></i> Crear nuevo paciente
+    </a>
+    <a href="{% url 'core:IndexAdmin' %}" class="btn btn-secondary mt-4">Volver al menú principal</a>
+  {% endif %}
+</div>
+{% endblock %}

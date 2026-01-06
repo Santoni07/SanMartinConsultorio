@@ -1,0 +1,108 @@
+{% extends 'core/base.html' %}
+{% load static %}
+{% block title %}Consultorio Medico San Martin{% endblock %}
+
+
+{% block content %}
+    <h2 class="mb-4 text-success">
+  <i class="bi bi-person-badge"></i>
+  Bienvenido/a Dr. {{ request.user.medico.nombre }} {{ request.user.medico.apellido }} &nbsp;
+  <span class="text-muted small">(M.P. {{ request.user.medico.matricula }})</span>
+</h2>
+  <header id="header" class="fixed-top">
+  <div class="container d-flex align-items-center">
+    
+    <!-- NAVBAR -->
+    <nav id="navbar" class="navbar order-last order-lg-0">
+      <ul class="nav">
+        <!-- MENÚ PRINCIPAL -->
+       
+
+       
+        <li class="dropdown"><a href="#"><span>Pacientes</span> <i class="bi bi-chevron-right"></i></a>
+          <ul>
+            <li><a href="{% url 'paciente:buscar' %}">Buscar</a></li>
+            <li><a href="{% url 'paciente:create' %}">Cargar</a></li>
+          </ul>
+        </li>
+
+    {% comment %}     <li class="dropdown"><a href="#"><span>Obra Sociales</span> <i class="bi bi-chevron-right"></i></a>
+          <ul>
+            <li><a href="{% url 'obrasocial:list' %}">Ver</a></li>
+            <li><a href="{% url 'obrasocial:create' %}">Cargar</a></li>
+          </ul>
+        </li>
+ {% endcomment %}
+       
+
+       
+
+        <li class="dropdown"><a href="#"><span>Turnos</span> <i class="bi bi-chevron-right"></i></a>
+          <ul>
+            <li><a href="#">Ver</a></li>
+            <li><a href="{% url 'turnos:seleccionar_paciente' %}">Seleccionar</a></li>
+          </ul>
+        </li>
+
+        <li class="dropdown"><a href="#"><span>Estudios</span> <i class="bi bi-chevron-right"></i></a>
+          <ul>
+            <li><a href="{% url 'buscar_y_cargar_estudio' %}">Cargar</a></li>
+            <li><a href="{% url 'ver_estudios' %}">Ver Estudios</a></li>
+          </ul>
+        </li>
+
+          <li class="dropdown"><a href="#"><span>Historia Clinica</span> <i class="bi bi-chevron-right"></i></a>
+          <ul>
+            <li><a href="{% url 'buscar_paciente_consulta' %}">Cargar Consulta</a></li>
+             <li><a href="{% url 'buscar_historia_por_dni' %}">Ver Historia</a></li>
+          </ul>
+        </li>
+
+        <!-- ACCESO/REGISTRO -->
+        {% if not request.user.is_authenticated %}
+          <li class="nav-item"><a class="nav-link scrollto" href="{% url 'login' %}">Accede</a></li>
+          <li class="nav-item"><a class="nav-link scrollto" href="{% url 'signup' %}">Registrarse</a></li>
+        {% endif %}
+      </ul>
+      <i class="bi bi-list mobile-nav-toggle"></i>
+    </nav>
+
+    <!-- BOTÓN SALIR A LA DERECHA -->
+    {% if request.user.is_authenticated %}
+    <div class="ms-auto d-none d-lg-block">
+      <a href="{% url 'logout' %}" class="btn btn-outline-danger btn-sm fw-bold"
+         onclick="event.preventDefault(); document.getElementById('logout-form').submit();">
+        <i class="bi bi-box-arrow-right"></i> Salir
+      </a>
+      <form id="logout-form" method="post" action="{% url 'logout' %}" style="display: none;">
+        {% csrf_token %}
+      </form>
+    </div>
+    {% endif %}
+
+  </div>
+</header>
+
+
+
+
+
+
+
+<!--Bienvenida-->
+        <div class="welcome-section">
+          <div class="container mt-5">
+            <div class="row">
+              <div class="col-md-8 offset-md-2 welcome-content ">
+                <h2>Bienvenido al Consultorio Médico San Martín</h2>
+                <p>
+                  Gracias por ser parte de nuestro equipo. Aquí puedes administrar y acceder a las funciones administrativas del consultorio.
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+
+
+{% endblock %}

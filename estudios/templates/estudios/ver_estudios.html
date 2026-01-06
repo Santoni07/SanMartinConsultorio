@@ -1,0 +1,87 @@
+{% extends "core/base.html" %}
+{% load static %}
+{% block content %}
+<div class="container mt-5">
+  <h2 class="mb-4 text-primary"><i class="bi bi-search"></i> Ver estudios del paciente</h2>
+
+  <!-- Formulario de búsqueda -->
+  <form method="get" class="mb-4 p-4 bg-light rounded shadow-sm">
+    <div class="mb-3">
+      <label for="dni" class="form-label fw-bold">Buscar por DNI:</label>
+      <input type="text" name="dni" class="form-control form-control-lg" placeholder="Ej: 30123456" required value="{{ request.GET.dni }}">
+    </div>
+    <button type="submit" class="btn btn-primary btn-lg">
+      <i class="bi bi-search"></i> Buscar
+    </button>
+  </form>
+
+  {% if messages %}
+    {% for message in messages %}
+      <div class="alert alert-warning"><i class="bi bi-exclamation-circle"></i> {{ message }}</div>
+    {% endfor %}
+  {% endif %}
+
+  {% if paciente %}
+    <div class="card mb-4 border-success shadow-sm">
+      <div class="card-body">
+        <h5 class="card-title text-success">
+          <i class="bi bi-person-circle"></i> {{ paciente.nombre }} {{ paciente.apellido }}
+        </h5>
+        <p class="card-text"><strong>DNI:</strong> {{ paciente.dni }}</p>
+      </div>
+    </div>
+
+    {% if estudios %}
+      <h4 class="text-secondary mb-3"><i class="bi bi-folder2-open"></i> Estudios Cargados</h4>
+      <div class="table-responsive">
+        <table class="table table-hover table-bordered">
+          <thead class="table-light">
+            <tr>
+              <th>Tipo</th>
+              <th>Fecha</th>
+              <th>Descripción</th>
+              <th>Archivo</th>
+              <th>Acciones</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for estudio in estudios %}
+            <tr>
+              <td>{{ estudio.get_tipo_display }}</td>
+              <td>{{ estudio.fecha }}</td>
+              <td>{{ estudio.descripcion|default:"-" }}</td>
+              <td>
+                {% if estudio.archivo %}
+                  <a href="{{ estudio.archivo.url }}" class="btn btn-success btn-sm" target="_blank">
+                    <i class="bi bi-eye"></i> Ver
+                  </a>
+                  <a href="{{ estudio.archivo.url }}" download class="btn btn-outline-primary btn-sm">
+                    <i class="bi bi-download"></i> Descargar
+                  </a>
+                {% else %}
+                  <span class="text-muted">No adjunto</span>
+                {% endif %}
+              </td>
+              <td>
+                <form method="post" action="{% url 'eliminar_estudio' estudio.id %}" onsubmit="return confirm('¿Deseás eliminar este estudio?')">
+                  {% csrf_token %}
+                  <button type="submit" class="btn btn-outline-danger btn-sm">
+                    <i class="bi bi-trash"></i> Eliminar
+                  </button>
+                </form>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% else %}
+      <div class="alert alert-info">Este paciente aún no tiene estudios cargados.</div>
+    {% endif %}
+  {% endif %}
+
+  <a href="{% url 'core:IndexAdmin' %}" class="btn btn-outline-secondary mt-4">
+    <i class="bi bi-arrow-left-circle"></i> Volver al menú
+  </a>
+</div>
+{% endblock %}
