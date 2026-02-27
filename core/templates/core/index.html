@@ -29,7 +29,7 @@
                 
                   {% if not request.user.is_authenticated %}
                     <li class="nav-item"><a class="nav-link scrollto" href="{% url 'login' %}" >Accede</a></li>
-                    <li class="nav-item"><a class="nav-link scrollto" href="{% url 'signup' %}" >Registrarse</a></li>
+                    
                   {% else %}
                   <li class="nav-item">
                       <a class="nav-link" href="{% url 'logout' %}" onclick="event.preventDefault(); document.getElementById('logout-form').submit();">
