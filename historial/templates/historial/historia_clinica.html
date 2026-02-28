@@ -49,9 +49,24 @@
         </div>
     {% endif %}
 </div>
+   <!-- BOTÓN VOLVER -->
 <div class="text-center mt-5">
-    <a href="{% url 'core:medico' %}" class="btn btn-secondary btn-lg">
-        <i class="bi bi-arrow-left-circle"></i> Volver al Menú Principal
-    </a>
+
+  {% if request.user.is_staff or request.user.is_superuser %}
+      <a href="{% url 'core:IndexAdmin' %}" class="btn btn-primary btn-lg">
+        <i class="bi bi-arrow-left-circle"></i> Volver 
+      </a>
+
+  {% elif request.user.is_authenticated and request.user.medico %}
+      <a href="{% url 'core:medico' %}" class="btn btn-primary btn-lg">
+        <i class="bi bi-arrow-left-circle"></i> Volver 
+      </a>
+
+  {% else %}
+      <a href="{% url 'home' %}" class="btn btn-secondary btn-lg">
+        <i class="bi bi-arrow-left-circle"></i> Volver 
+      </a>
+  {% endif %}
+
 </div>
 {% endblock %}

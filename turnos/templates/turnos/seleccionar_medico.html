@@ -1,20 +1,82 @@
 {% extends 'core/base.html' %}
+{% load static %}
 
 {% block content %}
 <div class="container mt-5">
-  <h2 class="mb-4 text-primary"><i class="bi bi-hospital"></i> Seleccionar Especialidad y Médico</h2>
 
-<form method="post">
+  <div class="text-center mb-4">
+    <h2 class="fw-bold text-primary">
+      <i class="bi bi-hospital"></i> Seleccionar Especialidad y Médico
+    </h2>
+    <p class="text-muted">Filtrar médicos dinámicamente</p>
+  </div>
+
+  <div class="row justify-content-center">
+    <div class="col-md-6">
+      <div class="card shadow border-0 filtro-card">
+        <div class="card-body p-4">
+          <form method="post" id="form-especialidad-medico">
     {% csrf_token %}
-    {{ form.as_p }}
-    <button class="btn btn-primary">Enviar</button>
+
+    <div class="mb-4">
+        <label class="form-label fw-bold">Especialidad</label>
+        {{ form.especialidad }}
+    </div>
+
+    <div class="mb-4">
+        <label class="form-label fw-bold">Médico</label>
+        {{ form.medico }}
+    </div>
+
+    <button type="submit" class="btn btn-primary">Confirmar</button>
 </form>
-  <a href="{% url 'core:IndexAdmin' %}" class="btn btn-primary mt-4">Volver al menú principal</a>
+<script>
+document.getElementById("id_especialidad").addEventListener("change", function () {
+    this.form.submit();
+});
+</script>
+         
+
+        </div>
+      </div>
+    </div>
+  </div>
+
 </div>
 
+<style>
+.filtro-card {
+  border-left: 6px solid #0d6efd;
+  transition: all 0.25s ease;
+}
+.filtro-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 25px rgba(0,0,0,0.12);
+}
+</style>
+
 <script>
-  document.getElementById("id_especialidad").addEventListener("change", function () {
-    document.getElementById("form-especialidad-medico").submit();
-  });
+document.getElementById("especialidadSelect").addEventListener("change", function () {
+
+  let especialidadSeleccionada = this.value;
+  let medicoSelect = document.getElementById("medicoSelect");
+  let opciones = medicoSelect.options;
+
+  for (let i = 0; i < opciones.length; i++) {
+
+    let especialidadesMedico = opciones[i].getAttribute("data-especialidades");
+
+    if (!especialidadSeleccionada) {
+      // Mostrar todos
+      opciones[i].style.display = "block";
+    } else if (especialidadesMedico && especialidadesMedico.includes(especialidadSeleccionada)) {
+      opciones[i].style.display = "block";
+    } else {
+      opciones[i].style.display = "none";
+    }
+  }
+
+});
 </script>
+
 {% endblock %}

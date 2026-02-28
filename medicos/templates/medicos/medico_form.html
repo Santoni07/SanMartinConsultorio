@@ -1,29 +1,126 @@
 {% extends 'core/base.html' %}
 {% load static %}
 {% block title %}Cargar Profesional{% endblock %}
+
 {% block content %}
+<div class="container mt-5">
 
-<main role="main">
-  <div class="container">
-    <div class="row mt-3">
-      <div class="col-md-9 mx-auto">
-        <div>
-        
-            <form action="" method="post" enctype="multipart/form-data">{% csrf_token %}
-                <table>
-                    {{ form.as_table}}
-                </table>
-                <br>
-                <input type="submit" value="Cargar" />
-            </form>
-        
-        </div>
-      </div>
+    <!-- TÍTULO -->
+    <div class="text-center mb-4">
+        <h2 class="fw-bold text-primary">
+            <i class="bi bi-person-badge-fill"></i> Nuevo Profesional
+        </h2>
+        <p class="text-muted">Complete los datos del profesional</p>
     </div>
-  </div>
-</main>
-<div class="d-flex justify-content-center align-items-center mt-2">
 
-  <a href="{% url 'core:IndexAdmin' %}" class="btn btn-success">Volver</a>
+    <div class="card shadow border-0">
+        <div class="card-body p-4">
+
+            <form method="post" enctype="multipart/form-data">
+                {% csrf_token %}
+
+                <div class="row">
+
+                    <!-- Nombre -->
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label fw-bold">Nombre</label>
+                        {{ form.nombre }}
+                    </div>
+
+                    <!-- Apellido -->
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label fw-bold">Apellido</label>
+                        {{ form.apellido }}
+                    </div>
+
+                    <!-- Matrícula -->
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label fw-bold">Matrícula</label>
+                        {{ form.matricula }}
+                    </div>
+
+                    <!-- Email -->
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label fw-bold">Email</label>
+                        {{ form.email }}
+                    </div>
+
+                    <!-- Especialidad -->
+                    <div class="col-12 mb-3">
+    <label class="form-label fw-bold">Especialidades</label>
+    <div class="border rounded p-3 bg-light">
+        {{ form.especialidad }}
+    </div>
 </div>
+
+                </div>
+
+                <!-- BOTONES -->
+                <div class="d-flex justify-content-between mt-4">
+                    <a href="{% url 'core:IndexAdmin' %}" class="btn btn-primary btn-lg">
+                        <i class="bi bi-arrow-left"></i> Volver
+                    </a>
+
+                    <button type="button"
+                            class="btn btn-success btn-lg"
+                            data-bs-toggle="modal"
+                            data-bs-target="#confirmarModal">
+                        <i class="bi bi-save"></i> Guardar Profesional
+                    </button>
+                </div>
+
+                <!-- MODAL CONFIRMACION -->
+                <div class="modal fade" id="confirmarModal" tabindex="-1">
+                    <div class="modal-dialog modal-dialog-centered">
+                        <div class="modal-content shadow-lg border-0">
+
+                            <div class="modal-header bg-success text-white">
+                                <h5 class="modal-title">
+                                    Confirmar Registro
+                                </h5>
+                                <button type="button"
+                                        class="btn-close btn-close-white"
+                                        data-bs-dismiss="modal">
+                                </button>
+                            </div>
+
+                            <div class="modal-body text-center">
+                                ¿Está seguro que desea guardar este profesional?
+                            </div>
+
+                            <div class="modal-footer justify-content-center">
+                                <button type="button"
+                                        class="btn btn-outline-secondary btn-lg"
+                                        data-bs-dismiss="modal">
+                                    Cancelar
+                                </button>
+
+                                <button type="submit"
+                                        class="btn btn-success btn-lg">
+                                    Confirmar
+                                </button>
+                            </div>
+
+                        </div>
+                    </div>
+                </div>
+
+            </form>
+
+        </div>
+    </div>
+
+</div>
+
+<style>
+.card {
+    border-left: 6px solid #0d6efd;
+}
+
+.card:hover {
+    box-shadow: 0 12px 25px rgba(0,0,0,0.1);
+    transition: 0.2s ease;
+}
+</style>
+
 {% endblock %}

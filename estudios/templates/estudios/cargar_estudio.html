@@ -32,14 +32,56 @@
       </div>
     </div>
 
-    <h4 class="mb-3 text-secondary">Cargar Estudio</h4>
-    <form method="post" enctype="multipart/form-data">
-      {% csrf_token %}
-      {{ form.as_p }}
-      <button type="submit" name="guardar_estudio" class="btn btn-success">
-        <i class="bi bi-save"></i> Guardar Estudio
-      </button>
-    </form>
+    <h4 class="mb-3 text-secondary">
+  <i class="bi bi-file-earmark-medical"></i> Cargar Estudio
+</h4>
+
+<form method="post" enctype="multipart/form-data" class="p-4 bg-light rounded shadow-sm">
+  {% csrf_token %}
+    <input type="hidden" name="dni" value="{{ paciente.dni }}">
+  <div class="row">
+
+    <!-- Tipo -->
+    <div class="col-md-6 mb-3">
+      <label class="form-label fw-bold">Tipo de estudio</label>
+      {{ form.tipo }}
+    </div>
+
+    <!-- Fecha -->
+    <div class="col-md-6 mb-3">
+      <label class="form-label fw-bold">Fecha del estudio</label>
+      {{ form.fecha }}
+    </div>
+
+    <!-- Consulta asociada -->
+    <div class="col-md-12 mb-3">
+      <label class="form-label fw-bold">
+        Asociar a consulta (opcional)
+      </label>
+      {{ form.consulta }}
+      <div class="form-text">
+        Si no seleccionás ninguna consulta, el estudio quedará como general.
+      </div>
+    </div>
+
+    <!-- Descripción -->
+    <div class="col-md-12 mb-3">
+      <label class="form-label fw-bold">Descripción</label>
+      {{ form.descripcion }}
+    </div>
+
+    <!-- Archivo -->
+    <div class="col-md-12 mb-3">
+      <label class="form-label fw-bold">Archivo</label>
+      {{ form.archivo }}
+    </div>
+
+  </div>
+
+  <button type="submit" name="guardar_estudio" class="btn btn-success btn-lg">
+    <i class="bi bi-save"></i> Guardar Estudio
+  </button>
+</form>
   {% endif %}
     {% if estudios %}
   <h4 class="mt-5 text-primary"><i class="bi bi-folder2-open"></i> Estudios cargados</h4>
@@ -88,9 +130,26 @@
   </div>
 {% endif %}
 
-  <a href="{% url 'core:IndexAdmin' %}" class="btn btn-outline-secondary mt-4">
-    <i class="bi bi-arrow-left"></i> Volver al menú
-  </a>
+     <!-- BOTÓN VOLVER -->
+<div class="text-center mt-5">
+
+  {% if request.user.is_staff or request.user.is_superuser %}
+      <a href="{% url 'core:IndexAdmin' %}" class="btn btn-primary btn-lg">
+        <i class="bi bi-arrow-left-circle"></i> Volver 
+      </a>
+
+  {% elif request.user.is_authenticated and request.user.medico %}
+      <a href="{% url 'core:medico' %}" class="btn btn-primary btn-lg">
+        <i class="bi bi-arrow-left-circle"></i> Volver 
+      </a>
+
+  {% else %}
+      <a href="{% url 'home' %}" class="btn btn-secondary btn-lg">
+        <i class="bi bi-arrow-left-circle"></i> Volver 
+      </a>
+  {% endif %}
+
+</div>
 </div>
 
 <!-- Modal de éxito -->

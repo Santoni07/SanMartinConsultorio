@@ -1,47 +1,103 @@
 {% extends 'core/base.html' %}
 {% block title %}Nuestros Profesionales{% endblock %}
+
 {% block content %}
+<section class="container mt-5">
 
-<section id="doctors" class="doctors">
-  <div class="container">
-    <div class="section-title">
-      <h2>Profesionales</h2>
-      <p>Lista de Profesionales cargadas</p>
+    <!-- TÍTULO -->
+    <div class="text-center mb-5">
+        <h2 class="fw-bold text-primary">
+            <i class="bi bi-person-badge-fill"></i> Profesionales
+        </h2>
+        <p class="text-muted">Lista de profesionales registrados</p>
     </div>
-    <ul class="list-group">
-      {% for medico in medicos %}
-        <li class="list-group-item border-bottom text-sm">
-          <div class="d-flex align-items-start justify-content-between">
-            
-            <div class="member-info">
-             
-              <h6>Nombre : {{ medico.nombre }} {{ medico.apellido }}</h6>
-              
-              <p>Especialidad: 
-                {% if medico.especialidad.all %}
-                  {% for especialidad in medico.especialidad.all %}
-                    {{ especialidad.nombre }}{% if not forloop.last %} / {% endif %}
-                  {% endfor %}
-                {% else %}
-                  Sin Especialidad
-                {% endif %}
-              </p>
-              <p>Matrícula N°: {{ medico.matricula }}</p>
-              <p>Email: {{ medico.email }}</p>
-              <div class="mt-3 ms-auto">
-                <a href="{% url "medicos:delete" pk=medico.pk %}" class="btn btn-secondary">Borrar</a>  
-                <a href="{% url "medicos:update" pk=medico.pk %}" class="btn btn-light">Editar</a>
-              </div>
-            </div>
-          </div>
-        </li>
-      {% endfor %}
-    </ul>
-  </div>
-  <div class="d-flex justify-content-center align-items-center mt-2">
 
-    <a href="{% url 'core:IndexAdmin' %}" class="btn btn-success">Volver</a>
-</div>
+    {% if medicos %}
+        <div class="row">
+            {% for medico in medicos %}
+            <div class="col-md-6 mb-4">
+                <div class="card shadow border-0 medico-card">
+
+                    <div class="card-body">
+
+                        <!-- Nombre -->
+                        <h5 class="fw-bold text-dark mb-3">
+                            <i class="bi bi-person-fill text-primary"></i>
+                            {{ medico.nombre }} {{ medico.apellido }}
+                        </h5>
+
+                        <!-- Especialidades -->
+                        <div class="mb-2">
+                            <strong class="text-secondary">Especialidades:</strong>
+                            <div class="mt-2">
+                                {% if medico.especialidad.all %}
+                                    {% for especialidad in medico.especialidad.all %}
+                                        <span class="badge bg-info text-dark me-1 mb-1">
+                                            {{ especialidad.nombre }}
+                                        </span>
+                                    {% endfor %}
+                                {% else %}
+                                    <span class="badge bg-secondary">Sin especialidad</span>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <hr>
+
+                        <!-- Datos -->
+                        <p class="mb-1">
+                            <strong>Matrícula:</strong> {{ medico.matricula }}
+                        </p>
+
+                        <p class="mb-3">
+                            <strong>Email:</strong> {{ medico.email }}
+                        </p>
+
+                        <!-- Botones -->
+                        <div class="d-flex justify-content-between">
+                            <a href="{% url 'medicos:update' pk=medico.pk %}"
+                               class="btn btn-outline-primary btn-sm">
+                                <i class="bi bi-pencil-square"></i> Editar
+                            </a>
+
+                            <a href="{% url 'medicos:delete' pk=medico.pk %}"
+                               class="btn btn-outline-danger btn-sm">
+                                <i class="bi bi-trash"></i> Eliminar
+                            </a>
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+
+    {% else %}
+        <div class="alert alert-warning text-center">
+            No hay profesionales registrados.
+        </div>
+    {% endif %}
+
+    <!-- VOLVER -->
+    <div class="text-center mt-5">
+        <a href="{% url 'core:IndexAdmin' %}" class="btn btn-primary btn-lg">
+            <i class="bi bi-arrow-left-circle"></i> Volver 
+        </a>
+    </div>
+
 </section>
+
+<!-- ESTILOS -->
+<style>
+.medico-card {
+    border-left: 6px solid #0d6efd;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.medico-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 12px 25px rgba(0,0,0,0.12);
+}
+</style>
 
 {% endblock %}

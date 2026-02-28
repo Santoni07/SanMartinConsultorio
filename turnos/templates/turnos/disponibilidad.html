@@ -15,6 +15,23 @@
   <a href="{% url 'turnos:seleccionar_medico' %}" class="btn btn-secondary">
     ← Volver a seleccionar médico
   </a>
+  {% if request.user.is_staff or request.user.is_superuser %}
+      <a href="{% url 'core:IndexAdmin' %}" class="btn btn-primary btn-lg">
+        <i class="bi bi-arrow-left-circle"></i> Volver 
+      </a>
+
+  {% elif request.user.is_authenticated and request.user.medico %}
+      <a href="{% url 'core:medico' %}" class="btn btn-primary btn-lg">
+        <i class="bi bi-arrow-left-circle"></i> Volver 
+      </a>
+
+  {% else %}
+      <a href="{% url 'home' %}" class="btn btn-secondary btn-lg">
+        <i class="bi bi-arrow-left-circle"></i> Volver 
+      </a>
+  {% endif %}
+
+
 
   <!-- Botones de navegación de días -->
   <div class="d-flex gap-2">

@@ -9,6 +9,8 @@ from .forms import EstudioForm
 
 from paciente.models import Paciente
 
+from historial.models import ConsultaMedica
+
 def buscar_y_cargar_estudio(request):
     paciente = None
     estudios = []
@@ -29,25 +31,39 @@ def buscar_y_cargar_estudio(request):
 
     if request.method == 'POST' and 'guardar_estudio' in request.POST:
         form = EstudioForm(request.POST, request.FILES)
+
+        if paciente:
+            # 🔥 FILTRAMOS CONSULTAS DEL PACIENTE
+            form.fields['consulta'].queryset = ConsultaMedica.objects.filter(
+                historia_clinica__paciente=paciente
+            ).order_by('-fecha')
+
         if form.is_valid() and paciente:
             estudio = form.save(commit=False)
             estudio.paciente = paciente
             estudio.save()
+
             return render(request, 'estudios/cargar_estudio.html', {
                 'form': EstudioForm(),
                 'paciente': paciente,
                 'estudios': paciente.estudios.all().order_by('-fecha'),
                 'modal_exito': True,
             })
+
     else:
         form = EstudioForm()
+
+        if paciente:
+            # 🔥 TAMBIÉN FILTRAMOS EN GET
+            form.fields['consulta'].queryset = ConsultaMedica.objects.filter(
+                historia_clinica__paciente=paciente
+            ).order_by('-fecha')
 
     return render(request, 'estudios/cargar_estudio.html', {
         'paciente': paciente,
         'form': form,
         'estudios': estudios,
     })
-
 def listar_estudios_paciente(request, paciente_id):
     paciente = get_object_or_404(Paciente, id=paciente_id)
     estudios = paciente.estudios.all()

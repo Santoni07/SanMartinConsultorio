@@ -4,21 +4,41 @@ from especialidades.models import Especialidades
 from medicos.models import Medico
 
 class SeleccionMedicoForm(forms.Form):
+
     especialidad = forms.ModelChoiceField(
         queryset=Especialidades.objects.all(),
-        label="Especialidad",
-        widget=forms.Select(attrs={
-            'class': 'form-select form-select-lg'
-        })
-    )
-    medico = forms.ModelChoiceField(
-        queryset=Medico.objects.all(),
-        label="Médico",
-        widget=forms.Select(attrs={
-            'class': 'form-select form-select-lg'
-        })
+        required=False,
+        empty_label="Todas las especialidades",
+        widget=forms.Select(attrs={'class': 'form-select form-select-lg'})
     )
 
+    medico = forms.ModelChoiceField(
+        queryset=Medico.objects.none(),
+        required=False,
+        widget=forms.Select(attrs={'class': 'form-select form-select-lg'})
+    )
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        # Si viene especialidad en el form enviado
+        if 'especialidad' in self.data:
+            try:
+                especialidad_id = int(self.data.get('especialidad'))
+
+                if especialidad_id:
+                    self.fields['medico'].queryset = Medico.objects.filter(
+                        especialidad__id=especialidad_id
+                    ).distinct()
+                else:
+                    self.fields['medico'].queryset = Medico.objects.all()
+
+            except (ValueError, TypeError):
+                self.fields['medico'].queryset = Medico.objects.all()
+
+        else:
+            # Primera carga
+            self.fields['medico'].queryset = Medico.objects.all()
 class TurnoForm(forms.ModelForm):
     class Meta:
         model = Turnos

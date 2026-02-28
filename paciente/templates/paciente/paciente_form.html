@@ -1,29 +1,147 @@
 {% extends 'core/base.html' %}
 {% load static %}
 {% block title %}Cargar Paciente{% endblock %}
-{% block content %}
 
-<main role="main">
-  <div class="container">
-    <div class="row mt-3">
-      <div class="col-md-9 mx-auto">
-        <div>
-        
-            <form action="" method="post" enctype="multipart/form-data">{% csrf_token %}
-                <table>
-                    {{ form.as_table}}
-                </table>
-                <br>
-                <input type="submit" value="Cargar" />
-            </form>
-        
-        </div>
+{% block content %}
+<div class="container mt-5">
+
+    <div class="text-center mb-4">
+        <h2 class="fw-bold text-primary">
+            <i class="bi bi-person-plus-fill"></i> Nuevo Paciente
+        </h2>
+        <p class="text-muted">Complete los datos del paciente</p>
+    </div>
+
+    <div class="card shadow border-0">
+        <div class="card-body p-4">
+
+            <form method="post">
+                {% csrf_token %}
+
+                <div class="row">
+
+                    <!-- DNI -->
+                    <div class="col-md-4 mb-3">
+                        <label class="form-label fw-bold">DNI</label>
+                        {{ form.dni }}
+                    </div>
+
+                    <!-- Nombre -->
+                    <div class="col-md-4 mb-3">
+                        <label class="form-label fw-bold">Nombre</label>
+                        {{ form.nombre }}
+                    </div>
+
+                    <!-- Apellido -->
+                    <div class="col-md-4 mb-3">
+                        <label class="form-label fw-bold">Apellido</label>
+                        {{ form.apellido }}
+                    </div>
+
+                    <!-- Fecha nacimiento -->
+                    <div class="col-md-4 mb-3">
+                        <label class="form-label fw-bold">Fecha de Nacimiento</label>
+                        {{ form.fecha_nacimiento }}
+                    </div>
+
+                    <!-- Teléfono -->
+                    <div class="col-md-4 mb-3">
+                        <label class="form-label fw-bold">Teléfono</label>
+                        {{ form.telefono }}
+                    </div>
+
+                    <!-- Email -->
+                    <div class="col-md-4 mb-3">
+                        <label class="form-label fw-bold">Email</label>
+                        {{ form.email }}
+                    </div>
+
+                    <!-- Dirección -->
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label fw-bold">Dirección</label>
+                        {{ form.direccion }}
+                    </div>
+
+                    <!-- Obra Social -->
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label fw-bold">Obra Social</label>
+                        {{ form.obrasocial }}
+                    </div>
+
+                    <!-- Observaciones -->
+                    <div class="col-12 mb-3">
+                        <label class="form-label fw-bold">Observaciones</label>
+                        {{ form.observaciones }}
+                    </div>
+
+                </div>
+
+                <div class="d-flex justify-content-between mt-4">
+                      <!-- BOTÓN VOLVER -->
+<div class="text-center mt-5">
+
+  {% if request.user.is_staff or request.user.is_superuser %}
+      <a href="{% url 'core:IndexAdmin' %}" class="btn btn-primary btn-lg">
+        <i class="bi bi-arrow-left-circle"></i> Volver 
+      </a>
+
+  {% elif request.user.is_authenticated and request.user.medico %}
+      <a href="{% url 'core:medico' %}" class="btn btn-primary btn-lg">
+        <i class="bi bi-arrow-left-circle"></i> Volver 
+      </a>
+
+  {% else %}
+      <a href="{% url 'home' %}" class="btn btn-secondary btn-lg">
+        <i class="bi bi-arrow-left-circle"></i> Volver 
+      </a>
+  {% endif %}
+
+</div>
+
+                    <button type="button" class="btn btn-success btn-lg" data-bs-toggle="modal" data-bs-target="#confirmarModal">
+    <i class="bi bi-save"></i> Guardar Paciente
+</button>
+                </div>
+<!-- MODAL CONFIRMACION -->
+<div class="modal fade" id="confirmarModal" tabindex="-1" aria-labelledby="confirmarModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content shadow-lg border-0">
+
+      <div class="modal-header bg-success text-white">
+        <h5 class="modal-title" id="confirmarModalLabel">
+          <i class="bi bi-check-circle-fill"></i> Confirmar Registro
+        </h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
       </div>
+
+      <div class="modal-body text-center">
+        <p class="fs-5">
+          ¿Está seguro que desea guardar este paciente?
+        </p>
+        <p class="text-muted small">
+          Verifique que los datos sean correctos antes de continuar.
+        </p>
+      </div>
+
+      <div class="modal-footer justify-content-center">
+        <button type="button" class="btn btn-outline-secondary btn-lg" data-bs-dismiss="modal">
+          Cancelar
+        </button>
+
+        <!-- Este botón envía el form -->
+        <button type="submit" class="btn btn-success btn-lg">
+          Confirmar y Guardar
+        </button>
+      </div>
+
     </div>
   </div>
-</main>
-<div class="d-flex justify-content-center align-items-center mt-2">
-
-  <a href="{% url 'core:IndexAdmin' %}" class="btn btn-success">Volver</a>
 </div>
+            </form>
+
+        </div>
+    </div>
+
+</div>
+
 {% endblock %}

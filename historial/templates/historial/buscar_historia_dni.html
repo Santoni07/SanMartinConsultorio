@@ -3,71 +3,239 @@
 
 {% block content %}
 <div class="container mt-5">
-    <h2 class="text-center mb-4">Buscar Historia Clínica por DNI</h2>
 
-    <form method="get" class="mb-4">
-        <div class="row justify-content-center">
-            <div class="col-md-4">
-                <input type="text" name="dni" class="form-control" placeholder="Ingrese DNI" value="{{ dni|default_if_none:'' }}">
-            </div>
-            <div class="col-auto">
-                <button type="submit" class="btn btn-primary">Buscar</button>
+    <!-- TÍTULO -->
+    <div class="text-center mb-5">
+        <h2 class="fw-bold text-primary">Historia Clínica</h2>
+        <p class="text-muted">Búsqueda por DNI</p>
+    </div>
+
+    <!-- FORMULARIO -->
+    <div class="row justify-content-center mb-5">
+        <div class="col-md-6">
+            <div class="card shadow border-0">
+                <div class="card-body">
+                    <form method="get">
+                        <div class="row g-2">
+                            <div class="col-md-8">
+                                <input type="text" name="dni" class="form-control form-control-lg"
+                                       placeholder="Ingrese DNI"
+                                       value="{{ dni|default_if_none:'' }}">
+                            </div>
+                            <div class="col-md-4 d-grid">
+                                <button type="submit" class="btn btn-primary btn-lg">
+                                    <i class="bi bi-search"></i> Buscar
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
             </div>
         </div>
-    </form>
+    </div>
 
     {% if dni %}
         {% if paciente %}
-            <div class="card shadow-sm p-4 mb-4">
-                <h5>Paciente:</h5>
-                <p><strong>{{ paciente.nombre }} {{ paciente.apellido }}</strong> - DNI: {{ paciente.dni }}</p>
 
-                {% if historia %}
-                    <h6 class="mt-3">Historia Clínica encontrada</h6>
-                    <p><strong>Observaciones generales:</strong> {{ historia.observaciones_generales|default:"Sin observaciones." }}</p>
-
-                    {% if consultas %}
-                        <div class="table-responsive mt-4">
-                            <table class="table table-bordered table-striped">
-                                <thead class="table-light text-center">
-                                    <tr>
-                                        <th>Fecha</th>
-                                        <th>Motivo</th>
-                                        <th>Diagnóstico</th>
-                                        <th>Tratamiento</th>
-                                        <th>Observaciones</th>
-                                        <th>Médico</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {% for consulta in consultas %}
-                                    <tr>
-                                        <td class="text-center">{{ consulta.fecha }}</td>
-                                        <td>{{ consulta.motivo }}</td>
-                                        <td>{{ consulta.diagnostico }}</td>
-                                        <td>{{ consulta.tratamiento }}</td>
-                                        <td>{{ consulta.observaciones|default:"-" }}</td>
-                                        <td>{{ consulta.medico }}</td>
-                                    </tr>
-                                    {% endfor %}
-                                </tbody>
-                            </table>
-                        </div>
-                    {% else %}
-                        <div class="alert alert-warning mt-3">Este paciente no tiene consultas registradas.</div>
-                    {% endif %}
-                {% else %}
-                    <div class="alert alert-secondary mt-3">Este paciente no tiene historia clínica cargada.</div>
-                {% endif %}
+        <!-- INFO PACIENTE -->
+        <div class="card shadow border-0 mb-4 paciente-card">
+            <div class="card-header bg-dark text-white d-flex justify-content-between">
+                <strong>{{ paciente.nombre }} {{ paciente.apellido }}</strong>
+                <span>DNI: {{ paciente.dni }}</span>
             </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-4"><strong>Edad:</strong> {{ paciente.edad }}</div>
+                    <div class="col-md-4"><strong>Obra Social:</strong> {{ paciente.obrasocial.nombre }}</div>
+                </div>
+                <hr>
+                <strong>Observaciones Generales:</strong>
+                <p class="text-muted mb-0">
+                    {{ historia.observaciones_generales|default:"Sin observaciones." }}
+                </p>
+            </div>
+        </div>
+
+        <!-- CONSULTAS -->
+        {% if consultas %}
+        <h4 class="mb-4 text-secondary">Consultas Médicas</h4>
+
+        {% for consulta in consultas %}
+        <div class="card mb-4 shadow border-0 consulta-card">
+
+            <!-- HEADER -->
+            <div class="card-header consulta-header text-white d-flex justify-content-between align-items-center">
+                <div>
+                    <strong>{{ consulta.fecha }}</strong> — {{ consulta.motivo }}
+                </div>
+                <div>
+                    <span class="badge bg-light text-dark">
+                        Dr/a {{ consulta.medico }}
+                    </span>
+                </div>
+            </div>
+
+            <div class="card-body bg-white">
+
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <div class="p-3 bg-light rounded">
+                            <strong class="text-primary">Diagnóstico</strong>
+                            <p class="mb-0">{{ consulta.diagnostico }}</p>
+                        </div>
+                    </div>
+
+                    <div class="col-md-6 mb-3">
+                        <div class="p-3 bg-light rounded">
+                            <strong class="text-success">Tratamiento</strong>
+                            <p class="mb-0">{{ consulta.tratamiento }}</p>
+                        </div>
+                    </div>
+                </div>
+
+                {% if consulta.observaciones %}
+                <div class="alert alert-secondary mt-3">
+                    <strong>Observaciones:</strong>
+                    {{ consulta.observaciones }}
+                </div>
+                {% endif %}
+
+                <!-- ESTUDIOS RELACIONADOS -->
+                {% if consulta.estudios_combinados %}
+                <hr>
+                <h6 class="text-muted mb-3">📎 Estudios Relacionados</h6>
+
+                <div class="row">
+                    {% for estudio in consulta.estudios_combinados %}
+                    <div class="col-md-6 mb-3">
+                        <div class="card estudio-card border-0 shadow-sm">
+                            <div class="card-body d-flex justify-content-between align-items-center">
+                                <div>
+                                    <span class="badge bg-info text-dark mb-2">
+                                        {{ estudio.get_tipo_display }}
+                                    </span>
+                                    <div class="small text-muted">{{ estudio.fecha }}</div>
+                                </div>
+
+                                {% if estudio.archivo %}
+                                <a href="{{ estudio.archivo.url }}" target="_blank"
+                                   class="btn btn-sm btn-outline-primary">
+                                    <i class="bi bi-eye"></i>
+                                </a>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% endif %}
+
+            </div>
+        </div>
+        {% endfor %}
+
         {% else %}
-            <div class="alert alert-danger mt-4">No se encontró ningún paciente con ese DNI.</div>
+        <div class="alert alert-warning text-center">
+            Este paciente no tiene consultas registradas.
+        </div>
+        {% endif %}
+
+        <!-- ESTUDIOS GENERALES -->
+        {% if estudios_generales %}
+        <div class="card mt-5 shadow border-0 generales-card">
+            <div class="card-header bg-secondary text-white">
+                📂 Estudios Generales del Paciente
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    {% for estudio in estudios_generales %}
+                    <div class="col-md-6 mb-3">
+                        <div class="card estudio-card border-0 shadow-sm">
+                            <div class="card-body d-flex justify-content-between align-items-center">
+                                <div>
+                                    <span class="badge bg-warning text-dark mb-2">
+                                        {{ estudio.get_tipo_display }}
+                                    </span>
+                                    <div class="small text-muted">{{ estudio.fecha }}</div>
+                                </div>
+
+                                {% if estudio.archivo %}
+                                <a href="{{ estudio.archivo.url }}" target="_blank"
+                                   class="btn btn-sm btn-outline-dark">
+                                    <i class="bi bi-eye"></i>
+                                </a>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        {% else %}
+        <div class="alert alert-danger text-center">
+            No se encontró ningún paciente con ese DNI.
+        </div>
         {% endif %}
     {% endif %}
+
 </div>
+
+   <!-- BOTÓN VOLVER -->
 <div class="text-center mt-5">
-    <a href="{% url 'core:medico' %}" class="btn btn-secondary btn-lg">
-        <i class="bi bi-arrow-left-circle"></i> Volver al Menú Principal
-    </a>
+
+  {% if request.user.is_staff or request.user.is_superuser %}
+      <a href="{% url 'core:IndexAdmin' %}" class="btn btn-primary btn-lg">
+        <i class="bi bi-arrow-left-circle"></i> Volver 
+      </a>
+
+  {% elif request.user.is_authenticated and request.user.medico %}
+      <a href="{% url 'core:medico' %}" class="btn btn-primary btn-lg">
+        <i class="bi bi-arrow-left-circle"></i> Volver 
+      </a>
+
+  {% else %}
+      <a href="{% url 'home' %}" class="btn btn-secondary btn-lg">
+        <i class="bi bi-arrow-left-circle"></i> Volver 
+      </a>
+  {% endif %}
+
 </div>
+
+<!-- ESTILOS -->
+<style>
+.paciente-card {
+    border-left: 6px solid #198754;
+}
+
+.consulta-card {
+    border-left: 6px solid #0d6efd;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.consulta-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 12px 25px rgba(0,0,0,0.15);
+}
+
+.consulta-header {
+    background: linear-gradient(135deg, #0d6efd, #0a58ca);
+}
+
+.estudio-card {
+    border-left: 4px solid #17a2b8;
+    transition: all 0.2s ease;
+}
+
+.estudio-card:hover {
+    background-color: #f8f9fa;
+}
+
+.generales-card {
+    border-left: 6px solid #6c757d;
+}
+</style>
+
 {% endblock %}

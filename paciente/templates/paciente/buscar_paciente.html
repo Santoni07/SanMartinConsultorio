@@ -2,47 +2,119 @@
 {% block title %}Pacientes{% endblock %}
 {% block content %}
 
-<section id="doctors" class="doctors">
+<section id="pacientes" class="doctors py-5">
   <div class="container">
-    <div class="section-title">
+
+    <!-- TÍTULO -->
+    <div class="section-title text-center mb-5">
       <h2>Pacientes</h2>
-      <p>Busqueda de Pacientes</p>
-      
+      <p class="text-muted">Búsqueda de Pacientes</p>
     </div>
-  
-   
-    <form method="post" action="{% url 'paciente:buscar' %}">
-      {% csrf_token %}
-      {{ form.as_p }}
-      <button type="submit" class="btn btn-primary">Buscar</button>
-    </form>
 
- 
-    {% if paciente_encontrado %}
-     
-    <p>Nombre: {{ paciente_encontrado.nombre }} {{ paciente_encontrado.apellido }}</p>
-    <p>Edad: {{ paciente_encontrado.edad }}</p>
-    <p>DNI: {{ paciente_encontrado.dni }}</p>
-    <p>Fecha de Nacimiento: {{ paciente_encontrado.fecha_nacimiento }}</p>
-    <p>Teléfono: {{ paciente_encontrado.telefono }}</p>
-    <p>Email: {{ paciente_encontrado.email }}</p>
-    <p>Dirección: {{ paciente_encontrado.direccion }}</p>
-    <p>Observaciones: {{ paciente_encontrado.observaciones }}</p>
-    <p>Obra Social: {{ paciente_encontrado.obrasocial.nombre }}</p>
-    <div class="mt-3 ms-auto">
-        <a href="{% url 'paciente:delete' pk=paciente_encontrado.pk %}" class="btn btn-secondary">Borrar</a>  
-        <a href="{% url 'paciente:update' pk=paciente_encontrado.pk %}" class="btn btn-light">Editar</a>
+    <!-- FORMULARIO EN CARD -->
+    <div class="row justify-content-center mb-5">
+      <div class="col-lg-6">
+        <div class="card shadow-sm border-0">
+          <div class="card-body">
+            <form method="post" action="{% url 'paciente:buscar' %}">
+              {% csrf_token %}
+              <div class="mb-3">
+                {{ form.as_p }}
+              </div>
+              <div class="d-grid">
+                <button type="submit" class="btn btn-primary btn-lg">
+                  <i class="bi bi-search"></i> Buscar Paciente
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
       </div>
-    {% elif mensaje_error %}
-     
-      <p>{{ mensaje_error }}</p>
-    {% endif %}
-   
-    <div class="d-flex justify-content-center align-items-center mt-2">
-      <a href="{% url 'core:IndexAdmin' %}" class="btn btn-success">Volver</a>
     </div>
-  </div>
 
+    <!-- RESULTADO -->
+    {% if paciente_encontrado %}
+    <div class="row justify-content-center">
+      <div class="col-lg-10">
+        <div class="card shadow border-0">
+          <div class="card-header bg-primary text-white">
+            <h5 class="mb-0">
+              <i class="bi bi-person-circle"></i>
+              {{ paciente_encontrado.nombre }} {{ paciente_encontrado.apellido }}
+            </h5>
+          </div>
+          <div class="card-body">
+
+            <div class="row">
+              <div class="col-md-6 mb-3">
+                <strong>DNI:</strong> {{ paciente_encontrado.dni }}<br>
+                <strong>Edad:</strong> {{ paciente_encontrado.edad }}<br>
+                <strong>Fecha Nacimiento:</strong> {{ paciente_encontrado.fecha_nacimiento }}
+              </div>
+
+              <div class="col-md-6 mb-3">
+                <strong>Teléfono:</strong> {{ paciente_encontrado.telefono }}<br>
+                <strong>Email:</strong> {{ paciente_encontrado.email }}<br>
+                <strong>Obra Social:</strong> {{ paciente_encontrado.obrasocial.nombre }}
+              </div>
+            </div>
+
+            <hr>
+
+            <div class="mb-3">
+              <strong>Dirección:</strong>
+              <p class="text-muted mb-1">{{ paciente_encontrado.direccion }}</p>
+
+              <strong>Observaciones:</strong>
+              <p class="text-muted">{{ paciente_encontrado.observaciones }}</p>
+            </div>
+
+            <!-- BOTONES -->
+            <div class="d-flex justify-content-end gap-2">
+              <a href="{% url 'paciente:update' pk=paciente_encontrado.pk %}"
+                 class="btn btn-outline-primary">
+                <i class="bi bi-pencil"></i> Editar
+              </a>
+
+              <a href="{% url 'paciente:delete' pk=paciente_encontrado.pk %}"
+                 class="btn btn-outline-danger">
+                <i class="bi bi-trash"></i> Borrar
+              </a>
+            </div>
+
+          </div>
+        </div>
+      </div>
+    </div>
+
+    {% elif mensaje_error %}
+    <div class="alert alert-danger text-center">
+      {{ mensaje_error }}
+    </div>
+    {% endif %}
+
+    <!-- BOTÓN VOLVER -->
+<div class="text-center mt-5">
+
+  {% if request.user.is_staff or request.user.is_superuser %}
+      <a href="{% url 'core:IndexAdmin' %}" class="btn btn-primary btn-lg">
+        <i class="bi bi-arrow-left-circle"></i> Volver 
+      </a>
+
+  {% elif request.user.is_authenticated and request.user.medico %}
+      <a href="{% url 'core:medico' %}" class="btn btn-primary btn-lg">
+        <i class="bi bi-arrow-left-circle"></i> Volver 
+      </a>
+
+  {% else %}
+      <a href="{% url 'home' %}" class="btn btn-secondary btn-lg">
+        <i class="bi bi-arrow-left-circle"></i> Volver 
+      </a>
+  {% endif %}
+
+</div>
+
+  </div>
 </section>
 
 {% endblock %}

@@ -9,4 +9,9 @@ urlpatterns = [
     path('ver_disponibilidad/', views.ver_disponibilidad, name='ver_disponibilidad'),
     path('reservar_turno/', views.reservar_turno, name='reservar_turno'),
     path('eliminar_turno/<int:turno_id>/', views.eliminar_turno, name='eliminar_turno'),
+      path(
+        'buscar-turnos-dni/',
+        views.buscar_turnos_por_dni,
+        name='buscar_turnos_por_dni'
+    ),
 ]

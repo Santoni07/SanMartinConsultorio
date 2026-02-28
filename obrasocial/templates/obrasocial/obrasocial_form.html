@@ -1,29 +1,102 @@
 {% extends 'core/base.html' %}
 {% load static %}
 {% block title %}Cargar Obra Social{% endblock %}
+
 {% block content %}
+<div class="container mt-5">
 
-<main role="main">
-  <div class="container">
-    <div class="row mt-3">
-      <div class="col-md-9 mx-auto">
-        <div>
-        
-            <form action="" method="post" enctype="multipart/form-data">{% csrf_token %}
-                <table>
-                    {{ form.as_table}}
-                </table>
-                <br>
-                <input type="submit" value="Cargar" />
-            </form>
-        
-        </div>
-      </div>
+    <!-- TÍTULO -->
+    <div class="text-center mb-4">
+        <h2 class="fw-bold text-success">
+            <i class="bi bi-building-add"></i> Nueva Obra Social
+        </h2>
+        <p class="text-muted">Complete los datos de la obra social</p>
     </div>
-  </div>
-</main>
-<div class="d-flex justify-content-center align-items-center mt-2">
 
-  <a href="{% url 'core:IndexAdmin' %}" class="btn btn-success">Volver</a>
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="card shadow border-0 obra-card">
+                <div class="card-body p-4">
+
+                    <form method="post">
+                        {% csrf_token %}
+
+                        <!-- Nombre -->
+                        <div class="mb-4">
+                            <label class="form-label fw-bold">Nombre</label>
+                            {{ form.nombre }}
+                        </div>
+
+                        <!-- BOTONES -->
+                        <div class="d-flex justify-content-between">
+                            <a href="{% url 'core:IndexAdmin' %}"
+                               class="btn btn-primary btn-lg">
+                                <i class="bi bi-arrow-left"></i> Volver
+                            </a>
+
+                            <button type="button"
+                                    class="btn btn-success btn-lg"
+                                    data-bs-toggle="modal"
+                                    data-bs-target="#confirmarModal">
+                                <i class="bi bi-save"></i> Guardar
+                            </button>
+                        </div>
+
+                        <!-- MODAL CONFIRMACION -->
+                        <div class="modal fade" id="confirmarModal" tabindex="-1">
+                            <div class="modal-dialog modal-dialog-centered">
+                                <div class="modal-content shadow-lg border-0">
+
+                                    <div class="modal-header bg-success text-white">
+                                        <h5 class="modal-title">
+                                            Confirmar Registro
+                                        </h5>
+                                        <button type="button"
+                                                class="btn-close btn-close-white"
+                                                data-bs-dismiss="modal">
+                                        </button>
+                                    </div>
+
+                                    <div class="modal-body text-center">
+                                        ¿Está seguro que desea guardar esta obra social?
+                                    </div>
+
+                                    <div class="modal-footer justify-content-center">
+                                        <button type="button"
+                                                class="btn btn-outline-secondary btn-lg"
+                                                data-bs-dismiss="modal">
+                                            Cancelar
+                                        </button>
+
+                                        <button type="submit"
+                                                class="btn btn-success btn-lg">
+                                            Confirmar
+                                        </button>
+                                    </div>
+
+                                </div>
+                            </div>
+                        </div>
+
+                    </form>
+
+                </div>
+            </div>
+        </div>
+    </div>
+
 </div>
+
+<style>
+.obra-card {
+    border-left: 6px solid #198754;
+    transition: all 0.25s ease;
+}
+
+.obra-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 12px 25px rgba(0,0,0,0.12);
+}
+</style>
+
 {% endblock %}

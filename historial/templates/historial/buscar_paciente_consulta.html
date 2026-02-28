@@ -3,47 +3,121 @@
 
 {% block content %}
 <div class="container mt-5">
-    <h2 class="text-center mb-4">Buscar Paciente para Consulta Médica</h2>
 
-    <form method="get" action="">
-        <div class="row justify-content-center">
-            <div class="col-md-6">
-                <input type="text" name="q" class="form-control" placeholder="Buscar por nombre, apellido o DNI" value="{{ request.GET.q }}">
-            </div>
-            <div class="col-auto">
-                <button type="submit" class="btn btn-primary">Buscar</button>
+    <!-- TÍTULO -->
+    <div class="text-center mb-5">
+        <h2 class="fw-bold text-primary">
+            <i class="bi bi-search"></i> Buscar Paciente para Consulta Médica
+        </h2>
+        <p class="text-muted">Busque por nombre, apellido o DNI</p>
+    </div>
+
+    <!-- FORMULARIO -->
+    <div class="row justify-content-center mb-4">
+        <div class="col-md-8">
+            <div class="card shadow-sm border-0">
+                <div class="card-body">
+                    <form method="get">
+                        <div class="row g-2">
+                            <div class="col-md-9">
+                                <input type="text" 
+                                       name="q" 
+                                       class="form-control form-control-lg"
+                                       placeholder="Ej: Juan Pérez o 30123456"
+                                       value="{{ request.GET.q }}">
+                            </div>
+                            <div class="col-md-3 d-grid">
+                                <button type="submit" class="btn btn-primary btn-lg">
+                                    <i class="bi bi-search"></i> Buscar
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
             </div>
         </div>
-    </form>
+    </div>
 
+    <!-- RESULTADOS -->
     {% if pacientes %}
-        <div class="mt-4">
-            <h5>Resultados:</h5>
-            <table class="table table-hover mt-3">
-                <thead class="table-light">
-                    <tr>
-                        <th>Nombre</th>
-                        <th>DNI</th>
-                        <th>Acción</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for paciente in pacientes %}
-                    <tr>
-                        <td>{{ paciente.nombre }} {{ paciente.apellido }}</td>
-                        <td>{{ paciente.dni }}</td>
-                        <td>
-                            <a href="{% url 'cargar_consulta_paciente' paciente.id %}" class="btn btn-success btn-sm">
-                                Seleccionar
-                            </a>
-                        </td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
+    <div class="card shadow-sm border-0 mt-4">
+        <div class="card-header bg-dark text-white">
+            <strong>Resultados encontrados</strong>
         </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Paciente</th>
+                            <th>DNI</th>
+                            <th>Turno Hoy</th>
+                            <th class="text-center">Acción</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for paciente in pacientes %}
+                        <tr>
+                            <td>
+                                <strong>{{ paciente.nombre }} {{ paciente.apellido }}</strong>
+                            </td>
+                            <td>{{ paciente.dni }}</td>
+
+                            <!-- TURNO HOY -->
+                            <td>
+                                {% if paciente.turno_hoy %}
+                                    <span class="badge bg-success fs-6">
+                                        <i class="bi bi-calendar-check"></i>
+                                        {{ paciente.turno_hoy.hora }} hs
+                                    </span>
+                                {% else %}
+                                    <span class="badge bg-secondary fs-6">
+                                        <i class="bi bi-calendar-x"></i>
+                                        Sin turno
+                                    </span>
+                                {% endif %}
+                            </td>
+
+                            <!-- BOTÓN -->
+                            <td class="text-center">
+                                <a href="{% url 'cargar_consulta_paciente' paciente.id %}" 
+                                   class="btn btn-success btn-sm">
+                                    <i class="bi bi-plus-circle"></i> Seleccionar
+                                </a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
     {% elif request.GET.q %}
-        <div class="alert alert-warning mt-4">No se encontraron pacientes con ese criterio.</div>
+        <div class="alert alert-warning text-center mt-4 shadow-sm">
+            <i class="bi bi-exclamation-triangle"></i>
+            No se encontraron pacientes con ese criterio.
+        </div>
     {% endif %}
+   <!-- BOTÓN VOLVER -->
+<div class="text-center mt-5">
+
+  {% if request.user.is_staff or request.user.is_superuser %}
+      <a href="{% url 'core:IndexAdmin' %}" class="btn btn-primary btn-lg">
+        <i class="bi bi-arrow-left-circle"></i> Volver 
+      </a>
+
+  {% elif request.user.is_authenticated and request.user.medico %}
+      <a href="{% url 'core:medico' %}" class="btn btn-primary btn-lg">
+        <i class="bi bi-arrow-left-circle"></i> Volver 
+      </a>
+
+  {% else %}
+      <a href="{% url 'home' %}" class="btn btn-secondary btn-lg">
+        <i class="bi bi-arrow-left-circle"></i> Volver 
+      </a>
+  {% endif %}
+
+</div>
 </div>
 {% endblock %}

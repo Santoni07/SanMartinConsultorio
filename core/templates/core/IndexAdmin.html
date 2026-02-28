@@ -51,7 +51,9 @@
 
         <li class="dropdown"><a href="#"><span>Turnos</span> <i class="bi bi-chevron-right"></i></a>
           <ul>
-            <li><a href="#">Ver</a></li>
+            <li><a href="{% url 'turnos:buscar_turnos_por_dni' %}" class="btn btn-outline-primary">
+    Ver Turnos
+</a></li>
             <li><a href="{% url 'turnos:seleccionar_paciente' %}">Seleccionar</a></li>
           </ul>
         </li>
@@ -65,7 +67,7 @@
 
           <li class="dropdown"><a href="#"><span>Historia Clinica</span> <i class="bi bi-chevron-right"></i></a>
           <ul>
-            <li><a href="">Ver</a></li>
+            <li><a href="{% url 'buscar_historia_por_dni' %}">Buscar</a></li>
             
           </ul>
         </li>

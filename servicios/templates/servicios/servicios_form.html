@@ -1,27 +1,118 @@
 {% extends 'core/base.html' %}
 {% load static %}
-{% block title %}Cargar Servicios{% endblock %}
+{% block title %}Cargar Servicio{% endblock %}
+
 {% block content %}
+<div class="container mt-5">
 
-<main role="main">
-  <div class="container">
-    <div class="row mt-3">
-      <div class="col-md-9 mx-auto">
-        <div>
-            <form action="" method="post" enctype="multipart/form-data">{% csrf_token %}
-                <table>
-                    {{ form.as_table}}
-                </table>
-                <br>
-                <input type="submit" value="Cargar" />
-            </form>
-        </div>
-      </div>
+    <!-- TITULO -->
+    <div class="text-center mb-4">
+        <h2 class="fw-bold text-primary">
+            <i class="bi bi-gear-fill"></i> Nuevo Servicio
+        </h2>
+        <p class="text-muted">Complete los datos del servicio</p>
     </div>
-  </div>
-</main>
-<div class="d-flex justify-content-center align-items-center mt-2">
 
-  <a href="{% url 'core:IndexAdmin' %}" class="btn btn-success">Volver</a>
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card shadow border-0 servicio-card">
+                <div class="card-body p-4">
+
+                    <form method="post" enctype="multipart/form-data">
+                        {% csrf_token %}
+
+                        <div class="row">
+
+                            <!-- Nombre -->
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label fw-bold">Nombre</label>
+                                {{ form.nombre }}
+                            </div>
+
+                            <!-- Imagen -->
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label fw-bold">Imagen</label>
+                                {{ form.imagen }}
+                            </div>
+
+                            <!-- Descripción -->
+                            <div class="col-12 mb-4">
+                                <label class="form-label fw-bold">Descripción</label>
+                                {{ form.descripcion }}
+                            </div>
+
+                        </div>
+
+                        <!-- BOTONES -->
+                        <div class="d-flex justify-content-between">
+                            <a href="{% url 'core:IndexAdmin' %}"
+                               class="btn btn-primary btn-lg">
+                                <i class="bi bi-arrow-left"></i> Volver
+                            </a>
+
+                            <button type="button"
+                                    class="btn btn-primary btn-lg"
+                                    data-bs-toggle="modal"
+                                    data-bs-target="#confirmarModal">
+                                <i class="bi bi-save"></i> Guardar
+                            </button>
+                        </div>
+
+                        <!-- MODAL -->
+                        <div class="modal fade" id="confirmarModal" tabindex="-1">
+                            <div class="modal-dialog modal-dialog-centered">
+                                <div class="modal-content shadow-lg border-0">
+
+                                    <div class="modal-header bg-primary text-white">
+                                        <h5 class="modal-title">
+                                            Confirmar Registro
+                                        </h5>
+                                        <button type="button"
+                                                class="btn-close btn-close-white"
+                                                data-bs-dismiss="modal">
+                                        </button>
+                                    </div>
+
+                                    <div class="modal-body text-center">
+                                        ¿Está seguro que desea guardar este servicio?
+                                    </div>
+
+                                    <div class="modal-footer justify-content-center">
+                                        <button type="button"
+                                                class="btn btn-outline-secondary btn-lg"
+                                                data-bs-dismiss="modal">
+                                            Cancelar
+                                        </button>
+
+                                        <button type="submit"
+                                                class="btn btn-primary btn-lg">
+                                            Confirmar
+                                        </button>
+                                    </div>
+
+                                </div>
+                            </div>
+                        </div>
+
+                    </form>
+
+                </div>
+            </div>
+        </div>
+    </div>
+
 </div>
+
+<style>
+.servicio-card {
+    border-left: 6px solid #0d6efd;
+    transition: all 0.25s ease;
+}
+
+.servicio-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 12px 25px rgba(0,0,0,0.12);
+}
+</style>
+
 {% endblock %}

@@ -39,7 +39,9 @@
 
         <li class="dropdown"><a href="#"><span>Turnos</span> <i class="bi bi-chevron-right"></i></a>
           <ul>
-            <li><a href="#">Ver</a></li>
+             <li><a href="{% url 'turnos:buscar_turnos_por_dni' %}" class="btn btn-outline-primary">
+    Ver Turnos
+</a></li>
             <li><a href="{% url 'turnos:seleccionar_paciente' %}">Seleccionar</a></li>
           </ul>
         </li>
@@ -89,20 +91,24 @@
 
 
 
-<!--Bienvenida-->
-        <div class="welcome-section">
-          <div class="container mt-5">
-            <div class="row">
-              <div class="col-md-8 offset-md-2 welcome-content ">
-                <h2>Bienvenido al Consultorio Médico San Martín</h2>
-                <p>
-                  Gracias por ser parte de nuestro equipo. Aquí puedes administrar y acceder a las funciones administrativas del consultorio.
-                </p>
-              </div>
-            </div>
-          </div>
-        </div>
-
+<!-- Bienvenida -->
+<div class="welcome-section">
+  <div class="container mt-5">
+    <div class="row">
+      <div class="col-md-8 offset-md-2 welcome-content">
+        <h2>Bienvenido/a Dr. {{ request.user.medico.apellido }}</h2>
+        <p>
+          Desde este panel podrá gestionar su agenda médica, acceder a las historias clínicas
+          de sus pacientes y registrar consultas de manera rápida y organizada.
+        </p>
+        <p>
+          El sistema del Consultorio Médico San Martín está diseñado para acompañar su práctica profesional
+          con eficiencia, seguridad y respaldo digital.
+        </p>
+      </div>
+    </div>
+  </div>
+</div>
 
 
 {% endblock %}

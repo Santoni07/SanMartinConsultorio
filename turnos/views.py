@@ -5,6 +5,7 @@ from paciente.models import Paciente
 from medicos.models import Medico
 from datetime import datetime, timedelta, time
 from django.contrib import messages
+from datetime import date
 
 def seleccionar_paciente(request):
     paciente = None
@@ -28,16 +29,24 @@ def seleccionar_medico(request):
 
     if request.method == 'POST':
         form = SeleccionMedicoForm(request.POST)
+
         if form.is_valid():
-            request.session['especialidad_id'] = form.cleaned_data['especialidad'].id
-            request.session['medico_id'] = form.cleaned_data['medico'].id
-            return redirect('turnos:ver_disponibilidad')
+
+            especialidad = form.cleaned_data.get('especialidad')
+            medico = form.cleaned_data.get('medico')
+
+            # Solo guardar si médico fue seleccionado
+            if medico:
+                request.session['especialidad_id'] = especialidad.id if especialidad else None
+                request.session['medico_id'] = medico.id
+                return redirect('turnos:ver_disponibilidad')
+
     else:
         form = SeleccionMedicoForm()
 
-    return render(request, 'turnos/seleccionar_medico.html', {'form': form})
-
-
+    return render(request, 'turnos/seleccionar_medico.html', {
+        'form': form
+    })
 def ver_disponibilidad(request):
     if 'paciente_id' not in request.session or 'medico_id' not in request.session:
         return redirect('turnos:seleccionar_paciente')
@@ -132,3 +141,28 @@ def eliminar_turno(request, turno_id):
     turno.delete()
     messages.success(request, "Turno eliminado.")
     return redirect('turnos:ver_disponibilidad')
+
+
+def buscar_turnos_por_dni(request):
+    dni = request.GET.get('dni')
+    paciente = None
+    turnos_futuros = None
+
+    if dni:
+        try:
+            paciente = Paciente.objects.get(dni=dni)
+
+            hoy = date.today()
+
+            turnos_futuros = Turnos.objects.filter(
+                paciente=paciente,
+                fecha__gte=hoy
+            ).order_by('fecha', 'hora')
+
+        except Paciente.DoesNotExist:
+            messages.warning(request, "No se encontró paciente con ese DNI.")
+
+    return render(request, 'turnos/buscar_turnos_dni.html', {
+        'paciente': paciente,
+        'turnos': turnos_futuros
+    })

@@ -14,11 +14,7 @@
     </button>
   </form>
 
-  {% if messages %}
-    {% for message in messages %}
-      <div class="alert alert-warning shadow-sm"><i class="bi bi-exclamation-circle"></i> {{ message }}</div>
-    {% endfor %}
-  {% endif %}
+  
 
   {% if paciente %}
     <div class="card shadow-sm border-success">
@@ -36,7 +32,26 @@
     <a href="{% url 'paciente:create' %}" class="btn btn-outline-success mt-4">
       <i class="bi bi-person-plus"></i> Crear nuevo paciente
     </a>
-    <a href="{% url 'core:IndexAdmin' %}" class="btn btn-secondary mt-4">Volver al menú principal</a>
+       <!-- BOTÓN VOLVER -->
+<div class="text-center mt-5">
+
+  {% if request.user.is_staff or request.user.is_superuser %}
+      <a href="{% url 'core:IndexAdmin' %}" class="btn btn-primary btn-lg">
+        <i class="bi bi-arrow-left-circle"></i> Volver 
+      </a>
+
+  {% elif request.user.is_authenticated and request.user.medico %}
+      <a href="{% url 'core:medico' %}" class="btn btn-primary btn-lg">
+        <i class="bi bi-arrow-left-circle"></i> Volver 
+      </a>
+
+  {% else %}
+      <a href="{% url 'home' %}" class="btn btn-secondary btn-lg">
+        <i class="bi bi-arrow-left-circle"></i> Volver 
+      </a>
+  {% endif %}
+
+</div>
   {% endif %}
 </div>
 {% endblock %}

@@ -1,6 +1,6 @@
 from django.shortcuts import render
 from django.views.generic import  CreateView, UpdateView, DeleteView,TemplateView
-from paciente.forms import BusquedaPacienteForm
+from paciente.forms import BusquedaPacienteForm,  PacienteForm
 
 
 from django.contrib import messages
@@ -46,16 +46,13 @@ class PacienteDeleteView(DeleteView):
     
     
 class PacienteCreateView(CreateView):
-    model=Paciente
-    fields=['dni','nombre','apellido','edad','fecha_nacimiento','telefono','email','direccion','observaciones','obrasocial']
+    model = Paciente
+    form_class = PacienteForm
     success_url = reverse_lazy('paciente:buscar')
-   
 
     def form_valid(self, form):
         messages.success(self.request, 'Paciente creado exitosamente')
         return super().form_valid(form)
-    
-        
         
 
        
