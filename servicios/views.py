@@ -5,22 +5,22 @@ from django.views.generic import ListView,CreateView,DeleteView,UpdateView
 
 from servicios.forms import ServiciosForm
 from django.contrib import messages
-
+from django.contrib.auth.mixins import LoginRequiredMixin
 from .models import Servicios
 
 # Create your views here.
-@login_required
-class ServiciosListView(ListView):
+
+class ServiciosListView(LoginRequiredMixin,ListView):
     model = Servicios
     template_name = 'servicios/servicios.html'
     context_object_name = 'servicios'
 
-@login_required
-class ServiciosDetailView(DeleteView):
+
+class ServiciosDetailView(LoginRequiredMixin,DeleteView):
     pass 
 
-@login_required
-class ServiciosCreateView(CreateView):
+
+class ServiciosCreateView(LoginRequiredMixin,CreateView):
     model = Servicios
     form_class = ServiciosForm
     success_url = reverse_lazy('servicios:list')
@@ -43,15 +43,16 @@ class ServiciosCreateView(CreateView):
         messages.error(self.request, 'Hubo un error en el formulario.')
         return super().form_invalid(form)
 
-@login_required
-class ServiciosUpdateView(UpdateView):
+
+class ServiciosUpdateView(LoginRequiredMixin,UpdateView):
     model=Servicios
     fields = ["nombre","descripcion","imagen"]
     success_url = reverse_lazy('servicios:list')
     template_name_suffix = '_update_form'
     def get_success_url(self):
       return reverse_lazy('servicios:update', args=[self.object.id]) + '?ok'
-@login_required
-class ServiciosDeleteView(DeleteView):
+
+
+class ServiciosDeleteView(LoginRequiredMixin,DeleteView):
     model=Servicios
     success_url = reverse_lazy('servicios:list')

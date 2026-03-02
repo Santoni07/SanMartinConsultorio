@@ -1,23 +1,26 @@
+from django.contrib.auth.decorators import login_required
 from django.shortcuts import render
 from django.views.generic import ListView, CreateView, UpdateView, DeleteView
 
 from medicos.forms import MedicosForm
 from django.contrib import messages
+from django.contrib.auth.mixins import LoginRequiredMixin
 
 
 from .models import  Medico
 from django.urls import reverse_lazy
 
 # Crud Medicos
-class MedicoListView(ListView):
+
+class MedicoListView(LoginRequiredMixin,ListView):
     model = Medico
     template_name = 'medicos/medicos.html' 
     context_object_name = 'medicos' 
 
-class MedicoDetailView(DeleteView):
+class MedicoDetailView(LoginRequiredMixin,DeleteView):
      model=Medico
 
-class MedicoCreateView(CreateView):   
+class MedicoCreateView(LoginRequiredMixin,CreateView):   
        model = Medico
        form_class = MedicosForm
        success_url = reverse_lazy('medicos:list')
@@ -39,7 +42,8 @@ class MedicoCreateView(CreateView):
         messages.error(self.request, 'Hubo un error en el formulario.')
         return super().form_invalid(form)
 
-class MedicoUpdateView(UpdateView):
+
+class MedicoUpdateView(LoginRequiredMixin,UpdateView):
     model=Medico
     fields = [ 'email', 'telefono', 'img', 'especialidad']
     success_url = reverse_lazy('medicos:list')
@@ -47,7 +51,7 @@ class MedicoUpdateView(UpdateView):
     def get_success_url(self):
       return reverse_lazy('medicos:update', args=[self.object.id]) + '?ok'
 
-class MedicoDeleteView(DeleteView):
+class MedicoDeleteView(LoginRequiredMixin,DeleteView):
     model=Medico
     success_url = reverse_lazy('medicos:list')
     

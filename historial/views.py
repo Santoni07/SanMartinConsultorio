@@ -1,3 +1,4 @@
+from django.contrib.auth.decorators import login_required
 from django.shortcuts import render, get_object_or_404, redirect
 from .models import HistoriaClinica, ConsultaMedica
 from .forms import ConsultaMedicaForm
@@ -8,7 +9,7 @@ from datetime import date
 from turnos.models import Turnos
 
 
-
+@login_required
 def ver_historia_clinica(request, paciente_id):
     paciente = get_object_or_404(Paciente, id=paciente_id)
     historia, _ = HistoriaClinica.objects.get_or_create(paciente=paciente)
@@ -58,6 +59,7 @@ def ver_historia_clinica(request, paciente_id):
         'dni': request.GET.get('dni')
     })
 
+@login_required
 def buscar_paciente_consulta(request):
     query = request.GET.get('q')
     pacientes = None
@@ -83,6 +85,8 @@ def buscar_paciente_consulta(request):
     return render(request, 'historial/buscar_paciente_consulta.html', {
         'pacientes': pacientes
     })
+
+@login_required
 def cargar_consulta_paciente(request, paciente_id):
     paciente = get_object_or_404(Paciente, id=paciente_id)
     historia, _ = HistoriaClinica.objects.get_or_create(paciente=paciente)
@@ -103,7 +107,7 @@ def cargar_consulta_paciente(request, paciente_id):
         'form': form,
         'paciente': paciente
     })
-
+@login_required
 def buscar_historia_por_dni(request):
     dni = request.GET.get('dni')
     paciente = None

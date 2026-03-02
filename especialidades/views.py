@@ -15,21 +15,22 @@ from especialidades.forms import EspecialidadesForm
 from .models import Especialidades
 from django.urls import reverse_lazy
 from django.contrib import messages
+from django.contrib.auth.mixins import LoginRequiredMixin
 
 # Crud Especialidades
-@login_required
-class EspecialidadesListView(ListView):
+
+class EspecialidadesListView(LoginRequiredMixin,ListView):
     model = Especialidades
     template_name = 'especialidades/especialidades.html' 
     context_object_name = 'especialidades'
 
-@login_required
-class EspecialidadesDetailView(DeleteView):
+
+class EspecialidadesDetailView(LoginRequiredMixin,DeleteView):
      model=Especialidades
   
 
-@login_required
-class EspecialidadesCreateView(CreateView):   
+
+class EspecialidadesCreateView(LoginRequiredMixin,CreateView):   
     model = Especialidades
     form_class= EspecialidadesForm
     
@@ -55,8 +56,8 @@ class EspecialidadesCreateView(CreateView):
         messages.error(self.request, 'Hubo un error en el formulario.')
         return super().form_invalid(form)
 
-@login_required
-class EspecialidadesUpdateView(UpdateView):
+
+class EspecialidadesUpdateView(LoginRequiredMixin,UpdateView):
     model=Especialidades
     success_url = reverse_lazy('especialidades:list')
     fields= ["descripcion", "img" ]
@@ -64,8 +65,8 @@ class EspecialidadesUpdateView(UpdateView):
     def get_success_url(self):
       return reverse_lazy('especialidades:update', args=[self.object.id]) + '?ok'
 
-@login_required
-class EspecialidadesDeleteView(DeleteView):
+
+class EspecialidadesDeleteView(LoginRequiredMixin,DeleteView):
     model=Especialidades
     success_url = reverse_lazy('especialidades:list')
     

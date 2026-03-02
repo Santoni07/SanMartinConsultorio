@@ -2,19 +2,20 @@ from django.forms import DateInput
 from django.shortcuts import render
 from django.views.generic import ListView, CreateView, UpdateView, DeleteView
 from django.contrib.auth.decorators import login_required
+from django.contrib.auth.mixins import LoginRequiredMixin
 
 from medicos.models import Medico
 from .models import Agendas
 from django.urls import reverse_lazy
 
-@login_required
-class AgendaListView(ListView):
+
+class AgendaListView(LoginRequiredMixin, ListView):
     model = Agendas
     template_name = 'agendas/agenda_list.html'  # La plantilla para mostrar la lista de agendas
     context_object_name = 'agendas'  # El nombre del objeto de contexto en la plantilla
 
-@login_required   
-class AgendaCreateView(CreateView):
+  
+class AgendaCreateView(LoginRequiredMixin,CreateView):
     model = Agendas
     template_name = 'agendas/agenda_form.html'
     fields = '__all__'
@@ -26,8 +27,8 @@ class AgendaCreateView(CreateView):
         form.fields['dia'].widget = DateInput(attrs={'type': 'date'})
         return form
 
-@login_required
-class AgendaUpdateView(UpdateView):
+
+class AgendaUpdateView(LoginRequiredMixin,UpdateView):
     model = Agendas
     template_name = 'agendas/agenda_form.html'
     fields = '__all__'
@@ -39,8 +40,8 @@ class AgendaUpdateView(UpdateView):
         form.fields['dia'].widget = DateInput(attrs={'type': 'date'})
         return form # URL a la que se redirige después de la actualización
 
-@login_required
-class AgendaDeleteView(DeleteView):
+
+class AgendaDeleteView(LoginRequiredMixin,DeleteView):
     model = Agendas
     template_name = 'agendas/agenda_confirm_delete.html'  # La plantilla para la confirmación de eliminación
     success_url = reverse_lazy('agenda:agenda_list')  # URL a la que se redirige después de la eliminación

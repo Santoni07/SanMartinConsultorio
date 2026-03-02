@@ -79,7 +79,7 @@ def eliminar_estudio(request, estudio_id):
     estudio.delete()
     return redirect(f"{reverse('buscar_y_cargar_estudio')}?seleccionar={paciente_id}")
 
-
+@login_required
 def ver_estudios_paciente(request):
     paciente = None
     estudios = []
