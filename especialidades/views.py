@@ -1,3 +1,4 @@
+from django.contrib.auth.decorators import login_required
 from django.shortcuts import render
 from django.views.generic import ListView, CreateView, UpdateView, DeleteView
 
@@ -16,15 +17,18 @@ from django.urls import reverse_lazy
 from django.contrib import messages
 
 # Crud Especialidades
+@login_required
 class EspecialidadesListView(ListView):
     model = Especialidades
     template_name = 'especialidades/especialidades.html' 
     context_object_name = 'especialidades'
 
+@login_required
 class EspecialidadesDetailView(DeleteView):
      model=Especialidades
   
 
+@login_required
 class EspecialidadesCreateView(CreateView):   
     model = Especialidades
     form_class= EspecialidadesForm
@@ -51,6 +55,7 @@ class EspecialidadesCreateView(CreateView):
         messages.error(self.request, 'Hubo un error en el formulario.')
         return super().form_invalid(form)
 
+@login_required
 class EspecialidadesUpdateView(UpdateView):
     model=Especialidades
     success_url = reverse_lazy('especialidades:list')
@@ -59,6 +64,7 @@ class EspecialidadesUpdateView(UpdateView):
     def get_success_url(self):
       return reverse_lazy('especialidades:update', args=[self.object.id]) + '?ok'
 
+@login_required
 class EspecialidadesDeleteView(DeleteView):
     model=Especialidades
     success_url = reverse_lazy('especialidades:list')

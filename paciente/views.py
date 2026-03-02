@@ -1,3 +1,4 @@
+from django.contrib.auth.decorators import login_required
 from django.shortcuts import render
 from django.views.generic import  CreateView, UpdateView, DeleteView,TemplateView
 from paciente.forms import BusquedaPacienteForm,  PacienteForm
@@ -10,6 +11,7 @@ from .models import  Paciente
 from django.urls import reverse_lazy
 
 # Crud Medicos
+@login_required
 class BuscarPacienteView(TemplateView):
     template_name = 'paciente/buscar_paciente.html'
 
@@ -30,7 +32,8 @@ class BuscarPacienteView(TemplateView):
                 return self.render_to_response({'mensaje_error': mensaje_error})
         else:
             return self.render_to_response({'form': form})
-      
+
+@login_required      
 class PacienteUpdateView(UpdateView):
     model=Paciente
     fields = [ 'telefono','email',  'direccion', 'observaciones', 'obrasocial']
@@ -38,13 +41,13 @@ class PacienteUpdateView(UpdateView):
     template_name_suffix = '_update_form'
     def get_success_url(self):
       return reverse_lazy('paciente:update', args=[self.object.id]) + '?ok'
-
+@login_required
 class PacienteDeleteView(DeleteView):
     model=Paciente
     success_url = reverse_lazy('IndexAdmin.html')
     
     
-    
+@login_required    
 class PacienteCreateView(CreateView):
     model = Paciente
     form_class = PacienteForm

@@ -1,4 +1,5 @@
 from django.contrib import messages
+from django.contrib.auth.decorators import login_required
 from django.shortcuts import render
 from .models import Estudio
 from django.views.decorators.http import require_POST
@@ -11,6 +12,7 @@ from paciente.models import Paciente
 
 from historial.models import ConsultaMedica
 
+@login_required
 def buscar_y_cargar_estudio(request):
     paciente = None
     estudios = []
@@ -69,6 +71,7 @@ def listar_estudios_paciente(request, paciente_id):
     estudios = paciente.estudios.all()
     return render(request, 'estudios/listar_estudios.html', {'paciente': paciente, 'estudios': estudios})
 
+@login_required
 @require_POST
 def eliminar_estudio(request, estudio_id):
     estudio = get_object_or_404(Estudio, id=estudio_id)

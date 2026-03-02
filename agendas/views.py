@@ -1,17 +1,19 @@
 from django.forms import DateInput
 from django.shortcuts import render
 from django.views.generic import ListView, CreateView, UpdateView, DeleteView
-
+from django.contrib.auth.decorators import login_required
 
 from medicos.models import Medico
 from .models import Agendas
 from django.urls import reverse_lazy
 
+@login_required
 class AgendaListView(ListView):
     model = Agendas
     template_name = 'agendas/agenda_list.html'  # La plantilla para mostrar la lista de agendas
     context_object_name = 'agendas'  # El nombre del objeto de contexto en la plantilla
-   
+
+@login_required   
 class AgendaCreateView(CreateView):
     model = Agendas
     template_name = 'agendas/agenda_form.html'
@@ -24,6 +26,7 @@ class AgendaCreateView(CreateView):
         form.fields['dia'].widget = DateInput(attrs={'type': 'date'})
         return form
 
+@login_required
 class AgendaUpdateView(UpdateView):
     model = Agendas
     template_name = 'agendas/agenda_form.html'
@@ -36,6 +39,7 @@ class AgendaUpdateView(UpdateView):
         form.fields['dia'].widget = DateInput(attrs={'type': 'date'})
         return form # URL a la que se redirige después de la actualización
 
+@login_required
 class AgendaDeleteView(DeleteView):
     model = Agendas
     template_name = 'agendas/agenda_confirm_delete.html'  # La plantilla para la confirmación de eliminación
