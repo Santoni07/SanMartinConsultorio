@@ -1,3 +1,4 @@
+from django.contrib.auth.decorators import login_required
 from django.shortcuts import render, redirect, get_object_or_404
 from .forms import  SeleccionMedicoForm
 from .models import Turnos
@@ -7,6 +8,7 @@ from datetime import datetime, timedelta, time
 from django.contrib import messages
 from datetime import date
 
+@login_required
 def seleccionar_paciente(request):
     paciente = None
     if request.method == 'POST':
@@ -22,7 +24,7 @@ def seleccionar_paciente(request):
 
     return render(request, 'turnos/seleccionar_paciente.html', {'paciente': paciente})
 
-
+@login_required
 def seleccionar_medico(request):
     if 'paciente_id' not in request.session:
         return redirect('turnos:seleccionar_paciente')
@@ -47,6 +49,8 @@ def seleccionar_medico(request):
     return render(request, 'turnos/seleccionar_medico.html', {
         'form': form
     })
+
+@login_required
 def ver_disponibilidad(request):
     if 'paciente_id' not in request.session or 'medico_id' not in request.session:
         return redirect('turnos:seleccionar_paciente')
@@ -94,6 +98,7 @@ def ver_disponibilidad(request):
         'offset': offset,
     })
 
+@login_required
 def reservar_turno(request):
     if request.method == 'POST':
         fecha_str = request.POST.get('fecha')
@@ -135,14 +140,14 @@ def reservar_turno(request):
     return redirect('turnos:ver_disponibilidad')
 
 
-
+@login_required
 def eliminar_turno(request, turno_id):
     turno = get_object_or_404(Turnos, id=turno_id)
     turno.delete()
     messages.success(request, "Turno eliminado.")
     return redirect('turnos:ver_disponibilidad')
 
-
+@login_required
 def buscar_turnos_por_dni(request):
     dni = request.GET.get('dni')
     paciente = None
