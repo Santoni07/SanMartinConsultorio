@@ -1,36 +1,52 @@
 {% extends 'core/base.html' %}
-
 {% load static %}
-<br>
-<br>
+
 {% block title %}Iniciar sesión{% endblock %}
+
 {% block content %}
-<style>.errorlist{color:red;}</style>
-<main role="main">
-  <div class="container">
-    <div class="row mt-3">
-      <div class="col-md-9 mx-auto mb-5">
-        {% if 'register' in request.GET %}
-        <p style="color:green;">Usuario registrado correctamente, ya puedes identificarte.</p>
-      {% endif %}
-        <form action="" method="post">{% csrf_token %}
-          <h3 class="mb-4">Iniciar sesión</h3>
-          {% if form.non_field_errors %}
-            <p style="color:red">Usuario o contraseña incorrectos, prueba de nuevo.</p>
-          {% endif %}
-          <p>
-            <input type="text" name="username" autofocus maxlength="254" required
-              id="id_username" class="form-control" placeholder="Nombre de usuario"/>
-          </p>
-          <p>
-            <input type="password" name="password" required
-              id="id_password" class="form-control" placeholder="Contraseña"/>
-          </p>
-          <p><input type="submit" class="btn btn-primary btn-block" value="Acceder"></p>
-        </form>
-        <p> ¿Ha olvidado su clave? Puede restaurarla <a href="{% url 'password_reset' %}">Aqui</a>
-      </div>
-    </div>
-  </div>
-</main>
+<div class="container mt-5" style="max-width: 700px;">
+
+    <h2 class="mb-4" style="color: #2c5c8a;">
+        Iniciar sesión
+    </h2>
+
+    {% if messages %}
+        {% for message in messages %}
+            <div class="alert alert-danger">
+                {{ message }}
+            </div>
+        {% endfor %}
+    {% endif %}
+
+    <form method="post">
+        {% csrf_token %}
+
+        <div class="mb-3">
+            <input type="text"
+                   name="username"
+                   class="form-control"
+                   placeholder="Nombre de usuario"
+                   required>
+        </div>
+
+        <div class="mb-3">
+            <input type="password"
+                   name="password"
+                   class="form-control"
+                   placeholder="Contraseña"
+                   required>
+        </div>
+
+        <button type="submit" class="btn btn-primary">
+            Acceder
+        </button>
+
+    </form>
+
+    <p class="mt-3">
+        ¿Ha olvidado su clave?
+        <a href="{% url 'password_reset' %}">Puede restaurar aquí</a>
+    </p>
+
+</div>
 {% endblock %}

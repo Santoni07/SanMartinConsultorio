@@ -1,8 +1,30 @@
 {% extends 'core/base.html' %}
 {% load static %}
 {% block title %}Consultorio Medico San Martin{% endblock %}
+ 
+{% block extra_css %}
+<style>
+.img-wrapper {
+    background-color: #f8f9fa; /* fondo claro si sobra espacio */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 220px;
+    padding: 10px;
+}
 
+.img-wrapper img {
+    max-width: 100%;
+    max-height: 100%;
+    object-fit: contain;
+    transition: transform 0.4s ease;
+}
 
+.service-card:hover .img-wrapper img {
+    transform: scale(1.08);
+}
+</style>
+{% endblock %}
  
         {% block headers %}
           <!-- ======= Header ======= -->
@@ -129,32 +151,41 @@
           </div>
         </section><!-- End Counts Section -->
         {% endblock %}  
-      
-        {% block services %}
-        <!-- ======= Sección de Servicios ======= -->
-        
-        <section id="services" class="services">
-          <div class="container">
-        
-            <div class="section-title">
-              <h2>Servicios</h2>
-              <p>Conoce todos nuestros Servicios</p>
+  {% block services %}
+<section id="services" class="services py-5">
+  <div class="container">
+
+    <div class="section-title text-center mb-5">
+      <h2 class="fw-bold">Servicios</h2>
+      <p class="text-muted">Conoce todos nuestros servicios</p>
+    </div>
+
+    <div class="row g-4">
+      {% for servicio in Servicios %}
+        <div class="col-lg-4 col-md-6">
+          <div class="card h-100 shadow-sm border-0 service-card">
+
+            <div class="img-wrapper">
+  <img src="{% if servicio.imagen %}{{ servicio.imagen.url }}{% else %}{% static 'core/img/default.jpg' %}{% endif %}"
+       alt="{{ servicio.nombre }}">
+</div>
+
+            <div class="card-body text-center">
+              <h5 class="card-title fw-bold text-primary">
+                {{ servicio.nombre }}
+              </h5>
+
+              
             </div>
-        
-            {% for servicio in Servicios %}
-            <div class="card card-custom" style="width: 18rem; border: 1px solid #dee2e6; border-radius: 10px; overflow: hidden;">
-              <img src="{% if servicio.imagen %}{{ servicio.imagen.url }}{% else %}ruta_por_defecto_de_la_imagen{% endif %}" class="card-img-top" alt="{{ servicio.nombre }}">
-              <div class="card-body" style="background-color: #c0bebe; border: 1px solid #dee2e6; padding: 20px; text-align: center;">
-                <h5 class="card-title">{{ servicio.nombre }}</h5>
-                <p class="card-text">{{ servicio.descripcion }}</p>
-              </div>
-            </div>
-            {% endfor %}
-            
-        
+
           </div>
-        </section><!-- Fin de la Sección de Servicios -->
-        {% endblock %}
+        </div>
+      {% endfor %}
+    </div>
+
+  </div>
+</section>
+{% endblock %}
         {% block departamentos %}
         <!-- ======= Departments Section -->
         <section id="departments" class="departments">

@@ -72,10 +72,11 @@
     <!-- BOTÓN SALIR A LA DERECHA -->
     {% if request.user.is_authenticated %}
     <div class="ms-auto d-none d-lg-block">
-      <a href="{% url 'logout' %}" class="btn btn-outline-danger btn-sm fw-bold"
-         onclick="event.preventDefault(); document.getElementById('logout-form').submit();">
-        <i class="bi bi-box-arrow-right"></i> Salir
-      </a>
+      <a href="#" class="btn btn-outline-danger btn-sm fw-bold"
+   data-bs-toggle="modal"
+   data-bs-target="#logoutModal">
+   <i class="bi bi-box-arrow-right"></i> Salir
+</a>
       <form id="logout-form" method="post" action="{% url 'logout' %}" style="display: none;">
         {% csrf_token %}
       </form>
@@ -83,6 +84,9 @@
     {% endif %}
 
   </div>
+
+
+
 </header>
 
 
@@ -110,5 +114,38 @@
   </div>
 </div>
 
+<!-- Modal Confirmar Logout -->
+<div class="modal fade" id="logoutModal" tabindex="-1" aria-labelledby="logoutModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
 
+      <div class="modal-header bg-danger text-white">
+        <h5 class="modal-title" id="logoutModalLabel">
+          Confirmar cierre de sesión
+        </h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+
+      <div class="modal-body text-center">
+        <p class="mb-3">
+          ¿Estás seguro que deseas cerrar sesión?
+        </p>
+      </div>
+
+      <div class="modal-footer justify-content-center">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+          Cancelar
+        </button>
+
+        <form method="post" action="{% url 'logout' %}">
+          {% csrf_token %}
+          <button type="submit" class="btn btn-danger">
+            Sí, salir
+          </button>
+        </form>
+      </div>
+
+    </div>
+  </div>
+</div>
 {% endblock %}
