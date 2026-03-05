@@ -1,0 +1,60 @@
+{% extends 'core/base.html' %}
+{% block content %}
+
+<div class="container mt-5">
+
+    <div class="card shadow border-0">
+        <div class="card-header bg-primary text-white">
+            Consulta del {{ consulta.fecha }}
+        </div>
+
+        <div class="card-body">
+
+            <h5>Paciente</h5>
+            <p>{{ consulta.historia.paciente.nombre }} {{ consulta.historia.paciente.apellido }}</p>
+
+            <hr>
+
+            <h5>Motivo</h5>
+            <p>{{ consulta.motivo }}</p>
+
+            <h5>Diagnóstico</h5>
+            <p>{{ consulta.diagnostico }}</p>
+
+            <h5>Tratamiento</h5>
+            <p>{{ consulta.tratamiento }}</p>
+
+            {% if consulta.observaciones %}
+            <h5>Observaciones</h5>
+            <p>{{ consulta.observaciones }}</p>
+            {% endif %}
+
+            {% if estudios %}
+            <hr>
+            <h5>Estudios Asociados</h5>
+            <ul>
+                {% for estudio in estudios %}
+                    <li>
+                        {{ estudio.get_tipo_display }} - {{ estudio.fecha }}
+                        {% if estudio.archivo %}
+                        <a href="{{ estudio.archivo.url }}" target="_blank">
+                            Ver archivo
+                        </a>
+                        {% endif %}
+                    </li>
+                {% endfor %}
+            </ul>
+            {% endif %}
+
+        </div>
+    </div>
+
+    <div class="text-center mt-4">
+        <a href="javascript:history.back()" class="btn btn-secondary">
+            Volver
+        </a>
+    </div>
+
+</div>
+
+{% endblock %}

@@ -59,7 +59,12 @@
              <li><a href="{% url 'buscar_historia_por_dni' %}">Ver Historia</a></li>
           </ul>
         </li>
-
+        <li>
+    <a href="https://aplicaciones.cmpc.org.ar/menu/" target="_blank">
+        <span>Receta Online</span>
+        <i class="bi bi-chevron-right"></i>
+    </a>
+</li>
         <!-- ACCESO/REGISTRO -->
         {% if not request.user.is_authenticated %}
           <li class="nav-item"><a class="nav-link scrollto" href="{% url 'login' %}">Accede</a></li>

@@ -10,15 +10,16 @@
         <p class="text-muted">Búsqueda por DNI</p>
     </div>
 
-    <!-- FORMULARIO -->
-    <div class="row justify-content-center mb-5">
+    <!-- FORMULARIO DNI -->
+    <div class="row justify-content-center mb-4">
         <div class="col-md-6">
             <div class="card shadow border-0">
                 <div class="card-body">
                     <form method="get">
                         <div class="row g-2">
                             <div class="col-md-8">
-                                <input type="text" name="dni" class="form-control form-control-lg"
+                                <input type="text" name="dni"
+                                       class="form-control form-control-lg"
                                        placeholder="Ingrese DNI"
                                        value="{{ dni|default_if_none:'' }}">
                             </div>
@@ -56,14 +57,72 @@
             </div>
         </div>
 
+        <!-- FILTRO POR FECHA -->
+        <div class="card shadow border-0 mb-4">
+            <div class="card-body">
+                <form method="get" class="row g-3 align-items-end">
+
+                    <!-- Mantener DNI -->
+                    <input type="hidden" name="dni" value="{{ dni }}">
+
+                    <div class="col-md-4">
+                        <label class="form-label">Mes</label>
+                        <select name="mes" class="form-select">
+                            <option value="">Todos</option>
+                            <option value="1" {% if mes == "1" %}selected{% endif %}>Enero</option>
+                            <option value="2" {% if mes == "2" %}selected{% endif %}>Febrero</option>
+                            <option value="3" {% if mes == "3" %}selected{% endif %}>Marzo</option>
+                            <option value="4" {% if mes == "4" %}selected{% endif %}>Abril</option>
+                            <option value="5" {% if mes == "5" %}selected{% endif %}>Mayo</option>
+                            <option value="6" {% if mes == "6" %}selected{% endif %}>Junio</option>
+                            <option value="7" {% if mes == "7" %}selected{% endif %}>Julio</option>
+                            <option value="8" {% if mes == "8" %}selected{% endif %}>Agosto</option>
+                            <option value="9" {% if mes == "9" %}selected{% endif %}>Septiembre</option>
+                            <option value="10" {% if mes == "10" %}selected{% endif %}>Octubre</option>
+                            <option value="11" {% if mes == "11" %}selected{% endif %}>Noviembre</option>
+                            <option value="12" {% if mes == "12" %}selected{% endif %}>Diciembre</option>
+                        </select>
+                    </div>
+
+                    <div class="col-md-4">
+                        <label class="form-label">Año</label>
+                        <input type="number" name="anio"
+                               class="form-control"
+                               placeholder="Ej: 2025"
+                               value="{{ anio }}">
+                    </div>
+
+                    <div class="col-md-2 d-grid">
+                        <button type="submit" class="btn btn-dark">
+                            Filtrar
+                        </button>
+                    </div>
+
+                    <div class="col-md-2 d-grid">
+                        <a href="?dni={{ dni }}" class="btn btn-outline-secondary">
+                            Limpiar
+                        </a>
+                    </div>
+
+                </form>
+            </div>
+        </div>
+
         <!-- CONSULTAS -->
         {% if consultas %}
-        <h4 class="mb-4 text-secondary">Consultas Médicas</h4>
+        <h4 class="mb-4 text-secondary">
+            Consultas Médicas
+            {% if mes or anio %}
+                <span class="badge bg-info text-dark">
+                    Filtrado
+                </span>
+            {% endif %}
+        </h4>
 
         {% for consulta in consultas %}
-        <div class="card mb-4 shadow border-0 consulta-card">
+        <a href="{% url 'detalle_consulta' consulta.id %}" class="text-decoration-none text-dark">
+            <div class="card mb-4 shadow border-0 consulta-card">
 
-            <!-- HEADER -->
             <div class="card-header consulta-header text-white d-flex justify-content-between align-items-center">
                 <div>
                     <strong>{{ consulta.fecha }}</strong> — {{ consulta.motivo }}
@@ -100,77 +159,13 @@
                 </div>
                 {% endif %}
 
-                <!-- ESTUDIOS RELACIONADOS -->
-                {% if consulta.estudios_combinados %}
-                <hr>
-                <h6 class="text-muted mb-3">📎 Estudios Relacionados</h6>
-
-                <div class="row">
-                    {% for estudio in consulta.estudios_combinados %}
-                    <div class="col-md-6 mb-3">
-                        <div class="card estudio-card border-0 shadow-sm">
-                            <div class="card-body d-flex justify-content-between align-items-center">
-                                <div>
-                                    <span class="badge bg-info text-dark mb-2">
-                                        {{ estudio.get_tipo_display }}
-                                    </span>
-                                    <div class="small text-muted">{{ estudio.fecha }}</div>
-                                </div>
-
-                                {% if estudio.archivo %}
-                                <a href="{{ estudio.archivo.url }}" target="_blank"
-                                   class="btn btn-sm btn-outline-primary">
-                                    <i class="bi bi-eye"></i>
-                                </a>
-                                {% endif %}
-                            </div>
-                        </div>
-                    </div>
-                    {% endfor %}
-                </div>
-                {% endif %}
-
             </div>
         </div>
         {% endfor %}
 
         {% else %}
         <div class="alert alert-warning text-center">
-            Este paciente no tiene consultas registradas.
-        </div>
-        {% endif %}
-
-        <!-- ESTUDIOS GENERALES -->
-        {% if estudios_generales %}
-        <div class="card mt-5 shadow border-0 generales-card">
-            <div class="card-header bg-secondary text-white">
-                📂 Estudios Generales del Paciente
-            </div>
-            <div class="card-body">
-                <div class="row">
-                    {% for estudio in estudios_generales %}
-                    <div class="col-md-6 mb-3">
-                        <div class="card estudio-card border-0 shadow-sm">
-                            <div class="card-body d-flex justify-content-between align-items-center">
-                                <div>
-                                    <span class="badge bg-warning text-dark mb-2">
-                                        {{ estudio.get_tipo_display }}
-                                    </span>
-                                    <div class="small text-muted">{{ estudio.fecha }}</div>
-                                </div>
-
-                                {% if estudio.archivo %}
-                                <a href="{{ estudio.archivo.url }}" target="_blank"
-                                   class="btn btn-sm btn-outline-dark">
-                                    <i class="bi bi-eye"></i>
-                                </a>
-                                {% endif %}
-                            </div>
-                        </div>
-                    </div>
-                    {% endfor %}
-                </div>
-            </div>
+            No hay consultas para el período seleccionado.
         </div>
         {% endif %}
 
@@ -180,27 +175,6 @@
         </div>
         {% endif %}
     {% endif %}
-
-</div>
-
-   <!-- BOTÓN VOLVER -->
-<div class="text-center mt-5">
-
-  {% if request.user.is_staff or request.user.is_superuser %}
-      <a href="{% url 'core:IndexAdmin' %}" class="btn btn-primary btn-lg">
-        <i class="bi bi-arrow-left-circle"></i> Volver 
-      </a>
-
-  {% elif request.user.is_authenticated and request.user.medico %}
-      <a href="{% url 'core:medico' %}" class="btn btn-primary btn-lg">
-        <i class="bi bi-arrow-left-circle"></i> Volver 
-      </a>
-
-  {% else %}
-      <a href="{% url 'home' %}" class="btn btn-secondary btn-lg">
-        <i class="bi bi-arrow-left-circle"></i> Volver 
-      </a>
-  {% endif %}
 
 </div>
 
@@ -222,19 +196,6 @@
 
 .consulta-header {
     background: linear-gradient(135deg, #0d6efd, #0a58ca);
-}
-
-.estudio-card {
-    border-left: 4px solid #17a2b8;
-    transition: all 0.2s ease;
-}
-
-.estudio-card:hover {
-    background-color: #f8f9fa;
-}
-
-.generales-card {
-    border-left: 6px solid #6c757d;
 }
 </style>
 

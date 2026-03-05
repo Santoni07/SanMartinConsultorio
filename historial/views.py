@@ -107,9 +107,13 @@ def cargar_consulta_paciente(request, paciente_id):
         'form': form,
         'paciente': paciente
     })
+
 @login_required
 def buscar_historia_por_dni(request):
     dni = request.GET.get('dni')
+    mes = request.GET.get('mes')
+    anio = request.GET.get('anio')
+
     paciente = None
     historia = None
     consultas = []
@@ -121,7 +125,16 @@ def buscar_historia_por_dni(request):
             historia = HistoriaClinica.objects.filter(paciente=paciente).first()
 
             if historia:
-                consultas = historia.consultas.prefetch_related('estudios').order_by('-fecha')
+                consultas = historia.consultas.prefetch_related('estudios')
+
+                # 🔥 FILTRO
+                if mes:
+                    consultas = consultas.filter(fecha__month=mes)
+
+                if anio:
+                    consultas = consultas.filter(fecha__year=anio)
+
+                consultas = consultas.order_by('-fecha')
 
                 for consulta in consultas:
                     estudios_fk = consulta.estudios.all()
@@ -152,4 +165,18 @@ def buscar_historia_por_dni(request):
         'historia': historia,
         'consultas': consultas,
         'estudios_generales': estudios_generales,
+        'mes': mes,
+        'anio': anio,
+    })
+    
+    
+@login_required
+def detalle_consulta(request, consulta_id):
+    consulta = get_object_or_404(ConsultaMedica, id=consulta_id)
+
+    estudios = consulta.estudios.all()
+
+    return render(request, "historial/detalle_consulta.html", {
+        "consulta": consulta,
+        "estudios": estudios,
     })
