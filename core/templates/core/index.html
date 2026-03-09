@@ -4,6 +4,39 @@
  
 {% block extra_css %}
 <style>
+  /* CONTACTO */
+.contact-section {
+    background: linear-gradient(180deg, #f4f7fb, #ffffff);
+    padding: 100px 0;
+}
+
+.contact-card {
+    background: white;
+    border-radius: 18px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.05);
+    transition: 0.3s ease;
+}
+
+.contact-card:hover {
+    transform: translateY(-6px);
+    box-shadow: 0 20px 50px rgba(0,0,0,0.08);
+}
+
+.contact-icon {
+    width: 70px;
+    height: 70px;
+    margin: 0 auto;
+    background: #e7f1ff;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.contact-icon i {
+    font-size: 28px;
+    color: #0d6efd;
+}
 .img-wrapper {
     background-color: #f8f9fa; /* fondo claro si sobra espacio */
     display: flex;
@@ -66,7 +99,7 @@
                 <i class="bi bi-list mobile-nav-toggle"></i>
               </nav><!-- .navbar -->
         
-              <a href="#appointment" class="appointment-btn scrollto" style="margin-left: 300px"><span class="d-none d-md-inline">Haz tu</span>Consulta</a>
+              <a href="{% url 'core:solicitar_turno' %}" class="appointment-btn scrollto" style="margin-left: 300px"><span class="d-none d-md-inline">Solicitar </span>Turno</a>
         
             </div>
           </header>
@@ -79,15 +112,21 @@
         <!--  Hero -->
         <section id="hero" class="d-flex align-items-center">
           <div class="container text-left">
-            <h1 class="mb-4">Bienvenidos al Centro Medico</h1>
-            <h2 class="container text-left" style="max-width: 50%;"> <!-- Utiliza mx-auto para centrar horizontalmente -->
-              En Centro Médico San Martín, nos enorgullece ofrecer atención médica de la más alta calidad. <br>
-              Nuestro equipo de médicos altamente calificados y experimentados está comprometido con brindar el mejor cuidado posible a nuestros pacientes. <br>
-            </h2>
-            <br>
-            <a href="#about" class="btn btn-primary btn-lg">Conocenos</a>
-          </div>
-        </section>
+  
+  <h1 class="mb-4 fw-bold">
+    Centro Médico San Martín
+  </h1>
+
+  <p class="lead" style="max-width: 600px;">
+    Brindamos atención médica integral con un enfoque profesional, humano y personalizado.
+    Nuestro equipo de especialistas matriculados trabaja con compromiso y excelencia,
+    priorizando siempre el bienestar y la confianza de cada paciente.
+  </p>
+
+
+
+</div>
+       
         </section><!-- End Hero -->
         <div class="why-us mb-5">
           <br>
@@ -236,77 +275,93 @@
             </div>
             <div class="row">
               {% for medico in medicos %}
-                <div class="col-lg-6">
-                  <div class="member d-flex align-items-start">
-                    <div class="pic"><img src="{{ medico.img.url }}" class="img-fluid" alt="{{ medico.nombre }} {{ medico.apellido }}"></div>
-                    <div class="member-info">
-                      <h4>{{ medico.nombre }} {{ medico.apellido }}</h4>
-                      <span>{{ medico.especialidad.nombre }}</span>
-                      <p>Matricula N° {{ medico.matricula }}</p>
-                      <p>{{ medico.email }}</p>
-                      <div class="social">
-                        <!-- Agrega enlaces a las redes sociales si es necesario -->
-                      </div>
+              <div class="col-lg-6">
+                <div class="member d-flex align-items-start">
+
+                  {% if medico.img %}
+                    <div class="pic">
+                      <img src="{{ medico.img.url }}" 
+                          class="img-fluid"
+                          alt="{{ medico.nombre }} {{ medico.apellido }}">
                     </div>
+                  {% endif %}
+
+                  <div class="member-info">
+                    <h4>{{ medico.nombre }} {{ medico.apellido }}</h4>
+                    <span>{{ medico.especialidad.nombre }}</span>
+                    <p>Matricula N° {{ medico.matricula }}</p>
+                    <p>{{ medico.email }}</p>
                   </div>
+
                 </div>
-              {% endfor %}
+              </div>
+            {% endfor %}
             </div>
           </div>
         </section>
         <!-- End Doctors Section -->
         {% endblock %}
-        {% block contacto %}
-        <!-- ======= Contact Section ======= -->
-        <section id="contact" class="contact">
-            <div class="container">
+       {% block contacto %}
+<section id="contact" class="contact-section section-padding">
 
-              <div class="section-title">
-                <h2>Contacto</h2>
-                <p>Magnam dolores commodi suscipit. Necessitatibus eius consequatur ex aliquid fuga eum quidem. Sit sint consectetur velit. Quisquam quos quisquam cupiditate. Et nemo qui impedit suscipit alias ea. Quia fugiat sit in iste officiis commodi quidem hic quas.</p>
-              </div>
-            </div>
+  <div class="container">
 
-          
+    <div class="text-center mb-5">
+      <h2 class="fw-bold">Contacto</h2>
+      <p class="text-muted col-lg-6 mx-auto">
+        Estamos para ayudarte. Comunicate con nuestro equipo
+        para consultas, información o coordinación de turnos.
+      </p>
+    </div>
 
-            <div class="container">
-              <div class="row mt-5">
+    <div class="row g-4 justify-content-center">
 
-                <div class="col-lg-4">
-                  <div class="info">
-                    <div class="address">
-                      <i class="bi bi-geo-alt"></i>
-                      <h4>Ubicacion:</h4>
-                      <p>Av Cornelio Savedra 343, Cordoba Argentina</p>
-                    </div>
+      <!-- Dirección -->
+      <div class="col-md-6 col-lg-4">
+        <div class="contact-card text-center p-4">
+          <div class="contact-icon mb-3">
+            <i class="bi bi-geo-alt"></i>
+          </div>
+          <h5 class="fw-bold">Ubicación</h5>
+          <p class="text-muted mb-0">
+            Av. Cornelio Saavedra 343<br>
+            Córdoba, Argentina
+          </p>
+        </div>
+      </div>
 
-                    <div class="email">
-                      <i class="bi bi-envelope"></i>
-                      <h4>Email:</h4>
-                      <p>centro.medico.sanMartin@hotmail.com</p>
-                    </div>
+      <!-- Email -->
+      <div class="col-md-6 col-lg-4">
+        <div class="contact-card text-center p-4">
+          <div class="contact-icon mb-3">
+            <i class="bi bi-envelope"></i>
+          </div>
+          <h5 class="fw-bold">Email</h5>
+          <p class="text-muted mb-0">
+            centro.medico.sanMartin@hotmail.com
+          </p>
+        </div>
+      </div>
 
-                    <div class="phone">
-                      <i class="bi bi-phone"></i>
-                      <h4>Call:</h4>
-                      <p>35113817760</p>
-                    </div>
+      <!-- Teléfono -->
+      <div class="col-md-6 col-lg-4">
+        <div class="contact-card text-center p-4">
+          <div class="contact-icon mb-3">
+            <i class="bi bi-telephone"></i>
+          </div>
+          <h5 class="fw-bold">Teléfono</h5>
+          <p class="text-muted mb-0">
+            351 138 17760
+          </p>
+        </div>
+      </div>
 
-                  </div>
+    </div>
 
-                </div>
+  </div>
 
-                <div class="col-lg-8 mt-5 mt-lg-0">
-
-                  
-              
-                </div>
-
-              </div>
-
-            </div>
-          </section><!-- End Contact Section -->
-        {% endblock %}  
+</section>
+{% endblock %}
         {% block consulta %}
         <!-- ======= Appointment Section ======= -->
         <section id="appointment" class="appointment section-bg">
@@ -381,7 +436,7 @@
 
             <div class="me-md-auto text-center text-md-start">
               <div class="copyright">
-                &copy; Copyright <strong><span>Medilab</span></strong>. All Rights Reserved
+                &copy; Copyright 2026 <strong><span>Centro Medico San Martin</span></strong>. Todos los derechos Reservados.
               </div>
               
             </div>

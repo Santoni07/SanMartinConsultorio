@@ -7,6 +7,8 @@ from django.db.models import Q
 from estudios.models import Estudio
 from datetime import date
 from turnos.models import Turnos
+from django.contrib import messages
+from datetime import date, datetime
 
 
 @login_required
@@ -59,10 +61,11 @@ def ver_historia_clinica(request, paciente_id):
         'dni': request.GET.get('dni')
     })
 
+
 @login_required
 def buscar_paciente_consulta(request):
     query = request.GET.get('q')
-    pacientes = None
+    turnos = None
 
     if query:
         pacientes = Paciente.objects.filter(
@@ -72,18 +75,21 @@ def buscar_paciente_consulta(request):
         )
 
         hoy = date.today()
+        ahora = datetime.now().time()
 
-        # Agregamos atributo dinámico a cada paciente
-        for paciente in pacientes:
-            turno_hoy = Turnos.objects.filter(
-                paciente=paciente,
-                fecha=hoy
-            ).first()
+        turnos = Turnos.objects.filter(
+            paciente__in=pacientes,
+            fecha=hoy
+        ).select_related('paciente').order_by('hora')
 
-            paciente.turno_hoy = turno_hoy
+        # Detectar próximo turno (el más cercano >= ahora)
+        turno_proximo = turnos.filter(hora__gte=ahora).first()
+
+        for turno in turnos:
+            turno.es_actual = (turno == turno_proximo)
 
     return render(request, 'historial/buscar_paciente_consulta.html', {
-        'pacientes': pacientes
+        'turnos': turnos
     })
 
 @login_required
@@ -91,23 +97,40 @@ def cargar_consulta_paciente(request, paciente_id):
     paciente = get_object_or_404(Paciente, id=paciente_id)
     historia, _ = HistoriaClinica.objects.get_or_create(paciente=paciente)
 
+    hoy = date.today()
+
+    # Buscar turno de hoy SIN consulta asociada
+    turno = Turnos.objects.filter(
+        paciente=paciente,
+        fecha=hoy,
+        consulta__isnull=True
+    ).order_by('hora').first()
+
+    if not turno:
+        messages.error(request, "El paciente no tiene turno activo hoy.")
+        return redirect('buscar_paciente_consulta')
+
     if request.method == 'POST':
         form = ConsultaMedicaForm(request.POST)
         if form.is_valid():
             consulta = form.save(commit=False)
             consulta.historia_clinica = historia
-            consulta.medico = request.user.medico  # Ajustar según tu modelo
-        
+            consulta.medico = request.user.medico
+            consulta.turno = turno  # 🔥 Vinculamos el turno
+            consulta.fecha = hoy
             consulta.save()
+
+            messages.success(request, "Consulta médica guardada con éxito.")
             return redirect('ver_historia_clinica', paciente_id=paciente.id)
+
     else:
-        form = ConsultaMedicaForm()
+        form = ConsultaMedicaForm(initial={'fecha': hoy})
 
     return render(request, 'historial/cargar_consulta.html', {
         'form': form,
-        'paciente': paciente
+        'paciente': paciente,
+        'turno': turno
     })
-
 @login_required
 def buscar_historia_por_dni(request):
     dni = request.GET.get('dni')

@@ -171,3 +171,65 @@ def buscar_turnos_por_dni(request):
         'paciente': paciente,
         'turnos': turnos_futuros
     })
+    
+    
+@login_required
+def mis_turnos_medico(request):
+
+    if not hasattr(request.user, 'medico'):
+        messages.warning(request, "No tienes perfil médico.")
+        return redirect('core:index')
+
+    medico = request.user.medico
+    hoy = date.today()
+    ahora = datetime.now().time()
+
+    filtro = request.GET.get("filtro")
+    fecha = request.GET.get("fecha")
+    mes = request.GET.get("mes")
+
+    turnos = Turnos.objects.filter(
+        medico=medico
+    ).order_by("fecha", "hora")
+
+    # 🔥 FILTROS RÁPIDOS
+    if filtro == "hoy":
+        turnos = turnos.filter(fecha=hoy)
+
+    elif filtro == "manana":
+        manana = hoy + timedelta(days=1)
+        turnos = turnos.filter(fecha=manana)
+
+    elif filtro == "semana":
+        fin_semana = hoy + timedelta(days=7)
+        turnos = turnos.filter(fecha__range=[hoy, fin_semana])
+
+    # 🔵 FILTROS MANUALES
+    elif fecha:
+        turnos = turnos.filter(fecha=fecha)
+
+    elif mes:
+        try:
+            year, month = mes.split("-")
+            turnos = turnos.filter(
+                fecha__year=year,
+                fecha__month=month
+            )
+        except ValueError:
+            pass
+
+    else:
+        # Por defecto mostrar HOY
+        turnos = turnos.filter(fecha=hoy)
+
+    turnos_hoy_count = Turnos.objects.filter(
+        medico=medico,
+        fecha=hoy
+    ).count()
+
+    return render(request, "turnos/mis_turnos_medico.html", {
+        "turnos": turnos,
+        "hoy": hoy,
+        "ahora": ahora,
+        "turnos_hoy_count": turnos_hoy_count
+    })

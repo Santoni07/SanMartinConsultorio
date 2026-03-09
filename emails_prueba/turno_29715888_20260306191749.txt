@@ -1,0 +1,14 @@
+
+NUEVA SOLICITUD DE TURNO
+
+Nombre: Ale Santoni
+DNI: 29715888
+Fecha Nacimiento: 1982-12-10
+Teléfono: 3516807765
+Email: alesantoni31@gmail.com
+Tipo de Atención: obra
+Obra Social: Swis Medical
+Especialidad: Generalista
+Preferencia Horaria: mañana
+
+Fecha de solicitud: 2026-03-06 19:17:49.324722

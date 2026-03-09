@@ -6,6 +6,15 @@ from servicios.models import Servicios
 from medicos.models import Medico
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.urls import reverse
+from especialidades.models import Especialidades
+from obrasocial.models import ObraSocial
+
+import os
+from datetime import datetime
+from django.conf import settings
+from django.shortcuts import render, redirect
+from django.contrib import messages
+
 
 
 from especialidades.views import *
@@ -96,3 +105,59 @@ def ValidarUsuario(request):
         else:
             return redirect('/')
     return redirect('login')
+
+def solicitar_turno(request):
+    especialidades = Especialidades.objects.all()
+    obras_sociales = ObraSocial.objects.all()
+
+    if request.method == "POST":
+
+        nombre = request.POST.get("nombre")
+        dni = request.POST.get("dni")
+        fecha_nacimiento = request.POST.get("fecha_nacimiento")
+        telefono = request.POST.get("telefono")
+        email = request.POST.get("email")
+        tipo_pago = request.POST.get("tipo_pago")
+        obra_social_id = request.POST.get("obra_social")
+        especialidad_id = request.POST.get("especialidad")
+        preferencia = request.POST.get("preferencia_horaria")
+
+        # Obtener nombres reales en vez de IDs
+        especialidad = Especialidades.objects.filter(id=especialidad_id).first()
+        obra_social = ObraSocial.objects.filter(id=obra_social_id).first()
+
+        contenido = f"""
+NUEVA SOLICITUD DE TURNO
+
+Nombre: {nombre}
+DNI: {dni}
+Fecha Nacimiento: {fecha_nacimiento}
+Teléfono: {telefono}
+Email: {email}
+Tipo de Atención: {tipo_pago}
+Obra Social: {obra_social.nombre if obra_social else "Particular"}
+Especialidad: {especialidad.nombre if especialidad else ""}
+Preferencia Horaria: {preferencia}
+
+Fecha de solicitud: {datetime.now()}
+"""
+
+        carpeta = os.path.join(settings.BASE_DIR, "emails_prueba")
+
+        if not os.path.exists(carpeta):
+            os.makedirs(carpeta)
+
+        nombre_archivo = f"turno_{dni}_{datetime.now().strftime('%Y%m%d%H%M%S')}.txt"
+        ruta_archivo = os.path.join(carpeta, nombre_archivo)
+
+        with open(ruta_archivo, "w", encoding="utf-8") as archivo:
+            archivo.write(contenido)
+
+        messages.success(request, "Solicitud enviada correctamente ✅")
+
+        return redirect("core:solicitar_turno")
+
+    return render(request, 'core/solicitar_turno.html', {
+        'especialidades': especialidades,
+        'obras_sociales': obras_sociales,
+    })

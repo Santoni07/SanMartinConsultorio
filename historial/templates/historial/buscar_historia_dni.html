@@ -62,25 +62,18 @@
             <div class="card-body">
                 <form method="get" class="row g-3 align-items-end">
 
-                    <!-- Mantener DNI -->
                     <input type="hidden" name="dni" value="{{ dni }}">
 
                     <div class="col-md-4">
                         <label class="form-label">Mes</label>
                         <select name="mes" class="form-select">
                             <option value="">Todos</option>
-                            <option value="1" {% if mes == "1" %}selected{% endif %}>Enero</option>
-                            <option value="2" {% if mes == "2" %}selected{% endif %}>Febrero</option>
-                            <option value="3" {% if mes == "3" %}selected{% endif %}>Marzo</option>
-                            <option value="4" {% if mes == "4" %}selected{% endif %}>Abril</option>
-                            <option value="5" {% if mes == "5" %}selected{% endif %}>Mayo</option>
-                            <option value="6" {% if mes == "6" %}selected{% endif %}>Junio</option>
-                            <option value="7" {% if mes == "7" %}selected{% endif %}>Julio</option>
-                            <option value="8" {% if mes == "8" %}selected{% endif %}>Agosto</option>
-                            <option value="9" {% if mes == "9" %}selected{% endif %}>Septiembre</option>
-                            <option value="10" {% if mes == "10" %}selected{% endif %}>Octubre</option>
-                            <option value="11" {% if mes == "11" %}selected{% endif %}>Noviembre</option>
-                            <option value="12" {% if mes == "12" %}selected{% endif %}>Diciembre</option>
+                            {% for i in "123456789101112"|make_list %}
+                            <option value="{{ forloop.counter }}"
+                                {% if mes == forloop.counter|stringformat:"s" %}selected{% endif %}>
+                                {{ forloop.counter }}
+                            </option>
+                            {% endfor %}
                         </select>
                     </div>
 
@@ -113,15 +106,13 @@
         <h4 class="mb-4 text-secondary">
             Consultas Médicas
             {% if mes or anio %}
-                <span class="badge bg-info text-dark">
-                    Filtrado
-                </span>
+                <span class="badge bg-info text-dark">Filtrado</span>
             {% endif %}
         </h4>
 
         {% for consulta in consultas %}
         <a href="{% url 'detalle_consulta' consulta.id %}" class="text-decoration-none text-dark">
-            <div class="card mb-4 shadow border-0 consulta-card">
+        <div class="card mb-4 shadow border-0 consulta-card">
 
             <div class="card-header consulta-header text-white d-flex justify-content-between align-items-center">
                 <div>
@@ -136,18 +127,32 @@
 
             <div class="card-body bg-white">
 
+                <!-- EXAMEN FISICO -->
+                {% if consulta.examen_fisico %}
+                <div class="mb-3">
+                    <div class="p-3 examen-box rounded">
+                        <strong class="text-dark">
+                            🩺 Examen Físico
+                        </strong>
+                        <p class="mb-0 mt-2">
+                            {{ consulta.examen_fisico|linebreaks }}
+                        </p>
+                    </div>
+                </div>
+                {% endif %}
+
                 <div class="row">
                     <div class="col-md-6 mb-3">
                         <div class="p-3 bg-light rounded">
                             <strong class="text-primary">Diagnóstico</strong>
-                            <p class="mb-0">{{ consulta.diagnostico }}</p>
+                            <p class="mb-0">{{ consulta.diagnostico|linebreaks }}</p>
                         </div>
                     </div>
 
                     <div class="col-md-6 mb-3">
                         <div class="p-3 bg-light rounded">
                             <strong class="text-success">Tratamiento</strong>
-                            <p class="mb-0">{{ consulta.tratamiento }}</p>
+                            <p class="mb-0">{{ consulta.tratamiento|linebreaks }}</p>
                         </div>
                     </div>
                 </div>
@@ -155,12 +160,13 @@
                 {% if consulta.observaciones %}
                 <div class="alert alert-secondary mt-3">
                     <strong>Observaciones:</strong>
-                    {{ consulta.observaciones }}
+                    {{ consulta.observaciones|linebreaks }}
                 </div>
                 {% endif %}
 
             </div>
         </div>
+        </a>
         {% endfor %}
 
         {% else %}
@@ -196,6 +202,11 @@
 
 .consulta-header {
     background: linear-gradient(135deg, #0d6efd, #0a58ca);
+}
+
+.examen-box {
+    background-color: #f8f9fa;
+    border-left: 5px solid #6c757d;
 }
 </style>
 

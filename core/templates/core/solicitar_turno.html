@@ -1,0 +1,211 @@
+{% extends 'core/base.html' %}
+{% load static %}
+
+{% block title %}Solicitar Turno{% endblock %}
+
+{% block extra_css %}
+<style>
+.turno-wrapper {
+    background: linear-gradient(135deg, #ffffff, #eef2f7);
+    padding: 30px 0;
+    min-height: 100vh;
+}
+
+.turno-card {
+    border-radius: 18px;
+}
+
+.turno-card h2 {
+    font-weight: 700;
+}
+
+.form-control, .form-select {
+    border-radius: 10px;
+}
+
+.btn-turno {
+    border-radius: 30px;
+    font-weight: 600;
+    padding: 12px 35px;
+    transition: all 0.3s ease;
+    width: 100%;
+}
+
+.btn-turno:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(0,0,0,0.15);
+}
+
+.info-box {
+    background: #f8f9fa;
+    border-left: 5px solid #0d6efd;
+    border-radius: 10px;
+}
+
+/* Ajustes para pantallas chicas */
+@media (max-width: 576px) {
+    .turno-card {
+        padding: 25px !important;
+    }
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="turno-wrapper">
+
+  <div class="container">
+    <div class="row justify-content-center">
+
+      <!-- En móvil ocupa 12 columnas, en desktop 8 -->
+      <div class="col-12 col-md-10 col-lg-8">
+
+        <div class="card shadow-lg border-0 p-4 p-md-5 turno-card">
+                    {% if messages %}
+                    {% for message in messages %}
+                        <div class="alert alert-success text-center">
+                        {{ message }}
+                        </div>
+                    {% endfor %}
+                    {% endif %}
+          <div class="text-center mb-4">
+            <h2 class="text-primary">Solicitar Turno</h2>
+            <p class="text-muted mb-0">
+              Completá el formulario y nuestro equipo se comunicará contigo
+              para coordinar la atención.
+            </p>
+          </div>
+
+          <form method="post" action="{% url 'core:solicitar_turno' %}">
+            {% csrf_token %}
+
+            <div class="row g-3">
+
+              <!-- DATOS PERSONALES -->
+              <div class="col-12 col-md-6">
+                <label class="form-label">Nombre y Apellido</label>
+                <input type="text" name="nombre" class="form-control" required>
+              </div>
+
+              <div class="col-12 col-md-6">
+                <label class="form-label">DNI</label>
+                <input type="text" name="dni" class="form-control" required>
+              </div>
+
+              <div class="col-12 col-md-6">
+                <label class="form-label">Fecha de Nacimiento</label>
+                <input type="date" name="fecha_nacimiento" class="form-control" required>
+              </div>
+
+              <div class="col-12 col-md-6">
+                <label class="form-label">Teléfono</label>
+                <input type="tel" name="telefono" class="form-control" required>
+              </div>
+
+              <div class="col-12">
+                <label class="form-label">Email</label>
+                <input type="email" name="email" class="form-control" required>
+              </div>
+
+              <!-- TIPO DE ATENCIÓN -->
+              <div class="col-12">
+                <label class="form-label d-block">Tipo de Atención</label>
+
+                <div class="d-flex flex-column flex-sm-row gap-2">
+                  <div class="form-check">
+                    <input class="form-check-input" type="radio" name="tipo_pago" value="obra" id="obraRadio">
+                    <label class="form-check-label" for="obraRadio">Obra Social</label>
+                  </div>
+
+                  <div class="form-check">
+                    <input class="form-check-input" type="radio" name="tipo_pago" value="particular" id="particularRadio">
+                    <label class="form-check-label" for="particularRadio">Particular</label>
+                  </div>
+                </div>
+              </div>
+
+              <div class="col-12 col-md-6 d-none" id="obraSocialSelect">
+                <label class="form-label">Seleccionar Obra Social</label>
+                <select name="obra_social" class="form-select">
+                  <option value="">Seleccione</option>
+                  {% for obra in obras_sociales %}
+                    <option value="{{ obra.id }}">{{ obra.nombre }}</option>
+                  {% endfor %}
+                </select>
+              </div>
+
+              <!-- ESPECIALIDAD -->
+              <div class="col-12 col-md-6">
+                <label class="form-label">Especialidad</label>
+                <select name="especialidad" class="form-select" required>
+                  <option value="">Seleccione</option>
+                  {% for especialidad in especialidades %}
+                    <option value="{{ especialidad.id }}">
+                      {{ especialidad.nombre }}
+                    </option>
+                  {% endfor %}
+                </select>
+              </div>
+
+              <!-- PREFERENCIA -->
+              <div class="col-12">
+                <label class="form-label">Preferencia Horaria</label>
+                <select name="preferencia_horaria" class="form-select">
+                  <option value="mañana">Mañana</option>
+                  <option value="tarde">Tarde</option>
+                  <option value="indistinto">Indistinto</option>
+                </select>
+              </div>
+
+              <!-- LEYENDA -->
+              <div class="col-12 mt-3">
+                <div class="info-box p-3 small text-muted">
+                  Los datos enviados serán recibidos por el consultorio.
+                  Nos comunicaremos vía WhatsApp o correo electrónico
+                  para coordinar y confirmar el turno solicitado.
+                </div>
+              </div>
+
+              <!-- BOTONES -->
+              <div class="col-12 mt-4">
+                <div class="d-grid gap-3 d-md-flex justify-content-md-center">
+                  <button type="submit" class="btn btn-primary btn-turno">
+                    Solicitar Turno
+                  </button>
+
+                  <a href="{% url 'core:index' %}" class="btn btn-outline-secondary btn-turno">
+                    Volver al Inicio
+                  </a>
+                </div>
+              </div>
+
+            </div>
+          </form>
+
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+
+  const obraRadio = document.getElementById("obraRadio");
+  const particularRadio = document.getElementById("particularRadio");
+  const obraSelect = document.getElementById("obraSocialSelect");
+
+  obraRadio.addEventListener("change", function() {
+    obraSelect.classList.remove("d-none");
+  });
+
+  particularRadio.addEventListener("change", function() {
+    obraSelect.classList.add("d-none");
+  });
+
+});
+</script>
+
+{% endblock %}

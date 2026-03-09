@@ -37,14 +37,32 @@
 
        
 
-        <li class="dropdown"><a href="#"><span>Turnos</span> <i class="bi bi-chevron-right"></i></a>
+        <li class="dropdown">
+          <a href="#">
+              <span>Turnos</span> 
+              <i class="bi bi-chevron-right"></i>
+          </a>
+
           <ul>
-             <li><a href="{% url 'turnos:buscar_turnos_por_dni' %}" class="btn btn-outline-primary">
-    Ver Turnos
-</a></li>
-            <li><a href="{% url 'turnos:seleccionar_paciente' %}">Seleccionar</a></li>
+              <li>
+                  <a href="{% url 'turnos:mis_turnos_medico' %}">
+                      🩺 Mis Turnos
+                  </a>
+              </li>
+
+              <li>
+                  <a href="{% url 'turnos:buscar_turnos_por_dni' %}">
+                      📋 Ver Turnos por DNI
+                  </a>
+              </li>
+
+              <li>
+                  <a href="{% url 'turnos:seleccionar_paciente' %}">
+                      ➕ Cargar Turno
+                  </a>
+              </li>
           </ul>
-        </li>
+      </li>
 
         <li class="dropdown"><a href="#"><span>Estudios</span> <i class="bi bi-chevron-right"></i></a>
           <ul>

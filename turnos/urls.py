@@ -14,4 +14,5 @@ urlpatterns = [
         views.buscar_turnos_por_dni,
         name='buscar_turnos_por_dni'
     ),
+    path("mis-turnos-medico/", views.mis_turnos_medico, name="mis_turnos_medico"),
 ]

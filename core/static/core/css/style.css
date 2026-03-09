@@ -505,11 +505,7 @@ h6 {
   background: #3291e6;
 }
 
-@media (min-width: 1024px) {
-  #hero {
-    background-attachment: fixed;
-  }
-}
+
 
 @media (max-width: 992px) {
   #hero {
