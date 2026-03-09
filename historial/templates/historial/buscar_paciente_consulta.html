@@ -12,116 +12,167 @@
         <p class="text-muted">Busque por nombre, apellido o DNI</p>
     </div>
 
-    <!-- FORMULARIO -->
-    <div class="row justify-content-center mb-4">
-        <div class="col-md-8">
-            <div class="card shadow-sm border-0">
-                <div class="card-body">
-                    <form method="get">
-                        <div class="row g-2">
-                            <div class="col-md-9">
-                                <input type="text" 
-                                       name="q" 
-                                       class="form-control form-control-lg"
-                                       placeholder="Ej: Juan Pérez o 30123456"
-                                       value="{{ request.GET.q }}">
-                            </div>
-                            <div class="col-md-3 d-grid">
-                                <button type="submit" class="btn btn-primary btn-lg">
-                                    <i class="bi bi-search"></i> Buscar
-                                </button>
-                            </div>
+
+<!-- FORMULARIO CENTRADO -->
+<div class="row justify-content-center mb-4">
+    <div class="col-md-8">
+        <div class="card shadow-sm border-0">
+            <div class="card-body">
+                <form method="get">
+                    <div class="row g-2">
+                        <div class="col-md-9">
+                            <input type="text" 
+                                   name="q" 
+                                   class="form-control form-control-lg"
+                                   placeholder="Ej: Juan Pérez o 30123456"
+                                   value="{{ request.GET.q }}">
                         </div>
-                    </form>
-                </div>
+                        <div class="col-md-3 d-grid">
+                            <button type="submit" class="btn btn-primary btn-lg">
+                                <i class="bi bi-search"></i> Buscar
+                            </button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+    
+
+    <!-- RESULTADOS -->
+    {% if turnos %}
+    <div class="card shadow-sm border-0 mt-4">
+        <div class="card-header bg-dark text-white">
+            <strong>Turnos del Día</strong>
+        </div>
+
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Paciente</th>
+                            <th>DNI</th>
+                            <th>Hora</th>
+                            <th>Estado</th>
+                            <th class="text-center">Acción</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for turno in turnos %}
+                        <tr class="
+                            {% if turno.es_actual and turno.estado == 'PENDIENTE' %}
+                                table-warning fw-bold
+                            {% elif turno.estado == 'ATENDIDO' %}
+                                table-primary
+                            {% elif turno.estado == 'AUSENTE' %}
+                                table-secondary
+                            {% endif %}
+                        ">
+                            
+                            <td>
+                                <strong>
+                                    {{ turno.paciente.nombre }} {{ turno.paciente.apellido }}
+                                </strong>
+                            </td>
+
+                            <td>{{ turno.paciente.dni }}</td>
+
+                            <td>
+                                {% if turno.es_actual and turno.estado == 'PENDIENTE' %}
+                                    <span class="badge bg-warning text-dark fs-6">
+                                        <i class="bi bi-clock"></i>
+                                        {{ turno.hora }} hs (En curso)
+                                    </span>
+                                {% else %}
+                                    <span class="badge bg-success fs-6">
+                                        <i class="bi bi-calendar-check"></i>
+                                        {{ turno.hora }} hs
+                                    </span>
+                                {% endif %}
+                            </td>
+
+                            <!-- ESTADO -->
+                            <td>
+                                {% if turno.estado == 'PENDIENTE' %}
+                                    <span class="badge bg-warning text-dark">
+                                        Pendiente
+                                    </span>
+                                {% elif turno.estado == 'ATENDIDO' %}
+                                    <span class="badge bg-primary">
+                                        Atendido
+                                    </span>
+                                {% elif turno.estado == 'AUSENTE' %}
+                                    <span class="badge bg-dark">
+                                        Ausente
+                                    </span>
+                                {% endif %}
+                            </td>
+
+                            <!-- ACCIONES -->
+<td class="text-center">
+
+    {% if turno.estado == 'PENDIENTE' %}
+
+        <a href="{% url 'cargar_consulta_paciente' turno.paciente.id %}" 
+           class="btn btn-success btn-sm">
+            <i class="bi bi-check-circle"></i> Atender
+        </a>
+
+        <a href="{% url 'turnos:marcar_ausente' turno.id %}" 
+           class="btn btn-danger btn-sm ms-2">
+            <i class="bi bi-x-circle"></i> Ausente
+        </a>
+
+    {% elif turno.estado == 'ATENDIDO' and turno.consulta %}
+        
+        <a href="{% url 'detalle_consulta' turno.consulta.id %}" 
+           class="btn btn-primary btn-sm">
+            <i class="bi bi-eye"></i> Ver Consulta
+        </a>
+
+    {% elif turno.estado == 'AUSENTE' %}
+        <span class="badge bg-secondary">
+            No asistió
+        </span>
+    {% endif %}
+
+</td>
+
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
             </div>
         </div>
     </div>
 
-   <!-- RESULTADOS -->
-{% if turnos %}
-<div class="card shadow-sm border-0 mt-4">
-    <div class="card-header bg-dark text-white">
-        <strong>Turnos del Día</strong>
+    {% elif request.GET.q %}
+    <div class="alert alert-warning text-center mt-4 shadow-sm">
+        <i class="bi bi-exclamation-triangle"></i>
+        No hay turnos para hoy.
+    </div>
+    {% endif %}
+
+    <!-- BOTÓN VOLVER -->
+    <div class="text-center mt-5">
+        {% if request.user.is_staff or request.user.is_superuser %}
+            <a href="{% url 'core:IndexAdmin' %}" class="btn btn-primary btn-lg">
+                <i class="bi bi-arrow-left-circle"></i> Volver 
+            </a>
+
+        {% elif request.user.is_authenticated and request.user.medico %}
+            <a href="{% url 'core:medico' %}" class="btn btn-primary btn-lg">
+                <i class="bi bi-arrow-left-circle"></i> Volver 
+            </a>
+
+        {% else %}
+            <a href="{% url 'home' %}" class="btn btn-secondary btn-lg">
+                <i class="bi bi-arrow-left-circle"></i> Volver 
+            </a>
+        {% endif %}
     </div>
 
-    <div class="card-body p-0">
-        <div class="table-responsive">
-            <table class="table table-hover align-middle mb-0">
-                <thead class="table-light">
-                    <tr>
-                        <th>Paciente</th>
-                        <th>DNI</th>
-                        <th>Hora</th>
-                        <th class="text-center">Acción</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for turno in turnos %}
-                    <tr class="{% if turno.es_actual %}table-danger fw-bold{% endif %}">
-                        
-                        <td>
-                            <strong>
-                                {{ turno.paciente.nombre }} {{ turno.paciente.apellido }}
-                            </strong>
-                        </td>
-
-                        <td>{{ turno.paciente.dni }}</td>
-
-                        <td>
-                            {% if turno.es_actual %}
-                                <span class="badge bg-danger fs-6">
-                                    <i class="bi bi-clock"></i>
-                                    {{ turno.hora }} hs (Actual)
-                                </span>
-                            {% else %}
-                                <span class="badge bg-success fs-6">
-                                    <i class="bi bi-calendar-check"></i>
-                                    {{ turno.hora }} hs
-                                </span>
-                            {% endif %}
-                        </td>
-
-                        <td class="text-center">
-                            <a href="{% url 'cargar_consulta_paciente' turno.paciente.id %}" 
-                               class="btn btn-success btn-sm">
-                                <i class="bi bi-plus-circle"></i> Seleccionar
-                            </a>
-                        </td>
-
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        </div>
-    </div>
-</div>
-
-{% elif request.GET.q %}
-<div class="alert alert-warning text-center mt-4 shadow-sm">
-    <i class="bi bi-exclamation-triangle"></i>
-    No hay turnos para hoy.
-</div>
-{% endif %}
-   <!-- BOTÓN VOLVER -->
-<div class="text-center mt-5">
-
-  {% if request.user.is_staff or request.user.is_superuser %}
-      <a href="{% url 'core:IndexAdmin' %}" class="btn btn-primary btn-lg">
-        <i class="bi bi-arrow-left-circle"></i> Volver 
-      </a>
-
-  {% elif request.user.is_authenticated and request.user.medico %}
-      <a href="{% url 'core:medico' %}" class="btn btn-primary btn-lg">
-        <i class="bi bi-arrow-left-circle"></i> Volver 
-      </a>
-
-  {% else %}
-      <a href="{% url 'home' %}" class="btn btn-secondary btn-lg">
-        <i class="bi bi-arrow-left-circle"></i> Volver 
-      </a>
-  {% endif %}
-
-</div>
 </div>
 {% endblock %}

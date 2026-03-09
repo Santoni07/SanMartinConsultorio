@@ -10,31 +10,54 @@
         <p class="text-muted">Búsqueda por DNI</p>
     </div>
 
-    <!-- FORMULARIO DNI -->
-    <div class="row justify-content-center mb-4">
-        <div class="col-md-6">
-            <div class="card shadow border-0">
-                <div class="card-body">
-                    <form method="get">
-                        <div class="row g-2">
-                            <div class="col-md-8">
-                                <input type="text" name="dni"
-                                       class="form-control form-control-lg"
-                                       placeholder="Ingrese DNI"
-                                       value="{{ dni|default_if_none:'' }}">
-                            </div>
-                            <div class="col-md-4 d-grid">
-                                <button type="submit" class="btn btn-primary btn-lg">
-                                    <i class="bi bi-search"></i> Buscar
-                                </button>
-                            </div>
+<!-- FORM DNI + VOLVER EN MISMA LÍNEA -->
+<div class="row align-items-center mb-4">
+
+    <!-- FORMULARIO -->
+    <div class="{% if paciente %}col-md-8{% else %}col-md-12{% endif %}">
+        <div class="card shadow border-0">
+            <div class="card-body">
+                <form method="get">
+                    <div class="row g-2">
+                        <div class="col-md-8">
+                            <input type="text" name="dni"
+                                   class="form-control form-control-lg"
+                                   placeholder="Ingrese DNI"
+                                   value="{{ dni|default_if_none:'' }}">
                         </div>
-                    </form>
-                </div>
+                        <div class="col-md-4 d-grid">
+                            <button type="submit" class="btn btn-primary btn-lg">
+                                <i class="bi bi-search"></i> Buscar
+                            </button>
+                        </div>
+                    </div>
+                </form>
             </div>
         </div>
     </div>
 
+    <!-- BOTÓN VOLVER SOLO SI HAY PACIENTE -->
+    {% if paciente %}
+    <div class="col-md-4 text-end">
+        {% if request.user.is_staff or request.user.is_superuser %}
+            <a href="{% url 'core:IndexAdmin' %}" class="btn btn-primary btn-lg">
+                <i class="bi bi-arrow-left-circle"></i> Volver
+            </a>
+
+        {% elif request.user.is_authenticated and request.user.medico %}
+            <a href="{% url 'core:medico' %}" class="btn btn-primary btn-lg">
+                <i class="bi bi-arrow-left-circle"></i> Volver
+            </a>
+
+        {% else %}
+            <a href="{% url 'home' %}" class="btn btn-secondary btn-lg">
+                <i class="bi bi-arrow-left-circle"></i> Volver
+            </a>
+        {% endif %}
+    </div>
+    {% endif %}
+
+</div>
     {% if dni %}
         {% if paciente %}
 

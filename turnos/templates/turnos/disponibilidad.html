@@ -54,25 +54,38 @@
     <tbody>
       {% for hora in horarios %}
         <tr>
-          <td>{{ hora|time:"H:i" }}</td>
-          {% for dia, turnos in disponibilidad.items %}
-            {% for turno in turnos %}
-              {% if turno.hora == hora %}
-                <td style="background-color: {% if turno.estado == 'libre' %}#d4edda{% else %}#f8d7da{% endif %};">
-                  {% if turno.estado == 'libre' %}
-                    <form method="POST" action="{% url 'turnos:reservar_turno' %}">
-                      {% csrf_token %}
-                      <input type="hidden" name="fecha" value="{{ dia|date:'Y-m-d' }}">
-                      <input type="hidden" name="hora" value="{{ turno.hora|time:'H:i' }}">
-                      <input type="text" name="observaciones" placeholder="Obs." class="form-control form-control-sm mb-1">
-                      <button type="submit" class="btn btn-success btn-sm">Reservar</button>
-                    </form>
-                  {% else %}
-                    <strong>{{ turno.paciente }}</strong><br>
-                    <span class="text-danger">{{ turno.observaciones }}</span><br>
-                    <a href="{% url 'turnos:eliminar_turno' turno.turno_id %}" class="btn btn-danger btn-sm mt-1" onclick="return confirm('¿Estás seguro de eliminar este turno?');">X</a>
-                  {% endif %}
-                </td>
+                <td>{{ hora|time:"H:i" }}</td>
+                  {% for dia, turnos in disponibilidad.items %}
+                    {% for turno in turnos %}
+                      {% if turno.hora == hora %}
+                      <td style="background-color: {% if turno.estado == 'libre' %}#d4edda{% else %}#f8d7da{% endif %};">
+    
+    {% if turno.estado == 'libre' %}
+        <form method="POST" action="{% url 'turnos:reservar_turno' %}">
+            {% csrf_token %}
+            <input type="hidden" name="fecha" value="{{ dia|date:'Y-m-d' }}">
+            <input type="hidden" name="hora" value="{{ turno.hora|time:'H:i' }}">
+            <input type="text" name="observaciones" placeholder="Obs." class="form-control form-control-sm mb-1">
+            <button type="submit" class="btn btn-success btn-sm">Reservar</button>
+        </form>
+
+    {% elif turno.estado == 'PENDIENTE' %}
+        <strong>{{ turno.paciente }}</strong><br>
+        <span class="text-danger">{{ turno.observaciones }}</span><br>
+        <a href="{% url 'turnos:eliminar_turno' turno.turno_id %}"
+           class="btn btn-danger btn-sm mt-1"
+           onclick="return confirm('¿Estás seguro de eliminar este turno?');">
+           X
+        </a>
+
+    {% elif turno.estado == 'ATENDIDO' %}
+        <strong>{{ turno.paciente }}</strong><br>
+        <span class="text-danger">{{ turno.observaciones }}</span><br>
+        <span class="badge bg-primary mt-1">Atendido</span>
+
+    {% endif %}
+
+</td>
               {% endif %}
             {% endfor %}
           {% endfor %}
@@ -81,6 +94,25 @@
     </tbody>
   </table>
 
-  <a href="{% url 'core:IndexAdmin' %}" class="btn btn-secondary mt-4">Volver al menú principal</a>
+    <!-- BOTÓN VOLVER -->
+<div class="text-center mt-5">
+
+  {% if request.user.is_staff or request.user.is_superuser %}
+      <a href="{% url 'core:IndexAdmin' %}" class="btn btn-primary btn-lg">
+        <i class="bi bi-arrow-left-circle"></i> Volver 
+      </a>
+
+  {% elif request.user.is_authenticated and request.user.medico %}
+      <a href="{% url 'core:medico' %}" class="btn btn-primary btn-lg">
+        <i class="bi bi-arrow-left-circle"></i> Volver 
+      </a>
+
+  {% else %}
+      <a href="{% url 'home' %}" class="btn btn-secondary btn-lg">
+        <i class="bi bi-arrow-left-circle"></i> Volver 
+      </a>
+  {% endif %}
+
+</div>
 </div>
 {% endblock %}

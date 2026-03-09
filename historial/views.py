@@ -109,7 +109,9 @@ def cargar_consulta_paciente(request, paciente_id):
     if not turno:
         messages.error(request, "El paciente no tiene turno activo hoy.")
         return redirect('buscar_paciente_consulta')
-
+    if turno.estado != 'PENDIENTE':
+        messages.warning(request, "Este turno ya fue cerrado.")
+        return redirect('buscar_paciente_consulta')
     if request.method == 'POST':
         form = ConsultaMedicaForm(request.POST)
         if form.is_valid():
@@ -119,7 +121,8 @@ def cargar_consulta_paciente(request, paciente_id):
             consulta.turno = turno  # 🔥 Vinculamos el turno
             consulta.fecha = hoy
             consulta.save()
-
+            turno.estado = 'ATENDIDO'
+            turno.save()
             messages.success(request, "Consulta médica guardada con éxito.")
             return redirect('ver_historia_clinica', paciente_id=paciente.id)
 

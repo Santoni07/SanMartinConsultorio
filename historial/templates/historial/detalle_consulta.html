@@ -1,62 +1,129 @@
 {% extends 'core/base.html' %}
-{% block content %}
+{% load static %}
 
+{% block content %}
 <div class="container mt-5">
 
-    <div class="card shadow border-0">
-        <div class="card-header bg-primary text-white">
-            Consulta del {{ consulta.fecha }}
+    <div class="card shadow-lg border-0 rounded-4">
+
+        <!-- HEADER -->
+        <div class="card-header bg-gradient text-white rounded-top-4"
+             style="background: linear-gradient(135deg, #0d6efd, #0a58ca);">
+            <div class="d-flex justify-content-between align-items-center">
+                <h4 class="mb-0">
+                    <i class="bi bi-clipboard2-pulse"></i>
+                    Consulta Médica
+                </h4>
+                <span class="badge bg-light text-dark fs-6">
+                    {{ consulta.fecha }}
+                </span>
+            </div>
         </div>
 
-        <div class="card-body">
+        <div class="card-body p-4">
 
-            <h5>Paciente</h5>
-            <p>{{ consulta.historia.paciente.nombre }} {{ consulta.historia.paciente.apellido }}</p>
+            <!-- PACIENTE -->
+            <div class="mb-4 p-3 rounded bg-light border-start border-4 border-success">
+                <h5 class="text-success mb-2">
+                    <i class="bi bi-person-fill"></i> Paciente
+                </h5>
+                <p class="fs-5 mb-0">
+                    {{ consulta.historia_clinica.paciente.nombre }}
+                    {{ consulta.historia_clinica.paciente.apellido }}
+                </p>
+            </div>
 
-            <hr>
+            <!-- MOTIVO -->
+            <div class="mb-4">
+                <h6 class="text-primary fw-bold">
+                    <i class="bi bi-chat-left-text"></i> Motivo
+                </h6>
+                <div class="p-3 bg-light rounded shadow-sm">
+                    {{ consulta.motivo }}
+                </div>
+            </div>
 
-            <h5>Motivo</h5>
-            <p>{{ consulta.motivo }}</p>
+            <!-- EXAMEN FÍSICO -->
+            <div class="mb-4">
+                <h6 class="text-warning fw-bold">
+                    <i class="bi bi-heart-pulse"></i> Examen Físico
+                </h6>
+                <div class="p-3 bg-light rounded shadow-sm">
+                    {{ consulta.examen_fisico|default:"Sin datos registrados." }}
+                </div>
+            </div>
 
-             <h5>Examen Fisico</h5>
-            <p>{{ consulta.examen_fisico }}</p>
-            <h5>Diagnóstico</h5>
-            <p>{{ consulta.diagnostico }}</p>
+            <!-- DIAGNÓSTICO -->
+            <div class="mb-4">
+                <h6 class="text-danger fw-bold">
+                    <i class="bi bi-file-medical"></i> Diagnóstico
+                </h6>
+                <div class="p-3 bg-light rounded shadow-sm">
+                    {{ consulta.diagnostico }}
+                </div>
+            </div>
 
-            <h5>Tratamiento</h5>
-            <p>{{ consulta.tratamiento }}</p>
+            <!-- TRATAMIENTO -->
+            <div class="mb-4">
+                <h6 class="text-success fw-bold">
+                    <i class="bi bi-capsule"></i> Tratamiento
+                </h6>
+                <div class="p-3 bg-light rounded shadow-sm">
+                    {{ consulta.tratamiento }}
+                </div>
+            </div>
 
+            <!-- OBSERVACIONES -->
             {% if consulta.observaciones %}
-            <h5>Observaciones</h5>
-            <p>{{ consulta.observaciones }}</p>
+            <div class="mb-4">
+                <h6 class="text-secondary fw-bold">
+                    <i class="bi bi-journal-text"></i> Observaciones
+                </h6>
+                <div class="alert alert-secondary mb-0">
+                    {{ consulta.observaciones }}
+                </div>
+            </div>
             {% endif %}
 
+            <!-- ESTUDIOS -->
             {% if estudios %}
             <hr>
-            <h5>Estudios Asociados</h5>
-            <ul>
-                {% for estudio in estudios %}
-                    <li>
-                        {{ estudio.get_tipo_display }} - {{ estudio.fecha }}
-                        {% if estudio.archivo %}
-                        <a href="{{ estudio.archivo.url }}" target="_blank">
-                            Ver archivo
-                        </a>
-                        {% endif %}
-                    </li>
-                {% endfor %}
-            </ul>
+            <div class="mt-4">
+                <h5 class="text-dark mb-3">
+                    <i class="bi bi-folder2-open"></i> Estudios Asociados
+                </h5>
+
+                <div class="list-group">
+                    {% for estudio in estudios %}
+                        <div class="list-group-item d-flex justify-content-between align-items-center">
+                            <div>
+                                <strong>{{ estudio.get_tipo_display }}</strong>
+                                <br>
+                                <small class="text-muted">{{ estudio.fecha }}</small>
+                            </div>
+
+                            {% if estudio.archivo %}
+                            <a href="{{ estudio.archivo.url }}"
+                               target="_blank"
+                               class="btn btn-outline-primary btn-sm">
+                                <i class="bi bi-file-earmark-pdf"></i> Ver archivo
+                            </a>
+                            {% endif %}
+                        </div>
+                    {% endfor %}
+                </div>
+            </div>
             {% endif %}
 
         </div>
     </div>
 
+    <!-- BOTÓN VOLVER -->
     <div class="text-center mt-4">
-        <a href="javascript:history.back()" class="btn btn-secondary">
-            Volver
+        <a href="javascript:history.back()" class="btn btn-outline-dark px-4">
+            <i class="bi bi-arrow-left"></i> Volver
         </a>
     </div>
 
 </div>
-
 {% endblock %}

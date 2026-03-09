@@ -77,7 +77,7 @@ def ver_disponibilidad(request):
             if turno:
                 dia_data.append({
                     'hora': hora,
-                    'estado': 'ocupado',
+                    'estado': turno.estado,
                     'paciente': turno.paciente,
                     'observaciones': turno.observaciones,
                     'turno_id': turno.id,
@@ -233,3 +233,10 @@ def mis_turnos_medico(request):
         "ahora": ahora,
         "turnos_hoy_count": turnos_hoy_count
     })
+    
+@login_required
+def marcar_ausente(request, turno_id):
+    turno = get_object_or_404(Turnos, id=turno_id)
+    turno.estado = 'AUSENTE'
+    turno.save()
+    return redirect('buscar_paciente_consulta')
