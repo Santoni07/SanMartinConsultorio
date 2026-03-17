@@ -2,31 +2,167 @@
 {% load static %}
 
 {% block content %}
-<div class="container mt-5">
+<div class="container-fluid mt-4">
+
     <h2 class="text-center mb-4">
         Consulta Médica - {{ paciente.nombre }} {{ paciente.apellido }}
     </h2>
-    <div class="alert alert-info text-center">
-    <strong>Turno de hoy:</strong> {{ turno.hora }} hs
-</div>
-    <div class="card p-4 shadow">
-        <form method="post">
-            {% csrf_token %}
-            {{ form.as_p }}
 
-            <div class="text-center mt-4">
-                <button type="submit" class="btn btn-success">
-                    <i class="bi bi-save"></i> Guardar Consulta
-                </button>
-                <a href="{% url 'buscar_paciente_consulta' %}" class="btn btn-secondary ms-2">
-                    Cancelar
-                </a>
+    {% if turno %}
+    <div class="alert alert-info text-center">
+        <strong>Turno de hoy:</strong> {{ turno.hora }} hs
+    </div>
+    {% endif %}
+
+    <div class="row">
+
+        <!-- 🔵 COLUMNA IZQUIERDA — FORMULARIO -->
+        <div class="col-lg-7">
+
+            <div class="card shadow border-0 h-100">
+                <div class="card-header bg-success text-white">
+                    <i class="bi bi-plus-circle"></i> Nueva Consulta
+                </div>
+
+                <div class="card-body">
+
+                    <form method="post">
+                        {% csrf_token %}
+                        {{ form.as_p }}
+
+                        <div class="text-center mt-4">
+
+                            {% if consulta and consulta.estado == "FINALIZADA" %}
+                                <div class="alert alert-danger">
+                                    Esta consulta está FINALIZADA y no puede modificarse.
+                                </div>
+                            {% else %}
+
+                                <button type="submit" name="guardar_parcial"
+                                        class="btn btn-warning">
+                                    <i class="bi bi-save"></i> Guardar Parcial
+                                </button>
+
+                                <button type="submit" name="finalizar_consulta"
+                                        class="btn btn-success ms-2">
+                                    <i class="bi bi-check-circle"></i> Finalizar Consulta
+                                </button>
+
+                            {% endif %}
+
+                            <a href="{% url 'buscar_paciente_consulta' %}"
+                            class="btn btn-secondary ms-2">
+                                Volver
+                            </a>
+
+                        </div>
+                    </form>
+
+                </div>
             </div>
-        </form>
+
+        </div>
+
+
+       <!-- 🟣 COLUMNA DERECHA — HISTORIAL COMPLETO -->
+<div class="col-lg-5">
+
+    <div class="card shadow border-0 h-100">
+
+        <div class="card-header bg-primary text-white">
+            <i class="bi bi-clock-history"></i> Historial Completo
+        </div>
+
+        <div class="card-body"
+             style="max-height: 75vh; overflow-y: auto;">
+
+            {% if consultas %}
+                {% for consulta in consultas %}
+                <div class="mb-4 p-3 rounded shadow-sm bg-light border-start border-4 border-primary">
+
+                    <!-- FECHA Y MÉDICO -->
+                    <div class="d-flex justify-content-between mb-2">
+                        <strong class="text-dark">
+                            {{ consulta.fecha }}
+                        </strong>
+                        <span class="badge bg-secondary">
+                            Dr/a {{ consulta.medico }}
+                        </span>
+                    </div>
+
+                    <!-- MOTIVO -->
+                    <div class="mb-2">
+                        <strong class="text-primary">
+                            Motivo:
+                        </strong>
+                        <div class="ps-2">
+                            {{ consulta.motivo|linebreaks }}
+                        </div>
+                    </div>
+
+                    <!-- EXAMEN FISICO -->
+                    {% if consulta.examen_fisico %}
+                    <div class="mb-2">
+                        <strong class="text-warning">
+                            🩺 Examen Físico:
+                        </strong>
+                        <div class="ps-2">
+                            {{ consulta.examen_fisico|linebreaks }}
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    <!-- DIAGNÓSTICO -->
+                    <div class="mb-2">
+                        <strong class="text-danger">
+                            Diagnóstico:
+                        </strong>
+                        <div class="ps-2">
+                            {{ consulta.diagnostico|linebreaks }}
+                        </div>
+                    </div>
+
+                    <!-- TRATAMIENTO -->
+                    <div class="mb-2">
+                        <strong class="text-success">
+                            Tratamiento:
+                        </strong>
+                        <div class="ps-2">
+                            {{ consulta.tratamiento|linebreaks }}
+                        </div>
+                    </div>
+
+                    <!-- OBSERVACIONES -->
+                    {% if consulta.observaciones %}
+                    <div class="mb-2">
+                        <strong class="text-dark">
+                            Observaciones:
+                        </strong>
+                        <div class="ps-2">
+                            {{ consulta.observaciones|linebreaks }}
+                        </div>
+                    </div>
+                    {% endif %}
+
+                </div>
+                {% endfor %}
+            {% else %}
+                <div class="alert alert-warning text-center">
+                    No hay consultas previas.
+                </div>
+            {% endif %}
+
+        </div>
+
+    </div>
+
+</div>
+
     </div>
 </div>
 
-<!-- 🔥 MODAL DE ÉXITO -->
+
+<!-- MODAL ÉXITO -->
 <div class="modal fade" id="successModal" tabindex="-1">
   <div class="modal-dialog modal-dialog-centered">
     <div class="modal-content">
@@ -54,6 +190,7 @@
 </div>
 
 {% endblock %}
+
 
 {% block extra_js %}
 <script>

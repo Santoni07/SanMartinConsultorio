@@ -115,7 +115,7 @@
 
     {% if turno.estado == 'PENDIENTE' %}
 
-        <a href="{% url 'cargar_consulta_paciente' turno.paciente.id %}" 
+        <a href="{% url 'cargar_consulta_paciente' turno.id %}"
            class="btn btn-success btn-sm">
             <i class="bi bi-check-circle"></i> Atender
         </a>

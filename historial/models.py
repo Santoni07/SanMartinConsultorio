@@ -14,6 +14,15 @@ class HistoriaClinica(models.Model):
         return f"Historia Clínica de {self.paciente}"
 
 class ConsultaMedica(models.Model):
+    ESTADOS_CONSULTA = [
+    ('BORRADOR', 'Borrador'),
+    ('FINALIZADA', 'Finalizada'),
+    ]
+    estado = models.CharField(
+    max_length=15,
+    choices=ESTADOS_CONSULTA,
+    default='BORRADOR'
+    )
     historia_clinica = models.ForeignKey(HistoriaClinica, on_delete=models.CASCADE, related_name='consultas')
     medico = models.ForeignKey(Medico, on_delete=models.SET_NULL, null=True)
     fecha = models.DateField()

@@ -93,47 +93,69 @@ def buscar_paciente_consulta(request):
     })
 
 @login_required
-def cargar_consulta_paciente(request, paciente_id):
-    paciente = get_object_or_404(Paciente, id=paciente_id)
-    historia, _ = HistoriaClinica.objects.get_or_create(paciente=paciente)
+def cargar_consulta_paciente(request, turno_id):
 
+    turno = get_object_or_404(Turnos, id=turno_id)
+    paciente = turno.paciente
+    historia, _ = HistoriaClinica.objects.get_or_create(paciente=paciente)
+    consultas = historia.consultas.order_by('-fecha')
     hoy = date.today()
 
-    # Buscar turno de hoy SIN consulta asociada
-    turno = Turnos.objects.filter(
-        paciente=paciente,
-        fecha=hoy,
-        consulta__isnull=True
-    ).order_by('hora').first()
-
-    if not turno:
-        messages.error(request, "El paciente no tiene turno activo hoy.")
+    if turno.fecha != hoy:
+        messages.error(request, "Este turno no corresponde al día de hoy.")
         return redirect('buscar_paciente_consulta')
-    if turno.estado != 'PENDIENTE':
+
+    consulta_existente = getattr(turno, 'consulta', None)
+
+    if turno.estado != 'PENDIENTE' and not consulta_existente:
         messages.warning(request, "Este turno ya fue cerrado.")
         return redirect('buscar_paciente_consulta')
+
     if request.method == 'POST':
-        form = ConsultaMedicaForm(request.POST)
+        form = ConsultaMedicaForm(
+            request.POST,
+            instance=consulta_existente
+        )
+
         if form.is_valid():
             consulta = form.save(commit=False)
             consulta.historia_clinica = historia
             consulta.medico = request.user.medico
-            consulta.turno = turno  # 🔥 Vinculamos el turno
+            consulta.turno = turno
             consulta.fecha = hoy
-            consulta.save()
-            turno.estado = 'ATENDIDO'
-            turno.save()
-            messages.success(request, "Consulta médica guardada con éxito.")
-            return redirect('ver_historia_clinica', paciente_id=paciente.id)
+
+            if "guardar_parcial" in request.POST:
+                consulta.estado = 'BORRADOR'
+                consulta.save()
+                messages.success(request, "Consulta guardada parcialmente.")
+
+            elif "finalizar_consulta" in request.POST:
+                consulta.estado = 'FINALIZADA'
+                consulta.save()
+
+                turno.estado = 'ATENDIDO'
+                turno.save()
+
+                messages.success(request, "Consulta finalizada correctamente.")
+                return redirect('ver_historia_clinica', paciente_id=paciente.id)
+
+            return redirect('cargar_consulta_paciente', turno_id=turno.id)
 
     else:
-        form = ConsultaMedicaForm(initial={'fecha': hoy})
+        form = ConsultaMedicaForm(instance=consulta_existente)
+
+    if consulta_existente and consulta_existente.estado == 'FINALIZADA':
+        for field in form.fields.values():
+            field.disabled = True
 
     return render(request, 'historial/cargar_consulta.html', {
         'form': form,
         'paciente': paciente,
-        'turno': turno
+        'turno': turno,
+        'consultas': consultas,
+        'consulta': consulta_existente
     })
+
 @login_required
 def buscar_historia_por_dni(request):
     dni = request.GET.get('dni')
