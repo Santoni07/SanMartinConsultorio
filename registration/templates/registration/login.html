@@ -120,6 +120,17 @@
     color: #6b7280;
     margin: 0;
 }
+.toggle-password {
+    position: absolute;
+    top: 38px;
+    right: 12px;
+    cursor: pointer;
+    color: #6c757d;
+}
+
+.toggle-password:hover {
+    color: #2c5c8a;
+}
 </style>
 {% endblock %}
 
@@ -179,14 +190,20 @@
             </div>
 
             <!-- PASSWORD -->
-            <div class="mb-2">
-                <label class="form-label">Contraseña</label>
-                <input type="password"
-                       name="password"
-                       class="form-control"
-                       placeholder="Ingresá tu contraseña"
-                       required>
-            </div>
+           <div class="mb-2 position-relative">
+    <label class="form-label">Contraseña</label>
+
+    <input type="password"
+           name="password"
+           id="passwordInput"
+           class="form-control pe-5"
+           placeholder="Ingresá tu contraseña"
+           required>
+
+    <span class="toggle-password" onclick="togglePassword()">
+        <i class="bi bi-eye" id="eyeIcon"></i>
+    </span>
+</div>
 
             <!-- FORGOT -->
             <div class="text-end mb-3">
@@ -205,5 +222,20 @@
     </div>
 
 </div>
+<script>
+function togglePassword() {
+    const input = document.getElementById("passwordInput");
+    const icon = document.getElementById("eyeIcon");
 
+    if (input.type === "password") {
+        input.type = "text";
+        icon.classList.remove("bi-eye");
+        icon.classList.add("bi-eye-slash");
+    } else {
+        input.type = "password";
+        icon.classList.remove("bi-eye-slash");
+        icon.classList.add("bi-eye");
+    }
+}
+</script>
 {% endblock %}
