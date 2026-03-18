@@ -10,7 +10,7 @@
   <span class="text-muted small">(M.P. {{ request.user.medico.matricula }})</span>
 </h2>
   <header id="header" class="fixed-top">
-  <div class="container d-flex align-items-center">
+ <div class="container-fluid d-flex align-items-center px-0">
     
     <!-- NAVBAR -->
     <nav id="navbar" class="navbar order-last order-lg-0">
@@ -26,14 +26,14 @@
           </ul>
         </li>
 
-    {% comment %}     <li class="dropdown"><a href="#"><span>Obra Sociales</span> <i class="bi bi-chevron-right"></i></a>
-          <ul>
-            <li><a href="{% url 'obrasocial:list' %}">Ver</a></li>
-            <li><a href="{% url 'obrasocial:create' %}">Cargar</a></li>
-          </ul>
-        </li>
- {% endcomment %}
-       
+        {% comment %}     <li class="dropdown"><a href="#"><span>Obra Sociales</span> <i class="bi bi-chevron-right"></i></a>
+              <ul>
+                <li><a href="{% url 'obrasocial:list' %}">Ver</a></li>
+                <li><a href="{% url 'obrasocial:create' %}">Cargar</a></li>
+              </ul>
+            </li>
+    {% endcomment %}
+          
 
        
 
@@ -94,15 +94,15 @@
 
     <!-- BOTÓN SALIR A LA DERECHA -->
     {% if request.user.is_authenticated %}
-    <div class="ms-auto d-none d-lg-block">
-      <a href="#" class="btn btn-outline-danger btn-sm fw-bold"
-   data-bs-toggle="modal"
-   data-bs-target="#logoutModal">
-   <i class="bi bi-box-arrow-right"></i> Salir
-</a>
-      <form id="logout-form" method="post" action="{% url 'logout' %}" style="display: none;">
-        {% csrf_token %}
-      </form>
+    <div class="ms-auto me-3 d-none d-lg-block">
+            <a href="#" class="btn btn-outline-danger btn-sm fw-bold"
+        data-bs-toggle="modal"
+        data-bs-target="#logoutModal">
+        <i class="bi bi-box-arrow-right"></i> Salir
+      </a>
+            <form id="logout-form" method="post" action="{% url 'logout' %}" style="display: none;">
+              {% csrf_token %}
+            </form>
     </div>
     {% endif %}
 
