@@ -23,6 +23,13 @@ from django.contrib.auth.views import LoginView
 print("🚀 CORE VIEWS CARGADO")
 
 
+def politica_privacidad(request):
+    return render(request, 'core/privado.html')
+
+
+def terminos_condiciones(request):
+    return render(request, 'core/terminos.html')
+
     
 class CustomLoginView(LoginView):
     template_name = "registration/login.html"
