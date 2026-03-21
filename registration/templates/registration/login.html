@@ -1,140 +1,140 @@
-{% extends 'core/base.html' %}
-{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
 
-{% block extra_css %}
-<style>
-.login-container {
-    display: flex;
-    height: calc(100vh - 60px);
-    overflow: hidden;
-}
+    {% load static %}
 
-/* IZQUIERDA */
-.login-left {
-    flex: 1;
-    background: url('/static/core/img/login-consultorio.png') no-repeat center center;
-    background-size: cover;
-    position: relative;
-}
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - Consultorio</title>
 
-.login-left .overlay {
-    position: absolute;
-    width: 100%;
-    height: 100%;
-    background: linear-gradient(180deg, rgba(0, 102, 153, 0.4), rgba(0, 51, 102, 0.7));
-    display: flex;
-    align-items: flex-end;
-    padding: 20px;
-}
+    <!-- Bootstrap -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
 
-.login-left .brand {
-    color: white;
-}
+    <!-- Bootstrap Icons -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet">
 
-.login-left h2 {
-    font-weight: 600;
-}
+    <!-- Tu CSS si querés mantenerlo -->
+    <link href="{% static 'core/css/style.css' %}" rel="stylesheet">
 
-/* DERECHA */
-.login-right {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
-    background: #f4f7fa;
-    padding: 20px;
-}
+    <style>
 
-/* FORM */
-.login-form {
-    width: 100%;
-    max-width: 360px;
-}
+    body {
+        margin: 0;
+        font-family: 'Poppins', sans-serif;
+    }
 
-/* LABELS */
-.form-label {
-    font-size: 13px;
-    color: #6c757d;
-}
+    .login-container {
+        display: flex;
+        height: 100vh;
+        overflow: hidden;
+    }
 
-/* INPUTS */
-.form-control {
-    border-radius: 10px;
-    padding: 10px;
-    background: #f9fafb;
-    border: 1px solid #e5e7eb;
-}
+    /* IZQUIERDA */
+    .login-left {
+        flex: 1;
+        background: url('{% static "core/img/login-consultorio.png" %}') no-repeat center center;
+        background-size: cover;
+        position: relative;
+    }
 
-.form-control:focus {
-    border-color: #2c5c8a;
-    box-shadow: none;
-}
+    .login-left .overlay {
+        position: absolute;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(180deg, rgba(0,102,153,0.4), rgba(0,51,102,0.7));
+        display: flex;
+        align-items: flex-end;
+        padding: 20px;
+    }
 
-/* BOTON LOGIN */
-.btn-login {
-    background: linear-gradient(135deg, #2c5c8a, #4a90e2);
-    border-radius: 25px;
-    padding: 10px;
-    color: white;
-    border: none;
-    font-weight: 500;
-}
+    .login-left .brand {
+        color: white;
+    }
 
-/* LINK */
-.link-recuperar {
-    color: #2c5c8a;
-    font-size: 14px;
-    text-decoration: none;
-}
+    /* DERECHA */
+    .login-right {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        background: #f4f7fa;
+        padding: 20px;
+    }
 
-.link-recuperar:hover {
-    text-decoration: underline;
-}
+    .login-form {
+        width: 100%;
+        max-width: 360px;
+    }
 
-/* Titulos*/
-/* Badge superior */
-.badge-acceso {
-    display: inline-block;
-    font-size: 12px;
-    letter-spacing: 1px;
-    text-transform: uppercase;
-    color: #2c5c8a;
-    background: rgba(44, 92, 138, 0.1);
-    padding: 5px 12px;
-    border-radius: 20px;
-    margin-bottom: 10px;
-}
+    .form-label {
+        font-size: 13px;
+        color: #6c757d;
+    }
 
-/* Título principal */
-.titulo-login {
-    font-weight: 600;
-    font-size: 24px;
-    margin-bottom: 8px;
-    color: #1f2937;
-}
+    .form-control {
+        border-radius: 10px;
+        padding: 10px;
+        background: #f9fafb;
+        border: 1px solid #e5e7eb;
+    }
 
-/* Subtítulo */
-.subtitulo-login {
-    font-size: 14px;
-    color: #6b7280;
-    margin: 0;
-}
-.toggle-password {
-    position: absolute;
-    top: 38px;
-    right: 12px;
-    cursor: pointer;
-    color: #6c757d;
-}
+    .form-control:focus {
+        border-color: #2c5c8a;
+        box-shadow: none;
+    }
 
-.toggle-password:hover {
-    color: #2c5c8a;
-}
-</style>
-{% endblock %}
+    .btn-login {
+        background: linear-gradient(135deg, #2c5c8a, #4a90e2);
+        border-radius: 25px;
+        padding: 10px;
+        color: white;
+        border: none;
+        font-weight: 500;
+    }
 
-{% block content %}
+    .link-recuperar {
+        color: #2c5c8a;
+        font-size: 14px;
+        text-decoration: none;
+    }
+
+    .badge-acceso {
+        font-size: 12px;
+        text-transform: uppercase;
+        color: #2c5c8a;
+        background: rgba(44,92,138,0.1);
+        padding: 5px 12px;
+        border-radius: 20px;
+        margin-bottom: 10px;
+    }
+
+    .titulo-login {
+        font-weight: 600;
+        font-size: 24px;
+        margin-bottom: 8px;
+        color: #1f2937;
+    }
+
+    .subtitulo-login {
+        font-size: 14px;
+        color: #6b7280;
+    }
+
+    .toggle-password {
+        position: absolute;
+        top: 38px;
+        right: 12px;
+        cursor: pointer;
+        color: #6c757d;
+    }
+
+    </style>
+
+</head>
+
+<body>
 
 <div class="login-container">
 
@@ -143,9 +143,7 @@
         <div class="overlay">
             <div class="brand">
                 <h2>Centro Médico San Martín</h2>
-                <p>
-                    Atención profesional y seguimiento integral de pacientes.
-                </p>
+                <p>Atención profesional y seguimiento integral de pacientes.</p>
             </div>
         </div>
     </div>
@@ -153,66 +151,46 @@
     <!-- DERECHA -->
     <div class="login-right text-center">
 
-       <div class="login-header text-center mb-4">
-
-    <span class="badge-acceso">Acceso</span>
-
-    <h2 class="titulo-login">
-        Sistema de Gestión Médica
-    </h2>
-
-    <p class="subtitulo-login">
-        Ingresá para continuar con la gestión de pacientes y turnos
-    </p>
-
-</div>
+        <div class="mb-4">
+            <span class="badge-acceso">Acceso</span>
+            <h2 class="titulo-login">Sistema de Gestión Médica</h2>
+            <p class="subtitulo-login">
+                Ingresá para continuar con la gestión de pacientes y turnos
+            </p>
+        </div>
 
         {% if messages %}
             {% for message in messages %}
-                <div class="alert alert-danger mt-2">
+                <div class="alert alert-danger">
                     {{ message }}
                 </div>
             {% endfor %}
         {% endif %}
 
         <!-- FORM -->
-        <form method="post" class="mt-4 text-start login-form">
+        <form method="post" class="login-form text-start">
             {% csrf_token %}
 
-            <!-- USUARIO -->
             <div class="mb-3">
                 <label class="form-label">Usuario</label>
-                <input type="text"
-                       name="username"
-                       class="form-control"
-                       placeholder="Ingresá tu usuario"
-                       required>
+                <input type="text" name="username" class="form-control" required>
             </div>
 
-            <!-- PASSWORD -->
-           <div class="mb-2 position-relative">
-    <label class="form-label">Contraseña</label>
+            <div class="mb-2 position-relative">
+                <label class="form-label">Contraseña</label>
+                <input type="password" name="password" id="passwordInput" class="form-control" required>
 
-    <input type="password"
-           name="password"
-           id="passwordInput"
-           class="form-control pe-5"
-           placeholder="Ingresá tu contraseña"
-           required>
+                <span class="toggle-password" onclick="togglePassword()">
+                    <i class="bi bi-eye" id="eyeIcon"></i>
+                </span>
+            </div>
 
-    <span class="toggle-password" onclick="togglePassword()">
-        <i class="bi bi-eye" id="eyeIcon"></i>
-    </span>
-</div>
-
-            <!-- FORGOT -->
             <div class="text-end mb-3">
                 <a href="{% url 'password_reset' %}" class="link-recuperar">
                     ¿Olvidaste tu contraseña?
                 </a>
             </div>
 
-            <!-- BOTON -->
             <button type="submit" class="btn w-100 btn-login">
                 Ingresar
             </button>
@@ -222,6 +200,7 @@
     </div>
 
 </div>
+
 <script>
 function togglePassword() {
     const input = document.getElementById("passwordInput");
@@ -229,13 +208,13 @@ function togglePassword() {
 
     if (input.type === "password") {
         input.type = "text";
-        icon.classList.remove("bi-eye");
-        icon.classList.add("bi-eye-slash");
+        icon.classList.replace("bi-eye", "bi-eye-slash");
     } else {
         input.type = "password";
-        icon.classList.remove("bi-eye-slash");
-        icon.classList.add("bi-eye");
+        icon.classList.replace("bi-eye-slash", "bi-eye");
     }
 }
 </script>
-{% endblock %}
+
+</body>
+</html>

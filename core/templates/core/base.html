@@ -1,6 +1,5 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
 
   <title>{% block title %}{% endblock %}</title>
@@ -8,42 +7,314 @@
   <meta charset="utf-8">
   <meta content="width=device-width, initial-scale=1.0" name="viewport">
 
-  
-  <meta content="" name="description">
-  <meta content="" name="keywords">
-<!-- Favicons -->
-<link rel="icon" type="image/png" sizes="32x32" href="{% static 'core/img/logo.jpg' %}">
-<link rel="apple-touch-icon" href="{% static 'core/img/logo.jpg' %}">
+  <link rel="icon" type="image/png" sizes="32x32" href="{% static 'core/img/logo.jpg' %}">
+  <link rel="apple-touch-icon" href="{% static 'core/img/logo.jpg' %}">
+
   <!-- Bootstrap -->
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
 
-  <!-- Google Fonts -->
-  <link href="https://fonts.googleapis.com/css?family=Open+Sans:300,300i,400,400i,600,600i,700,700i|Raleway:300,300i,400,400i,500,500i,600,600i,700,700i|Poppins:300,300i,400,400i,500,500i,600,600i,700,700i" rel="stylesheet">
-  
-  <!-- Vendor CSS Files -->
+  <!-- Fonts -->
+  <link href="https://fonts.googleapis.com/css?family=Open+Sans|Raleway|Poppins" rel="stylesheet">
+
+  <!-- Vendor CSS -->
   <link href="{% static 'core/vendor/fontawesome-free/css/all.min.css' %}" rel="stylesheet">
-  <link href="{% static 'core/vendor/animate.css/animate.min.css' %}" rel="stylesheet">
-  <link href="{% static 'core/vendor/bootstrap/css/bootstrap.min.css' %}" rel="stylesheet">
   <link href="{% static 'core/vendor/bootstrap-icons/bootstrap-icons.css' %}" rel="stylesheet">
-  <link href="{% static 'core/vendor/boxicons/css/boxicons.min.css' %}" rel="stylesheet">
-  <link href="{% static 'core/vendor/glightbox/css/glightbox.min.css' %}" rel="stylesheet">
-  <link href="{% static 'core/vendor/remixicon/remixicon.css' %}" rel="stylesheet">
-  <link href="{% static 'core/vendor/swiper/swiper-bundle.min.css' %}" rel="stylesheet">
- 
-  <!-- Template Main CSS File -->
+
+  <!-- Main CSS -->
   <link href="{% static 'core/css/style.css' %}" rel="stylesheet">
-  
+
+  <!-- Bootstrap Icons CDN -->
   <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet">
 
+  {% block extra_css %}{% endblock %}
 
+  <!-- 🎨 ESTILOS GLOBAL UX -->
+  <style>
+
+    /* HEADER */
+    #header {
+      position: fixed;
+      width: 100%;
+      z-index: 9999;
+      top: 0;
+      left: 0;
+    }
+
+    /* TOPBAR */
+    .topbar {
+      background: #ffffff;
+      padding: 8px 0;
+      border-bottom: 1px solid #eee;
+    }
+
+    /* NAVBAR */
+    .navbar-main {
+      background: linear-gradient(135deg, #6ea8dc, #9ec9ff);
+      padding: 10px 0;
+    }
+
+    .navbar a {
+      color: white;
+      font-weight: 500;
+    }
+
+    .navbar ul {
+      display: flex;
+      gap: 20px;
+      align-items: center;
+    }
+
+    /* BODY FIX */
+    body {
+      padding-top: 110px;
+    }
+
+    /* MODAL */
+    .custom-modal-header {
+      background: linear-gradient(135deg, #0d6efd, #4facfe);
+      border: none;
+    }
+
+    /* BOTONES */
+    .custom-btn-gradient {
+      background: linear-gradient(135deg, #0d6efd, #4facfe);
+      color: white;
+      border: none;
+      padding: 8px 18px;
+      border-radius: 8px;
+      transition: all 0.3s ease;
+    }
+
+    .custom-btn-gradient:hover {
+      opacity: 0.9;
+      transform: translateY(-1px);
+    }
+
+    .custom-btn-soft {
+      border-radius: 8px;
+      padding: 8px 18px;
+    }
+    .navbar .dropdown:hover ul {
+  display: block;
+}
+
+.navbar .dropdown ul {
+  display: none;
+  position: absolute;
+  background: white;
+  padding: 10px;
+  border-radius: 8px;
+  list-style: none;
+}
+
+.navbar .dropdown ul li a {
+  color: #333;
+}
+.main-content {
+    margin-top: 30px;
+}
+  </style>
 
 </head>
 
 <body>
+{% block show_navbar %}
+<!-- 🔥 HEADER GLOBAL DINÁMICO -->
+<header id="header" class="fixed-top">
 
-{% block extra_css %}{% endblock %}
-{% block headers %}{% endblock %}
- {% block content %} {% endblock %}
+  <!-- TOPBAR -->
+  <div class="topbar">
+    <div class="container-fluid d-flex align-items-center">
+
+      <a href="{% url 'core:index' %}" class="d-flex align-items-center text-decoration-none">
+        <img src="{% static 'core/img/logo.jpg' %}" 
+             class="me-2 rounded-circle"
+             style="width: 45px; height: 45px;">
+        <span class="fw-bold text-dark">Centro Médico San Martín</span>
+      </a>
+
+      <div class="ms-auto d-flex gap-3">
+        <i class="bi bi-facebook"></i>
+        <i class="bi bi-instagram"></i>
+      </div>
+
+    </div>
+  </div>
+<!-- NAVBAR DINAMICO -->
+<div class="navbar-main">
+  <div class="container-fluid d-flex align-items-center">
+
+    <nav id="navbar" class="navbar">
+      <ul>
+
+        <!-- 🟡 NO LOGUEADO -->
+        {% if not request.user.is_authenticated %}
+
+          <li><a class="nav-link scrollto active" href="#hero">Inicio</a></li>
+          <li><a class="nav-link scrollto" href="#about">Conocenos</a></li>
+          <li><a class="nav-link scrollto" href="#services">Servicios</a></li>
+          <li><a class="nav-link scrollto" href="#departments">Especialidades</a></li>
+          <li><a class="nav-link scrollto" href="#doctors">Profesionales</a></li>
+          <li><a class="nav-link scrollto" href="#contact">Contacto</a></li>
+
+          <li><a class="nav-link" href="{% url 'login' %}">Accede</a></li>
+
+        <!-- 🔴 ADMIN -->
+        {% elif request.user.is_staff %}
+          
+          <li class="dropdown">
+            <a href="#"><span>Medicos</span> <i class="bi bi-chevron-down"></i></a>
+            <ul>
+              <li><a href="{% url 'medicos:list' %}">Ver</a></li>
+              <li><a href="{% url 'medicos:create' %}">Cargar</a></li>
+            </ul>
+          </li>
+
+          <li class="dropdown">
+            <a href="#"><span>Especialidades</span> <i class="bi bi-chevron-down"></i></a>
+            <ul>
+              <li><a href="{% url 'especialidades:list' %}">Ver</a></li>
+              <li><a href="{% url 'especialidades:create' %}">Cargar</a></li>
+            </ul>
+          </li>
+
+          <li class="dropdown">
+            <a href="#"><span>Pacientes</span> <i class="bi bi-chevron-down"></i></a>
+            <ul>
+              <li><a href="{% url 'paciente:buscar' %}">Buscar</a></li>
+              <li><a href="{% url 'paciente:create' %}">Cargar</a></li>
+            </ul>
+          </li>
+
+          <li class="dropdown">
+            <a href="#"><span>Obra Sociales</span> <i class="bi bi-chevron-down"></i></a>
+            <ul>
+              <li><a href="{% url 'obrasocial:list' %}">Ver</a></li>
+              <li><a href="{% url 'obrasocial:create' %}">Cargar</a></li>
+            </ul>
+          </li>
+
+          <li class="dropdown">
+            <a href="#"><span>Servicios</span> <i class="bi bi-chevron-down"></i></a>
+            <ul>
+              <li><a href="{% url 'servicios:list' %}">Ver</a></li>
+              <li><a href="{% url 'servicios:create' %}">Cargar</a></li>
+            </ul>
+          </li>
+
+          <li class="dropdown">
+            <a href="#"><span>Turnos</span> <i class="bi bi-chevron-down"></i></a>
+            <ul>
+              <li><a href="{% url 'turnos:buscar_turnos_por_dni' %}">Ver Turnos</a></li>
+              <li><a href="{% url 'turnos:seleccionar_paciente' %}">Seleccionar</a></li>
+            </ul>
+          </li>
+
+          <li class="dropdown">
+            <a href="#"><span>Estudios</span> <i class="bi bi-chevron-down"></i></a>
+            <ul>
+              <li><a href="{% url 'buscar_y_cargar_estudio' %}">Cargar</a></li>
+              <li><a href="{% url 'ver_estudios' %}">Ver</a></li>
+            </ul>
+          </li>
+
+          <li class="dropdown">
+            <a href="#"><span>Historia Clínica</span> <i class="bi bi-chevron-down"></i></a>
+            <ul>
+              <li><a href="{% url 'buscar_historia_por_dni' %}">Buscar</a></li>
+            </ul>
+          </li>
+
+        <!-- 🔵 MÉDICO -->
+        {% elif request.user.medico %}
+           <li class="dropdown">
+            <a href="#"><span>Pacientes</span> <i class="bi bi-chevron-down"></i></a>
+            <ul>
+              <li><a href="{% url 'paciente:buscar' %}">Buscar</a></li>
+              <li><a href="{% url 'paciente:create' %}">Cargar</a></li>
+            </ul>
+          </li>
+
+          <li class="dropdown">
+            <a href="#"><span>Turnos</span> <i class="bi bi-chevron-down"></i></a>
+            <ul>
+              <li><a href="{% url 'turnos:mis_turnos_medico' %}"> Mis Turnos</a></li>
+              <li><a href="{% url 'turnos:buscar_turnos_por_dni' %}">Ver por DNI</a></li>
+              <li><a href="{% url 'turnos:seleccionar_paciente' %}">Cargar Turno</a></li>
+            </ul>
+          </li>
+
+          <li class="dropdown">
+            <a href="#"><span>Estudios</span> <i class="bi bi-chevron-down"></i></a>
+            <ul>
+              <li><a href="{% url 'buscar_y_cargar_estudio' %}">Cargar</a></li>
+              <li><a href="{% url 'ver_estudios' %}">Ver</a></li>
+            </ul>
+          </li>
+
+          <li class="dropdown">
+            <a href="#"><span>Historia Clínica</span> <i class="bi bi-chevron-down"></i></a>
+            <ul>
+              <li><a href="{% url 'buscar_paciente_consulta' %}">Cargar Consulta</a></li>
+              <li><a href="{% url 'buscar_historia_por_dni' %}">Ver Historia</a></li>
+            </ul>
+          </li>
+
+          <li>
+            <a href="https://aplicaciones.cmpc.org.ar/menu/" target="_blank">
+              Receta Online
+            </a>
+          </li>
+
+        
+        {% endif %}
+
+      </ul>
+
+      <i class="bi bi-list mobile-nav-toggle"></i>
+    </nav>
+
+    <!-- 🧠 BOTÓN DERECHO DINÁMICO -->
+
+    {% if not request.user.is_authenticated %}
+
+      <!-- BOTÓN LANDING -->
+      <a href="{% url 'core:solicitar_turno' %}" class="appointment-btn ms-auto">
+        Solicitar Turno
+      </a>
+
+    {% else %}
+
+      <!-- USUARIO -->
+      <div class="ms-auto me-3 text-white fw-semibold">
+        {% if request.user.is_staff %}
+            Admin {{ request.user.username}}
+        {% elif request.user.medico %}
+           Dr. {{ request.user.medico.nombre }} {{ request.user.medico.apellido }}
+        {% endif %}
+      </div>
+
+      <!-- LOGOUT -->
+      <div class="me-3">
+        <a href="#" class="btn btn-outline-light btn-sm"
+           data-bs-toggle="modal"
+           data-bs-target="#logoutModal">
+          <i class="bi bi-box-arrow-right"></i>
+        </a>
+      </div>
+
+    {% endif %}
+
+  </div>
+</div>
+
+</header>
+  <br>
+{% endblock %}
+<!-- 🧠 CONTENIDO -->
+<div class="main-content">
+  {% block content %}{% endblock %}
+</div>
 
  {% block hero %}{% endblock %}
 
@@ -55,21 +326,41 @@
  {% block Doctores %}{% endblock %}
  {% block contacto %}{% endblock %}
  {% block footer %}{% endblock %}
+<!-- 🔥 MODAL LOGOUT -->
+<div class="modal fade" id="logoutModal">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
 
-  <div id="preloader"></div>
-  <a href="#" class="back-to-top d-flex align-items-center justify-content-center"><i class="bi bi-arrow-up-short"></i></a>
+      <div class="modal-header custom-modal-header text-white">
+        <h5 class="modal-title">Cerrar sesión</h5>
+        <button class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
 
-  <!-- Vendor JS Files -->
-  <script src="{% static 'core/vendor/purecounter/purecounter_vanilla.js' %}"></script>
-  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-  <script src="{% static 'core/vendor/glightbox/js/glightbox.min.js' %}"></script>
-  <script src="{% static 'core/vendor/swiper/swiper-bundle.min.js' %}"></script>
-  <script src="{% static 'core/vendor/php-email-form/validate.js' %}"></script>
-  <script src="https://code.jquery.com/jquery-3.6.4.min.js"></script>
-  <!-- Template Main JS File -->
-  <script src="{% static 'core/js/main.js' %}"></script>
-<!-- Scroll Suave con jQuery -->
+      <div class="modal-body text-center">
+        ¿Seguro que querés salir?
+      </div>
+
+      <div class="modal-footer justify-content-center gap-2">
+        <button class="btn btn-outline-secondary custom-btn-soft" data-bs-dismiss="modal">
+          Cancelar
+        </button>
+
+        <form method="post" action="{% url 'logout' %}">
+          {% csrf_token %}
+          <button class="btn custom-btn-gradient">
+            Salir
+          </button>
+        </form>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- SCRIPTS -->
+<script src="{% static 'core/vendor/purecounter/purecounter_vanilla.js' %}"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script src="{% static 'core/js/main.js' %}"></script>
 
 </body>
-
 </html>

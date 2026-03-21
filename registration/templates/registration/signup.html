@@ -1,22 +1,60 @@
-{% extends 'core/base.html' %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
 
-{% load static %}
-<br>
-<br>
-{% block title %}Iniciar sesión{% endblock %}
-{% block content %}
-<style>.errorlist{color:red;} label{display:none}</style>
+  {% load static %}
+
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <title>Iniciar sesión</title>
+
+  <!-- Bootstrap -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+
+  <!-- Tu CSS -->
+  <link href="{% static 'core/css/style.css' %}" rel="stylesheet">
+
+  <style>
+    .errorlist {
+      color: red;
+      list-style: none;
+      padding: 0;
+    }
+    label {
+      display: none;
+    }
+  </style>
+
+</head>
+
+<body style="background-color: #f8f9fa;">
+
 <main role="main">
   <div class="container">
-    <div class="row mt-3">
+    <div class="row mt-5">
       <div class="col-md-9 mx-auto mb-5">
-        <form action="" method="post">{% csrf_token %}
-          <h3 class="mb-4">Registro</h3>
-          {{form.as_p}}
-          <p><input type="submit" class="btn btn-primary btn-block" value="Confirmar"></p>
+
+        <form method="post" class="bg-white p-4 shadow-sm rounded">
+          {% csrf_token %}
+
+          <h3 class="mb-4 text-center">Registro</h3>
+
+          {{ form.as_p }}
+
+          <div class="d-grid">
+            <input type="submit" class="btn btn-primary btn-lg" value="Confirmar">
+          </div>
+
         </form>
+
       </div>
     </div>
   </div>
 </main>
-{% endblock %}
+
+<!-- Bootstrap JS -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+</body>
+</html>
