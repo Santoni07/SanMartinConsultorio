@@ -40,52 +40,18 @@
 </head>
 
 <body>
-      <!-- ======= Top Bar ======= -->
-      <br>
-    <div id="topbar" class="d-flex align-items-center fixed-top">
 
-  <div class="container-fluid d-flex justify-content-between px-3">
-
-    <a href="{% url 'core:index' %}" 
-       class="d-flex align-items-center text-decoration-none">
-
-      <img src="{% static 'core/img/logo.jpg' %}" 
-           alt="Centro Médico San Martín" 
-           class="img-fluid me-2 rounded-circle shadow-sm"
-           style="width: 55px; height: 55px; object-fit: cover;">
-
-      <div>
-        <h1 class="h5 mb-0 fw-bold text-dark">
-          Centro Médico San Martín
-        </h1>
-      </div>
-
-    </a>
-
-    <div class="d-none d-lg-flex social-links align-items-center">
-      <a href="https://www.facebook.com/Centro.medic.San.Martin" class="facebook">
-        <i class="bi bi-facebook"></i>
-      </a>
-      <a href="https://www.instagram.com/centromedico.san.martin/" class="instagram">
-        <i class="bi bi-instagram"></i>
-      </a>
-    </div>
-
-  </div>
-
-</div>
-  <br>
-<br>
 {% block extra_css %}{% endblock %}
-   {% block headers %}{% endblock %}
+{% block headers %}{% endblock %}
  {% block content %} {% endblock %}
 
  {% block hero %}{% endblock %}
- {% block about %}{% endblock %}
+
  {% block count %}{% endblock %}
+  {% block departamentos %}{% endblock %}
  {% block services %}{% endblock %}
  {% block consulta %}{% endblock %}
- {% block departamentos %}{% endblock %}
+
  {% block Doctores %}{% endblock %}
  {% block contacto %}{% endblock %}
  {% block footer %}{% endblock %}

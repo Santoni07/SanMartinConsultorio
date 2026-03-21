@@ -2,113 +2,196 @@
 {% load static %}
 {% block title %}Consultorio Medico San Martin{% endblock %}
 
+{% block extra_css %}
+<style>
+/* HEADER */
+#header {
+  position: fixed;
+  width: 100%;
+  z-index: 9999;
+    top: 0;
+  left: 0;
+}
+.custom-modal-header {
+  background: linear-gradient(135deg, #6ea8dc, #9ec9ff);
+  border-bottom: none;
+}
+/* TOPBAR */
+.topbar {
+  background: #ffffff;
+  padding: 8px 0;
+  border-bottom: 1px solid #eee;
+  margin: 0;
+  color: black;
+ 
+}
 
+/* NAVBAR */
+.navbar-main {
+  background: linear-gradient(135deg, #6ea8dc, #9ec9ff);
+  padding: 10px 0;
+  font-size: 16px;
+  font-weight: 500;
+   color: white;
+}
+ 
+/* LINKS */
+.navbar a {
+  font-size: 16px;
+  font-weight: 500;
+   color: white;
+}
+.navbar ul {
+  display: flex;
+  gap: 20px;
+  align-items: center;
+}
+.navbar a:hover {
+  color: #ffffff;
+}
+
+/* DROPDOWN */
+.navbar .dropdown ul {
+  background: white;
+  border-radius: 8px;
+}
+
+/* TEXTO MÉDICO */
+.navbar-main .text-white {
+  font-size: 14px;
+}
+
+/* BODY FIX */
+body {
+  padding-top: 110px;
+}
+
+/* Header con gradient */
+.custom-modal-header {
+    background: linear-gradient(135deg, #0d6efd, #4facfe);
+    border: none;
+}
+
+/* Botón gradient suave */
+.custom-btn-gradient {
+    background: linear-gradient(135deg, #0d6efd, #4facfe);
+    color: white;
+    border: none;
+    padding: 8px 18px;
+    border-radius: 8px;
+    transition: all 0.3s ease;
+}
+
+/* Hover más elegante */
+.custom-btn-gradient:hover {
+    opacity: 0.9;
+    transform: translateY(-1px);
+}
+
+/* Botón cancelar suave */
+.custom-btn-soft {
+    border-radius: 8px;
+    padding: 8px 18px;
+    transition: all 0.3s ease;
+}
+
+/* Hover cancelar */
+.custom-btn-soft:hover {
+    background-color: #f1f1f1;
+}
+  </style>
+{% endblock %}
 {% block content %}
-    <h2 class="mb-4 text-success">
-  <i class="bi bi-person-badge"></i>
-  Bienvenido/a Dr. {{ request.user.medico.nombre }} {{ request.user.medico.apellido }} &nbsp;
-  <span class="text-muted small">(M.P. {{ request.user.medico.matricula }})</span>
-</h2>
-  <header id="header" class="fixed-top">
- <div class="container-fluid d-flex align-items-center px-0">
-    
-    <!-- NAVBAR -->
-    <nav id="navbar" class="navbar order-last order-lg-0">
-      <ul class="nav">
-        <!-- MENÚ PRINCIPAL -->
-       
+<header id="header" class="fixed-top">
 
-       
-        <li class="dropdown"><a href="#"><span>Pacientes</span> <i class="bi bi-chevron-right"></i></a>
-          <ul>
-            <li><a href="{% url 'paciente:buscar' %}">Buscar</a></li>
-            <li><a href="{% url 'paciente:create' %}">Cargar</a></li>
-          </ul>
-        </li>
+  <!-- 🔝 TOPBAR -->
+  <div class="topbar">
+    <div class="container-fluid d-flex align-items-center">
 
-        {% comment %}     <li class="dropdown"><a href="#"><span>Obra Sociales</span> <i class="bi bi-chevron-right"></i></a>
-              <ul>
-                <li><a href="{% url 'obrasocial:list' %}">Ver</a></li>
-                <li><a href="{% url 'obrasocial:create' %}">Cargar</a></li>
-              </ul>
-            </li>
-    {% endcomment %}
-          
-
-       
-
-        <li class="dropdown">
-          <a href="#">
-              <span>Turnos</span> 
-              <i class="bi bi-chevron-right"></i>
-          </a>
-
-          <ul>
-              <li>
-                  <a href="{% url 'turnos:mis_turnos_medico' %}">
-                      🩺 Mis Turnos
-                  </a>
-              </li>
-
-              <li>
-                  <a href="{% url 'turnos:buscar_turnos_por_dni' %}">
-                      📋 Ver Turnos por DNI
-                  </a>
-              </li>
-
-              <li>
-                  <a href="{% url 'turnos:seleccionar_paciente' %}">
-                      ➕ Cargar Turno
-                  </a>
-              </li>
-          </ul>
-      </li>
-
-        <li class="dropdown"><a href="#"><span>Estudios</span> <i class="bi bi-chevron-right"></i></a>
-          <ul>
-            <li><a href="{% url 'buscar_y_cargar_estudio' %}">Cargar</a></li>
-            <li><a href="{% url 'ver_estudios' %}">Ver Estudios</a></li>
-          </ul>
-        </li>
-
-          <li class="dropdown"><a href="#"><span>Historia Clinica</span> <i class="bi bi-chevron-right"></i></a>
-          <ul>
-            <li><a href="{% url 'buscar_paciente_consulta' %}">Cargar Consulta</a></li>
-             <li><a href="{% url 'buscar_historia_por_dni' %}">Ver Historia</a></li>
-          </ul>
-        </li>
-        <li>
-    <a href="https://aplicaciones.cmpc.org.ar/menu/" target="_blank">
-        <span>Receta Online</span>
-        <i class="bi bi-chevron-right"></i>
-    </a>
-</li>
-        <!-- ACCESO/REGISTRO -->
-        {% if not request.user.is_authenticated %}
-          <li class="nav-item"><a class="nav-link scrollto" href="{% url 'login' %}">Accede</a></li>
-          <li class="nav-item"><a class="nav-link scrollto" href="{% url 'signup' %}">Registrarse</a></li>
-        {% endif %}
-      </ul>
-      <i class="bi bi-list mobile-nav-toggle"></i>
-    </nav>
-
-    <!-- BOTÓN SALIR A LA DERECHA -->
-    {% if request.user.is_authenticated %}
-    <div class="ms-auto me-3 d-none d-lg-block">
-            <a href="#" class="btn btn-outline-danger btn-sm fw-bold"
-        data-bs-toggle="modal"
-        data-bs-target="#logoutModal">
-        <i class="bi bi-box-arrow-right"></i> Salir
+         <!-- LOGO -->
+      <a href="{% url 'core:index' %}" class="d-flex align-items-center text-decoration-none">
+        <img src="{% static 'core/img/logo.jpg' %}" 
+             class="me-2 rounded-circle"
+             style="width: 45px; height: 45px; object-fit: cover;">
+        <span class="fw-bold text-dark">Centro Médico San Martín</span>
       </a>
-            <form id="logout-form" method="post" action="{% url 'logout' %}" style="display: none;">
-              {% csrf_token %}
-            </form>
-    </div>
-    {% endif %}
 
+      <!-- REDES -->
+      <div class="social-links d-flex gap-3 ms-auto">
+        <a  href="https://www.facebook.com/Centro.medic.San.Martin"><i class="bi bi-facebook"></i></a>
+        <a href="https://www.instagram.com/centromedico.san.martin/"><i class="bi bi-instagram"></i></a>
+      </div>
+
+    </div>
   </div>
 
+  <!-- 🔽 NAVBAR MÉDICO -->
+  <div class="navbar-main">
+    <div class="container-fluid d-flex align-items-center">
 
+      <nav id="navbar" class="navbar">
+        <ul>
+
+          <li class="dropdown">
+            <a href="#"><span>Pacientes</span> <i class="bi bi-chevron-down"></i></a>
+            <ul>
+              <li><a href="{% url 'paciente:buscar' %}">Buscar</a></li>
+              <li><a href="{% url 'paciente:create' %}">Cargar</a></li>
+            </ul>
+          </li>
+
+          <li class="dropdown">
+            <a href="#"><span>Turnos</span> <i class="bi bi-chevron-down"></i></a>
+            <ul>
+              <li><a href="{% url 'turnos:mis_turnos_medico' %}"> Mis Turnos</a></li>
+              <li><a href="{% url 'turnos:buscar_turnos_por_dni' %}">Ver por DNI</a></li>
+              <li><a href="{% url 'turnos:seleccionar_paciente' %}">Cargar Turno</a></li>
+            </ul>
+          </li>
+
+          <li class="dropdown">
+            <a href="#"><span>Estudios</span> <i class="bi bi-chevron-down"></i></a>
+            <ul>
+              <li><a href="{% url 'buscar_y_cargar_estudio' %}">Cargar</a></li>
+              <li><a href="{% url 'ver_estudios' %}">Ver</a></li>
+            </ul>
+          </li>
+
+          <li class="dropdown">
+            <a href="#"><span>Historia Clínica</span> <i class="bi bi-chevron-down"></i></a>
+            <ul>
+              <li><a href="{% url 'buscar_paciente_consulta' %}">Cargar Consulta</a></li>
+              <li><a href="{% url 'buscar_historia_por_dni' %}">Ver Historia</a></li>
+            </ul>
+          </li>
+
+          <li>
+            <a href="https://aplicaciones.cmpc.org.ar/menu/" target="_blank">
+              Receta Online
+            </a>
+          </li>
+
+        </ul>
+
+        <i class="bi bi-list mobile-nav-toggle"></i>
+      </nav>
+
+      <!-- SALUDO MÉDICO -->
+      <div class="ms-auto me-3 d-none d-lg-block text-white fw-semibold">
+        Dr. {{ request.user.medico.nombre }} {{ request.user.medico.apellido }}
+      </div>
+
+      <!-- BOTÓN SALIR -->
+      <div class="me-3">
+        <a href="#" class="btn btn-outline-light btn-sm fw-bold"
+           data-bs-toggle="modal"
+           data-bs-target="#logoutModal">
+           <i class="bi bi-box-arrow-right"></i>
+        </a>
+      </div>
+
+    </div>
+  </div>
 
 </header>
 
@@ -142,7 +225,7 @@
   <div class="modal-dialog modal-dialog-centered">
     <div class="modal-content">
 
-      <div class="modal-header bg-danger text-white">
+      <div class="modal-header custom-modal-header text-white">
         <h5 class="modal-title" id="logoutModalLabel">
           Confirmar cierre de sesión
         </h5>
@@ -155,17 +238,19 @@
         </p>
       </div>
 
-      <div class="modal-footer justify-content-center">
-        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+      <div class="modal-footer justify-content-center gap-2">
+
+        <button type="button" class="btn btn-outline-secondary custom-btn-soft" data-bs-dismiss="modal">
           Cancelar
         </button>
 
         <form method="post" action="{% url 'logout' %}">
           {% csrf_token %}
-          <button type="submit" class="btn btn-danger">
-            Sí, salir
+          <button type="submit" class="btn custom-btn-gradient">
+            Sí
           </button>
         </form>
+
       </div>
 
     </div>
