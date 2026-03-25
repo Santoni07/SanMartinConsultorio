@@ -113,6 +113,47 @@
 .main-content {
     margin-top: 30px;
 }
+/* ========================= */
+/* 📱 NAVBAR MOBILE */
+/* ========================= */
+@media (max-width: 768px) {
+
+  .navbar ul {
+    flex-direction: column;
+    gap: 10px;
+    background: #6ea8dc;
+    padding: 15px;
+    border-radius: 10px;
+    margin-top: 10px;
+  }
+
+  .navbar a {
+    display: block;
+    width: 100%;
+  }
+
+  /* dropdown mobile */
+  .navbar .dropdown ul {
+    position: static;
+    background: transparent;
+    padding: 0;
+  }
+
+  .navbar .dropdown ul li a {
+    color: white;
+    padding-left: 15px;
+  }
+
+  /* botón hamburguesa */
+  .navbar-toggler {
+    border: none;
+  }
+
+  .navbar-toggler:focus {
+    box-shadow: none;
+  }
+
+}
   </style>
 
 </head>
@@ -144,8 +185,16 @@
 <div class="navbar-main">
   <div class="container-fluid d-flex align-items-center">
 
-    <nav id="navbar" class="navbar">
-      <ul>
+    <nav class="navbar navbar-expand-lg">
+
+  <!-- BOTÓN MOBILE -->
+  <button class="navbar-toggler ms-2" type="button" data-bs-toggle="collapse" data-bs-target="#navbarContent">
+    <span class="navbar-toggler-icon"></span>
+  </button>
+
+  <!-- CONTENIDO -->
+  <div class="collapse navbar-collapse" id="navbarContent">
+    <ul class="navbar-nav me-auto">
 
         <!-- 🟡 NO LOGUEADO -->
         {% if not request.user.is_authenticated %}
@@ -269,9 +318,10 @@
         
         {% endif %}
 
-      </ul>
-
-      <i class="bi bi-list mobile-nav-toggle"></i>
+   
+          </ul>
+  </div>
+      
     </nav>
 
     <!-- 🧠 BOTÓN DERECHO DINÁMICO -->
