@@ -15,6 +15,8 @@ urlpatterns = [
         views.buscar_turnos_por_dni,
         name='buscar_turnos_por_dni'
     ),
-    
+    path('agenda-rapida/', views.agenda_rapida, name='agenda_rapida'),
+    path('cargar-agenda-medico/', views.cargar_agenda_medico, name='cargar_agenda_medico'),
+    path('agenda-mensual/', views.agenda_mensual_medico, name='agenda_mensual_medico'),
     path("mis-turnos-medico/", views.mis_turnos_medico, name="mis_turnos_medico"),
 ]

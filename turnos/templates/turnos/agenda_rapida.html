@@ -1,0 +1,232 @@
+{% extends 'core/base.html' %}
+
+{% block content %}
+<div class="container mt-4">
+
+<!-- 🔔 MENSAJES -->
+{% if messages %}
+    {% for message in messages %}
+        <div class="alert 
+            {% if message.tags == 'success' %}alert-success
+            {% elif message.tags == 'warning' %}alert-warning
+            {% elif message.tags == 'error' %}alert-danger
+            {% else %}alert-info{% endif %}
+            alert-dismissible fade show" role="alert">
+
+            {{ message }}
+
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    {% endfor %}
+{% endif %}
+
+<h2>Agenda mensual</h2>
+
+<!-- 🔵 SELECT MÉDICO -->
+<form method="GET" class="mb-4">
+    <label class="fw-bold">Seleccionar médico</label>
+    <select name="medico_id" class="form-control" onchange="this.form.submit()">
+        <option value="">-- Seleccionar --</option>
+        {% for m in medicos %}
+            <option value="{{ m.id }}" {% if medico and medico.id == m.id %}selected{% endif %}>
+                {{ m.nombre }} {{ m.apellido }}
+            </option>
+        {% endfor %}
+    </select>
+</form>
+
+<!-- 🔵 FORM -->
+{% if medico %}
+
+<form method="POST" class="card p-4 shadow">
+{% csrf_token %}
+
+{{ form.medico.as_hidden }}
+
+<div class="row">
+
+    <div class="col-md-6 mb-3">
+        <label class="fw-bold">Desde</label>
+        {{ form.fecha_desde }}
+    </div>
+
+    <div class="col-md-6 mb-3">
+        <label class="fw-bold">Hasta</label>
+        {{ form.fecha_hasta }}
+    </div>
+
+</div>
+
+<hr>
+
+<h5>Días y horarios</h5>
+
+<div class="row">
+
+<div class="col-md-6 mb-3">
+    <label>{{ form.lunes }} Lunes</label><br>
+    {{ form.lunes_inicio }} - {{ form.lunes_fin }}
+</div>
+
+<div class="col-md-6 mb-3">
+    <label>{{ form.martes }} Martes</label><br>
+    {{ form.martes_inicio }} - {{ form.martes_fin }}
+</div>
+
+<div class="col-md-6 mb-3">
+    <label>{{ form.miercoles }} Miércoles</label><br>
+    {{ form.miercoles_inicio }} - {{ form.miercoles_fin }}
+</div>
+
+<div class="col-md-6 mb-3">
+    <label>{{ form.jueves }} Jueves</label><br>
+    {{ form.jueves_inicio }} - {{ form.jueves_fin }}
+</div>
+
+<div class="col-md-6 mb-3">
+    <label>{{ form.viernes }} Viernes</label><br>
+    {{ form.viernes_inicio }} - {{ form.viernes_fin }}
+</div>
+
+</div>
+
+<button class="btn btn-primary w-100">
+    Generar Preview
+</button>
+
+</form>
+
+{% endif %}
+
+<!-- 🔥 PREVIEW -->
+{% if preview %}
+
+<div class="mt-4">
+
+<h4>Preview de Agenda</h4>
+
+<table class="table table-bordered text-center">
+    <thead>
+        <tr>
+            <th>Fecha</th>
+            <th>Inicio</th>
+            <th>Fin</th>
+        </tr>
+    </thead>
+
+    <tbody>
+        {% for d in preview %}
+        <tr class="{% if d.fecha in conflictos_fechas %}table-danger{% endif %}">
+            <td>{{ d.fecha|date:"d/m/Y" }}</td>
+            <td>{{ d.inicio }}</td>
+            <td>{{ d.fin }}</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+<!-- 🔴 BOTÓN -->
+{% if pisando_agenda %}
+    <div class="d-flex gap-2">
+
+    <!-- 🔴 SOBRESCRIBIR -->
+    <button type="button" 
+            class="btn btn-danger flex-fill"
+            data-bs-toggle="modal" 
+            data-bs-target="#confirmarModal">
+        ⚠️ Sobrescribir Agenda
+    </button>
+
+    <!-- ⚪ CANCELAR -->
+    <a href="{% url 'turnos:agenda_rapida' %}" 
+       class="btn btn-secondary flex-fill">
+        Cancelar
+    </a>
+
+</div>
+{% else %}
+    <form method="POST">
+        {% csrf_token %}
+        <input type="hidden" name="confirmar" value="1">
+
+        {% for field in form %}
+            <input type="hidden" name="{{ field.name }}" value="{{ field.value }}">
+        {% endfor %}
+
+        <button class="btn btn-success w-100">
+            Confirmar y Guardar Agenda
+        </button>
+    </form>
+{% endif %}
+
+</div>
+
+{% endif %}
+
+</div>
+
+<!-- 🔴 MODAL -->
+<div class="modal fade" id="confirmarModal" tabindex="-1">
+  <div class="modal-dialog modal-lg modal-dialog-centered">
+    <div class="modal-content">
+
+      <div class="modal-header bg-danger text-white">
+        <h5 class="modal-title">
+          ⚠️ Conflicto de Agenda
+        </h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+
+      <div class="modal-body">
+
+        <p>Estas fechas ya tienen agenda cargada:</p>
+
+        <table class="table table-bordered text-center">
+            <thead class="table-danger">
+                <tr>
+                    <th>Fecha</th>
+                    <th>Horario Actual</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for c in conflictos %}
+                <tr>
+                    <td>{{ c.fecha|date:"d/m/Y" }}</td>
+                    <td>{{ c.existente.hora_inicio }} - {{ c.existente.hora_fin }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+
+        <p class="text-danger fw-bold">
+            Se reemplazarán estos horarios.
+        </p>
+
+      </div>
+
+      <div class="modal-footer">
+
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+            Cancelar
+        </button>
+
+        <form method="POST">
+            {% csrf_token %}
+            <input type="hidden" name="confirmar" value="1">
+
+            {% for field in form %}
+                <input type="hidden" name="{{ field.name }}" value="{{ field.value }}">
+            {% endfor %}
+
+            <button class="btn btn-danger">
+                Sí, sobrescribir agenda
+            </button>
+        </form>
+
+      </div>
+
+    </div>
+  </div>
+</div>
+
+{% endblock %}

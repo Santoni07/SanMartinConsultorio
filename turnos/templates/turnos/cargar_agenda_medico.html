@@ -1,0 +1,63 @@
+{% extends 'core/base.html' %}
+
+{% block content %}
+<div class="container mt-4">
+
+    <h2>Configurar Agenda del Médico</h2>
+
+    {% if messages %}
+        {% for message in messages %}
+            <div class="alert alert-{{ message.tags }}">{{ message }}</div>
+        {% endfor %}
+    {% endif %}
+
+    <form method="POST" class="card p-4 shadow">
+        {% csrf_token %}
+
+        <!-- Médico -->
+        <div class="mb-3">
+            <label class="form-label fw-bold">Médico</label>
+            {{ form.medico }}
+        </div>
+
+        <!-- Días -->
+        <div class="mb-3">
+            <label class="form-label fw-bold">Días de atención</label>
+            <div class="border p-3 rounded bg-light">
+                {{ form.dias }}
+            </div>
+        </div>
+
+        <!-- Horarios -->
+        <div class="row">
+            <div class="col-md-4 mb-3">
+                <label class="form-label fw-bold">Hora inicio</label>
+                {{ form.hora_inicio }}
+            </div>
+
+            <div class="col-md-4 mb-3">
+                <label class="form-label fw-bold">Hora fin</label>
+                {{ form.hora_fin }}
+            </div>
+
+            <div class="col-md-4 mb-3">
+                <label class="form-label fw-bold">Duración turno (min)</label>
+                {{ form.duracion_turno }}
+            </div>
+        </div>
+
+        <button type="submit" class="btn btn-success w-100">
+            Guardar Agenda
+        </button>
+
+    </form>
+
+    <!-- BOTÓN VOLVER -->
+    <div class="text-center mt-4">
+        <a href="{% url 'core:IndexAdmin' %}" class="btn btn-secondary">
+            ← Volver
+        </a>
+    </div>
+
+</div>
+{% endblock %}

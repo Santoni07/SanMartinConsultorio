@@ -11,36 +11,32 @@
   {% endif %}
 
   <div class="d-flex justify-content-between align-items-center mt-3">
-  <!-- Botón para volver a seleccionar médico -->
-  <a href="{% url 'turnos:seleccionar_medico' %}" class="btn btn-secondary">
-    ← Volver a seleccionar médico
-  </a>
-  {% if request.user.is_staff or request.user.is_superuser %}
+
+    <a href="{% url 'turnos:seleccionar_medico' %}" class="btn btn-secondary">
+      ← Volver a seleccionar médico
+    </a>
+
+    {% if request.user.is_staff or request.user.is_superuser %}
       <a href="{% url 'core:IndexAdmin' %}" class="btn btn-primary btn-lg">
         <i class="bi bi-arrow-left-circle"></i> Volver 
       </a>
-
-  {% elif request.user.is_authenticated and request.user.medico %}
+    {% elif request.user.is_authenticated and request.user.medico %}
       <a href="{% url 'core:medico' %}" class="btn btn-primary btn-lg">
         <i class="bi bi-arrow-left-circle"></i> Volver 
       </a>
-
-  {% else %}
+    {% else %}
       <a href="{% url 'home' %}" class="btn btn-secondary btn-lg">
         <i class="bi bi-arrow-left-circle"></i> Volver 
       </a>
-  {% endif %}
-
-
-
-  <!-- Botones de navegación de días -->
-  <div class="d-flex gap-2">
-    {% if offset > 0 %}
-      <a href="?offset={{ offset|add:"-6" }}" class="btn btn-outline-primary">← Días anteriores</a>
     {% endif %}
-    <a href="?offset={{ offset|add:"6" }}" class="btn btn-outline-primary">Días siguientes →</a>
+
+    <div class="d-flex gap-2">
+      {% if offset > 0 %}
+        <a href="?offset={{ offset|add:"-6" }}" class="btn btn-outline-primary">← Días anteriores</a>
+      {% endif %}
+      <a href="?offset={{ offset|add:"6" }}" class="btn btn-outline-primary">Días siguientes →</a>
+    </div>
   </div>
-</div>
 
   <table class="table table-bordered text-center mt-3">
     <thead>
@@ -51,68 +47,127 @@
         {% endfor %}
       </tr>
     </thead>
+
     <tbody>
+
+      <!-- 🔵 TURNOS NORMALES -->
       {% for hora in horarios %}
         <tr>
-                <td>{{ hora|time:"H:i" }}</td>
-                  {% for dia, turnos in disponibilidad.items %}
-                    {% for turno in turnos %}
-                      {% if turno.hora == hora %}
-                      <td style="background-color: {% if turno.estado == 'libre' %}#d4edda{% else %}#f8d7da{% endif %};">
-    
-    {% if turno.estado == 'libre' %}
-        <form method="POST" action="{% url 'turnos:reservar_turno' %}">
-            {% csrf_token %}
-            <input type="hidden" name="fecha" value="{{ dia|date:'Y-m-d' }}">
-            <input type="hidden" name="hora" value="{{ turno.hora|time:'H:i' }}">
-            <input type="text" name="observaciones" placeholder="Obs." class="form-control form-control-sm mb-1">
-            <button type="submit" class="btn btn-success btn-sm">Reservar</button>
-        </form>
+          <td>{{ hora|time:"H:i" }}</td>
 
-    {% elif turno.estado == 'PENDIENTE' %}
-        <strong>{{ turno.paciente }}</strong><br>
-        <span class="text-danger">{{ turno.observaciones }}</span><br>
-        <a href="{% url 'turnos:eliminar_turno' turno.turno_id %}"
-           class="btn btn-danger btn-sm mt-1"
-           onclick="return confirm('¿Estás seguro de eliminar este turno?');">
-           X
-        </a>
+          {% for dia, turnos in disponibilidad.items %}
+            <td>
 
-    {% elif turno.estado == 'ATENDIDO' %}
-        <strong>{{ turno.paciente }}</strong><br>
-        <span class="text-danger">{{ turno.observaciones }}</span><br>
-        <span class="badge bg-primary mt-1">Atendido</span>
+              {% for turno in turnos %}
+                {% if turno.hora == hora %}
 
-    {% endif %}
+                  <div class="mb-2 p-1 rounded"
+                       style="background-color: {% if turno.estado == 'libre' %}#d4edda{% else %}#f8d7da{% endif %};">
 
-</td>
-              {% endif %}
-            {% endfor %}
+                    {% if turno.estado == 'libre' %}
+                      <form method="POST" action="{% url 'turnos:reservar_turno' %}">
+                        {% csrf_token %}
+                        <input type="hidden" name="fecha" value="{{ dia|date:'Y-m-d' }}">
+                        <input type="hidden" name="hora" value="{{ turno.hora|time:'H:i' }}">
+                        <input type="hidden" name="es_sobreturno" value="false">
+
+                        <input type="text" name="observaciones" placeholder="Obs."
+                               class="form-control form-control-sm mb-1">
+
+                        <button type="submit" class="btn btn-success btn-sm w-100">
+                          Reservar
+                        </button>
+                      </form>
+
+                    {% elif turno.estado == 'PENDIENTE' %}
+                      <strong>{{ turno.paciente }}</strong><br>
+                      <span class="text-danger">{{ turno.observaciones }}</span><br>
+
+                      {% if turno.es_sobreturno %}
+                        <span class="badge bg-warning text-dark">Sobreturno</span><br>
+                      {% endif %}
+
+                      <a href="{% url 'turnos:eliminar_turno' turno.turno_id %}"
+                         class="btn btn-danger btn-sm mt-1"
+                         onclick="return confirm('¿Eliminar turno?');">
+                         X
+                      </a>
+
+                    {% elif turno.estado == 'ATENDIDO' %}
+                      <strong>{{ turno.paciente }}</strong><br>
+                      <span class="text-danger">{{ turno.observaciones }}</span><br>
+                      <span class="badge bg-primary mt-1">Atendido</span>
+                    {% endif %}
+
+                  </div>
+
+                {% endif %}
+              {% endfor %}
+
+            </td>
           {% endfor %}
         </tr>
       {% endfor %}
+
+
+      <!-- 🟡 FILA DE SOBRETURNOS -->
+      <tr style="background-color:#fff3cd;">
+        <td><strong>Sobreturnos</strong></td>
+
+        {% for dia, turnos in disponibilidad.items %}
+          <td>
+
+            {% for turno in turnos %}
+              {% if turno.estado == 'sobreturno_libre' %}
+
+                <div class="mb-2 p-1 border rounded">
+
+                  <form method="POST" action="{% url 'turnos:reservar_turno' %}">
+                    {% csrf_token %}
+                    <input type="hidden" name="fecha" value="{{ dia|date:'Y-m-d' }}">
+                    <input type="hidden" name="es_sobreturno" value="true">
+
+                    <input type="time" name="hora_manual"
+                           class="form-control form-control-sm mb-1" required>
+
+                    <input type="text" name="observaciones"
+                           placeholder="Obs."
+                           class="form-control form-control-sm mb-1">
+
+                    <button type="submit" class="btn btn-warning btn-sm w-100">
+                      Sobreturno
+                    </button>
+                  </form>
+
+                </div>
+
+              {% endif %}
+            {% endfor %}
+
+          </td>
+        {% endfor %}
+      </tr>
+
     </tbody>
   </table>
 
-    <!-- BOTÓN VOLVER -->
-<div class="text-center mt-5">
+  <!-- BOTÓN VOLVER -->
+  <div class="text-center mt-5">
 
-  {% if request.user.is_staff or request.user.is_superuser %}
+    {% if request.user.is_staff or request.user.is_superuser %}
       <a href="{% url 'core:IndexAdmin' %}" class="btn btn-primary btn-lg">
         <i class="bi bi-arrow-left-circle"></i> Volver 
       </a>
-
-  {% elif request.user.is_authenticated and request.user.medico %}
+    {% elif request.user.is_authenticated and request.user.medico %}
       <a href="{% url 'core:medico' %}" class="btn btn-primary btn-lg">
         <i class="bi bi-arrow-left-circle"></i> Volver 
       </a>
-
-  {% else %}
+    {% else %}
       <a href="{% url 'home' %}" class="btn btn-secondary btn-lg">
         <i class="bi bi-arrow-left-circle"></i> Volver 
       </a>
-  {% endif %}
+    {% endif %}
 
-</div>
+  </div>
 </div>
 {% endblock %}
