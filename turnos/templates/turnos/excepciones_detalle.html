@@ -1,0 +1,47 @@
+{% extends 'core/base.html' %}
+
+{% block content %}
+<div class="container mt-4">
+
+<h3>Pacientes afectados - {{ fecha }}</h3>
+
+<table class="table table-bordered mt-3">
+
+  <thead>
+    <tr>
+      <th>Hora</th>
+      <th>Nombre</th>
+      <th>Teléfono</th>
+      <th>Email</th>
+      <th>Tipo</th>
+    </tr>
+  </thead>
+
+  <tbody>
+
+    {% for p in pacientes %}
+    <tr>
+      <td>{{ p.hora|time:"H:i" }}</td>
+      <td>{{ p.nombre }}</td>
+      <td>{{ p.telefono }}</td>
+      <td>{{ p.email }}</td>
+      <td>
+        {% if p.tipo == 'Sobreturno' %}
+          <span class="badge bg-warning text-dark">Sobreturno</span>
+        {% else %}
+          <span class="badge bg-danger">Turno</span>
+        {% endif %}
+      </td>
+    </tr>
+    {% empty %}
+    <tr>
+      <td colspan="5">No hay pacientes afectados</td>
+    </tr>
+    {% endfor %}
+
+  </tbody>
+
+</table>
+
+</div>
+{% endblock %}

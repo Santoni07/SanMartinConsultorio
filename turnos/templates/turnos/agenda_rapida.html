@@ -3,22 +3,7 @@
 {% block content %}
 <div class="container mt-4">
 
-<!-- 🔔 MENSAJES -->
-{% if messages %}
-    {% for message in messages %}
-        <div class="alert 
-            {% if message.tags == 'success' %}alert-success
-            {% elif message.tags == 'warning' %}alert-warning
-            {% elif message.tags == 'error' %}alert-danger
-            {% else %}alert-info{% endif %}
-            alert-dismissible fade show" role="alert">
 
-            {{ message }}
-
-            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-        </div>
-    {% endfor %}
-{% endif %}
 
 <h2>Agenda mensual</h2>
 
@@ -34,7 +19,14 @@
         {% endfor %}
     </select>
 </form>
-
+{% if medico %}
+<div class="mb-3 text-end">
+    <a href="{% url 'turnos:crear_excepcion' %}?medico_id={{ medico.id }}" 
+       class="btn btn-warning">
+        ⚙️ Modificar Agenda (Excepción)
+    </a>
+</div>
+{% endif %}
 <!-- 🔵 FORM -->
 {% if medico %}
 

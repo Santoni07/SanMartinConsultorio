@@ -1,0 +1,118 @@
+{% extends 'core/base.html' %}
+
+{% block content %}
+<div class="container mt-4">
+
+  <h2>Disponibilidad de {{ medico }}</h2>
+
+  <!-- 🔵 MENÚ SUPERIOR -->
+  <div class="d-flex justify-content-between align-items-center mt-3">
+
+    <a href="{% url 'turnos:seleccionar_medico' %}" class="btn btn-secondary">
+      ← Cambiar médico
+    </a>
+
+    <div class="d-flex gap-2">
+      {% if offset > 0 %}
+        <a href="?medico_id={{ medico.id }}&offset={{ offset|add:"-6" }}" class="btn btn-outline-primary">
+          ← Días anteriores
+        </a>
+      {% endif %}
+
+      <a href="?medico_id={{ medico.id }}&offset={{ offset|add:"6" }}" class="btn btn-outline-primary">
+        Días siguientes →
+      </a>
+    </div>
+
+  </div>
+
+  <!-- 🔵 TABLA -->
+  <div style="max-height: 500px; overflow-y: auto;">
+    <table class="table table-bordered text-center mt-4">
+
+      <thead>
+        <tr>
+          <!-- 🔵 HORA FIJA -->
+          <th style="position: sticky; top: 0; left: 0; background: white; z-index: 20;">
+            Hora
+          </th>
+
+          {% for dia, _ in disponibilidad.items %}
+            <!-- 🔵 FECHAS FIJAS -->
+            <th style="position: sticky; top: 0; background: white; z-index: 15;">
+              <a href="{% url 'turnos:excepciones_detalle' %}?medico_id={{ medico.id }}&fecha={{ dia|date:'Y-m-d' }}"
+                 class="text-decoration-none text-primary fw-bold">
+                {{ dia|date:"D d/m" }}
+              </a>
+            </th>
+          {% endfor %}
+        </tr>
+      </thead>
+
+      <tbody>
+
+        {% for hora in horarios %}
+          <tr>
+
+            <!-- 🔵 HORA FIJA -->
+            <td style="position: sticky; left: 0; background: white; z-index: 10;">
+              {{ hora|time:"H:i" }}
+            </td>
+
+            {% for dia, turnos in disponibilidad.items %}
+              <td>
+
+                {% if turnos %}
+
+                  {% for turno in turnos %}
+                    {% if turno.hora == hora %}
+
+                      <div class="p-2 rounded text-white"
+                           style="background-color:{% if turno.estado == 'libre' %}#28a745{% elif turno.estado == 'sobreturno' %}#ffc107{% else %}#dc3545{% endif %};">
+
+                        {% if turno.estado == 'libre' %}
+                          Disponible
+
+                        {% elif turno.estado == 'sobreturno' %}
+                          ⚡ Sobreturno Ocupado
+
+                        {% else %}
+                          Ocupado
+                        {% endif %}
+
+                      </div>
+
+                    {% endif %}
+                  {% endfor %}
+
+                {% else %}
+
+                  <!-- 🔴 NO ATIENDE -->
+                  <div class="bg-secondary text-white p-2 rounded">
+                    No atiende
+                  </div>
+
+                {% endif %}
+
+              </td>
+            {% endfor %}
+
+          </tr>
+        {% endfor %}
+
+      </tbody>
+
+    </table>
+  </div>
+
+  <!-- 🔵 REFERENCIAS -->
+  <div class="mt-4">
+
+    <span class="badge bg-success">Turno Disponible</span>
+    <span class="badge bg-danger">Turno Ocupado</span>
+    <span class="badge bg-warning text-dark">Sobreturno</span>
+
+  </div>
+
+</div>
+{% endblock %}

@@ -2,7 +2,7 @@ from django import forms
 from .models import Turnos
 from especialidades.models import Especialidades
 from medicos.models import Medico
-from .models import DisponibilidadMedico
+from .models import DisponibilidadMedico,ExcepcionAgenda
 
 class SeleccionMedicoForm(forms.Form):
 
@@ -132,3 +132,58 @@ class ConfiguracionAgendaForm(forms.Form):
 
     viernes_inicio = forms.ChoiceField(choices=HORAS, required=False)
     viernes_fin = forms.ChoiceField(choices=HORAS, required=False)
+    
+
+class ExcepcionAgendaForm(forms.ModelForm):
+    class Meta:
+        model = ExcepcionAgenda
+        fields = ['fecha', 'tipo', 'hora_inicio', 'hora_fin', 'nueva_fecha', 'motivo']
+
+        widgets = {
+            'fecha': forms.DateInput(attrs={'type': 'date', 'class': 'form-control'}),
+            'tipo': forms.Select(attrs={'class': 'form-control', 'id': 'tipo'}),
+            'hora_inicio': forms.TimeInput(attrs={'type': 'time', 'class': 'form-control', 'id': 'hora_inicio'}),
+            'hora_fin': forms.TimeInput(attrs={'type': 'time', 'class': 'form-control', 'id': 'hora_fin'}),
+            'nueva_fecha': forms.DateInput(attrs={'type': 'date', 'class': 'form-control', 'id': 'nueva_fecha'}),
+            'motivo': forms.TextInput(attrs={'class': 'form-control', 'id': 'motivo'}),
+        }
+class SeleccionMedicoConsultaForm(forms.Form):
+
+    especialidad = forms.ModelChoiceField(
+        queryset=Especialidades.objects.all(),
+        required=False,
+        empty_label="Todas las especialidades",
+        widget=forms.Select(attrs={
+            'class': 'form-select form-select-lg',
+            'id': 'id_especialidad'
+        })
+    )
+
+    medico = forms.ModelChoiceField(
+        queryset=Medico.objects.none(),
+        required=False,
+        widget=forms.Select(attrs={
+            'class': 'form-select form-select-lg',
+            'id': 'id_medico'
+        })
+    )
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        if 'especialidad' in self.data:
+            try:
+                especialidad_id = int(self.data.get('especialidad'))
+
+                if especialidad_id:
+                    self.fields['medico'].queryset = Medico.objects.filter(
+                        especialidad__id=especialidad_id  # 🔥 CORRECTO
+                    ).distinct()
+                else:
+                    self.fields['medico'].queryset = Medico.objects.all()
+
+            except (ValueError, TypeError):
+                self.fields['medico'].queryset = Medico.objects.all()
+
+        else:
+            self.fields['medico'].queryset = Medico.objects.all()

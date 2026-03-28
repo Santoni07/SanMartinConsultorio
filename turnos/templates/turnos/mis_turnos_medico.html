@@ -65,6 +65,7 @@
                         <tr>
                             <th>Fecha</th>
                             <th>Hora</th>
+                            <th>Tipo</th>
                             <th>Paciente</th>
                             <th>Observaciones</th>
                         </tr>
@@ -81,7 +82,14 @@
 
                             <td class="fw-semibold">{{ turno.fecha }}</td>
                             <td>{{ turno.hora }}</td>
-                            <td>{{ turno.paciente }}</td>
+                            <td>
+                            {% if turno.tipo == "Sobreturno" %}
+                                <span class="badge bg-warning text-dark">⚡ Sobreturno</span>
+                            {% else %}
+                                <span class="badge bg-primary">✔ Turno</span>
+                            {% endif %}
+                        </td>
+                                                    <td>{{ turno.paciente }}</td>
                             <td>{{ turno.observaciones|default:"-" }}</td>
                         </tr>
 

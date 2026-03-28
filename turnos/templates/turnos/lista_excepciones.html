@@ -1,0 +1,81 @@
+{% extends 'core/base.html' %}
+
+{% block content %}
+<div class="container mt-4">
+
+  <h2>Modificaciones / Excepciones</h2>
+
+  <!-- 🔍 FILTRO -->
+  <form method="GET" class="row g-3 mt-3 mb-4">
+
+    <div class="col-md-4">
+      <label class="form-label">Filtrar por fecha</label>
+      <input type="date" name="fecha" value="{{ fecha }}" class="form-control">
+    </div>
+
+    <div class="col-md-2 align-self-end">
+      <button class="btn btn-primary w-100">Buscar</button>
+    </div>
+
+    <div class="col-md-2 align-self-end">
+      <a href="{% url 'turnos:lista_excepciones' %}" class="btn btn-secondary w-100">
+        Limpiar
+      </a>
+    </div>
+
+  </form>
+
+  <!-- 📋 TABLA -->
+  <table class="table table-bordered table-hover">
+
+    <thead class="table-dark">
+      <tr>
+        <th>Fecha</th>
+        <th>Médico</th>
+        <th>Tipo</th>
+        <th>Motivo</th>
+        <th>Acción</th>
+      </tr>
+    </thead>
+
+    <tbody>
+
+      {% for e in excepciones %}
+      <tr>
+
+        <td>{{ e.fecha|date:"d/m/Y" }}</td>
+        <td>{{ e.medico }}</td>
+
+        <td>
+          {% if e.tipo == 'CERRADO' %}
+            <span class="badge bg-danger">No atiende</span>
+          {% elif e.tipo == 'REPROGRAMAR' %}
+            <span class="badge bg-warning text-dark">Reprogramado</span>
+          {% else %}
+            <span class="badge bg-info">Modificado</span>
+          {% endif %}
+        </td>
+
+        <td>{{ e.motivo }}</td>
+
+        <td>
+  <a href="{% url 'turnos:excepciones_detalle' %}?medico_id={{ e.medico.id }}&fecha={{ e.fecha|date:'Y-m-d' }}"
+     class="btn btn-sm btn-primary"
+     target="_blank">
+    Ver detalle
+  </a>
+</td>
+
+      </tr>
+      {% empty %}
+      <tr>
+        <td colspan="5">No hay excepciones registradas</td>
+      </tr>
+      {% endfor %}
+
+    </tbody>
+
+  </table>
+
+</div>
+{% endblock %}

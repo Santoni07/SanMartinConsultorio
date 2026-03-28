@@ -212,14 +212,40 @@
         {% elif request.user.is_staff %}
           
           <li class="dropdown">
-            <a href="#"><span>Medicos</span> <i class="bi bi-chevron-down"></i></a>
-            <ul>
-              <li><a href="{% url 'medicos:list' %}">Ver</a></li>
-              <li><a href="{% url 'medicos:create' %}">Cargar</a></li>
-             <li><a href="{% url 'turnos:agenda_rapida' %}">Agenda Rápida</a></li>
-            </ul>
-          </li>
+              <li class="dropdown">
+              <a href="#"><span>Medicos</span> <i class="bi bi-chevron-down"></i></a>
 
+              <ul>
+                <li><a href="{% url 'medicos:list' %}">Ver</a></li>
+                <li><a href="{% url 'medicos:create' %}">Cargar</a></li>
+
+              </ul>
+            </li>
+            
+          <li class="dropdown">
+            <a href="#"><span>Agenda</span> <i class="bi bi-chevron-down"></i></a>
+            <ul>
+                    <li>
+                      <a href="{% url 'turnos:agenda_rapida' %}">
+                        Cargar Agenda
+                      </a>
+                    </li>
+
+                    <!-- 🔥 CAMBIO IMPORTANTE ACÁ -->
+                    <li>
+                      <a href="{% url 'turnos:seleccionar_medico_consulta' %}">
+                        Ver Disponibilidad
+                      </a>
+                    </li>
+
+                      <li>
+                      <a href="{% url 'turnos:lista_excepciones' %}">
+                        Modificaciones
+                      </a>
+                    </li>
+
+                  </ul>
+          </li>
           <li class="dropdown">
             <a href="#"><span>Especialidades</span> <i class="bi bi-chevron-down"></i></a>
             <ul>
