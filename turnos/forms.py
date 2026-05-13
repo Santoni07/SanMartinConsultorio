@@ -2,7 +2,7 @@ from django import forms
 from .models import Turnos
 from especialidades.models import Especialidades
 from medicos.models import Medico
-from .models import DisponibilidadMedico,ExcepcionAgenda
+from .models import DisponibilidadMedico,ExcepcionAgenda,Consultorio
 
 class SeleccionMedicoForm(forms.Form):
 
@@ -88,6 +88,10 @@ class AgendaMedicoForm(forms.Form):
         label="Duración (minutos)",
         initial=20
     )
+    consultorio = forms.ModelChoiceField(
+        queryset=Consultorio.objects.all(),
+        label="Consultorio"
+    )
 
 
 # 🔥 Generador de horarios
@@ -106,7 +110,11 @@ HORAS = generar_horas()
 class ConfiguracionAgendaForm(forms.Form):
 
     medico = forms.ModelChoiceField(queryset=Medico.objects.all())
-
+    consultorio = forms.ModelChoiceField(
+        queryset=Consultorio.objects.all(),
+        required=False,   # 🔥 CLAVE
+        label="Consultorio"
+    )
     fecha_desde = forms.DateField(widget=forms.DateInput(attrs={'type': 'date'}))
     fecha_hasta = forms.DateField(widget=forms.DateInput(attrs={'type': 'date'}))
 

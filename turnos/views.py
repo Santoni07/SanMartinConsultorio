@@ -1,9 +1,10 @@
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import render, redirect, get_object_or_404
 from .forms import  SeleccionMedicoForm
-from .models import Turnos, DisponibilidadMedico,AgendaMedico,Sobreturno
+from .models import Turnos, DisponibilidadMedico,AgendaMedico,Sobreturno,Consultorio
 from paciente.models import Paciente
 from medicos.models import Medico
+from django.http import JsonResponse
 from datetime import datetime, timedelta, time
 from django.contrib import messages
 from django.utils.dateparse import parse_date
@@ -12,6 +13,40 @@ from datetime import date
 from .forms import AgendaMedicoForm,ConfiguracionAgendaForm,ExcepcionAgendaForm,SeleccionMedicoConsultaForm
 from .models import DisponibilidadMedico,ExcepcionAgenda
 from turnos.utils.agenda   import obtener_agenda_dia
+
+
+def obtener_consultorio_disponible(fecha, hora_inicio, hora_fin, medico=None):
+
+    consultorios = Consultorio.objects.all()
+
+    for consultorio in consultorios:
+
+        # 🔴 VALIDAR CONTRA AGENDA
+        conflicto_agenda = AgendaMedico.objects.filter(
+            fecha=fecha,
+            consultorio=consultorio,
+            hora_inicio__lt=hora_fin,
+            hora_fin__gt=hora_inicio
+        )
+
+        if medico:
+            conflicto_agenda = conflicto_agenda.exclude(medico=medico)
+
+        # 🔴 VALIDAR CONTRA TURNOS (CLAVE 🔥)
+        conflicto_turnos = Turnos.objects.filter(
+            fecha=fecha,
+            consultorio=consultorio,
+            hora__gte=hora_inicio,
+            hora__lte=hora_fin,
+            estado='PENDIENTE'
+        )
+
+        if not conflicto_agenda.exists() and not conflicto_turnos.exists():
+            return consultorio
+
+    return None
+
+
 @login_required
 def seleccionar_paciente(request):
     paciente = None
@@ -158,6 +193,81 @@ def ver_disponibilidad(request):
     })
 
 @login_required
+def crear_sobreturno(request):
+
+    if request.method == 'POST':
+
+        fecha_str = request.POST.get('fecha')
+        hora_str = request.POST.get('hora_manual')
+        observaciones = request.POST.get('observaciones')
+
+        medico_id = request.session.get('medico_id')
+        paciente_id = request.session.get('paciente_id')
+
+        if not (fecha_str and hora_str and medico_id and paciente_id):
+            messages.error(request, "Faltan datos para el sobreturno.")
+            return redirect('turnos:ver_disponibilidad')
+
+        # 🔥 PARSEAR FECHA Y HORA
+        try:
+            fecha = datetime.strptime(fecha_str, '%Y-%m-%d').date()
+        except ValueError:
+            messages.error(request, "Formato de fecha inválido.")
+            return redirect('turnos:ver_disponibilidad')
+
+        try:
+            hora = datetime.strptime(hora_str, '%H:%M').time()
+        except ValueError:
+            messages.error(request, "Formato de hora inválido.")
+            return redirect('turnos:ver_disponibilidad')
+
+        # 🔥 OBTENER AGENDA (CLAVE)
+        agenda = AgendaMedico.objects.filter(
+            medico_id=medico_id,
+            fecha=fecha
+        ).first()
+
+        if not agenda:
+            messages.error(request, "El médico no tiene agenda ese día.")
+            return redirect('turnos:ver_disponibilidad')
+
+        consultorio = agenda.consultorio
+
+        # 🔥 VALIDAR SI YA EXISTE TURNO O SOBRETURNO EN ESA HORA
+        existe_turno = Turnos.objects.filter(
+            medico_id=medico_id,
+            fecha=fecha,
+            hora=hora
+        ).exists()
+
+        existe_sobreturno = Sobreturno.objects.filter(
+            medico_id=medico_id,
+            fecha=fecha,
+            hora=hora
+        ).exists()
+
+        if existe_turno or existe_sobreturno:
+            messages.warning(request, "Ya existe un turno o sobreturno en ese horario.")
+            return redirect('turnos:ver_disponibilidad')
+
+        # 🔥 CREAR SOBRETURNO
+        Sobreturno.objects.create(
+            medico_id=medico_id,
+            paciente_id=paciente_id,
+            fecha=fecha,
+            hora=hora,
+            observaciones=observaciones,
+            estado='PENDIENTE'
+        )
+
+        messages.success(
+            request,
+            f"Sobreturno creado correctamente en Consultorio {consultorio.numero}."
+        )
+
+    return redirect('turnos:ver_disponibilidad')
+
+@login_required
 def reservar_turno(request):
 
     if request.method == 'POST':
@@ -186,6 +296,18 @@ def reservar_turno(request):
             messages.error(request, "Error de sesión.")
             return redirect('turnos:ver_disponibilidad')
 
+        # 🔥 OBTENER AGENDA DEL DÍA (CLAVE)
+        agenda = AgendaMedico.objects.filter(
+            medico_id=medico_id,
+            fecha=fecha
+        ).first()
+
+        if not agenda:
+            messages.error(request, "El médico no tiene agenda para ese día.")
+            return redirect('turnos:ver_disponibilidad')
+
+        consultorio = agenda.consultorio
+
         # ===============================
         # 🔵 CASO 1: SOBRETURNO
         # ===============================
@@ -201,7 +323,7 @@ def reservar_turno(request):
                 messages.error(request, "Formato de hora inválido.")
                 return redirect('turnos:ver_disponibilidad')
 
-            # 🔥 VALIDAR SI YA EXISTE CUALQUIER TURNO EN ESE HORARIO
+            # 🔥 VALIDAR SI YA EXISTE TURNO EN ESE HORARIO
             ya_existe = Turnos.objects.filter(
                 medico_id=medico_id,
                 fecha=fecha,
@@ -221,10 +343,14 @@ def reservar_turno(request):
                 hora=hora,
                 observaciones=observaciones,
                 estado='PENDIENTE',
-                es_sobreturno=True
+                es_sobreturno=True,
+                consultorio=consultorio  # 🔥 NUEVO
             )
 
-            messages.success(request, "Sobreturno agregado correctamente.")
+            messages.success(
+                request,
+                f"Sobreturno agregado correctamente en Consultorio {consultorio.numero}."
+            )
             return redirect('turnos:ver_disponibilidad')
 
         # ===============================
@@ -241,7 +367,7 @@ def reservar_turno(request):
             messages.error(request, "Formato de hora inválido.")
             return redirect('turnos:ver_disponibilidad')
 
-        # 🔥 VALIDAR SI YA EXISTE TURNO NORMAL
+        # 🔥 VALIDAR SI YA EXISTE TURNO
         ya_existe = Turnos.objects.filter(
             medico_id=medico_id,
             fecha=fecha,
@@ -262,10 +388,14 @@ def reservar_turno(request):
             hora=hora,
             observaciones=observaciones,
             estado='PENDIENTE',
-            es_sobreturno=False
+            es_sobreturno=False,
+           
         )
 
-        messages.success(request, "Turno reservado correctamente.")
+        messages.success(
+            request,
+            f"Turno reservado correctamente en Consultorio {consultorio.numero}."
+        )
 
     return redirect('turnos:ver_disponibilidad')
 @login_required
@@ -442,7 +572,8 @@ def agenda_mensual_medico(request):
     medicos = Medico.objects.all()
     medico = None
     dias_final = []
-
+    consultorio = request.POST.get(f'consultorio_{dia}')
+    consultorio = Consultorio.objects.get(id=consultorio) if consultorio else None
     medico_id = request.GET.get('medico_id') or request.POST.get('medico_id')
 
     # 🔵 Si seleccionó médico
@@ -511,6 +642,7 @@ def agenda_mensual_medico(request):
                     defaults={
                         'hora_inicio': hora_inicio,
                         'hora_fin': hora_fin,
+                        'consultorio': consultorio,
                         'duracion_turno': 20
                     }
                 )
@@ -576,102 +708,7 @@ def generar_preview(data):
 
 
 
-def agenda_rapida(request):
 
-    preview = None
-    conflictos = []
-    pisando_agenda = False
-
-    medicos = Medico.objects.all()
-
-    # 🔵 Capturar médico
-    medico_id = request.GET.get('medico_id') or request.POST.get('medico')
-    medico = None
-
-    if medico_id:
-        medico = Medico.objects.filter(id=medico_id).first()
-
-    # 🔵 POST
-    if request.method == 'POST':
-
-        form = ConfiguracionAgendaForm(request.POST)
-        form.fields['medico'].queryset = medicos
-
-        # 🔥 FIX → forzar médico si no viene
-        if not request.POST.get('medico') and medico_id:
-            form.data = form.data.copy()
-            form.data['medico'] = medico_id
-
-        if form.is_valid():
-
-            data = form.cleaned_data
-            medico = data['medico']
-
-            # 🔥 GENERAR PREVIEW
-            preview = generar_preview(data)
-
-            # 🔴 DETECTAR CONFLICTOS
-            conflictos = []
-
-            for d in preview:
-                agendas_existentes = AgendaMedico.objects.filter(
-                    medico=medico,
-                    fecha=d['fecha']
-                )
-
-                if agendas_existentes.exists():
-                    conflictos.append({
-                        'fecha': d['fecha'],
-                        'existente': agendas_existentes.first()
-                    })
-
-            pisando_agenda = len(conflictos) > 0
-
-            # 🔔 AVISO
-            if pisando_agenda and 'confirmar' not in request.POST:
-                messages.warning(
-                    request,
-                    "⚠️ Esta agenda pisa horarios existentes. Confirmá para continuar."
-                )
-
-            # 🔵 GUARDAR
-            if 'confirmar' in request.POST:
-
-                for d in preview:
-
-                    hora_inicio = datetime.strptime(d['inicio'], '%H:%M').time()
-                    hora_fin = datetime.strptime(d['fin'], '%H:%M').time()
-
-                    AgendaMedico.objects.update_or_create(
-                        medico=medico,
-                        fecha=d['fecha'],
-                        defaults={
-                            'hora_inicio': hora_inicio,
-                            'hora_fin': hora_fin,
-                            'duracion_turno': 20
-                        }
-                    )
-
-                messages.success(request, "Agenda creada correctamente.")
-                return redirect('turnos:agenda_rapida')
-
-        else:
-            print("ERRORES:", form.errors)
-
-    else:
-        form = ConfiguracionAgendaForm(initial={'medico': medico})
-        form.fields['medico'].queryset = medicos
-    conflictos_fechas = [c['fecha'] for c in conflictos]
-    return render(request, 'turnos/agenda_rapida.html', {
-        'form': form,
-        'preview': preview,
-        'medicos': medicos,
-        'medico': medico,
-        'pisando_agenda': pisando_agenda,
-        'conflictos': conflictos,
-        'conflictos_fechas': conflictos_fechas
-    })
-    
 @login_required
 def crear_excepcion(request):
 
@@ -681,6 +718,44 @@ def crear_excepcion(request):
 
     if medico_id:
         medico = Medico.objects.filter(id=medico_id).first()
+
+    # 🔥 FUNCIÓN CORRECTA (SIN usar consultorio en Turnos)
+    def obtener_consultorio_disponible(fecha, hora_inicio, hora_fin, medico=None):
+
+        consultorios = Consultorio.objects.all()
+
+        for consultorio in consultorios:
+
+            # 🔵 conflicto por agenda
+            conflicto_agenda = AgendaMedico.objects.filter(
+                fecha=fecha,
+                consultorio=consultorio,
+                hora_inicio__lt=hora_fin,
+                hora_fin__gt=hora_inicio
+            )
+
+            if medico:
+                conflicto_agenda = conflicto_agenda.exclude(medico=medico)
+
+            # 🔵 médicos que usan ese consultorio
+            medicos_en_consultorio = AgendaMedico.objects.filter(
+                fecha=fecha,
+                consultorio=consultorio
+            ).values_list('medico_id', flat=True)
+
+            # 🔴 conflicto por turnos (SIN consultorio en modelo)
+            conflicto_turnos = Turnos.objects.filter(
+                fecha=fecha,
+                medico_id__in=medicos_en_consultorio,
+                hora__gte=hora_inicio,
+                hora__lt=hora_fin,
+                estado='PENDIENTE'
+            )
+
+            if not conflicto_agenda.exists() and not conflicto_turnos.exists():
+                return consultorio
+
+        return None
 
     if request.method == 'POST':
         form = ExcepcionAgendaForm(request.POST)
@@ -711,21 +786,27 @@ def crear_excepcion(request):
                 fecha=excepcion.fecha
             )
 
+            agenda_original = AgendaMedico.objects.filter(
+                medico=medico,
+                fecha=excepcion.fecha
+            ).first()
+
             # ===============================
             # 🔴 CERRADO
             # ===============================
             if excepcion.tipo == 'CERRADO':
 
-                for turno in turnos:
-                    turno.estado = 'CANCELADO'
-                    turno.save()
-
-                cantidad_sobreturnos = sobreturnos.count()
+                turnos.update(estado='CANCELADO')
                 sobreturnos.update(estado='CANCELADO')
+
+                AgendaMedico.objects.filter(
+                    medico=medico,
+                    fecha=excepcion.fecha
+                ).delete()
 
                 messages.warning(
                     request,
-                    f"Se cancelaron {turnos.count()} turnos y {cantidad_sobreturnos} sobreturnos."
+                    f"Se cancelaron {turnos.count()} turnos y se liberó el consultorio."
                 )
 
             # ===============================
@@ -736,35 +817,30 @@ def crear_excepcion(request):
                 conflictos = 0
                 movidos = 0
 
-                agenda_original = AgendaMedico.objects.filter(
-                    medico=medico,
-                    fecha=excepcion.fecha
-                ).first()
+                consultorio = obtener_consultorio_disponible(
+                    excepcion.nueva_fecha,
+                    excepcion.hora_inicio,
+                    excepcion.hora_fin,
+                    medico
+                )
 
-                # 🔥 CREAR NUEVA AGENDA CON HORARIO DE LA EXCEPCIÓN
+                if not consultorio:
+                    messages.error(request, "No hay consultorios disponibles en la nueva fecha.")
+                    return redirect('turnos:crear_excepcion')
+
+                # 🔵 crear nueva agenda
                 AgendaMedico.objects.update_or_create(
                     medico=medico,
                     fecha=excepcion.nueva_fecha,
                     defaults={
                         'hora_inicio': excepcion.hora_inicio,
                         'hora_fin': excepcion.hora_fin,
-                        'duracion_turno': agenda_original.duracion_turno if agenda_original else 20
+                        'duracion_turno': agenda_original.duracion_turno if agenda_original else 20,
+                        'consultorio': consultorio
                     }
                 )
 
-                # 🔥 TRAER NUEVA AGENDA
-                agenda_nueva = AgendaMedico.objects.filter(
-                    medico=medico,
-                    fecha=excepcion.nueva_fecha
-                ).first()
-
                 for turno in turnos:
-
-                    hora_valida = False
-
-                    if agenda_nueva:
-                        if agenda_nueva.hora_inicio <= turno.hora <= agenda_nueva.hora_fin:
-                            hora_valida = True
 
                     existe = Turnos.objects.filter(
                         medico=medico,
@@ -772,8 +848,7 @@ def crear_excepcion(request):
                         hora=turno.hora
                     ).exists()
 
-                    # 🔥 DECISIÓN FINAL
-                    if hora_valida and not existe:
+                    if (excepcion.hora_inicio <= turno.hora <= excepcion.hora_fin) and not existe:
                         turno.fecha = excepcion.nueva_fecha
                         turno.save()
                         movidos += 1
@@ -782,12 +857,11 @@ def crear_excepcion(request):
                         turno.save()
                         conflictos += 1
 
-                cantidad_sobreturnos = sobreturnos.count()
                 sobreturnos.update(estado='CANCELADO')
 
                 messages.success(
                     request,
-                    f"Turnos movidos: {movidos}. Cancelados: {conflictos}. Sobreturnos cancelados: {cantidad_sobreturnos}"
+                    f"Turnos movidos: {movidos}. Cancelados: {conflictos}. Consultorio asignado: {consultorio.numero}"
                 )
 
             # ===============================
@@ -795,33 +869,43 @@ def crear_excepcion(request):
             # ===============================
             elif excepcion.tipo == 'MODIFICADO':
 
+                consultorio = obtener_consultorio_disponible(
+                    excepcion.fecha,
+                    excepcion.hora_inicio,
+                    excepcion.hora_fin,
+                    medico
+                )
+
+                if not consultorio:
+                    messages.error(request, "No hay consultorios disponibles.")
+                    return redirect('turnos:crear_excepcion')
+
+                AgendaMedico.objects.update_or_create(
+                    medico=medico,
+                    fecha=excepcion.fecha,
+                    defaults={
+                        'hora_inicio': excepcion.hora_inicio,
+                        'hora_fin': excepcion.hora_fin,
+                        'consultorio': consultorio
+                    }
+                )
+
                 cancelados = 0
 
                 for turno in turnos:
-
                     if not (excepcion.hora_inicio <= turno.hora <= excepcion.hora_fin):
                         turno.estado = 'CANCELADO'
                         turno.save()
                         cancelados += 1
 
-                sobreturnos_cancelados = 0
-                sobreturnos_mantenidos = 0
-
                 for s in sobreturnos:
-
-                    if excepcion.hora_inicio <= s.hora <= excepcion.hora_fin:
-                        # ✔ se mantiene
-                        sobreturnos_mantenidos += 1
-                    else:
-                        # ❌ se cancela
+                    if not (excepcion.hora_inicio <= s.hora <= excepcion.hora_fin):
                         s.estado = 'CANCELADO'
                         s.save()
-                        sobreturnos_cancelados += 1
 
                 messages.warning(
                     request,
-                    f"Se cancelaron {cancelados} turnos y {sobreturnos_cancelados} sobreturnos. "
-                    f"{sobreturnos_mantenidos} sobreturnos se mantienen."
+                    f"Se cancelaron {cancelados} turnos. Consultorio: {consultorio.numero}"
                 )
 
             messages.success(request, "Excepción aplicada correctamente")
@@ -836,7 +920,175 @@ def crear_excepcion(request):
         'form': form,
         'medico': medico,
         'medicos': medicos
-    })    
+    })
+
+
+
+@login_required
+def agenda_rapida(request):
+
+    preview = None
+    conflictos = []
+    pisando_agenda = False
+    consultorios_disponibles = []
+
+    medicos = Medico.objects.all()
+
+    # 🔵 Capturar médico
+    medico_id = request.GET.get('medico_id') or request.POST.get('medico')
+    medico = None
+
+    if medico_id:
+        medico = Medico.objects.filter(id=medico_id).first()
+
+    # 🔵 POST
+    if request.method == 'POST':
+
+        # ===============================
+        # 🟢 CONFIRMAR (PRIMERO 🔥)
+        # ===============================
+        if 'confirmar' in request.POST:
+
+            form = ConfiguracionAgendaForm(request.POST)
+            form.fields['medico'].queryset = medicos
+
+            if not form.is_valid():
+                print("ERRORES CONFIRMAR:", form.errors)
+                messages.error(request, "Error en los datos.")
+                return redirect('turnos:agenda_rapida')
+
+            data = form.cleaned_data
+            medico = data['medico']
+
+            from .models import Consultorio
+
+            consultorio_id = request.POST.get('consultorio')
+
+            if not consultorio_id:
+                messages.error(request, "Debes seleccionar un consultorio.")
+                return redirect('turnos:agenda_rapida')
+
+            consultorio = Consultorio.objects.get(id=consultorio_id)
+
+            # 🔥 GENERAR PREVIEW CORRECTO
+            preview = generar_preview(data)
+
+            for d in preview:
+
+                hora_inicio = datetime.strptime(d['inicio'], '%H:%M').time()
+                hora_fin = datetime.strptime(d['fin'], '%H:%M').time()
+
+                AgendaMedico.objects.update_or_create(
+                    medico=medico,
+                    fecha=d['fecha'],
+                    defaults={
+                        'hora_inicio': hora_inicio,
+                        'hora_fin': hora_fin,
+                        'duracion_turno': 20,
+                        'consultorio': consultorio
+                    }
+                )
+
+            messages.success(request, "Agenda creada correctamente.")
+            return redirect('turnos:agenda_rapida')
+
+        # ===============================
+        # 🔵 PREVIEW
+        # ===============================
+        form = ConfiguracionAgendaForm(request.POST)
+        form.fields['medico'].queryset = medicos
+
+        # 🔥 FIX → forzar médico si no viene
+        if not request.POST.get('medico') and medico_id:
+            form.data = form.data.copy()
+            form.data['medico'] = medico_id
+
+        if form.is_valid():
+            print("FORM VALIDO:", form.is_valid())
+            print("ERRORES:", form.errors)
+
+            data = form.cleaned_data
+            medico = data['medico']
+
+            # 🔥 GENERAR PREVIEW
+            preview = generar_preview(data)
+
+            # ===============================
+            # 🔴 DETECTAR CONFLICTOS DEL MÉDICO
+            # ===============================
+            conflictos = []
+
+            for d in preview:
+                agendas_existentes = AgendaMedico.objects.filter(
+                    medico=medico,
+                    fecha=d['fecha']
+                )
+
+                if agendas_existentes.exists():
+                    conflictos.append({
+                        'fecha': d['fecha'],
+                        'existente': agendas_existentes.first()
+                    })
+
+            pisando_agenda = len(conflictos) > 0
+
+            # ===============================
+            # 🔥 CONSULTORIOS DISPONIBLES
+            # ===============================
+            from .models import Consultorio
+
+            consultorios = Consultorio.objects.all()
+            consultorios_disponibles = []
+
+            for c in consultorios:
+
+                ocupado = False
+
+                for d in preview:
+
+                    hora_inicio = datetime.strptime(d['inicio'], '%H:%M').time()
+                    hora_fin = datetime.strptime(d['fin'], '%H:%M').time()
+
+                    conflicto = AgendaMedico.objects.filter(
+                        fecha=d['fecha'],
+                        consultorio=c,
+                        hora_inicio__lt=hora_fin,
+                        hora_fin__gt=hora_inicio
+                    ).exists()
+
+                    if conflicto:
+                        ocupado = True
+                        break
+
+                if not ocupado:
+                    consultorios_disponibles.append(c)
+
+            # 🔔 AVISO
+            if pisando_agenda:
+                messages.warning(
+                    request,
+                    "⚠️ Esta agenda pisa horarios existentes. Confirmá para continuar."
+                )
+
+        else:
+            print("ERRORES PREVIEW:", form.errors)
+
+    else:
+        form = ConfiguracionAgendaForm(initial={'medico': medico})
+        form.fields['medico'].queryset = medicos
+
+    conflictos_fechas = [c['fecha'] for c in conflictos]
+
+    return render(request, 'turnos/agenda_rapida.html', {
+        'form': form,
+        'preview': preview,
+        'medicos': medicos,
+        'medico': medico,
+        'pisando_agenda': pisando_agenda,
+        'conflictos': conflictos,
+        'conflictos_fechas': conflictos_fechas,
+        'consultorios_disponibles': consultorios_disponibles
+    })
 
 @login_required
 def lista_excepciones(request):
@@ -860,6 +1112,62 @@ def lista_excepciones(request):
         'fecha': fecha
     })
 
+
+
+@login_required
+def excepciones_detalle(request):
+
+    medico_id = request.GET.get('medico_id')
+    fecha = request.GET.get('fecha')
+
+    if not medico_id or not fecha:
+        return redirect('turnos:agenda_rapida')
+
+    medico = get_object_or_404(Medico, id=medico_id)
+
+    # 🔵 TURNOS CANCELADOS
+    turnos = Turnos.objects.filter(
+        medico=medico,
+        fecha=fecha,
+        estado='CANCELADO'
+    ).select_related('paciente')
+
+    # 🟡 SOBRETURNOS (ya eliminados → si querés historial después lo vemos)
+    sobreturnos = Sobreturno.objects.filter(
+        medico=medico,
+        fecha=fecha
+    ).select_related('paciente')
+
+    pacientes_afectados = []
+
+    # 🔵 TURNOS
+    for t in turnos:
+        pacientes_afectados.append({
+            'nombre': f"{t.paciente.nombre} {t.paciente.apellido}",
+            'telefono': t.paciente.telefono,
+            'email': t.paciente.email,
+            'tipo': 'Turno',
+            'hora': t.hora
+        })
+
+    # 🟡 SOBRETURNOS
+    for s in sobreturnos:
+        pacientes_afectados.append({
+            'nombre': f"{s.paciente.nombre} {s.paciente.apellido}",
+            'telefono': s.paciente.telefono,
+            'email': s.paciente.email,
+            'tipo': 'Sobreturno',
+            'hora': s.hora
+        })
+
+    # 🔥 ORDENAR
+    pacientes_afectados = sorted(pacientes_afectados, key=lambda x: x['hora'])
+
+    return render(request, 'turnos/excepciones_detalle.html', {
+        'medico': medico,
+        'fecha': fecha,
+        'pacientes': pacientes_afectados
+    })
     
 @login_required
 def ver_disponibilidad_consulta(request):
@@ -1036,57 +1344,219 @@ def eliminar_sobreturno(request, sobreturno_id):
     return redirect('turnos:ver_disponibilidad')
 
 
-@login_required
-def excepciones_detalle(request):
+def generar_huecos_consultorio(agendas, turnos):
 
-    medico_id = request.GET.get('medico_id')
-    fecha = request.GET.get('fecha')
+    huecos = []
 
-    if not medico_id or not fecha:
-        return redirect('turnos:agenda_rapida')
+    # 🔥 rango total del consultorio
+    inicio = min(a.hora_inicio for a in agendas)
+    fin = max(a.hora_fin for a in agendas)
 
-    medico = get_object_or_404(Medico, id=medico_id)
+    # 🔴 BLOQUES OCUPADOS (AGENDAS + TURNOS)
+    ocupados = []
 
-    # 🔵 TURNOS CANCELADOS
-    turnos = Turnos.objects.filter(
-        medico=medico,
-        fecha=fecha,
-        estado='CANCELADO'
-    ).select_related('paciente')
+    # 🔵 agendas ocupan SIEMPRE el consultorio
+    for a in agendas:
+        ocupados.append((a.hora_inicio, a.hora_fin))
 
-    # 🟡 SOBRETURNOS (ya eliminados → si querés historial después lo vemos)
-    sobreturnos = Sobreturno.objects.filter(
-        medico=medico,
-        fecha=fecha
-    ).select_related('paciente')
-
-    pacientes_afectados = []
-
-    # 🔵 TURNOS
+    # 🔴 turnos (opcional, pero ya están dentro de agenda)
     for t in turnos:
-        pacientes_afectados.append({
-            'nombre': f"{t.paciente.nombre} {t.paciente.apellido}",
-            'telefono': t.paciente.telefono,
-            'email': t.paciente.email,
-            'tipo': 'Turno',
-            'hora': t.hora
+        duracion = 40 if t.es_sobreturno else 20
+        fin_turno = (
+            datetime.combine(date.today(), t.hora) + timedelta(minutes=duracion)
+        ).time()
+
+        ocupados.append((t.hora, fin_turno))
+
+    # 🔥 ordenar bloques ocupados
+    ocupados.sort()
+
+    actual = inicio
+
+    for inicio_oc, fin_oc in ocupados:
+
+        if inicio_oc > actual:
+            huecos.append({
+                'inicio': actual,
+                'fin': inicio_oc
+            })
+
+        actual = max(actual, fin_oc)
+
+    if actual < fin:
+        huecos.append({
+            'inicio': actual,
+            'fin': fin
         })
 
-    # 🟡 SOBRETURNOS
-    for s in sobreturnos:
-        pacientes_afectados.append({
-            'nombre': f"{s.paciente.nombre} {s.paciente.apellido}",
-            'telefono': s.paciente.telefono,
-            'email': s.paciente.email,
-            'tipo': 'Sobreturno',
-            'hora': s.hora
-        })
+    return huecos
 
-    # 🔥 ORDENAR
-    pacientes_afectados = sorted(pacientes_afectados, key=lambda x: x['hora'])
+@login_required
+def tablero_consultorios(request):
 
-    return render(request, 'turnos/excepciones_detalle.html', {
-        'medico': medico,
-        'fecha': fecha,
-        'pacientes': pacientes_afectados
+    fecha_str = request.GET.get('fecha')
+
+    if fecha_str:
+        fecha_base = datetime.strptime(fecha_str, '%Y-%m-%d').date()
+    else:
+        fecha_base = date.today()
+
+    # 🔥 rango de días
+    dias = [fecha_base + timedelta(days=i) for i in range(10)]
+
+    consultorios = Consultorio.objects.all()
+
+    tablero = []
+
+    for c in consultorios:
+
+        fila = {
+            'consultorio': c,
+            'dias': []
+        }
+
+        for dia in dias:
+
+            agendas = AgendaMedico.objects.filter(
+                consultorio=c,
+                fecha=dia
+            ).select_related('medico')
+
+            bloques = []
+            medicos = []
+            huecos_total = []
+
+            if agendas.exists():
+
+                for agenda in agendas:
+
+                    # 🔵 MÉDICO + HORARIO
+                    medicos.append({
+                        'nombre': agenda.medico.nombre,
+                        'apellido': agenda.medico.apellido,
+                        'hora_inicio': agenda.hora_inicio,
+                        'hora_fin': agenda.hora_fin,
+                    })
+
+                    # 🔴 TURNOS EN SU RANGO
+                    turnos = Turnos.objects.filter(
+                        medico=agenda.medico,
+                        fecha=dia,
+                        hora__gte=agenda.hora_inicio,
+                        hora__lte=agenda.hora_fin
+                    ).order_by('hora')
+
+                    # 🔥 GENERAR HUECOS
+                    # 🔥 HUECOS GLOBALES
+                    huecos_total = generar_huecos_consultorio(agendas, list(turnos))
+                    
+
+                    # 🔴 BLOQUES OCUPADOS
+                    for t in turnos:
+                        bloques.append({
+                            'hora': t.hora,
+                            'paciente': t.paciente,
+                            'medico': t.medico
+                        })
+
+                estado = 'ocupado' if bloques else 'libre'
+
+            else:
+                estado = 'sin_agenda'
+
+            fila['dias'].append({
+                'estado': estado,
+                'bloques': bloques,
+                'medicos': medicos,
+                'huecos': huecos_total  # 🔥 NUEVO
+            })
+
+        tablero.append(fila)
+
+    return render(request, 'turnos/tablero_consultorios.html', {
+        'tablero': tablero,
+        'dias': dias,
+        'fecha': fecha_base
+    })
+    
+
+@login_required
+def consultar_consultorios_disponibles(request):
+
+    fecha = request.GET.get('fecha')
+    hora_inicio = request.GET.get('hora_inicio')
+    hora_fin = request.GET.get('hora_fin')
+    medico_id = request.GET.get('medico_id')
+
+    # 🔴 VALIDACIÓN
+    if not (fecha and hora_inicio and hora_fin):
+        return JsonResponse({'consultorios': []})
+
+    try:
+        fecha = datetime.strptime(fecha, '%Y-%m-%d').date()
+        hora_inicio = datetime.strptime(hora_inicio, '%H:%M').time()
+        hora_fin = datetime.strptime(hora_fin, '%H:%M').time()
+    except ValueError:
+        return JsonResponse({'consultorios': []})
+
+    consultorios = Consultorio.objects.all()
+    disponibles = []
+
+    for c in consultorios:
+
+        # 🔵 1. CONFLICTO CON AGENDA
+        conflicto_agenda = AgendaMedico.objects.filter(
+            fecha=fecha,
+            consultorio=c,
+            hora_inicio__lt=hora_fin,
+            hora_fin__gt=hora_inicio
+        )
+
+        # 🔥 EXCLUIR EL MISMO MÉDICO (permite editar su agenda)
+        if medico_id:
+            conflicto_agenda = conflicto_agenda.exclude(medico_id=medico_id)
+
+        # 🔵 2. MÉDICOS QUE USAN ESE CONSULTORIO ESE DÍA
+        medicos_en_consultorio = AgendaMedico.objects.filter(
+            fecha=fecha,
+            consultorio=c
+        ).values_list('medico_id', flat=True)
+
+        # 🔵 3. CONFLICTO CON TURNOS
+        conflicto_turnos = Turnos.objects.filter(
+            fecha=fecha,
+            medico_id__in=medicos_en_consultorio,
+            hora__gte=hora_inicio,
+            hora__lt=hora_fin,
+            estado='PENDIENTE'
+        )
+
+        # 🔵 4. CONFLICTO CON SOBRETURNOS (IMPORTANTE 🔥)
+        conflicto_sobreturnos = Sobreturno.objects.filter(
+            fecha=fecha,
+            medico_id__in=medicos_en_consultorio,
+            hora__gte=hora_inicio,
+            hora__lt=hora_fin
+        ).exclude(estado='CANCELADO')
+
+        # 🔵 5. SI NO HAY CONFLICTOS → DISPONIBLE
+        if not conflicto_agenda.exists() and not conflicto_turnos.exists() and not conflicto_sobreturnos.exists():
+            disponibles.append({
+                'id': c.id,
+                'numero': c.numero
+            })
+
+    return JsonResponse({'consultorios': disponibles})
+
+def validar_agenda(request):
+    fecha = request.GET.get('fecha')
+    medico_id = request.GET.get('medico_id')
+
+    existe = AgendaMedico.objects.filter(
+        medico_id=medico_id,
+        fecha=fecha
+    ).exists()
+
+    return JsonResponse({
+        'existe': existe
     })

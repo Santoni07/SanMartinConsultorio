@@ -3,8 +3,6 @@
 {% block content %}
 <div class="container mt-4">
 
-
-
 <h2>Agenda mensual</h2>
 
 <!-- 🔵 SELECT MÉDICO -->
@@ -19,6 +17,7 @@
         {% endfor %}
     </select>
 </form>
+
 {% if medico %}
 <div class="mb-3 text-end">
     <a href="{% url 'turnos:crear_excepcion' %}?medico_id={{ medico.id }}" 
@@ -27,6 +26,7 @@
     </a>
 </div>
 {% endif %}
+
 <!-- 🔵 FORM -->
 {% if medico %}
 
@@ -117,11 +117,11 @@
     </tbody>
 </table>
 
-<!-- 🔴 BOTÓN -->
+<!-- 🔴 SI HAY CONFLICTOS -->
 {% if pisando_agenda %}
-    <div class="d-flex gap-2">
 
-    <!-- 🔴 SOBRESCRIBIR -->
+<div class="d-flex gap-2">
+
     <button type="button" 
             class="btn btn-danger flex-fill"
             data-bs-toggle="modal" 
@@ -129,14 +129,18 @@
         ⚠️ Sobrescribir Agenda
     </button>
 
-    <!-- ⚪ CANCELAR -->
     <a href="{% url 'turnos:agenda_rapida' %}" 
        class="btn btn-secondary flex-fill">
         Cancelar
     </a>
 
 </div>
+
 {% else %}
+
+    <!-- 🔥 CONSULTORIOS DISPONIBLES -->
+    {% if consultorios_disponibles %}
+
     <form method="POST">
         {% csrf_token %}
         <input type="hidden" name="confirmar" value="1">
@@ -145,10 +149,32 @@
             <input type="hidden" name="{{ field.name }}" value="{{ field.value }}">
         {% endfor %}
 
+        <div class="mb-3">
+            <label class="fw-bold">Seleccionar Consultorio</label>
+
+            <select name="consultorio" class="form-control">
+                <option value="">-- Seleccionar --</option>
+                {% for c in consultorios_disponibles %}
+                    <option value="{{ c.id }}">
+                        Consultorio {{ c.numero }}
+                    </option>
+                {% endfor %}
+            </select>
+        </div>
+
         <button class="btn btn-success w-100">
             Confirmar y Guardar Agenda
         </button>
     </form>
+
+    {% else %}
+
+        <div class="alert alert-danger mt-3">
+            ❌ No hay consultorios disponibles para ese rango de fechas y horarios.
+        </div>
+
+    {% endif %}
+
 {% endif %}
 
 </div>

@@ -49,7 +49,7 @@ class ExcepcionAgendaAdmin(admin.ModelAdmin):
 # turnos/admin.py
 
 from django.contrib import admin
-from .models import DisponibilidadMedico, AgendaMedico, Sobreturno
+from .models import DisponibilidadMedico, AgendaMedico, Sobreturno, Consultorio
 
 
 # ===============================
@@ -121,3 +121,9 @@ class SobreturnoAdmin(admin.ModelAdmin):
     list_display = ('medico', 'paciente', 'fecha', 'hora', 'estado')
     list_filter = ('medico', 'fecha', 'estado')
     search_fields = ('paciente__nombre', 'medico__nombre')
+    
+    
+@admin.register(Consultorio)
+class ConsultorioAdmin(admin.ModelAdmin):
+    list_display = ('numero',)
+    search_fields = ('numero',)

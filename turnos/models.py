@@ -3,6 +3,14 @@ from especialidades.models import Especialidades
 from medicos.models import Medico
 from paciente.models import Paciente
 
+
+class Consultorio(models.Model):
+    numero = models.IntegerField(unique=True)
+
+    def __str__(self):
+        return f"Consultorio {self.numero}"
+    
+    
 class Turnos(models.Model):
 
     ESTADOS = [
@@ -56,10 +64,10 @@ class AgendaMedico(models.Model):
 
     medico = models.ForeignKey('medicos.Medico', on_delete=models.CASCADE)
     fecha = models.DateField()
-
+    consultorio = models.ForeignKey(Consultorio, on_delete=models.PROTECT, null=True, blank=True)
     hora_inicio = models.TimeField()
     hora_fin = models.TimeField()
-
+    
     duracion_turno = models.IntegerField(default=20)
 
     def __str__(self):
@@ -107,3 +115,5 @@ class Sobreturno(models.Model):
 
     def __str__(self):
         return f"Sobreturno - {self.medico} - {self.fecha} {self.hora}"
+    
+    

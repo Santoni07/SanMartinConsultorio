@@ -1,96 +1,103 @@
 {% extends 'core/base.html' %}
 
 {% block content %}
+
 <div class="container mt-4">
+
     {% if messages %}
-  {% for message in messages %}
-    <div class="alert alert-{{ message.tags }} alert-dismissible fade show mt-3" role="alert">
-      {{ message }}
-      <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-    </div>
-  {% endfor %}
-{% endif %}
-
-<div class="d-flex justify-content-between align-items-center mb-3">
-    <h2>Excepción de Agenda</h2>
-
-    <a href="{% url 'turnos:agenda_rapida' %}" class="btn btn-secondary">
-        ← Volver
-    </a>
-</div>
-
-<form method="POST" class="card p-4 shadow">
-{% csrf_token %}
-
-<!-- 🔵 MÉDICO -->
-<div class="mb-3">
-    <label class="fw-bold">Médico</label>
-    <select name="medico_id" class="form-control" onchange="this.form.submit()">
-        <option value="">-- Seleccionar --</option>
-        {% for m in medicos %}
-            <option value="{{ m.id }}" {% if medico and medico.id == m.id %}selected{% endif %}>
-                {{ m.nombre }} {{ m.apellido }}
-            </option>
+        {% for message in messages %}
+            <div class="alert alert-{{ message.tags }} alert-dismissible fade show mt-3" role="alert">
+                {{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
         {% endfor %}
-    </select>
-</div>
+    {% endif %}
 
-{% if medico %}
-
-<!-- 🔵 FECHA -->
-<div class="mb-3">
-    <label class="fw-bold">Fecha</label>
-    {{ form.fecha }}
-</div>
-
-<!-- 🔵 TIPO -->
-<div class="mb-3">
-    <label class="fw-bold">Tipo</label>
-    {{ form.tipo }}
-</div>
-
-<!-- 🔵 HORARIOS -->
-<div id="bloque_horario" class="row d-none">
-    <div class="col-md-6 mb-3">
-        <label class="fw-bold">Hora inicio</label>
-        {{ form.hora_inicio }}
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h2>Excepción de Agenda</h2>
+        <a href="{% url 'turnos:agenda_rapida' %}" class="btn btn-secondary">
+            ← Volver
+        </a>
     </div>
 
-    <div class="col-md-6 mb-3">
-        <label class="fw-bold">Hora fin</label>
-        {{ form.hora_fin }}
-    </div>
-</div>
+    <form method="POST" class="card p-4 shadow">
+        {% csrf_token %}
 
-<!-- 🔵 NUEVA FECHA -->
-<div id="bloque_fecha" class="mb-3 d-none">
-    <label class="fw-bold">Nueva fecha</label>
-    {{ form.nueva_fecha }}
-</div>
+        <!-- 🔵 MÉDICO -->
+        <div class="mb-3">
+            <label class="fw-bold">Médico</label>
+            <select name="medico_id" class="form-control" onchange="this.form.submit()">
+                <option value="">-- Seleccionar --</option>
+                {% for m in medicos %}
+                    <option value="{{ m.id }}" {% if medico and medico.id == m.id %}selected{% endif %}>
+                        {{ m.nombre }} {{ m.apellido }}
+                    </option>
+                {% endfor %}
+            </select>
+        </div>
 
-<!-- 🔵 MOTIVO -->
-<div id="bloque_motivo" class="mb-3 d-none">
-    <label class="fw-bold">Motivo</label>
-    {{ form.motivo }}
-</div>
+        {% if medico %}
 
-<!-- 🔵 BOTONES -->
-<div class="d-flex flex-column flex-md-row gap-2 mt-3">
+            <!-- 🔵 FECHA -->
+            <div class="mb-3">
+                <label class="fw-bold">Fecha</label>
+                {{ form.fecha }}
+            </div>
 
-    <button class="btn btn-primary flex-fill">
-        Guardar Excepción
-    </button>
+            <!-- 🔵 TIPO -->
+            <div class="mb-3">
+                <label class="fw-bold">Tipo</label>
+                {{ form.tipo }}
+            </div>
 
-    <a href="{% url 'turnos:agenda_rapida' %}?medico_id={{ medico.id }}" 
-       class="btn btn-secondary flex-fill">
-        Cancelar
-    </a>
+            <!-- 🔵 HORARIOS -->
+            <div id="bloque_horario" class="row d-none">
+                <div class="col-md-6 mb-3">
+                    <label class="fw-bold">Hora inicio</label>
+                    {{ form.hora_inicio }}
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label class="fw-bold">Hora fin</label>
+                    {{ form.hora_fin }}
+                </div>
+            </div>
 
-</div>
+            <!-- 🔵 NUEVA FECHA -->
+            <div id="bloque_fecha" class="mb-3 d-none">
+                <label class="fw-bold">Nueva fecha</label>
+                {{ form.nueva_fecha }}
+            </div>
+            <!-- 🔵 CONSULTORIOS DISPONIBLES -->
+            <div id="bloque_consultorios" class="mb-3 d-none">
+                <label class="fw-bold">Consultorios disponibles</label>
 
-{% endif %}
+                <select id="consultorio_select" name="consultorio" class="form-control">
+                    <option value="">-- Seleccionar consultorio --</option>
+                </select>
+            </div>
 
-</form>
+
+            <!-- 🔵 MOTIVO -->
+            <div id="bloque_motivo" class="mb-3 d-none">
+                <label class="fw-bold">Motivo</label>
+                {{ form.motivo }}
+            </div>
+
+            <!-- 🔵 BOTONES -->
+            <div class="d-flex flex-column flex-md-row gap-2 mt-3">
+                <button class="btn btn-primary flex-fill">
+                    Guardar Excepción
+                </button>
+
+                <a href="{% url 'turnos:agenda_rapida' %}?medico_id={{ medico.id }}" 
+                   class="btn btn-secondary flex-fill">
+                    Cancelar
+                </a>
+            </div>
+
+        {% endif %}
+
+    </form>
 
 </div>
 
@@ -99,19 +106,26 @@
 document.addEventListener('DOMContentLoaded', function() {
 
     const tipo = document.getElementById('tipo');
+    const fecha = document.querySelector("[name='fecha']");
+    const nuevaFecha = document.getElementById('nueva_fecha');
+    const horaInicio = document.getElementById('hora_inicio');
+    const horaFin = document.getElementById('hora_fin');
+    const medico = document.querySelector("[name='medico_id']");
 
     const bloqueHorario = document.getElementById('bloque_horario');
     const bloqueFecha = document.getElementById('bloque_fecha');
     const bloqueMotivo = document.getElementById('bloque_motivo');
+    const bloqueConsultorios = document.getElementById('bloque_consultorios');
+    const selectConsultorio = document.getElementById('consultorio_select');
 
     function actualizarCampos() {
 
-        // ocultar todo
+        if (!tipo) return;
+
         bloqueHorario.classList.add('d-none');
         bloqueFecha.classList.add('d-none');
         bloqueMotivo.classList.add('d-none');
-
-        if (!tipo) return;
+        bloqueConsultorios.classList.add('d-none');
 
         if (tipo.value === 'MODIFICADO') {
             bloqueHorario.classList.remove('d-none');
@@ -125,12 +139,70 @@ document.addEventListener('DOMContentLoaded', function() {
             bloqueFecha.classList.remove('d-none');
             bloqueHorario.classList.remove('d-none');
         }
+
+        // 🔥 cada vez que cambia el tipo → recalcular
+        buscarConsultorios();
     }
 
-    if (tipo) {
-        tipo.addEventListener('change', actualizarCampos);
-        actualizarCampos(); // ejecutar al cargar
+    function buscarConsultorios() {
+
+        // 🔴 validaciones fuertes
+        if (!tipo || !horaInicio || !horaFin || !medico) return;
+
+        if (tipo.value !== 'MODIFICADO' && tipo.value !== 'REPROGRAMAR') return;
+
+        let fechaFinal = fecha?.value;
+
+        if (tipo.value === 'REPROGRAMAR') {
+            if (!nuevaFecha || !nuevaFecha.value) return;
+            fechaFinal = nuevaFecha.value;
+        }
+
+        if (!fechaFinal || !horaInicio.value || !horaFin.value || !medico.value) return;
+
+        console.log("Buscando consultorios...");
+
+        fetch(`/turnos/consultar-consultorios-disponibles/?fecha=${fechaFinal}&hora_inicio=${horaInicio.value}&hora_fin=${horaFin.value}&medico_id=${medico.value}`)
+        .then(res => res.json())
+        .then(data => {
+
+            console.log("Respuesta:", data);
+
+            selectConsultorio.innerHTML = '<option value="">-- Seleccionar consultorio --</option>';
+
+            if (!data.consultorios || data.consultorios.length === 0) {
+
+                selectConsultorio.innerHTML = '<option value="">No hay disponibles</option>';
+
+            } else {
+
+                data.consultorios.forEach(c => {
+                    let option = document.createElement('option');
+                    option.value = c.id;
+                    option.textContent = `Consultorio ${c.numero}`;
+                    selectConsultorio.appendChild(option);
+                });
+
+            }
+
+            bloqueConsultorios.classList.remove('d-none');
+        })
+        .catch(error => {
+            console.error("Error:", error);
+        });
     }
+
+    // 🔥 EVENTOS
+    if (tipo) tipo.addEventListener('change', actualizarCampos);
+
+    if (horaInicio) horaInicio.addEventListener('change', buscarConsultorios);
+    if (horaFin) horaFin.addEventListener('change', buscarConsultorios);
+    if (nuevaFecha) nuevaFecha.addEventListener('change', buscarConsultorios);
+    if (fecha) fecha.addEventListener('change', buscarConsultorios);
+
+    // 🔥 inicializar todo al cargar
+    actualizarCampos();
+    buscarConsultorios();
 
 });
 </script>

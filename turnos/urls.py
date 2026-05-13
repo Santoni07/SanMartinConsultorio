@@ -19,11 +19,18 @@ urlpatterns = [
     ),
     path('agenda-rapida/', views.agenda_rapida, name='agenda_rapida'),
     path('cargar-agenda-medico/', views.cargar_agenda_medico, name='cargar_agenda_medico'),
+    path('validar-agenda/', views.validar_agenda, name='validar_agenda'),
     path('agenda-mensual/', views.agenda_mensual_medico, name='agenda_mensual_medico'),
     path('seleccionar-medico-consulta/', views.seleccionar_medico_consulta, name='seleccionar_medico_consulta'),
     path('excepcion/', views.crear_excepcion, name='crear_excepcion'),
     path('excepciones/', views.lista_excepciones, name='lista_excepciones'),
     path('excepciones-detalle/', views.excepciones_detalle, name='excepciones_detalle'),
     path('disponibilidad-consulta/', views.ver_disponibilidad_consulta, name='disponibilidad_consulta'),
+    path('tablero-consultorios/', views.tablero_consultorios, name='tablero_consultorios'),
+    path(
+    'consultar-consultorios-disponibles/',
+    views.consultar_consultorios_disponibles,
+    name='consultar_consultorios'
+),
     path("mis-turnos-medico/", views.mis_turnos_medico, name="mis_turnos_medico"),
 ]
