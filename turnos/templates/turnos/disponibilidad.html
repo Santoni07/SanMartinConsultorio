@@ -70,18 +70,24 @@
         <td>
 
           {% for turno in turnos %}
-  {% if turno.hora == hora and turno.estado != 'CANCELADO' %}
+ {% if turno.hora == hora %}
 
     <div class="mb-2 p-1 rounded"
          style="background-color:
          {% if turno.estado == 'libre' %}
             #d4edda
+
          {% elif turno.estado == 'sobreturno' %}
             #fff3cd
+
          {% elif turno.estado == 'ATENDIDO' %}
             #cfe2ff
-         {% else %}
+
+         {% elif turno.estado == 'CANCELADO' %}
             #f8d7da
+
+         {% else %}
+            #ffffff
          {% endif %};">
 
       {% if turno.estado == 'libre' %}
@@ -111,15 +117,18 @@
       {% elif turno.estado == 'PENDIENTE' %}
 
         <strong>{{ turno.paciente }}</strong><br>
-        <span class="text-danger">{{ turno.observaciones }}</span><br>
+
+        <span class="text-danger">
+          {{ turno.observaciones }}
+        </span><br>
 
         {% if turno.tipo == 'sobreturno' %}
+
           <span class="badge bg-warning text-dark mb-1">
             ⚡ Sobreturno
           </span><br>
 
-          <!-- 🔥 ELIMINAR SOBRETURNO -->
-           <a href="{% url 'turnos:eliminar_sobreturno' turno.sobreturno_id %}"
+          <a href="{% url 'turnos:eliminar_sobreturno' turno.sobreturno_id %}"
              class="btn btn-danger btn-sm mt-1"
              onclick="return confirm('¿Eliminar sobreturno?');">
              X
@@ -127,7 +136,6 @@
 
         {% else %}
 
-          <!-- 🔵 ELIMINAR TURNO NORMAL -->
           <a href="{% url 'turnos:eliminar_turno' turno.turno_id %}"
              class="btn btn-danger btn-sm mt-1"
              onclick="return confirm('¿Eliminar turno?');">
@@ -139,14 +147,32 @@
       {% elif turno.estado == 'ATENDIDO' %}
 
         <strong>{{ turno.paciente }}</strong><br>
-        <span class="text-danger">{{ turno.observaciones }}</span><br>
-        <span class="badge bg-primary mt-1">Atendido</span>
+
+        <span class="text-danger">
+          {{ turno.observaciones }}
+        </span><br>
+
+        <span class="badge bg-primary mt-1">
+          Atendido
+        </span>
+
+      {% elif turno.estado == 'CANCELADO' %}
+
+        <strong>{{ turno.paciente }}</strong><br>
+
+        <span class="text-danger">
+          {{ turno.observaciones }}
+        </span><br>
+
+        <span class="badge bg-danger mt-1">
+          Cancelado
+        </span>
 
       {% endif %}
 
     </div>
 
-  {% endif %}
+{% endif %}
 {% endfor %}
 
         </td>

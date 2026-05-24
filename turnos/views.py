@@ -407,30 +407,58 @@ def eliminar_turno(request, turno_id):
 
 @login_required
 def buscar_turnos_por_dni(request):
+
     dni = request.GET.get('dni')
+
     paciente = None
-    turnos_futuros = None
+    turnos_futuros = []
 
     if dni:
+
         try:
+
             paciente = Paciente.objects.get(dni=dni)
 
             hoy = date.today()
 
-            turnos_futuros = Turnos.objects.filter(
+            # 🔵 TURNOS NORMALES
+            turnos_normales = Turnos.objects.filter(
                 paciente=paciente,
                 fecha__gte=hoy
             ).order_by('fecha', 'hora')
 
+            # 🟡 SOBRETURNOS
+            sobreturnos = Sobreturno.objects.filter(
+                paciente=paciente,
+                fecha__gte=hoy
+            ).order_by('fecha', 'hora')
+
+            # IDENTIFICAR TIPO
+            for turno in turnos_normales:
+                turno.tipo_turno = 'NORMAL'
+
+            for sobreturno in sobreturnos:
+                sobreturno.tipo_turno = 'SOBRETURNO'
+
+            # 🔥 UNIFICAR
+            turnos_futuros = list(turnos_normales) + list(sobreturnos)
+
+            # 🔥 ORDENAR
+            turnos_futuros.sort(
+                key=lambda x: (x.fecha, x.hora)
+            )
+
         except Paciente.DoesNotExist:
-            messages.warning(request, "No se encontró paciente con ese DNI.")
+
+            messages.warning(
+                request,
+                "No se encontró paciente con ese DNI."
+            )
 
     return render(request, 'turnos/buscar_turnos_dni.html', {
         'paciente': paciente,
         'turnos': turnos_futuros
-    })
-    
-    
+    })   
 @login_required
 def mis_turnos_medico(request):
 
@@ -509,10 +537,33 @@ def mis_turnos_medico(request):
     
 @login_required
 def marcar_ausente(request, turno_id):
-    turno = get_object_or_404(Turnos, id=turno_id)
-    turno.estado = 'AUSENTE'
+
+    turno = Turnos.objects.filter(id=turno_id).first()
+    es_sobreturno = False
+
+    if not turno:
+        turno = Sobreturno.objects.filter(id=turno_id).first()
+        es_sobreturno = True
+
+    if not turno:
+        messages.error(request, "El turno no existe.")
+        return redirect('turnos:ver_disponibilidad')
+
+    turno.estado = 'CANCELADO'
     turno.save()
-    return redirect('buscar_paciente_consulta')
+
+    if es_sobreturno:
+        messages.warning(
+            request,
+            "Sobreturno marcado como ausente."
+        )
+    else:
+        messages.warning(
+            request,
+            "Turno marcado como ausente."
+        )
+
+    return redirect('turnos:ver_disponibilidad')
 
 
 def generar_horarios(disponibilidad):

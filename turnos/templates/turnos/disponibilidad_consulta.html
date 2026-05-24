@@ -106,13 +106,32 @@
   </div>
 
   <!-- 🔵 REFERENCIAS -->
-  <div class="mt-4">
+  <!-- 🔵 REFERENCIAS -->
+<div class="mt-4 d-flex flex-wrap gap-2 align-items-center">
 
-    <span class="badge bg-success">Turno Disponible</span>
-    <span class="badge bg-danger">Turno Ocupado</span>
-    <span class="badge bg-warning text-dark">Sobreturno</span>
+    <span class="badge bg-success">
+        Turno Disponible
+    </span>
 
-  </div>
+    <span class="badge bg-danger">
+        Turno Ocupado
+    </span>
+
+    <span class="badge bg-warning text-dark">
+        Sobreturno
+    </span>
+
+    <!-- 🔥 BOTÓN AGENDAR -->
+    <a href="{% url 'turnos:seleccionar_paciente' %}"
+       target="_blank"
+       class="btn btn-primary btn-sm ms-3">
+
+        <i class="bi bi-calendar-plus"></i>
+        Agendar Turno
+
+    </a>
+
+</div>
 
 </div>
 {% endblock %}

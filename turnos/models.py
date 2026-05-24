@@ -17,6 +17,7 @@ class Turnos(models.Model):
         ('PENDIENTE', 'Pendiente'),
         ('ATENDIDO', 'Atendido'),
         ('AUSENTE', 'Ausente'),
+        ('CANCELADO', 'Cancelado'),
     ]
 
     especialidad = models.ForeignKey(Especialidades, on_delete=models.CASCADE)
@@ -98,6 +99,7 @@ class Sobreturno(models.Model):
     ESTADOS = [
         ('PENDIENTE', 'Pendiente'),
         ('ATENDIDO', 'Atendido'),
+         ('AUSENTE', 'Ausente'),
         ('CANCELADO', 'Cancelado'),
     ]
 

@@ -138,9 +138,17 @@
         <div class="card mb-4 shadow border-0 consulta-card">
 
             <div class="card-header consulta-header text-white d-flex justify-content-between align-items-center">
-                <div>
-                    <strong>{{ consulta.fecha }}</strong> — {{ consulta.motivo }}
-                </div>
+                <div class="d-flex align-items-center gap-2">
+
+    <strong>{{ consulta.fecha }}</strong> — {{ consulta.motivo }}
+
+    {% if consulta.sobreturno %}
+        <span class="badge bg-warning text-dark">
+            Sobreturno
+        </span>
+    {% endif %}
+
+</div>
                 <div>
                     <span class="badge bg-light text-dark">
                         Dr/a {{ consulta.medico }}
