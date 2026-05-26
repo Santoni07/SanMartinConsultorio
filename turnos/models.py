@@ -91,7 +91,12 @@ class ExcepcionAgenda(models.Model):
         ('MODIFICADO', 'Modificar horario'),
         ('REPROGRAMAR', 'Cambiar de día'),
     ]
-
+    centro_medico = models.ForeignKey(
+        CentroMedico,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True
+    )
     medico = models.ForeignKey('medicos.Medico', on_delete=models.CASCADE)
     fecha = models.DateField()
 
