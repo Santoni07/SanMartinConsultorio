@@ -232,6 +232,95 @@
 body {
   padding-top: 110px;
 }
+/* ========================= */
+/* 📱 RESPONSIVE MOBILE ONLY */
+/* ========================= */
+@media (max-width: 768px) {
+
+  /* HERO */
+  #hero {
+    text-align: center;
+    padding: 40px 15px;
+  }
+
+  #hero h1 {
+    font-size: 26px;
+  }
+
+  #hero p {
+    font-size: 14px;
+    margin: 0 auto;
+  }
+
+  /* VIDEO SECTION */
+  .video-box {
+    min-height: 250px;
+  }
+
+  .video-bg {
+    object-fit: cover;
+  }
+
+  /* ABOUT TEXT */
+  .icon-boxes {
+    padding: 20px !important;
+    text-align: center;
+  }
+
+  /* ESPECIALIDADES */
+  .especialidades-scroll {
+    height: auto;
+    border-right: none;
+    display: flex;
+    overflow-x: auto;
+    overflow-y: hidden;
+    white-space: nowrap;
+  }
+
+  .especialidades-scroll .nav-item {
+    height: auto;
+    flex: 0 0 auto;
+  }
+
+  .especialidades-scroll .nav-link {
+    padding: 8px 12px;
+    font-size: 14px;
+  }
+
+  /* CONTENIDO ESPECIALIDADES */
+  .details {
+    text-align: center;
+  }
+
+  /* SERVICIOS */
+  .servicio-img {
+    height: 200px;
+  }
+
+  .servicio-card {
+    position: relative;
+    right: auto;
+    bottom: auto;
+    width: 100%;
+    margin-top: 10px;
+  }
+
+  /* DOCTORES */
+  .member {
+    flex-direction: column;
+    text-align: center;
+  }
+
+  .member-info {
+    margin-top: 10px;
+  }
+
+  /* COUNTS */
+  .count-box {
+    text-align: center;
+  }
+
+}
   </style>
 {% endblock %}
  

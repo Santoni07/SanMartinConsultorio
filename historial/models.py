@@ -14,30 +14,73 @@ class HistoriaClinica(models.Model):
         return f"Historia Clínica de {self.paciente}"
 
 class ConsultaMedica(models.Model):
+
     ESTADOS_CONSULTA = [
-    ('BORRADOR', 'Borrador'),
-    ('FINALIZADA', 'Finalizada'),
+        ('BORRADOR', 'Borrador'),
+        ('FINALIZADA', 'Finalizada'),
     ]
+
     estado = models.CharField(
-    max_length=15,
-    choices=ESTADOS_CONSULTA,
-    default='BORRADOR'
+        max_length=15,
+        choices=ESTADOS_CONSULTA,
+        default='BORRADOR'
     )
-    historia_clinica = models.ForeignKey(HistoriaClinica, on_delete=models.CASCADE, related_name='consultas')
-    medico = models.ForeignKey(Medico, on_delete=models.SET_NULL, null=True)
+
+    historia_clinica = models.ForeignKey(
+        HistoriaClinica,
+        on_delete=models.CASCADE,
+        related_name='consultas'
+    )
+
+    medico = models.ForeignKey(
+        Medico,
+        on_delete=models.SET_NULL,
+        null=True
+    )
+
     fecha = models.DateField()
+
     motivo = models.CharField(max_length=255)
-    examen_fisico = models.TextField(blank=True, null=True) 
+
+    examen_fisico = models.TextField(
+        blank=True,
+        null=True
+    )
+
     diagnostico = models.TextField()
+
     tratamiento = models.TextField()
-    observaciones = models.TextField(blank=True, null=True)
+
+    observaciones = models.TextField(
+        blank=True,
+        null=True
+    )
+
     turno = models.OneToOneField(
-    Turnos,
-    on_delete=models.SET_NULL,
-    null=True,
-    blank=True,
-    related_name='consulta'
-)
+        Turnos,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='consulta'
+    )
+
+    # NUEVO
+    sobreturno = models.OneToOneField(
+        'turnos.Sobreturno',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='consulta'
+    )
 
     def __str__(self):
-        return f"Consulta de {self.historia_clinica.paciente} el {self.fecha}"
+
+        paciente = self.historia_clinica.paciente
+
+        if self.turno:
+            return f"Consulta Turno - {paciente} - {self.fecha}"
+
+        if self.sobreturno:
+            return f"Consulta Sobreturno - {paciente} - {self.fecha}"
+
+        return f"Consulta de {paciente} el {self.fecha}"

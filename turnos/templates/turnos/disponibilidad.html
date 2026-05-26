@@ -1,118 +1,517 @@
 {% extends 'core/base.html' %}
+{% block extra_css %}
+
+<style>
+
+    /* 🔵 MOBILE FIRST */
+    .tabla-turnos {
+        min-width: 1100px;
+    }
+
+    .contenedor-tabla {
+        overflow-x: auto;
+        overflow-y: auto;
+        max-height: 75vh;
+        border-radius: 10px;
+    }
+
+    .sticky-hora {
+        position: sticky;
+        left: 0;
+        background: white;
+        z-index: 20;
+        min-width: 80px;
+        font-weight: bold;
+    }
+
+    .sticky-header {
+        position: sticky;
+        top: 0;
+        background: white;
+        z-index: 25;
+    }
+
+    .card-turno {
+        min-width: 130px;
+        font-size: 13px;
+    }
+
+    .acciones-superiores {
+        gap: 10px;
+        flex-wrap: wrap;
+    }
+
+    .acciones-superiores .btn {
+        width: 100%;
+    }
+
+    /* 🔵 MOBILE */
+    @media (max-width: 768px) {
+
+        h2 {
+            font-size: 1.4rem;
+            text-align: center;
+        }
+
+        .container {
+            padding-left: 10px;
+            padding-right: 10px;
+        }
+
+        .acciones-superiores {
+            flex-direction: column;
+            align-items: stretch !important;
+        }
+
+        .acciones-superiores > div {
+            width: 100%;
+        }
+
+        .acciones-superiores .btn {
+            width: 100%;
+            margin-bottom: 5px;
+        }
+
+        .tabla-turnos {
+            font-size: 12px;
+        }
+
+        .tabla-turnos th,
+        .tabla-turnos td {
+            padding: 4px;
+            vertical-align: top;
+        }
+
+        .card-turno {
+            min-width: 110px;
+            font-size: 11px;
+        }
+
+        .form-control-sm {
+            font-size: 11px;
+            padding: 3px 5px;
+        }
+
+        .btn-sm {
+            font-size: 11px;
+            padding: 4px;
+        }
+
+        .modal-dialog {
+            margin: 10px;
+        }
+
+    }
+
+    /* 🔵 TABLET */
+    @media (min-width: 769px) and (max-width: 1024px) {
+
+        .tabla-turnos {
+            font-size: 13px;
+        }
+
+        .card-turno {
+            min-width: 120px;
+        }
+
+    }
+
+</style>
+
+{% endblock %}
 
 {% block content %}
+
 <div class="container mt-4">
-  <h2>Disponibilidad de {{ medico }}</h2>
 
-  {% if messages %}
-    {% for message in messages %}
-      <div class="alert alert-{{ message.tags }}">{{ message }}</div>
-    {% endfor %}
-  {% endif %}
+    <br>
 
-  <div class="d-flex justify-content-between align-items-center mt-3">
-  <!-- Botón para volver a seleccionar médico -->
-  <a href="{% url 'turnos:seleccionar_medico' %}" class="btn btn-secondary">
-    ← Volver a seleccionar médico
-  </a>
-  {% if request.user.is_staff or request.user.is_superuser %}
-      <a href="{% url 'core:IndexAdmin' %}" class="btn btn-primary btn-lg">
-        <i class="bi bi-arrow-left-circle"></i> Volver 
-      </a>
+    <h2 class="fw-bold">
+        Disponibilidad de {{ medico }}
+    </h2>
 
-  {% elif request.user.is_authenticated and request.user.medico %}
-      <a href="{% url 'core:medico' %}" class="btn btn-primary btn-lg">
-        <i class="bi bi-arrow-left-circle"></i> Volver 
-      </a>
+    <!-- 🔵 BOTONES SUPERIORES -->
+    <div class="d-flex justify-content-between align-items-center mt-3 acciones-superiores">
 
-  {% else %}
-      <a href="{% url 'home' %}" class="btn btn-secondary btn-lg">
-        <i class="bi bi-arrow-left-circle"></i> Volver 
-      </a>
-  {% endif %}
+        <div>
+            <a href="{% url 'turnos:seleccionar_medico' %}" class="btn btn-secondary">
+                ← Volver a seleccionar médico
+            </a>
+        </div>
 
+        <div>
+            <a href="#sobreturnos" class="btn btn-warning">
+                Ir a Sobreturnos
+            </a>
+        </div>
 
+        <div>
+            {% if request.user.is_staff or request.user.is_superuser %}
+                <a href="{% url 'core:IndexAdmin' %}" class="btn btn-primary">
+                    Volver
+                </a>
 
-  <!-- Botones de navegación de días -->
-  <div class="d-flex gap-2">
-    {% if offset > 0 %}
-      <a href="?offset={{ offset|add:"-6" }}" class="btn btn-outline-primary">← Días anteriores</a>
-    {% endif %}
-    <a href="?offset={{ offset|add:"6" }}" class="btn btn-outline-primary">Días siguientes →</a>
-  </div>
+            {% elif request.user.is_authenticated and request.user.medico %}
+                <a href="{% url 'core:medico' %}" class="btn btn-primary">
+                    Volver
+                </a>
+
+            {% else %}
+                <a href="{% url 'home' %}" class="btn btn-secondary">
+                    Volver
+                </a>
+            {% endif %}
+        </div>
+
+        <div class="d-flex gap-2 flex-wrap">
+
+            {% if offset > 0 %}
+                <a href="?offset={{ offset|add:'-6' }}"
+                   class="btn btn-outline-primary">
+                    ← Días anteriores
+                </a>
+            {% endif %}
+
+            <a href="?offset={{ offset|add:'6' }}"
+               class="btn btn-outline-primary">
+                Días siguientes →
+            </a>
+
+        </div>
+
+    </div>
+
+    <br>
+
+    <!-- 🔵 TABLA -->
+    <div class="contenedor-tabla">
+
+        <table class="table table-bordered text-center mt-3 tabla-turnos">
+
+            <thead>
+
+                <tr>
+
+                    <!-- 🔵 HORA -->
+                    <th class="sticky-header sticky-hora">
+                        Hora
+                    </th>
+
+                    {% for dia, _ in disponibilidad.items %}
+
+                        <th class="sticky-header">
+
+                            <a href="{% url 'turnos:excepciones_detalle' %}?medico_id={{ medico.id }}&fecha={{ dia|date:'Y-m-d' }}"
+                               class="text-decoration-none text-primary fw-bold">
+
+                                {{ dia|date:"D d/m" }}
+
+                            </a>
+
+                        </th>
+
+                    {% endfor %}
+
+                </tr>
+
+            </thead>
+
+            <tbody>
+
+                {% for hora in horarios %}
+
+                <tr>
+
+                    <td class="sticky-hora">
+                        {{ hora|time:"H:i" }}
+                    </td>
+
+                    {% for dia, turnos in disponibilidad.items %}
+
+                    <td>
+
+                        {% for turno in turnos %}
+
+                        {% if turno.hora == hora %}
+
+                        <div class="mb-2 p-1 rounded card-turno"
+
+                             style="background-color:
+                             {% if turno.estado == 'libre' %}
+                                #d4edda
+
+                             {% elif turno.estado == 'sobreturno' %}
+                                #fff3cd
+
+                             {% elif turno.estado == 'ATENDIDO' %}
+                                #cfe2ff
+
+                             {% elif turno.estado == 'CANCELADO' %}
+                                #f8d7da
+
+                             {% else %}
+                                #ffffff
+                             {% endif %};">
+
+                            {% if turno.estado == 'libre' %}
+
+                            <form method="POST"
+                                  action="{% url 'turnos:reservar_turno' %}"
+                                  class="form-turno">
+
+                                {% csrf_token %}
+
+                                <input type="hidden"
+                                       name="fecha"
+                                       value="{{ dia|date:'Y-m-d' }}">
+
+                                <input type="hidden"
+                                       name="hora"
+                                       value="{{ turno.hora|time:'H:i' }}">
+
+                                <input type="hidden"
+                                       name="es_sobreturno"
+                                       value="false">
+
+                                <input type="text"
+                                       name="observaciones"
+                                       placeholder="Obs."
+                                       class="form-control form-control-sm mb-1">
+
+                                <button type="button"
+                                        class="btn btn-success btn-sm w-100 btn-confirmar"
+                                        data-tipo="turno"
+                                        data-hora="{{ turno.hora|time:'H:i' }}">
+
+                                    Reservar
+
+                                </button>
+
+                            </form>
+
+                            {% elif turno.estado == 'PENDIENTE' %}
+
+                                <strong>{{ turno.paciente }}</strong><br>
+
+                                <span class="text-danger">
+                                    {{ turno.observaciones }}
+                                </span><br>
+
+                                {% if turno.tipo == 'sobreturno' %}
+
+                                    <span class="badge bg-warning text-dark mb-1">
+                                        ⚡ Sobreturno
+                                    </span><br>
+
+                                    <a href="{% url 'turnos:eliminar_sobreturno' turno.sobreturno_id %}"
+                                       class="btn btn-danger btn-sm mt-1"
+                                       onclick="return confirm('¿Eliminar sobreturno?');">
+
+                                        X
+
+                                    </a>
+
+                                {% else %}
+
+                                    <a href="{% url 'turnos:eliminar_turno' turno.turno_id %}"
+                                       class="btn btn-danger btn-sm mt-1"
+                                       onclick="return confirm('¿Eliminar turno?');">
+
+                                        X
+
+                                    </a>
+
+                                {% endif %}
+
+                            {% elif turno.estado == 'ATENDIDO' %}
+
+                                <strong>{{ turno.paciente }}</strong><br>
+
+                                <span class="text-danger">
+                                    {{ turno.observaciones }}
+                                </span><br>
+
+                                <span class="badge bg-primary mt-1">
+                                    Atendido
+                                </span>
+
+                            {% elif turno.estado == 'CANCELADO' %}
+
+                                <strong>{{ turno.paciente }}</strong><br>
+
+                                <span class="text-danger">
+                                    {{ turno.observaciones }}
+                                </span><br>
+
+                                <span class="badge bg-danger mt-1">
+                                    Cancelado
+                                </span>
+
+                            {% endif %}
+
+                        </div>
+
+                        {% endif %}
+
+                        {% endfor %}
+
+                    </td>
+
+                    {% endfor %}
+
+                </tr>
+
+                {% endfor %}
+
+                <!-- 🔵 SOBRETURNOS -->
+                <tr id="sobreturnos" style="background-color:#fff3cd;">
+
+                    <td class="sticky-hora" style="background:#fff3cd;">
+                        <strong>Sobreturnos</strong>
+                    </td>
+
+                    {% for dia, turnos in disponibilidad.items %}
+
+                    <td>
+
+                        <form method="POST"
+                              action="{% url 'turnos:crear_sobreturno' %}"
+                              class="form-turno">
+
+                            {% csrf_token %}
+
+                            <input type="hidden"
+                                   name="fecha"
+                                   value="{{ dia|date:'Y-m-d' }}">
+
+                            <input type="time"
+                                   name="hora_manual"
+                                   class="form-control form-control-sm mb-1"
+                                   required>
+
+                            <input type="text"
+                                   name="observaciones"
+                                   placeholder="Obs."
+                                   class="form-control form-control-sm mb-1">
+
+                            <button type="button"
+                                    class="btn btn-warning btn-sm w-100 btn-confirmar"
+                                    data-tipo="sobreturno">
+
+                                + Sobreturno
+
+                            </button>
+
+                        </form>
+
+                    </td>
+
+                    {% endfor %}
+
+                </tr>
+
+            </tbody>
+
+        </table>
+
+    </div>
+
 </div>
 
-  <table class="table table-bordered text-center mt-3">
-    <thead>
-      <tr>
-        <th>Hora</th>
-        {% for dia, _ in disponibilidad.items %}
-          <th>{{ dia|date:"D d/m" }}</th>
-        {% endfor %}
-      </tr>
-    </thead>
-    <tbody>
-      {% for hora in horarios %}
-        <tr>
-                <td>{{ hora|time:"H:i" }}</td>
-                  {% for dia, turnos in disponibilidad.items %}
-                    {% for turno in turnos %}
-                      {% if turno.hora == hora %}
-                      <td style="background-color: {% if turno.estado == 'libre' %}#d4edda{% else %}#f8d7da{% endif %};">
-    
-    {% if turno.estado == 'libre' %}
-        <form method="POST" action="{% url 'turnos:reservar_turno' %}">
-            {% csrf_token %}
-            <input type="hidden" name="fecha" value="{{ dia|date:'Y-m-d' }}">
-            <input type="hidden" name="hora" value="{{ turno.hora|time:'H:i' }}">
-            <input type="text" name="observaciones" placeholder="Obs." class="form-control form-control-sm mb-1">
-            <button type="submit" class="btn btn-success btn-sm">Reservar</button>
-        </form>
+<!-- 🔵 MODAL -->
+<div class="modal fade" id="confirmModal" tabindex="-1">
 
-    {% elif turno.estado == 'PENDIENTE' %}
-        <strong>{{ turno.paciente }}</strong><br>
-        <span class="text-danger">{{ turno.observaciones }}</span><br>
-        <a href="{% url 'turnos:eliminar_turno' turno.turno_id %}"
-           class="btn btn-danger btn-sm mt-1"
-           onclick="return confirm('¿Estás seguro de eliminar este turno?');">
-           X
-        </a>
+    <div class="modal-dialog modal-dialog-centered">
 
-    {% elif turno.estado == 'ATENDIDO' %}
-        <strong>{{ turno.paciente }}</strong><br>
-        <span class="text-danger">{{ turno.observaciones }}</span><br>
-        <span class="badge bg-primary mt-1">Atendido</span>
+        <div class="modal-content">
 
-    {% endif %}
+            <div class="modal-header bg-primary text-white">
 
-</td>
-              {% endif %}
-            {% endfor %}
-          {% endfor %}
-        </tr>
-      {% endfor %}
-    </tbody>
-  </table>
+                <h5 class="modal-title" id="modalTitulo"></h5>
 
-    <!-- BOTÓN VOLVER -->
-<div class="text-center mt-5">
+                <button type="button"
+                        class="btn-close btn-close-white"
+                        data-bs-dismiss="modal">
 
-  {% if request.user.is_staff or request.user.is_superuser %}
-      <a href="{% url 'core:IndexAdmin' %}" class="btn btn-primary btn-lg">
-        <i class="bi bi-arrow-left-circle"></i> Volver 
-      </a>
+                </button>
 
-  {% elif request.user.is_authenticated and request.user.medico %}
-      <a href="{% url 'core:medico' %}" class="btn btn-primary btn-lg">
-        <i class="bi bi-arrow-left-circle"></i> Volver 
-      </a>
+            </div>
 
-  {% else %}
-      <a href="{% url 'home' %}" class="btn btn-secondary btn-lg">
-        <i class="bi bi-arrow-left-circle"></i> Volver 
-      </a>
-  {% endif %}
+            <div class="modal-body text-center">
+                <p id="modalMensaje"></p>
+            </div>
+
+            <div class="modal-footer justify-content-center">
+
+                <button class="btn btn-secondary"
+                        data-bs-dismiss="modal">
+
+                    Cancelar
+
+                </button>
+
+                <button id="btnConfirmar"
+                        class="btn btn-primary">
+
+                    Confirmar
+
+                </button>
+
+            </div>
+
+        </div>
+
+    </div>
 
 </div>
-</div>
+
+<script>
+
+document.addEventListener("DOMContentLoaded", function () {
+
+    let modal = new bootstrap.Modal(document.getElementById('confirmModal'));
+    let formSeleccionado = null;
+
+    document.querySelectorAll(".btn-confirmar").forEach(btn => {
+
+        btn.addEventListener("click", function () {
+
+            formSeleccionado = this.closest(".form-turno");
+
+            let tipo = this.dataset.tipo;
+            let hora = this.dataset.hora;
+
+            let titulo = document.getElementById("modalTitulo");
+            let mensaje = document.getElementById("modalMensaje");
+
+            if (tipo === "sobreturno") {
+
+                titulo.innerText = "Confirmar Sobreturno";
+                mensaje.innerText = "¿Desea cargar este sobreturno?";
+
+            } else {
+
+                titulo.innerText = "Confirmar Turno";
+                mensaje.innerText = `¿Desea reservar el turno de las ${hora}?`;
+
+            }
+
+            modal.show();
+
+        });
+
+    });
+
+    document.getElementById("btnConfirmar").addEventListener("click", function () {
+
+        if (formSeleccionado) {
+            formSeleccionado.submit();
+        }
+
+    });
+
+});
+
+</script>
+
 {% endblock %}

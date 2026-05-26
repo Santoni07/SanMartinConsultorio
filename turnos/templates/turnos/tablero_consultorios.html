@@ -1,0 +1,104 @@
+{% extends 'core/base.html' %}
+{% block content %}
+
+<div class="container mt-4">
+
+<h2 class="mb-4">Tablero de Consultorios</h2>
+
+<form method="GET" class="mb-3">
+    <input type="date" name="fecha" value="{{ fecha|date:'Y-m-d' }}" class="form-control w-25 d-inline">
+    <button class="btn btn-primary">Ver</button>
+</form>
+
+<div class="table-responsive">
+
+<table class="table table-bordered text-center align-middle">
+
+    <thead class="table-dark">
+        <tr>
+            <th style="min-width:120px;">Consultorio</th>
+
+            {% for d in dias %}
+                <th style="min-width:150px;">
+                    {{ d|date:"d/m" }}<br>
+                    <small>{{ d|date:"D" }}</small>
+                </th>
+            {% endfor %}
+        </tr>
+    </thead>
+
+    <tbody>
+
+    {% for t in tablero %}
+        <tr>
+
+            <!-- 🔵 CONSULTORIO -->
+            <td class="fw-bold">
+                Consultorio {{ t.consultorio.numero }} 7 a 20
+            </td>
+
+            <!-- 🔵 DÍAS -->
+{% for dia in t.dias %}
+<td>
+
+    <!-- 🔵 MÉDICOS + HORARIOS -->
+    {% if dia.medicos %}
+        <div style="background:#cce5ff; padding:6px; border-radius:6px; font-size:12px; margin-bottom:6px;">
+            {% for m in dia.medicos %}
+                <div style="margin-bottom:5px;">
+                    <strong>{{ m.nombre }} {{ m.apellido }}</strong><br>
+                    <span class="badge bg-primary">
+                        {{ m.hora_inicio|time:"H:i" }} - {{ m.hora_fin|time:"H:i" }}
+                    </span>
+                </div>
+            {% endfor %}
+        </div>
+    {% endif %}
+{% comment %} 
+    <!-- 🔴 TURNOS -->
+    {% if dia.bloques %}
+        <div style="background:#ffcccc; padding:6px; border-radius:6px; font-size:12px; margin-bottom:6px;">
+            {% for b in dia.bloques %}
+                <div style="border-bottom:1px solid #aaa; margin-bottom:4px;">
+                    <strong>{{ b.hora }}</strong><br>
+                    {{ b.paciente }}
+                </div>
+            {% endfor %}
+        </div>
+    {% endif %} {% endcomment %}
+
+    <!-- 🟢 HUECOS LIBRES (LO NUEVO 🔥) -->
+    {% if dia.huecos %}
+        <div style="background:#ccffcc; padding:6px; border-radius:6px; font-size:12px;">
+            <strong>LIBRE</strong><br>
+
+            {% for h in dia.huecos %}
+                <div>
+                    ⏰ {{ h.inicio|time:"H:i" }} - {{ h.fin|time:"H:i" }}
+                </div>
+            {% endfor %}
+        </div>
+    {% endif %}
+
+    <!-- ⚪ SIN AGENDA -->
+    {% if not dia.medicos %}
+        <div style="background:#eeeeee; padding:10px; border-radius:6px;">
+            <strong>SIN MÉDICO</strong>
+        </div>
+    {% endif %}
+
+</td>
+{% endfor %}
+
+        </tr>
+    {% endfor %}
+
+    </tbody>
+
+</table>
+
+</div>
+
+</div>
+
+{% endblock %}

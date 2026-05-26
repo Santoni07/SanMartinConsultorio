@@ -6,7 +6,7 @@ from paciente.models import Paciente
 from django.db.models import Q
 from estudios.models import Estudio
 from datetime import date
-from turnos.models import Turnos
+from turnos.models import Turnos, Sobreturno
 from django.contrib import messages
 from datetime import date, datetime
 
@@ -61,13 +61,14 @@ def ver_historia_clinica(request, paciente_id):
         'dni': request.GET.get('dni')
     })
 
-
 @login_required
 def buscar_paciente_consulta(request):
+
     query = request.GET.get('q')
-    turnos = None
+    turnos = []
 
     if query:
+
         pacientes = Paciente.objects.filter(
             Q(nombre__icontains=query) |
             Q(apellido__icontains=query) |
@@ -77,13 +78,36 @@ def buscar_paciente_consulta(request):
         hoy = date.today()
         ahora = datetime.now().time()
 
-        turnos = Turnos.objects.filter(
+        turnos_normales = Turnos.objects.filter(
             paciente__in=pacientes,
             fecha=hoy
         ).select_related('paciente').order_by('hora')
 
-        # Detectar próximo turno (el más cercano >= ahora)
-        turno_proximo = turnos.filter(hora__gte=ahora).first()
+        sobreturnos = Sobreturno.objects.filter(
+            paciente__in=pacientes,
+            fecha=hoy
+        ).select_related('paciente').order_by('hora')
+
+        # Identificar tipo
+        for turno in turnos_normales:
+            turno.tipo_turno = 'NORMAL'
+
+        for sobreturno in sobreturnos:
+            sobreturno.tipo_turno = 'SOBRETURNO'
+
+        # Unificamos
+        turnos = list(turnos_normales) + list(sobreturnos)
+
+        # Ordenamos por hora
+        turnos.sort(key=lambda x: x.hora)
+
+        # Detectar próximo turno
+        turnos_futuros = [
+            t for t in turnos
+            if t.hora >= ahora and t.estado == 'PENDIENTE'
+        ]
+
+        turno_proximo = turnos_futuros[0] if turnos_futuros else None
 
         for turno in turnos:
             turno.es_actual = (turno == turno_proximo)
@@ -92,59 +116,109 @@ def buscar_paciente_consulta(request):
         'turnos': turnos
     })
 
+
+
 @login_required
 def cargar_consulta_paciente(request, turno_id):
 
-    turno = get_object_or_404(Turnos, id=turno_id)
+    turno = Turnos.objects.filter(id=turno_id).first()
+    es_sobreturno = False
+
+    if not turno:
+        turno = Sobreturno.objects.filter(id=turno_id).first()
+        es_sobreturno = True
+
+    if not turno:
+        messages.error(request, "El turno no existe.")
+        return redirect('buscar_paciente_consulta')
+
     paciente = turno.paciente
-    historia, _ = HistoriaClinica.objects.get_or_create(paciente=paciente)
+
+    historia, _ = HistoriaClinica.objects.get_or_create(
+        paciente=paciente
+    )
+
     consultas = historia.consultas.order_by('-fecha')
+
     hoy = date.today()
 
     if turno.fecha != hoy:
-        messages.error(request, "Este turno no corresponde al día de hoy.")
+        messages.error(
+            request,
+            "Este turno no corresponde al día de hoy."
+        )
         return redirect('buscar_paciente_consulta')
 
     consulta_existente = getattr(turno, 'consulta', None)
 
     if turno.estado != 'PENDIENTE' and not consulta_existente:
-        messages.warning(request, "Este turno ya fue cerrado.")
+        messages.warning(
+            request,
+            "Este turno ya fue cerrado."
+        )
         return redirect('buscar_paciente_consulta')
 
     if request.method == 'POST':
+
         form = ConsultaMedicaForm(
             request.POST,
             instance=consulta_existente
         )
 
         if form.is_valid():
+
             consulta = form.save(commit=False)
+
             consulta.historia_clinica = historia
             consulta.medico = request.user.medico
-            consulta.turno = turno
             consulta.fecha = hoy
 
+            if es_sobreturno:
+                consulta.sobreturno = turno
+            else:
+                consulta.turno = turno
+
             if "guardar_parcial" in request.POST:
+
                 consulta.estado = 'BORRADOR'
                 consulta.save()
-                messages.success(request, "Consulta guardada parcialmente.")
+
+                messages.success(
+                    request,
+                    "Consulta guardada parcialmente."
+                )
 
             elif "finalizar_consulta" in request.POST:
+
                 consulta.estado = 'FINALIZADA'
                 consulta.save()
 
                 turno.estado = 'ATENDIDO'
                 turno.save()
 
-                messages.success(request, "Consulta finalizada correctamente.")
-                return redirect('ver_historia_clinica', paciente_id=paciente.id)
+                messages.success(
+                    request,
+                    "Consulta finalizada correctamente."
+                )
 
-            return redirect('cargar_consulta_paciente', turno_id=turno.id)
+                return redirect(
+                    'ver_historia_clinica',
+                    paciente_id=paciente.id
+                )
+
+            return redirect(
+                'cargar_consulta_paciente',
+                turno_id=turno.id
+            )
 
     else:
-        form = ConsultaMedicaForm(instance=consulta_existente)
+
+        form = ConsultaMedicaForm(
+            instance=consulta_existente
+        )
 
     if consulta_existente and consulta_existente.estado == 'FINALIZADA':
+
         for field in form.fields.values():
             field.disabled = True
 
@@ -153,9 +227,11 @@ def cargar_consulta_paciente(request, turno_id):
         'paciente': paciente,
         'turno': turno,
         'consultas': consultas,
-        'consulta': consulta_existente
+        'consulta': consulta_existente,
+        'es_sobreturno': es_sobreturno
     })
-
+    
+    
 @login_required
 def buscar_historia_por_dni(request):
     dni = request.GET.get('dni')

@@ -1,6 +1,15 @@
 {% extends 'core/base.html' %}
 {% load static %}
 {% block title %}Cargar Paciente{% endblock %}
+{% block extra_css %}
+<style>
+.btn-custom {
+    padding: 10px 22px;
+    font-size: 1.1rem;
+    border-radius: .5rem;
+}
+</style>
+{% endblock %}
 
 {% block content %}
 <div class="container mt-5">
@@ -80,27 +89,30 @@
                       <!-- BOTÓN VOLVER -->
 <div class="text-center mt-5">
 
-  {% if request.user.is_staff or request.user.is_superuser %}
-      <a href="{% url 'core:IndexAdmin' %}" class="btn btn-primary btn-lg">
-        <i class="bi bi-arrow-left-circle"></i> Volver 
-      </a>
+ {% if request.user.is_staff or request.user.is_superuser %}
+    <a href="{% url 'core:IndexAdmin' %}" class="btn btn-primary btn-custom">
+        <i class="bi bi-arrow-left-circle"></i> Volver
+    </a>
 
-  {% elif request.user.is_authenticated and request.user.medico %}
-      <a href="{% url 'core:medico' %}" class="btn btn-primary btn-lg">
-        <i class="bi bi-arrow-left-circle"></i> Volver 
-      </a>
+{% elif request.user.is_authenticated and request.user.medico %}
+    <a href="{% url 'core:medico' %}" class="btn btn-primary btn-custom">
+        <i class="bi bi-arrow-left-circle"></i> Volver
+    </a>
 
-  {% else %}
-      <a href="{% url 'home' %}" class="btn btn-secondary btn-lg">
-        <i class="bi bi-arrow-left-circle"></i> Volver 
-      </a>
-  {% endif %}
+{% else %}
+    <a href="{% url 'home' %}" class="btn btn-primary btn-custom">
+        <i class="bi bi-arrow-left-circle"></i> Volver
+    </a>
+{% endif %}
 
 </div>
-
-                    <button type="button" class="btn btn-success btn-lg" data-bs-toggle="modal" data-bs-target="#confirmarModal">
-    <i class="bi bi-save"></i> Guardar Paciente
-</button>
+      <button type="button"
+              class="btn btn-success btn-custom"
+              data-bs-toggle="modal"
+              data-bs-target="#confirmarModal">
+          <i class="bi bi-save"></i> Guardar Paciente
+      </button>
+    
                 </div>
 <!-- MODAL CONFIRMACION -->
 <div class="modal fade" id="confirmarModal" tabindex="-1" aria-labelledby="confirmarModalLabel" aria-hidden="true">
