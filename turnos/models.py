@@ -67,7 +67,12 @@ class DisponibilidadMedico(models.Model):
         return f"{self.medico} - {self.get_dia_semana_display()}"
     
 class AgendaMedico(models.Model):
-
+    centro_medico = models.ForeignKey(
+        CentroMedico,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True
+    )
     medico = models.ForeignKey('medicos.Medico', on_delete=models.CASCADE)
     fecha = models.DateField()
     consultorio = models.ForeignKey(Consultorio, on_delete=models.PROTECT, null=True, blank=True)
