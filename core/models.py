@@ -35,7 +35,10 @@ class PerfilUsuario(models.Model):
         ('RECEPCION', 'Recepción'),
         ('MEDICO', 'Médico'),
     ]
-
+    centros = models.ManyToManyField(
+        CentroMedico,
+        blank=True
+    )
     user = models.OneToOneField(
         User,
         on_delete=models.CASCADE
