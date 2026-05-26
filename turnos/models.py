@@ -2,7 +2,7 @@ from django.db import models
 from especialidades.models import Especialidades
 from medicos.models import Medico
 from paciente.models import Paciente
-
+from core.models import CentroMedico
 
 class Consultorio(models.Model):
     numero = models.IntegerField(unique=True)
@@ -19,7 +19,12 @@ class Turnos(models.Model):
         ('AUSENTE', 'Ausente'),
         ('CANCELADO', 'Cancelado'),
     ]
-
+    centro_medico = models.ForeignKey(
+        CentroMedico,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True
+    )
     especialidad = models.ForeignKey(Especialidades, on_delete=models.CASCADE)
     medico = models.ForeignKey(Medico, on_delete=models.CASCADE)
     fecha = models.DateField()
