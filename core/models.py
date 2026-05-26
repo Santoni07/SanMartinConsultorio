@@ -1,4 +1,5 @@
 from django.db import models
+from django.contrib.auth.models import User
 
 class CentroMedico(models.Model):
 
@@ -27,3 +28,32 @@ class CentroMedico(models.Model):
 
     def __str__(self):
         return self.nombre 
+class PerfilUsuario(models.Model):
+
+    ROLES = [
+        ('ADMIN', 'Administrador'),
+        ('RECEPCION', 'Recepción'),
+        ('MEDICO', 'Médico'),
+    ]
+
+    user = models.OneToOneField(
+        User,
+        on_delete=models.CASCADE
+    )
+
+    rol = models.CharField(
+        max_length=20,
+        choices=ROLES,
+        default='RECEPCION'
+    )
+
+    activo = models.BooleanField(default=True)
+
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = "Perfil Usuario"
+        verbose_name_plural = "Perfiles Usuarios"
+
+    def __str__(self):
+        return f"{self.user.username} - {self.rol}"
