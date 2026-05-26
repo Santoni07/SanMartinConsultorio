@@ -1,2 +1,21 @@
+# Python
 __pycache__/
-*.pyc
+*.py[cod]
+
+# SQLite
+db.sqlite3
+
+# Media
+media/
+
+# Static collectstatic
+staticfiles/
+
+# VSCode
+.vscode/
+
+# Logs
+*.log
+
+# Videos pesados
+*.mp4
