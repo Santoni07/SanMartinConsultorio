@@ -5,11 +5,19 @@ from paciente.models import Paciente
 from core.models import CentroMedico
 
 class Consultorio(models.Model):
-    numero = models.IntegerField(unique=True)
+
+    centro_medico = models.ForeignKey(
+        CentroMedico,
+        on_delete=models.CASCADE
+    )
+
+    numero = models.IntegerField()
+
+    class Meta:
+        unique_together = ('centro_medico', 'numero')
 
     def __str__(self):
-        return f"Consultorio {self.numero}"
-    
+        return f"{self.centro_medico} - Consultorio {self.numero}"
     
 class Turnos(models.Model):
 
@@ -44,6 +52,7 @@ class Turnos(models.Model):
    
         
         
+
 class DisponibilidadMedico(models.Model):
 
     DIAS = [
@@ -55,17 +64,34 @@ class DisponibilidadMedico(models.Model):
         (5, 'Sábado'),
     ]
 
-    medico = models.ForeignKey('medicos.Medico', on_delete=models.CASCADE)
-    dia_semana = models.IntegerField(choices=DIAS)
+    medico = models.ForeignKey(
+        'medicos.Medico',
+        on_delete=models.CASCADE
+    )
+
+    centro_medico = models.ForeignKey(
+        CentroMedico,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True
+    )
+
+    dia_semana = models.IntegerField(
+        choices=DIAS
+    )
 
     hora_inicio = models.TimeField()
+
     hora_fin = models.TimeField()
 
-    duracion_turno = models.IntegerField(default=20)
+    duracion_turno = models.IntegerField(
+        default=20
+    )
 
     def __str__(self):
         return f"{self.medico} - {self.get_dia_semana_display()}"
-    
+
+   
 class AgendaMedico(models.Model):
     centro_medico = models.ForeignKey(
         CentroMedico,
@@ -109,28 +135,51 @@ class ExcepcionAgenda(models.Model):
 
     motivo = models.CharField(max_length=255, blank=True, null=True)
     
+
 class Sobreturno(models.Model):
 
     ESTADOS = [
         ('PENDIENTE', 'Pendiente'),
         ('ATENDIDO', 'Atendido'),
-         ('AUSENTE', 'Ausente'),
+        ('AUSENTE', 'Ausente'),
         ('CANCELADO', 'Cancelado'),
     ]
 
-    medico = models.ForeignKey('medicos.Medico', on_delete=models.CASCADE)
-    paciente = models.ForeignKey('paciente.Paciente', on_delete=models.CASCADE)
+    medico = models.ForeignKey(
+        'medicos.Medico',
+        on_delete=models.CASCADE
+    )
+
+    centro_medico = models.ForeignKey(
+        CentroMedico,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True
+    )
+
+    paciente = models.ForeignKey(
+        'paciente.Paciente',
+        on_delete=models.CASCADE
+    )
 
     fecha = models.DateField()
+
     hora = models.TimeField()
 
-    estado = models.CharField(max_length=20, choices=ESTADOS, default='PENDIENTE')
+    estado = models.CharField(
+        max_length=20,
+        choices=ESTADOS,
+        default='PENDIENTE'
+    )
 
-    observaciones = models.TextField(blank=True, null=True)
+    observaciones = models.TextField(
+        blank=True,
+        null=True
+    )
 
-    creado = models.DateTimeField(auto_now_add=True)
+    creado = models.DateTimeField(
+        auto_now_add=True
+    )
 
     def __str__(self):
         return f"Sobreturno - {self.medico} - {self.fecha} {self.hora}"
-    
-    
