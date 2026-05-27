@@ -8,7 +8,7 @@ from django.contrib.auth.mixins import LoginRequiredMixin
 from django.urls import reverse
 from especialidades.models import Especialidades
 from obrasocial.models import ObraSocial
-
+from django.contrib.auth.decorators import login_required
 import os
 from datetime import datetime
 from django.conf import settings
@@ -19,9 +19,20 @@ from django.contrib import messages
 
 from especialidades.views import *
 from django.contrib.auth.views import LoginView
+from core.models import CentroMedico
 
-print("🚀 CORE VIEWS CARGADO")
+@login_required
+def cambiar_centro(request, centro_id):
 
+    centro = CentroMedico.objects.filter(
+        id=centro_id
+    ).first()
+
+    if centro:
+
+        request.session['centro_id'] = centro.id
+
+    return redirect(request.META.get('HTTP_REFERER', '/'))
 
 def politica_privacidad(request):
     return render(request, 'core/privado.html')
@@ -61,9 +72,76 @@ class CustomLoginView(LoginView):
         return reverse('core:index')
 
     def form_valid(self, form):
-        print("✅ FORM VALID - Usuario autenticado:", form.get_user())
-        return super().form_valid(form)
 
+        print("\n")
+        print("===================================")
+        print("✅ FORM VALID")
+        print("===================================")
+
+        user = form.get_user()
+
+        print("👤 USER:", user)
+
+        try:
+
+            perfil = user.perfilusuario
+
+            print("📌 PERFIL:", perfil)
+
+            print(
+                "🏥 CENTRO PRINCIPAL DB:",
+                perfil.centro_principal
+            )
+
+            print(
+                "🏥 TODOS LOS CENTROS:"
+            )
+
+            for c in perfil.centros.all():
+
+                print(
+                    "   ➜",
+                    c.id,
+                    c.nombre
+                )
+
+            if perfil.centro_principal:
+
+                self.request.session['centro_id'] = (
+                    perfil.centro_principal.id
+                )
+
+                print(
+                    "✅ SESSION CENTRO_ID SETEADO:",
+                    self.request.session.get('centro_id')
+                )
+
+                self.request.session.modified = True
+
+                self.request.session.save()
+
+                print(
+                    "💾 SESSION GUARDADA"
+                )
+
+            else:
+
+                print("⚠️ NO TIENE CENTRO PRINCIPAL")
+
+        except Exception as e:
+
+            print("❌ ERROR:")
+            print(e)
+
+        print(
+            "📦 SESSION FINAL:",
+            dict(self.request.session)
+        )
+
+        print("===================================")
+        print("\n")
+
+        return super().form_valid(form)
     def form_invalid(self, form):
         print("❌ FORM INVALID:", form.errors)
         return super().form_invalid(form)

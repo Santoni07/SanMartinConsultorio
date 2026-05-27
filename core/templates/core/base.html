@@ -196,7 +196,7 @@
   <div class="collapse navbar-collapse" id="navbarContent">
     <ul class="navbar-nav me-auto">
 
-        <!-- 🟡 NO LOGUEADO -->
+              <!-- 🟡 NO LOGUEADO -->
         {% if not request.user.is_authenticated %}
 
           <li><a class="nav-link scrollto active" href="#hero">Inicio</a></li>
@@ -210,136 +210,399 @@
 
         <!-- 🔴 ADMIN -->
         {% elif request.user.is_staff %}
-          
-          <li class="dropdown">
-              <li class="dropdown">
-              <a href="#"><span>Medicos</span> <i class="bi bi-chevron-down"></i></a>
 
-              <ul>
-                <li><a href="{% url 'medicos:list' %}">Ver</a></li>
-                <li><a href="{% url 'medicos:create' %}">Cargar</a></li>
+            {% if modo_colaboracion %}
 
-              </ul>
-            </li>
-            
-          <li class="dropdown">
-            <a href="#"><span>Agenda</span> <i class="bi bi-chevron-down"></i></a>
-            <ul>
-                    <li>
-                      <a href="{% url 'turnos:agenda_rapida' %}">
-                        Cargar Agenda
-                      </a>
-                    </li>
+                <!-- 🔵 MODO COLABORACIÓN -->
 
-                    <!-- 🔥 CAMBIO IMPORTANTE ACÁ -->
-                    <li>
-                      <a href="{% url 'turnos:seleccionar_medico_consulta' %}">
-                        Ver Disponibilidad
-                      </a>
-                    </li>
+                <li class="dropdown">
 
-                      <li>
-                      <a href="{% url 'turnos:lista_excepciones' %}">
-                        Modificaciones
-                      </a>
-                    </li>
-                    <li>
-                      <a href="{% url 'turnos:tablero_consultorios' %}">
-                          Disponibilidad Consultorios
-                      </a>
-                    </li>
-                    
+                    <a href="#">
+                        <span>Agenda</span>
+                        <i class="bi bi-chevron-down"></i>
+                    </a>
 
-                  </ul>
-          </li>
-          <li class="dropdown">
-            <a href="#"><span>Especialidades</span> <i class="bi bi-chevron-down"></i></a>
-            <ul>
-              <li><a href="{% url 'especialidades:list' %}">Ver</a></li>
-              <li><a href="{% url 'especialidades:create' %}">Cargar</a></li>
-            </ul>
-          </li>
+                    <ul>
 
-          <li class="dropdown">
-            <a href="#"><span>Pacientes</span> <i class="bi bi-chevron-down"></i></a>
-            <ul>
-              <li><a href="{% url 'paciente:buscar' %}">Buscar</a></li>
-              <li><a href="{% url 'paciente:create' %}">Cargar</a></li>
-            </ul>
-          </li>
+                        <li>
+                            <a href="{% url 'turnos:seleccionar_medico_consulta' %}">
+                                Ver Disponibilidad
+                            </a>
+                        </li>
 
-          <li class="dropdown">
-            <a href="#"><span>Obra Sociales</span> <i class="bi bi-chevron-down"></i></a>
-            <ul>
-              <li><a href="{% url 'obrasocial:list' %}">Ver</a></li>
-              <li><a href="{% url 'obrasocial:create' %}">Cargar</a></li>
-            </ul>
-          </li>
+                    </ul>
 
-          <li class="dropdown">
-            <a href="#"><span>Servicios</span> <i class="bi bi-chevron-down"></i></a>
-            <ul>
-              <li><a href="{% url 'servicios:list' %}">Ver</a></li>
-              <li><a href="{% url 'servicios:create' %}">Cargar</a></li>
-            </ul>
-          </li>
+                </li>
 
-          <li class="dropdown">
-            <a href="#"><span>Turnos</span> <i class="bi bi-chevron-down"></i></a>
-            <ul>
-              <li><a href="{% url 'turnos:buscar_turnos_por_dni' %}">Ver Turnos</a></li>
-              <li><a href="{% url 'turnos:seleccionar_paciente' %}">Seleccionar</a></li>
-            </ul>
-          </li>
+                <li class="dropdown">
 
-          <li class="dropdown">
-            <a href="#"><span>Estudios</span> <i class="bi bi-chevron-down"></i></a>
-            <ul>
-              <li><a href="{% url 'buscar_y_cargar_estudio' %}">Cargar</a></li>
-              <li><a href="{% url 'ver_estudios' %}">Ver</a></li>
-            </ul>
-          </li>
+                    <a href="#">
+                        <span>Turnos</span>
+                        <i class="bi bi-chevron-down"></i>
+                    </a>
 
-          <li class="dropdown">
-            <a href="#"><span>Historia Clínica</span> <i class="bi bi-chevron-down"></i></a>
-            <ul>
-              <li><a href="{% url 'buscar_historia_por_dni' %}">Buscar</a></li>
-            </ul>
-          </li>
+                    <ul>
+
+                        <li>
+                            <a href="{% url 'turnos:buscar_turnos_por_dni' %}">
+                                Ver Turnos
+                            </a>
+                        </li>
+
+                        <li>
+                            <a href="{% url 'turnos:seleccionar_paciente' %}">
+                                Seleccionar
+                            </a>
+                        </li>
+
+                    </ul>
+
+                </li>
+
+            {% else %}
+
+                <!-- 🔴 MODO COMPLETO -->
+
+                <li class="dropdown">
+
+                    <a href="#">
+                        <span>Medicos</span>
+                        <i class="bi bi-chevron-down"></i>
+                    </a>
+
+                    <ul>
+
+                        <li>
+                            <a href="{% url 'medicos:list' %}">
+                                Ver
+                            </a>
+                        </li>
+
+                        <li>
+                            <a href="{% url 'medicos:create' %}">
+                                Cargar
+                            </a>
+                        </li>
+
+                    </ul>
+
+                </li>
+
+                <li class="dropdown">
+
+                    <a href="#">
+                        <span>Agenda</span>
+                        <i class="bi bi-chevron-down"></i>
+                    </a>
+
+                    <ul>
+
+                        <li>
+                            <a href="{% url 'turnos:agenda_rapida' %}">
+                                Cargar Agenda
+                            </a>
+                        </li>
+
+                        <li>
+                            <a href="{% url 'turnos:seleccionar_medico_consulta' %}">
+                                Ver Disponibilidad
+                            </a>
+                        </li>
+
+                        <li>
+                            <a href="{% url 'turnos:lista_excepciones' %}">
+                                Modificaciones
+                            </a>
+                        </li>
+
+                        <li>
+                            <a href="{% url 'turnos:tablero_consultorios' %}">
+                                Disponibilidad Consultorios
+                            </a>
+                        </li>
+
+                    </ul>
+
+                </li>
+
+                <li class="dropdown">
+
+                    <a href="#">
+                        <span>Especialidades</span>
+                        <i class="bi bi-chevron-down"></i>
+                    </a>
+
+                    <ul>
+
+                        <li>
+                            <a href="{% url 'especialidades:list' %}">
+                                Ver
+                            </a>
+                        </li>
+
+                        <li>
+                            <a href="{% url 'especialidades:create' %}">
+                                Cargar
+                            </a>
+                        </li>
+
+                    </ul>
+
+                </li>
+
+                <li class="dropdown">
+
+                    <a href="#">
+                        <span>Pacientes</span>
+                        <i class="bi bi-chevron-down"></i>
+                    </a>
+
+                    <ul>
+
+                        <li>
+                            <a href="{% url 'paciente:buscar' %}">
+                                Buscar
+                            </a>
+                        </li>
+
+                        <li>
+                            <a href="{% url 'paciente:create' %}">
+                                Cargar
+                            </a>
+                        </li>
+
+                    </ul>
+
+                </li>
+
+                <li class="dropdown">
+
+                    <a href="#">
+                        <span>Obra Sociales</span>
+                        <i class="bi bi-chevron-down"></i>
+                    </a>
+
+                    <ul>
+
+                        <li>
+                            <a href="{% url 'obrasocial:list' %}">
+                                Ver
+                            </a>
+                        </li>
+
+                        <li>
+                            <a href="{% url 'obrasocial:create' %}">
+                                Cargar
+                            </a>
+                        </li>
+
+                    </ul>
+
+                </li>
+
+                <li class="dropdown">
+
+                    <a href="#">
+                        <span>Servicios</span>
+                        <i class="bi bi-chevron-down"></i>
+                    </a>
+
+                    <ul>
+
+                        <li>
+                            <a href="{% url 'servicios:list' %}">
+                                Ver
+                            </a>
+                        </li>
+
+                        <li>
+                            <a href="{% url 'servicios:create' %}">
+                                Cargar
+                            </a>
+                        </li>
+
+                    </ul>
+
+                </li>
+
+                <li class="dropdown">
+
+                    <a href="#">
+                        <span>Turnos</span>
+                        <i class="bi bi-chevron-down"></i>
+                    </a>
+
+                    <ul>
+
+                        <li>
+                            <a href="{% url 'turnos:buscar_turnos_por_dni' %}">
+                                Ver Turnos
+                            </a>
+                        </li>
+
+                        <li>
+                            <a href="{% url 'turnos:seleccionar_paciente' %}">
+                                Seleccionar
+                            </a>
+                        </li>
+
+                    </ul>
+
+                </li>
+
+                <li class="dropdown">
+
+                    <a href="#">
+                        <span>Estudios</span>
+                        <i class="bi bi-chevron-down"></i>
+                    </a>
+
+                    <ul>
+
+                        <li>
+                            <a href="{% url 'buscar_y_cargar_estudio' %}">
+                                Cargar
+                            </a>
+                        </li>
+
+                        <li>
+                            <a href="{% url 'ver_estudios' %}">
+                                Ver
+                            </a>
+                        </li>
+
+                    </ul>
+
+                </li>
+
+                <li class="dropdown">
+
+                    <a href="#">
+                        <span>Historia Clínica</span>
+                        <i class="bi bi-chevron-down"></i>
+                    </a>
+
+                    <ul>
+
+                        <li>
+                            <a href="{% url 'buscar_historia_por_dni' %}">
+                                Buscar
+                            </a>
+                        </li>
+
+                    </ul>
+
+                </li>
+
+            {% endif %}
 
         <!-- 🔵 MÉDICO -->
         {% elif request.user.medico %}
+
            <li class="dropdown">
-            <a href="#"><span>Pacientes</span> <i class="bi bi-chevron-down"></i></a>
+
+            <a href="#">
+                <span>Pacientes</span>
+                <i class="bi bi-chevron-down"></i>
+            </a>
+
             <ul>
-              <li><a href="{% url 'paciente:buscar' %}">Buscar</a></li>
-              <li><a href="{% url 'paciente:create' %}">Cargar</a></li>
+
+              <li>
+                <a href="{% url 'paciente:buscar' %}">
+                    Buscar
+                </a>
+              </li>
+
+              <li>
+                <a href="{% url 'paciente:create' %}">
+                    Cargar
+                </a>
+              </li>
+
             </ul>
+
           </li>
 
           <li class="dropdown">
-            <a href="#"><span>Turnos</span> <i class="bi bi-chevron-down"></i></a>
+
+            <a href="#">
+                <span>Turnos</span>
+                <i class="bi bi-chevron-down"></i>
+            </a>
+
             <ul>
-              <li><a href="{% url 'turnos:mis_turnos_medico' %}"> Mis Turnos</a></li>
-              <li><a href="{% url 'turnos:buscar_turnos_por_dni' %}">Ver por DNI</a></li>
-              <li><a href="{% url 'turnos:seleccionar_paciente' %}">Cargar Turno</a></li>
+
+              <li>
+                <a href="{% url 'turnos:mis_turnos_medico' %}">
+                    Mis Turnos
+                </a>
+              </li>
+
+              <li>
+                <a href="{% url 'turnos:buscar_turnos_por_dni' %}">
+                    Ver por DNI
+                </a>
+              </li>
+
+              <li>
+                <a href="{% url 'turnos:seleccionar_paciente' %}">
+                    Cargar Turno
+                </a>
+              </li>
+
             </ul>
+
           </li>
 
           <li class="dropdown">
-            <a href="#"><span>Estudios</span> <i class="bi bi-chevron-down"></i></a>
+
+            <a href="#">
+                <span>Estudios</span>
+                <i class="bi bi-chevron-down"></i>
+            </a>
+
             <ul>
-              <li><a href="{% url 'buscar_y_cargar_estudio' %}">Cargar</a></li>
-              <li><a href="{% url 'ver_estudios' %}">Ver</a></li>
+
+              <li>
+                <a href="{% url 'buscar_y_cargar_estudio' %}">
+                    Cargar
+                </a>
+              </li>
+
+              <li>
+                <a href="{% url 'ver_estudios' %}">
+                    Ver
+                </a>
+              </li>
+
             </ul>
+
           </li>
 
           <li class="dropdown">
-            <a href="#"><span>Historia Clínica</span> <i class="bi bi-chevron-down"></i></a>
+
+            <a href="#">
+                <span>Historia Clínica</span>
+                <i class="bi bi-chevron-down"></i>
+            </a>
+
             <ul>
-              <li><a href="{% url 'buscar_paciente_consulta' %}">Cargar Consulta</a></li>
-              <li><a href="{% url 'buscar_historia_por_dni' %}">Ver Historia</a></li>
+
+              <li>
+                <a href="{% url 'buscar_paciente_consulta' %}">
+                    Cargar Consulta
+                </a>
+              </li>
+
+              <li>
+                <a href="{% url 'buscar_historia_por_dni' %}">
+                    Ver Historia
+                </a>
+              </li>
+
             </ul>
+
           </li>
 
           <li>
@@ -348,7 +611,6 @@
             </a>
           </li>
 
-        
         {% endif %}
 
    
@@ -369,13 +631,66 @@
     {% else %}
 
       <!-- USUARIO -->
-      <div class="ms-auto me-3 text-white fw-semibold">
+     <div class="ms-auto d-flex align-items-center gap-3">
+
+    <!-- USUARIO -->
+    <div class="text-white fw-semibold">
+
         {% if request.user.is_staff %}
-            Admin {{ request.user.username}}
+            Admin {{ request.user.username }}
+
         {% elif request.user.medico %}
-           Dr. {{ request.user.medico.nombre }} {{ request.user.medico.apellido }}
+
+            Dr. {{ request.user.medico.nombre }}
+            {{ request.user.medico.apellido }}
+
         {% endif %}
-      </div>
+
+    </div>
+
+    <!-- SELECTOR DE SEDE -->
+    {% if request.user.is_authenticated %}
+
+    <div class="dropdown">
+
+        <button
+            class="btn btn-outline-light btn-sm dropdown-toggle"
+            type="button"
+            data-bs-toggle="dropdown"
+        >
+
+            {% if centro_activo %}
+                {{ centro_activo.nombre }}
+            {% else %}
+                Seleccionar Sede
+            {% endif %}
+
+        </button>
+
+        <ul class="dropdown-menu dropdown-menu-end">
+
+            {% for centro in request.user.perfilusuario.centros.all %}
+
+                <li>
+
+                    <a
+                        class="dropdown-item"
+                        href="{% url 'core:cambiar_centro' centro.id %}"
+                    >
+                        {{ centro.nombre }}
+                    </a>
+
+                </li>
+
+            {% endfor %}
+
+        </ul>
+
+    </div>
+
+    {% endif %}
+
+</div>
 
       <!-- LOGOUT -->
       <div class="me-3">

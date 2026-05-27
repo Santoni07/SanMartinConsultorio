@@ -35,6 +35,13 @@ class PerfilUsuario(models.Model):
         ('RECEPCION', 'Recepción'),
         ('MEDICO', 'Médico'),
     ]
+    centro_principal = models.ForeignKey(
+        CentroMedico,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='usuarios_principales'
+    )
     centros = models.ManyToManyField(
         CentroMedico,
         blank=True

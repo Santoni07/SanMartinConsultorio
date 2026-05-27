@@ -49,8 +49,44 @@ def login_view(request):
         user = authenticate(request, username=username, password=password)
 
         if user is not None:
+
             login(request, user)
+
             print("Login correcto")
+
+            try:
+
+                perfil = user.perfilusuario
+
+                if perfil.centro_principal:
+
+                    request.session['centro_id'] = (
+                        perfil.centro_principal.id
+                    )
+
+                    print(
+                        "🏥 Centro principal asignado:",
+                        perfil.centro_principal.nombre
+                    )
+
+                else:
+
+                    primer_centro = perfil.centros.first()
+
+                    if primer_centro:
+
+                        request.session['centro_id'] = (
+                            primer_centro.id
+                        )
+
+                        print(
+                            "🏥 Centro fallback asignado:",
+                            primer_centro.nombre
+                        )
+
+            except Exception as e:
+
+                print("❌ Error asignando centro:", e)
 
             # 🔁 Redirección por rol
             if user.is_superuser or user.is_staff:
