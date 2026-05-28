@@ -1,12 +1,12 @@
 import copy
 from turnos.models import AgendaMedico, ExcepcionAgenda
 
-
-def obtener_agenda_dia(medico, fecha):
+def obtener_agenda_dia(medico, fecha, centro_medico=None):
 
     agenda = AgendaMedico.objects.filter(
         medico=medico,
-        fecha=fecha
+        fecha=fecha,
+        centro_medico=centro_medico
     ).first()
 
     excepcion = ExcepcionAgenda.objects.filter(
@@ -22,7 +22,7 @@ def obtener_agenda_dia(medico, fecha):
     if excepcion and excepcion.tipo == 'REPROGRAMAR':
         return None
 
-    # 🟢 MODIFICADO (🔥 ESTO TE FALTABA)
+    # 🟢 MODIFICADO
     if excepcion and excepcion.tipo == 'MODIFICADO':
 
         if agenda:

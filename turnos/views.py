@@ -13,7 +13,7 @@ from datetime import date
 from .forms import AgendaMedicoForm,ConfiguracionAgendaForm,ExcepcionAgendaForm,SeleccionMedicoConsultaForm
 from .models import DisponibilidadMedico,ExcepcionAgenda
 from turnos.utils.agenda   import obtener_agenda_dia
-
+from collections import defaultdict   
 
 def obtener_consultorio_disponible(fecha, hora_inicio, hora_fin, medico=None):
 
@@ -614,7 +614,7 @@ def cargar_agenda_medico(request):
         'form': form
     })
  
-from collections import defaultdict   
+
 
 
 @login_required
