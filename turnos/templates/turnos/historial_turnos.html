@@ -1,0 +1,139 @@
+{% extends 'core/base.html' %}
+{% load static %}
+
+{% block content %}
+
+<div class="container mt-4">
+
+    <div class="card shadow">
+
+        <div class="card-header bg-primary text-white">
+
+            <h4 class="mb-0">
+                Historial del Turno
+            </h4>
+
+        </div>
+
+        <div class="card-body">
+
+            <div class="alert alert-secondary">
+
+                <strong>Paciente:</strong>
+                {{ turno.paciente }}
+
+                <br>
+
+                <strong>Médico:</strong>
+                {{ turno.medico }}
+
+                <br>
+
+                <strong>Fecha:</strong>
+                {{ turno.fecha }}
+
+                <br>
+
+                <strong>Hora:</strong>
+                {{ turno.hora }}
+
+            </div>
+
+            {% for evento in historial %}
+
+                <div class="card mb-3 border-start border-4
+                    {% if evento.accion == 'CREADO' %}
+                        border-success
+                    {% elif evento.accion == 'CANCELADO' %}
+                        border-danger
+                    {% elif evento.accion == 'REPROGRAMADO' %}
+                        border-warning
+                    {% elif evento.accion == 'EXCEPCION' %}
+                        border-dark
+                    {% else %}
+                        border-info
+                    {% endif %}
+                ">
+
+                    <div class="card-body">
+
+                        <h5>
+
+                            {{ evento.get_accion_display }}
+
+                        </h5>
+
+                        <p class="mb-1">
+
+                            <strong>Fecha:</strong>
+
+                            {{ evento.fecha|date:"d/m/Y H:i" }}
+
+                        </p>
+
+                        <p class="mb-1">
+
+                            <strong>Usuario:</strong>
+
+                            {% if evento.usuario %}
+                                {{ evento.usuario.username }}
+                            {% else %}
+                                Sistema
+                            {% endif %}
+
+                        </p>
+
+                        <p class="mb-1">
+
+                            <strong>Sede:</strong>
+
+                            {% if evento.sede_operacion %}
+                                {{ evento.sede_operacion.nombre }}
+                            {% endif %}
+
+                        </p>
+
+                        {% if evento.descripcion %}
+
+                            <p class="mb-0">
+
+                                <strong>Detalle:</strong>
+
+                                {{ evento.descripcion }}
+
+                            </p>
+
+                        {% endif %}
+
+                    </div>
+
+                </div>
+
+            {% empty %}
+
+                <div class="alert alert-warning">
+
+                    No existen movimientos registrados.
+
+                </div>
+
+            {% endfor %}
+
+        </div>
+
+        <div class="card-footer">
+
+            <a href="javascript:history.back()"
+               class="btn btn-secondary">
+
+                Volver
+
+            </a>
+
+        </div>
+
+    </div>
+
+</div>
+
+{% endblock %}

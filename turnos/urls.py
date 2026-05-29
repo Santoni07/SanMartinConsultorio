@@ -17,6 +17,11 @@ urlpatterns = [
         views.buscar_turnos_por_dni,
         name='buscar_turnos_por_dni'
     ),
+    path(
+    'historial-turno/<int:turno_id>/',
+    views.historial_turno,
+    name='historial_turno'
+),
     path('agenda-rapida/', views.agenda_rapida, name='agenda_rapida'),
     path('cargar-agenda-medico/', views.cargar_agenda_medico, name='cargar_agenda_medico'),
     path('validar-agenda/', views.validar_agenda, name='validar_agenda'),

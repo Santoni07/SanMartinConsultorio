@@ -254,6 +254,7 @@
                                 Seleccionar
                             </a>
                         </li>
+                        
 
                     </ul>
 
@@ -318,6 +319,31 @@
                         <li>
                             <a href="{% url 'turnos:tablero_consultorios' %}">
                                 Disponibilidad Consultorios
+                            </a>
+                        </li>
+
+                    </ul>
+
+                </li>
+                
+                 <li class="dropdown">
+
+                    <a href="#">
+                        <span>Turnos</span>
+                        <i class="bi bi-chevron-down"></i>
+                    </a>
+
+                    <ul>
+
+                        <li>
+                            <a href="{% url 'turnos:buscar_turnos_por_dni' %}">
+                                Ver Turnos
+                            </a>
+                        </li>
+
+                        <li>
+                            <a href="{% url 'turnos:seleccionar_paciente' %}">
+                                Seleccionar
                             </a>
                         </li>
 
@@ -425,30 +451,7 @@
 
                 </li>
 
-                <li class="dropdown">
-
-                    <a href="#">
-                        <span>Turnos</span>
-                        <i class="bi bi-chevron-down"></i>
-                    </a>
-
-                    <ul>
-
-                        <li>
-                            <a href="{% url 'turnos:buscar_turnos_por_dni' %}">
-                                Ver Turnos
-                            </a>
-                        </li>
-
-                        <li>
-                            <a href="{% url 'turnos:seleccionar_paciente' %}">
-                                Seleccionar
-                            </a>
-                        </li>
-
-                    </ul>
-
-                </li>
+               
 
                 <li class="dropdown">
 
