@@ -22,6 +22,11 @@ urlpatterns = [
     views.historial_turno,
     name='historial_turno'
 ),
+    path(
+    'historial-turnos-medico/',
+    views.historial_turnos_medico,
+    name='historial_turnos_medico'
+),
     path('agenda-rapida/', views.agenda_rapida, name='agenda_rapida'),
     path('cargar-agenda-medico/', views.cargar_agenda_medico, name='cargar_agenda_medico'),
     path('validar-agenda/', views.validar_agenda, name='validar_agenda'),

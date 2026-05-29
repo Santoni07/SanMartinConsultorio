@@ -541,6 +541,11 @@
                     Mis Turnos
                 </a>
               </li>
+              <li>
+    <a href="{% url 'turnos:historial_turnos_medico' %}">
+        Historial de Turnos
+    </a>
+</li>
 
               <li>
                 <a href="{% url 'turnos:buscar_turnos_por_dni' %}">
@@ -548,11 +553,11 @@
                 </a>
               </li>
 
-              <li>
+              {% comment %} <li>
                 <a href="{% url 'turnos:seleccionar_paciente' %}">
                     Cargar Turno
                 </a>
-              </li>
+              </li> {% endcomment %}
 
             </ul>
 
@@ -652,46 +657,47 @@
     </div>
 
     <!-- SELECTOR DE SEDE -->
-    {% if request.user.is_authenticated %}
+    <!-- SELECTOR DE SEDE SOLO PARA ADMINISTRATIVOS -->
+{% if request.user.is_staff %}
 
-    <div class="dropdown">
+<div class="dropdown">
 
-        <button
-            class="btn btn-outline-light btn-sm dropdown-toggle"
-            type="button"
-            data-bs-toggle="dropdown"
-        >
+    <button
+        class="btn btn-outline-light btn-sm dropdown-toggle"
+        type="button"
+        data-bs-toggle="dropdown"
+    >
 
-            {% if centro_activo %}
-                {{ centro_activo.nombre }}
-            {% else %}
-                Seleccionar Sede
-            {% endif %}
+        {% if centro_activo %}
+            {{ centro_activo.nombre }}
+        {% else %}
+            Seleccionar Sede
+        {% endif %}
 
-        </button>
+    </button>
 
-        <ul class="dropdown-menu dropdown-menu-end">
+    <ul class="dropdown-menu dropdown-menu-end">
 
-            {% for centro in request.user.perfilusuario.centros.all %}
+        {% for centro in request.user.perfilusuario.centros.all %}
 
-                <li>
+            <li>
 
-                    <a
-                        class="dropdown-item"
-                        href="{% url 'core:cambiar_centro' centro.id %}"
-                    >
-                        {{ centro.nombre }}
-                    </a>
+                <a
+                    class="dropdown-item"
+                    href="{% url 'core:cambiar_centro' centro.id %}"
+                >
+                    {{ centro.nombre }}
+                </a>
 
-                </li>
+            </li>
 
-            {% endfor %}
+        {% endfor %}
 
-        </ul>
+    </ul>
 
-    </div>
+</div>
 
-    {% endif %}
+{% endif %}
 
 </div>
 

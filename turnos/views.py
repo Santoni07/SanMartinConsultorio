@@ -802,7 +802,7 @@ def buscar_turnos_por_dni(request):
         'turnos': turnos_futuros
     })   
 
-@login_required
+""" @login_required
 def mis_turnos_medico(request):
 
     if not hasattr(request.user, 'medico'):
@@ -825,7 +825,8 @@ def mis_turnos_medico(request):
     fecha = request.GET.get("fecha")
 
     mes = request.GET.get("mes")
-
+    
+    sede = request.GET.get("sede")
     # =====================================================
     # 🔵 TURNOS GLOBALES DEL MÉDICO
     # =====================================================
@@ -858,7 +859,13 @@ def mis_turnos_medico(request):
     # =====================================================
 
     def filtrar(turno):
+        if sede:
 
+            if not turno.centro_medico:
+                return False
+
+            if str(turno.centro_medico.id) != sede:
+                return False
         if filtro == "hoy":
 
             return turno.fecha == hoy
@@ -985,10 +992,11 @@ def mis_turnos_medico(request):
     )
 
     # =====================================================
-
+    centros = CentroMedico.objects.all()
     return render(request, "turnos/mis_turnos_medico.html", {
 
         "turnos": turnos,
+        "centros": centros,
 
         "hoy": hoy,
 
@@ -996,6 +1004,254 @@ def mis_turnos_medico(request):
 
         "turnos_hoy_count": turnos_hoy_count
     })
+ """
+@login_required
+def mis_turnos_medico(request):
+
+    if not hasattr(request.user, 'medico'):
+
+        messages.warning(
+            request,
+            "No tienes perfil médico."
+        )
+
+        return redirect('core:index')
+
+    medico = request.user.medico
+
+    hoy = date.today()
+
+    ahora = datetime.now().time()
+
+    filtro = request.GET.get("filtro")
+
+    fecha = request.GET.get("fecha")
+
+    mes = request.GET.get("mes")
+
+    sede = request.GET.get("sede")
+
+    # =====================================================
+    # 🔵 SOLO TURNOS PENDIENTES
+    # =====================================================
+
+    turnos_normales = Turnos.objects.filter(
+        medico=medico,
+        estado='PENDIENTE'
+    ).select_related(
+        'paciente',
+        'centro_medico',
+        'sede_operacion',
+        'creado_por',
+        'cancelado_por'
+    )
+
+    sobreturnos = Sobreturno.objects.filter(
+        medico=medico,
+        estado='PENDIENTE'
+    ).select_related(
+        'paciente',
+        'centro_medico',
+        'sede_operacion',
+        'creado_por',
+        'cancelado_por'
+    )
+
+    # =====================================================
+    # 🔥 UNIFICAR
+    # =====================================================
+
+    turnos = list(turnos_normales) + list(sobreturnos)
+
+    # =====================================================
+    # 🔥 FILTROS
+    # =====================================================
+
+    def filtrar(turno):
+
+        # 🔵 FILTRO POR SUCURSAL
+        if sede:
+
+            if not turno.centro_medico:
+                return False
+
+            if str(turno.centro_medico.id) != sede:
+                return False
+
+        # 🔵 FILTRO RÁPIDO
+        if filtro == "hoy":
+
+            return turno.fecha == hoy
+
+        elif filtro == "manana":
+
+            return turno.fecha == hoy + timedelta(days=1)
+
+        elif filtro == "semana":
+
+            return hoy <= turno.fecha <= hoy + timedelta(days=7)
+
+        # 🔵 FILTRO POR FECHA
+        elif fecha:
+
+            return str(turno.fecha) == fecha
+
+        # 🔵 FILTRO POR MES
+        elif mes:
+
+            try:
+
+                year, month = mes.split("-")
+
+                return (
+                    turno.fecha.year == int(year)
+                    and turno.fecha.month == int(month)
+                )
+
+            except ValueError:
+
+                return True
+
+        # 🔵 POR DEFECTO: HOY
+        else:
+
+            return turno.fecha == hoy
+
+    turnos = list(filter(filtrar, turnos))
+
+    # =====================================================
+    # 🔥 DATOS VISUALES
+    # =====================================================
+
+    for t in turnos:
+
+        # 🔵 TIPO
+
+        if isinstance(t, Sobreturno):
+
+            t.tipo = "Sobreturno"
+
+        else:
+
+            t.tipo = "Turno"
+
+        # 🔵 NOMBRE DE SEDE
+
+        t.sede_nombre = (
+
+            t.centro_medico.nombre
+
+            if t.centro_medico
+
+            else "Sin sede"
+        )
+
+        # 🔵 COLOR ESTADO
+
+        if t.estado == 'PENDIENTE':
+
+            t.estado_color = 'warning'
+
+        elif t.estado == 'ATENDIDO':
+
+            t.estado_color = 'success'
+
+        elif t.estado == 'AUSENTE':
+
+            t.estado_color = 'secondary'
+
+        elif t.estado == 'CANCELADO':
+
+            t.estado_color = 'danger'
+
+        else:
+
+            t.estado_color = 'light'
+
+        # 🔵 USUARIO CREADOR
+
+        t.usuario_creador = (
+
+            t.creado_por.username
+
+            if t.creado_por
+
+            else "Sistema"
+        )
+
+        # 🔵 USUARIO CANCELACIÓN
+
+        t.usuario_cancelacion = (
+
+            t.cancelado_por.username
+
+            if hasattr(t, 'cancelado_por')
+            and t.cancelado_por
+
+            else None
+        )
+
+    # =====================================================
+    # 🔥 ORDENAR
+    # =====================================================
+
+    turnos = sorted(
+        turnos,
+        key=lambda x: (
+            x.fecha,
+            x.hora
+        )
+    )
+
+    # =====================================================
+    # 🔥 CONTADOR DEL DÍA
+    # SOLO PENDIENTES
+    # =====================================================
+
+    turnos_hoy_count = (
+
+        Turnos.objects.filter(
+            medico=medico,
+            fecha=hoy,
+            estado='PENDIENTE'
+        ).count()
+
+        +
+
+        Sobreturno.objects.filter(
+            medico=medico,
+            fecha=hoy,
+            estado='PENDIENTE'
+        ).count()
+    )
+
+    # =====================================================
+    # 🔥 SUCURSALES PARA FILTRO
+    # =====================================================
+
+    centros = CentroMedico.objects.all()
+
+    # =====================================================
+
+    return render(
+        request,
+        "turnos/mis_turnos_medico.html",
+        {
+
+            "turnos": turnos,
+
+            "centros": centros,
+
+            "hoy": hoy,
+
+            "ahora": ahora,
+
+            "turnos_hoy_count": turnos_hoy_count,
+        }
+    )
+
+
+
 
 from django.utils import timezone
 @login_required
@@ -1110,7 +1366,222 @@ def cargar_agenda_medico(request):
         'form': form
     })
  
+@login_required
+def historial_turnos_medico(request):
 
+    if not hasattr(request.user, 'medico'):
+
+        messages.warning(
+            request,
+            "No tienes perfil médico."
+        )
+
+        return redirect('core:index')
+
+    medico = request.user.medico
+
+    hoy = date.today()
+
+    filtro = request.GET.get("filtro")
+
+    fecha = request.GET.get("fecha")
+
+    mes = request.GET.get("mes")
+
+    sede = request.GET.get("sede")
+
+    estado = request.GET.get("estado")
+
+    # ==========================================
+    # SOLO HISTORIAL
+    # ==========================================
+
+    estados_historial = [
+        'ATENDIDO',
+        'AUSENTE',
+        'CANCELADO'
+    ]
+
+    turnos_normales = Turnos.objects.filter(
+        medico=medico,
+        estado__in=estados_historial
+    ).select_related(
+        'paciente',
+        'centro_medico'
+    )
+
+    sobreturnos = Sobreturno.objects.filter(
+        medico=medico,
+        estado__in=estados_historial
+    ).select_related(
+        'paciente',
+        'centro_medico'
+    )
+
+    turnos = list(turnos_normales) + list(sobreturnos)
+
+    # ==========================================
+    # FILTROS
+    # ==========================================
+
+    def filtrar(turno):
+
+        if sede:
+
+            if not turno.centro_medico:
+                return False
+
+            if str(turno.centro_medico.id) != sede:
+                return False
+
+        if estado:
+
+            if turno.estado != estado:
+                return False
+
+        if filtro == "hoy":
+
+            return turno.fecha == hoy
+
+        elif filtro == "manana":
+
+            return turno.fecha == hoy + timedelta(days=1)
+
+        elif filtro == "semana":
+
+            return hoy <= turno.fecha <= hoy + timedelta(days=7)
+
+        elif fecha:
+
+            return str(turno.fecha) == fecha
+
+        elif mes:
+
+            try:
+
+                year, month = mes.split("-")
+
+                return (
+                    turno.fecha.year == int(year)
+                    and turno.fecha.month == int(month)
+                )
+
+            except ValueError:
+
+                return True
+
+        return True
+
+    turnos = list(filter(filtrar, turnos))
+
+    # ==========================================
+    # DATOS VISUALES
+    # ==========================================
+
+    for t in turnos:
+
+        if isinstance(t, Sobreturno):
+
+            t.tipo = "Sobreturno"
+
+        else:
+
+            t.tipo = "Turno"
+
+        t.sede_nombre = (
+            t.centro_medico.nombre
+            if t.centro_medico
+            else "Sin sede"
+        )
+
+        if t.estado == 'ATENDIDO':
+
+            t.estado_color = 'success'
+
+        elif t.estado == 'AUSENTE':
+
+            t.estado_color = 'secondary'
+
+        elif t.estado == 'CANCELADO':
+
+            t.estado_color = 'danger'
+
+        else:
+
+            t.estado_color = 'light'
+
+    # ==========================================
+    # ORDENAR
+    # ==========================================
+
+    turnos = sorted(
+        turnos,
+        key=lambda x: (
+            x.fecha,
+            x.hora
+        ),
+        reverse=True
+    )
+
+    # ==========================================
+    # CONTADORES
+    # ==========================================
+
+    atendidos = (
+        Turnos.objects.filter(
+            medico=medico,
+            estado='ATENDIDO'
+        ).count()
+
+        +
+
+        Sobreturno.objects.filter(
+            medico=medico,
+            estado='ATENDIDO'
+        ).count()
+    )
+
+    ausentes = (
+        Turnos.objects.filter(
+            medico=medico,
+            estado='AUSENTE'
+        ).count()
+
+        +
+
+        Sobreturno.objects.filter(
+            medico=medico,
+            estado='AUSENTE'
+        ).count()
+    )
+
+    cancelados = (
+        Turnos.objects.filter(
+            medico=medico,
+            estado='CANCELADO'
+        ).count()
+
+        +
+
+        Sobreturno.objects.filter(
+            medico=medico,
+            estado='CANCELADO'
+        ).count()
+    )
+
+    centros = CentroMedico.objects.all()
+
+    return render(
+        request,
+        'turnos/historial_turnos_medico.html',
+        {
+            'turnos': turnos,
+            'centros': centros,
+            'atendidos': atendidos,
+            'ausentes': ausentes,
+            'cancelados': cancelados,
+        }
+    )
 
 
 @login_required
@@ -1541,12 +2012,7 @@ def crear_excepcion(request):
             # =================================================
             # 🟡 REPROGRAMAR
             # =================================================
-
             elif excepcion.tipo == 'REPROGRAMAR':
-
-                conflictos = 0
-
-                movidos = 0
 
                 consultorio = obtener_consultorio_disponible(
                     excepcion.nueva_fecha,
@@ -1565,7 +2031,7 @@ def crear_excepcion(request):
                     return redirect('turnos:crear_excepcion')
 
                 # =============================================
-                # 🔵 NUEVA AGENDA
+                # 🔵 CREAR NUEVA AGENDA
                 # =============================================
 
                 AgendaMedico.objects.update_or_create(
@@ -1596,74 +2062,50 @@ def crear_excepcion(request):
                     }
                 )
 
+                # =============================================
+                # 🔴 CANCELAR TODOS LOS TURNOS
+                # =============================================
+
+                cancelados = 0
+
                 for turno in turnos:
 
-                    existe = Turnos.objects.filter(
-                        medico=medico,
-                        fecha=excepcion.nueva_fecha,
-                        hora=turno.hora,
-                        centro_medico=centro_activo
-                    ).exists()
+                    turno.estado = 'CANCELADO'
 
-                    if (
-                        excepcion.hora_inicio
-                        <= turno.hora
-                        <= excepcion.hora_fin
-                    ) and not existe:
+                    turno.cancelado_por = request.user
 
-                        fecha_anterior = turno.fecha
+                    turno.fecha_cancelacion = timezone.now()
 
-                        turno.fecha = excepcion.nueva_fecha
+                    turno.sede_operacion = centro_activo
 
-                        turno.modificado_por = request.user
+                    turno.save()
 
-                        turno.sede_operacion = centro_activo
+                    registrar_historial_turno(
 
-                        turno.save()
+                        turno=turno,
 
-                        registrar_historial_turno(
+                        accion='REPROGRAMADO',
 
-                            turno=turno,
+                        usuario=request.user,
 
-                            accion='REPROGRAMADO',
+                        sede_operacion=centro_activo,
 
-                            usuario=request.user,
-
-                            sede_operacion=centro_activo,
-
-                            descripcion=f'Turno reprogramado de {fecha_anterior} a {excepcion.nueva_fecha}'
+                        descripcion=(
+                            f'Agenda reprogramada para '
+                            f'{excepcion.nueva_fecha}. '
+                            f'Turno cancelado para '
+                            f'reprogramación manual.'
                         )
+                    )
 
-                        movidos += 1
+                    cancelados += 1
 
-                    else:
+                # =============================================
+                # 🔴 CANCELAR TODOS LOS SOBRETURNOS
+                # =============================================
 
-                        turno.estado = 'CANCELADO'
+                sobreturnos_cancelados = 0
 
-                        turno.cancelado_por = request.user
-
-                        turno.fecha_cancelacion = timezone.now()
-
-                        turno.sede_operacion = centro_activo
-
-                        turno.save()
-
-                        registrar_historial_turno(
-
-                            turno=turno,
-
-                            accion='CANCELADO',
-
-                            usuario=request.user,
-
-                            sede_operacion=centro_activo,
-
-                            descripcion='Turno cancelado por conflicto de reprogramación'
-                        )
-
-                        conflictos += 1
-
-                # 🔵 SOBRETURNOS
                 for s in sobreturnos:
 
                     s.estado = 'CANCELADO'
@@ -1676,9 +2118,19 @@ def crear_excepcion(request):
 
                     s.save()
 
-                messages.success(
+                    sobreturnos_cancelados += 1
+
+                messages.warning(
+
                     request,
-                    f"Turnos movidos: {movidos}. Cancelados: {conflictos}. Consultorio asignado: {consultorio.numero}"
+
+                    f"Se cancelaron "
+                    f"{cancelados} turnos y "
+                    f"{sobreturnos_cancelados} sobreturnos. "
+                    f"La nueva agenda fue creada para "
+                    f"{excepcion.nueva_fecha}. "
+                    f"Los pacientes deberán ser "
+                    f"reprogramados manualmente."
                 )
 
             # =================================================

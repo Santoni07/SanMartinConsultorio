@@ -1,0 +1,252 @@
+{% extends 'core/base.html' %}
+{% block content %}
+
+<div class="container mt-5">
+
+    <div class="d-flex justify-content-between align-items-center mb-4">
+
+        <h2 class="fw-bold">
+            <i class="bi bi-clock-history text-primary"></i>
+            Historial de Turnos
+        </h2>
+
+    </div>
+
+    <!-- CONTADORES -->
+
+    <div class="row mb-4">
+
+        <div class="col-md-3">
+            <div class="card border-success shadow-sm">
+                <div class="card-body text-center">
+                    <h6>Atendidos</h6>
+                    <h3 class="text-success">
+                        {{ atendidos }}
+                    </h3>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-3">
+            <div class="card border-secondary shadow-sm">
+                <div class="card-body text-center">
+                    <h6>Ausentes</h6>
+                    <h3 class="text-secondary">
+                        {{ ausentes }}
+                    </h3>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-3">
+            <div class="card border-danger shadow-sm">
+                <div class="card-body text-center">
+                    <h6>Cancelados</h6>
+                    <h3 class="text-danger">
+                        {{ cancelados }}
+                    </h3>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-3">
+            <div class="card border-primary shadow-sm">
+                <div class="card-body text-center">
+                    <h6>Total</h6>
+                    <h3 class="text-primary">
+                        {{ atendidos|add:ausentes|add:cancelados }}
+                    </h3>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- FILTROS -->
+
+    <div class="card shadow-sm border-0 mb-4">
+
+        <div class="card-body">
+
+            <form method="get" class="row g-3">
+
+                <div class="col-md-2">
+                    <input type="date"
+                           name="fecha"
+                           class="form-control">
+                </div>
+
+                <div class="col-md-2">
+                    <input type="month"
+                           name="mes"
+                           class="form-control">
+                </div>
+
+                <div class="col-md-3">
+
+                    <select name="sede"
+                            class="form-select">
+
+                        <option value="">
+                            Todas las sucursales
+                        </option>
+
+                        {% for centro in centros %}
+
+                            <option value="{{ centro.id }}">
+                                {{ centro.nombre }}
+                            </option>
+
+                        {% endfor %}
+
+                    </select>
+
+                </div>
+
+                <div class="col-md-3">
+
+                    <select name="estado"
+                            class="form-select">
+
+                        <option value="">
+                            Todos
+                        </option>
+
+                        <option value="ATENDIDO">
+                            Atendidos
+                        </option>
+
+                        <option value="AUSENTE">
+                            Ausentes
+                        </option>
+
+                        <option value="CANCELADO">
+                            Cancelados
+                        </option>
+
+                    </select>
+
+                </div>
+
+                <div class="col-md-2">
+
+                    <button class="btn btn-primary w-100">
+
+                        <i class="bi bi-search"></i>
+
+                        Filtrar
+
+                    </button>
+
+                </div>
+
+            </form>
+
+        </div>
+
+    </div>
+
+    <!-- TABLA -->
+
+    <div class="card shadow-sm border-0">
+
+        <div class="card-body">
+
+            <div class="table-responsive">
+
+                <table class="table table-hover align-middle">
+
+                    <thead class="table-light">
+
+                        <tr>
+
+                            <th>Fecha</th>
+                            <th>Hora</th>
+                            <th>Sede</th>
+                            <th>Tipo</th>
+                            <th>Paciente</th>
+                            <th>Estado</th>
+                            <th>Observaciones</th>
+
+                        </tr>
+
+                    </thead>
+
+                    <tbody>
+
+                        {% for turno in turnos %}
+
+                        <tr>
+
+                            <td>{{ turno.fecha }}</td>
+
+                            <td>{{ turno.hora }}</td>
+
+                            <td>
+                                {{ turno.sede_nombre }}
+                            </td>
+
+                            <td>
+
+                                {% if turno.tipo == "Sobreturno" %}
+
+                                    <span class="badge bg-warning text-dark">
+                                        Sobreturno
+                                    </span>
+
+                                {% else %}
+
+                                    <span class="badge bg-primary">
+                                        Turno
+                                    </span>
+
+                                {% endif %}
+
+                            </td>
+
+                            <td>{{ turno.paciente }}</td>
+
+                            <td>
+
+                                <span class="badge bg-{{ turno.estado_color }}">
+
+                                    {{ turno.estado }}
+
+                                </span>
+
+                            </td>
+
+                            <td>
+                                {{ turno.observaciones|default:"-" }}
+                            </td>
+
+                        </tr>
+
+                        {% empty %}
+
+                        <tr>
+
+                            <td colspan="7"
+                                class="text-center py-4">
+
+                                No hay registros.
+
+                            </td>
+
+                        </tr>
+
+                        {% endfor %}
+
+                    </tbody>
+
+                </table>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+{% endblock %}
