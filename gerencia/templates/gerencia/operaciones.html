@@ -1,0 +1,362 @@
+{% extends 'core/base.html' %}
+
+{% block content %}
+
+<div class="container-fluid mt-4">
+
+    <div class="row">
+
+        <div class="col-lg-2">
+
+            {% include 'gerencia/sidebar_gerencia.html' %}
+
+        </div>
+
+        <div class="col-lg-10">
+
+            <h2 class="fw-bold mb-4">
+                🏥 Operaciones
+            </h2>
+
+            <div class="row">
+
+                <div class="col-md-2 mb-3">
+                    <div class="card shadow">
+                        <div class="card-body text-center">
+                            <h6>Turnos Hoy</h6>
+                            <h3>{{ turnos_hoy }}</h3>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-md-2 mb-3">
+                    <div class="card shadow">
+                        <div class="card-body text-center">
+                            <h6>Atendidos</h6>
+                            <h3 class="text-success">
+                                {{ atendidos_hoy }}
+                            </h3>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-md-2 mb-3">
+                    <div class="card shadow">
+                        <div class="card-body text-center">
+                            <h6>Ausentes</h6>
+                            <h3 class="text-secondary">
+                                {{ ausentes_hoy }}
+                            </h3>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-md-2 mb-3">
+                    <div class="card shadow">
+                        <div class="card-body text-center">
+                            <h6>Cancelados</h6>
+                            <h3 class="text-danger">
+                                {{ cancelados_hoy }}
+                            </h3>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-md-2 mb-3">
+                    <div class="card shadow">
+                        <div class="card-body text-center">
+                            <h6>Pendientes</h6>
+                            <h3 class="text-warning">
+                                {{ pendientes_hoy }}
+                            </h3>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+
+            <div class="card shadow mt-4">
+
+                <div class="card-header">
+                    Resumen Operativo
+                </div>
+
+                <div class="card-body">
+
+                    <table class="table">
+
+                        <tr>
+                            <td>Turnos Semana</td>
+                            <td>{{ turnos_semana }}</td>
+                        </tr>
+
+                        <tr>
+                            <td>Atendidos Semana</td>
+                            <td>{{ atendidos_semana }}</td>
+                        </tr>
+
+                        <tr>
+                            <td>Turnos Mes</td>
+                            <td>{{ turnos_mes }}</td>
+                        </tr>
+
+                        <tr>
+                            <td>Atendidos Mes</td>
+                            <td>{{ atendidos_mes }}</td>
+                        </tr>
+
+                    </table>
+
+                </div>
+                <div class="card shadow mt-4">
+
+    <div class="card-header bg-white">
+
+        <h5 class="mb-0 fw-bold">
+
+            🏢 Comparativo por Sucursal
+
+        </h5>
+
+    </div>
+
+    <div class="card-body">
+
+        <div class="table-responsive">
+
+            <table class="table table-hover">
+
+                <thead class="table-light">
+
+                    <tr>
+
+                        <th>Sucursal</th>
+
+                        <th>Atendidos</th>
+
+                        <th>Ausentes</th>
+
+                        <th>Cancelados</th>
+
+                        <th>Pendientes</th>
+
+                    </tr>
+
+                </thead>
+
+                <tbody>
+
+                    {% for sede in sedes_operacion %}
+
+                    <tr>
+
+                        <td>
+
+                            <strong>
+
+                                {{ sede.nombre }}
+
+                            </strong>
+
+                        </td>
+
+                        <td>
+
+                            <span class="badge bg-success">
+
+                                {{ sede.atendidos }}
+
+                            </span>
+
+                        </td>
+
+                        <td>
+
+                            <span class="badge bg-secondary">
+
+                                {{ sede.ausentes }}
+
+                            </span>
+
+                        </td>
+
+                        <td>
+
+                            <span class="badge bg-danger">
+
+                                {{ sede.cancelados }}
+
+                            </span>
+
+                        </td>
+
+                        <td>
+
+                            <span class="badge bg-warning text-dark">
+
+                                {{ sede.pendientes }}
+
+                            </span>
+
+                        </td>
+
+                    </tr>
+
+                    {% endfor %}
+
+                </tbody>
+
+            </table>
+
+        </div>
+
+    </div>
+
+</div>
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+
+
+    
+    <div class="card shadow-sm mt-4">
+
+    <div class="card-header bg-white">
+
+        <h5 class="mb-0 fw-bold">
+            📈 Rendimiento por Sucursal
+        </h5>
+
+    </div>
+
+    <div class="card-body">
+
+        <div style="height: 300px;">
+            <canvas id="graficoSedes"></canvas>
+        </div>
+
+    </div>
+
+
+
+</div>
+
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<script>
+
+   const ctx = document.getElementById('graficoSedes');
+
+new Chart(ctx, {
+
+    type: 'bar',
+
+    data: {
+
+        labels: [
+
+            {% for sede in sedes_operacion %}
+                '{{ sede.nombre }}',
+            {% endfor %}
+
+        ],
+
+        datasets: [
+
+            {
+                label: 'Atendidos',
+
+                data: [
+
+                    {% for sede in sedes_operacion %}
+                        {{ sede.atendidos }},
+                    {% endfor %}
+
+                ],
+
+                backgroundColor: [
+                    '#198754',
+                    '#0d6efd',
+                    '#20c997',
+                    '#6f42c1'
+                ],
+
+                borderRadius: 10,
+
+                borderSkipped: false,
+
+                maxBarThickness: 70
+            }
+
+        ]
+
+    },
+
+    options: {
+
+        responsive: true,
+
+        maintainAspectRatio: false,
+
+        plugins: {
+
+            legend: {
+
+                display: false
+
+            },
+
+            title: {
+
+                display: true,
+
+                text: 'Atenciones por Sucursal',
+
+                font: {
+
+                    size: 18
+
+                }
+
+            }
+
+        },
+
+        scales: {
+
+            y: {
+
+                beginAtZero: true,
+
+                grid: {
+
+                    color: '#e9ecef'
+
+                }
+
+            },
+
+            x: {
+
+                grid: {
+
+                    display: false
+
+                }
+
+            }
+
+        }
+
+    }
+
+});
+
+</script>
+{% endblock %}

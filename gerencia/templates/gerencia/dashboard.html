@@ -1,0 +1,498 @@
+{% extends 'core/base.html' %}
+
+{% block content %}
+
+<div class="row">
+
+    <!-- SIDEBAR -->
+    <div class="col-lg-2 mb-4">
+
+        {% include 'gerencia/sidebar_gerencia.html' %}
+
+    </div>
+
+    <!-- CONTENIDO -->
+    <div class="col-lg-10">
+
+        <div class="d-flex justify-content-between align-items-center mb-4">
+
+            <h2 class="fw-bold mb-0">
+                📊 Dashboard Ejecutivo
+            </h2>
+
+            <span class="badge bg-primary fs-6">
+                Consultorio Médico San Martín
+            </span>
+
+        </div>
+
+        <!-- ================= KPI PRINCIPALES ================= -->
+
+        <div class="row">
+
+            <div class="col-xl-3 col-md-6 mb-4">
+                <div class="card border-start border-primary border-4 shadow h-100">
+                    <div class="card-body">
+                        <div class="text-xs fw-bold text-primary text-uppercase mb-2">
+                            Turnos Hoy
+                        </div>
+                        <div class="h3 fw-bold">
+                            {{ turnos_hoy }}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-xl-3 col-md-6 mb-4">
+                <div class="card border-start border-success border-4 shadow h-100">
+                    <div class="card-body">
+                        <div class="text-xs fw-bold text-success text-uppercase mb-2">
+                            Atendidos Hoy
+                        </div>
+                        <div class="h3 fw-bold">
+                            {{ atendidos_hoy }}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-xl-3 col-md-6 mb-4">
+                <div class="card border-start border-warning border-4 shadow h-100">
+                    <div class="card-body">
+                        <div class="text-xs fw-bold text-warning text-uppercase mb-2">
+                            Pendientes Hoy
+                        </div>
+                        <div class="h3 fw-bold">
+                            {{ pendientes_hoy }}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-xl-3 col-md-6 mb-4">
+                <div class="card border-start border-danger border-4 shadow h-100">
+                    <div class="card-body">
+                        <div class="text-xs fw-bold text-danger text-uppercase mb-2">
+                            Cancelados Hoy
+                        </div>
+                        <div class="h3 fw-bold">
+                            {{ cancelados_hoy }}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- ================= KPI SECUNDARIOS ================= -->
+
+        <div class="row">
+
+            <div class="col-xl-4 col-md-6 mb-4">
+                <div class="card shadow h-100">
+                    <div class="card-body text-center">
+                        <h6 class="text-secondary">
+                            Ausentes Hoy
+                        </h6>
+                        <h2 class="fw-bold text-secondary">
+                            {{ ausentes_hoy }}
+                        </h2>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-xl-4 col-md-6 mb-4">
+                <div class="card shadow h-100">
+                    <div class="card-body text-center">
+                        <h6 class="text-primary">
+                            Pacientes Registrados
+                        </h6>
+                        <h2 class="fw-bold text-primary">
+                            {{ pacientes_totales }}
+                        </h2>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-xl-4 col-md-6 mb-4">
+                <div class="card shadow h-100">
+                    <div class="card-body text-center">
+                        <h6 class="text-success">
+                            Médicos Activos
+                        </h6>
+                        <h2 class="fw-bold text-success">
+                            {{ medicos_totales }}
+                        </h2>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- ================= RESUMEN GENERAL ================= -->
+
+        <div class="row">
+
+            <div class="col-lg-12">
+
+                <div class="card shadow mb-4">
+
+                    <div class="card-header bg-white">
+
+                        <h5 class="mb-0 fw-bold">
+                            🏢 Información General
+                        </h5>
+                        <br>
+                        <div class="card shadow mb-4">
+
+    <div class="card-header bg-white">
+
+        <h5 class="mb-0 fw-bold">
+
+            🏢 Rendimiento por Sucursal
+
+        </h5>
+
+    </div>
+
+    <div class="card-body">
+
+        <div class="table-responsive">
+
+            <table class="table table-hover">
+
+                <thead class="table-light">
+
+                    <tr>
+
+                        <th>Sucursal</th>
+
+                        <th>Atendidos</th>
+
+                        <th>Ausentes</th>
+
+                        <th>Cancelados</th>
+
+                        <th>Pendientes</th>
+
+                        
+
+                    </tr>
+
+                </thead>
+
+                <tbody>
+
+                    {% for sede in sedes_resumen %}
+
+                    <tr>
+
+                        <td>
+
+                            <strong>
+
+                                {{ sede.nombre }}
+
+                            </strong>
+
+                        </td>
+
+                        <td>
+
+                            <span class="badge bg-success">
+
+                                {{ sede.atendidos }}
+
+                            </span>
+
+                        </td>
+
+                        <td>
+
+                            <span class="badge bg-secondary">
+
+                                {{ sede.ausentes }}
+
+                            </span>
+
+                        </td>
+
+                        <td>
+
+                            <span class="badge bg-danger">
+
+                                {{ sede.cancelados }}
+
+                            </span>
+
+                        </td>
+
+                        <td>
+
+                            <span class="badge bg-warning text-dark">
+
+                                {{ sede.pendientes }}
+
+                            </span>
+
+                        </td>
+
+                       
+
+                    </tr>
+
+                    {% endfor %}
+
+                </tbody>
+
+            </table>
+
+        </div>
+
+    </div>
+
+    <div class="card shadow mb-4">
+
+    <div class="card-header bg-white">
+
+        <h5 class="mb-0 fw-bold">
+
+            👨‍⚕️ Ranking de Médicos
+
+        </h5>
+
+    </div>
+
+    <div class="card-body">
+
+        <div class="table-responsive">
+
+            <table class="table table-hover align-middle">
+
+                <thead class="table-light">
+
+                    <tr>
+
+                        <th>Médico</th>
+
+                        <th>Atendidos</th>
+
+                        <th>Ausentes</th>
+
+                        <th>Cancelados</th>
+
+                        <th>Pendientes</th>
+
+                        
+
+                    </tr>
+
+                </thead>
+
+                <tbody>
+
+                    {% for medico in ranking_medicos %}
+
+                    <tr>
+
+                        <td>
+
+                            <strong>
+
+                                {{ medico.nombre }}
+
+                            </strong>
+
+                        </td>
+
+                        <td>
+
+                            <span class="badge bg-success">
+
+                                {{ medico.atendidos }}
+
+                            </span>
+
+                        </td>
+
+                        <td>
+
+                            <span class="badge bg-secondary">
+
+                                {{ medico.ausentes }}
+
+                            </span>
+
+                        </td>
+
+                        <td>
+
+                            <span class="badge bg-danger">
+
+                                {{ medico.cancelados }}
+
+                            </span>
+
+                        </td>
+
+                        <td>
+
+                            <span class="badge bg-warning text-dark">
+
+                                {{ medico.pendientes }}
+
+                            </span>
+
+                        </td>
+
+                       
+
+                    </tr>
+
+                    {% empty %}
+
+                    <tr>
+
+                        <td colspan="6" class="text-center">
+
+                            No hay datos.
+
+                        </td>
+
+                    </tr>
+
+                    {% endfor %}
+
+                </tbody>
+
+            </table>
+
+        </div>
+
+    </div>
+
+</div>
+
+</div>
+
+                    </div>
+
+                    <div class="card-body">
+
+                        <div class="table-responsive">
+
+                            <table class="table table-hover align-middle">
+
+                                <thead>
+
+                                    <tr>
+
+                                        <th>Indicador</th>
+
+                                        <th>Valor</th>
+
+                                    </tr>
+
+                                </thead>
+
+                                <tbody>
+
+                                    <tr>
+                                        <td>Sedes Activas</td>
+                                        <td>{{ sedes_totales }}</td>
+                                    </tr>
+
+                                    <tr>
+                                        <td>Pacientes Totales</td>
+                                        <td>{{ pacientes_totales }}</td>
+                                    </tr>
+
+                                    <tr>
+                                        <td>Médicos Activos</td>
+                                        <td>{{ medicos_totales }}</td>
+                                    </tr>
+
+                                    <tr>
+                                        <td>Turnos del Día</td>
+                                        <td>{{ turnos_hoy }}</td>
+                                    </tr>
+
+                                </tbody>
+
+                            </table>
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+        </div>
+
+        <!-- ================= PRÓXIMOS MÓDULOS ================= -->
+
+        <div class="row">
+
+            <div class="col-md-4 mb-4">
+
+                <div class="card shadow h-100">
+
+                    <div class="card-body text-center">
+
+                        <h5>🏥 Operaciones</h5>
+
+                        <p class="text-muted">
+                            Estadísticas de turnos, ausencias y cancelaciones.
+                        </p>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+            <div class="col-md-4 mb-4">
+
+                <div class="card shadow h-100">
+
+                    <div class="card-body text-center">
+
+                        <h5>🧑 Pacientes</h5>
+
+                        <p class="text-muted">
+                            Crecimiento, pacientes nuevos y actividad.
+                        </p>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+            <div class="col-md-4 mb-4">
+
+                <div class="card shadow h-100">
+
+                    <div class="card-body text-center">
+
+                        <h5>💰 Facturación</h5>
+
+                        <p class="text-muted">
+                            Próximamente disponible.
+                        </p>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+{% endblock %}

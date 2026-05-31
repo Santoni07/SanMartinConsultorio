@@ -54,7 +54,11 @@ urlpatterns = [
    
 # path historial
    path('historial/', include('historial.urls')),
-
+# path gerencia 
+path(
+    'gerencia/',
+    include('gerencia.urls')
+),
 ]
 
 
