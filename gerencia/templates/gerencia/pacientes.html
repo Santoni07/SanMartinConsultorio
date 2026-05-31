@@ -1,0 +1,395 @@
+{% extends 'core/base.html' %}
+
+{% block content %}
+
+<div class="container-fluid mt-4">
+
+    <div class="row">
+
+        <div class="col-lg-2">
+
+            {% include 'gerencia/sidebar_gerencia.html' %}
+
+        </div>
+
+        <div class="col-lg-10">
+
+            <h2 class="fw-bold mb-4">
+                👥 Pacientes
+            </h2>
+
+            <!-- KPIs -->
+
+            <div class="row">
+
+                <div class="col-md-3 mb-3">
+
+                    <div class="card shadow">
+
+                        <div class="card-body text-center">
+
+                            <h6>Total Pacientes</h6>
+
+                            <h3>
+                                {{ total_pacientes }}
+                            </h3>
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+                <div class="col-md-3 mb-3">
+
+                    <div class="card shadow">
+
+                        <div class="card-body text-center">
+
+                            <h6>Nuevos este Mes</h6>
+
+                            <h3 class="text-primary">
+                                {{ nuevos_mes }}
+                            </h3>
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+                <div class="col-md-3 mb-3">
+
+                    <div class="card shadow">
+
+                        <div class="card-body text-center">
+
+                            <h6>Pacientes Activos</h6>
+
+                            <h3 class="text-success">
+                                {{ pacientes_activos }}
+                            </h3>
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+                <div class="col-md-3 mb-3">
+
+                    <div class="card shadow">
+
+                        <div class="card-body text-center">
+
+                            <h6>Pacientes Inactivos</h6>
+
+                            <h3 class="text-danger">
+                                {{ pacientes_inactivos }}
+                            </h3>
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+            <!-- Gráfico -->
+
+            <div class="card shadow mt-4">
+
+                <div class="card-header bg-white">
+
+                    <h5 class="mb-0 fw-bold">
+                        📈 Evolución de Pacientes
+                    </h5>
+
+                </div>
+
+                <div class="card-body">
+
+                    <div style="height: 350px;">
+
+                        <canvas id="graficoPacientes"></canvas>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+            <div class="card shadow mt-4">
+
+    <div class="card-header bg-white">
+
+        <h5 class="mb-0 fw-bold">
+            🏥 Distribución por Obra Social
+        </h5>
+
+    </div>
+
+    <div class="card-body">
+
+        <div style="height:400px;">
+
+            <canvas id="graficoObrasSociales"></canvas>
+
+        </div>
+
+    </div>
+
+</div>
+
+            <!-- Últimos Pacientes -->
+
+            <div class="card shadow mt-4">
+
+                <div class="card-header bg-white">
+
+                    <h5 class="mb-0 fw-bold">
+                        🧾 Últimos Pacientes Registrados
+                    </h5>
+
+                </div>
+
+                <div class="card-body">
+
+                    <div class="table-responsive">
+
+                        <table class="table table-hover">
+
+                            <thead class="table-light">
+
+                                <tr>
+
+                                    <th>Paciente</th>
+
+                                    <th>DNI</th>
+
+                                    <th>Sexo</th>
+
+                                    <th>Obra Social</th>
+
+                                    <th>Teléfono</th>
+
+                                    <th>Fecha Alta</th>
+
+                                </tr>
+
+                            </thead>
+
+                            <tbody>
+
+                                {% for paciente in ultimos_pacientes %}
+
+                                <tr>
+
+                                    <td>
+                                        <strong>
+                                            {{ paciente.apellido }},
+                                            {{ paciente.nombre }}
+                                        </strong>
+                                    </td>
+
+                                    <td>
+                                        {{ paciente.dni }}
+                                    </td>
+
+                                    <td>
+                                        {{ paciente.get_sexo_display }}
+                                    </td>
+
+                                    <td>
+                                        {{ paciente.obrasocial }}
+                                    </td>
+
+                                    <td>
+                                        {{ paciente.telefono }}
+                                    </td>
+
+                                    <td>
+                                        {{ paciente.fecha_alta|date:"d/m/Y" }}
+                                    </td>
+
+                                </tr>
+
+                                {% empty %}
+
+                                <tr>
+
+                                    <td colspan="6" class="text-center">
+
+                                        No existen pacientes cargados.
+
+                                    </td>
+
+                                </tr>
+
+                                {% endfor %}
+
+                            </tbody>
+
+                        </table>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2"></script>
+
+<script>
+
+Chart.register(ChartDataLabels);
+
+const ctxOS = document.getElementById('graficoObrasSociales');
+
+new Chart(ctxOS, {
+
+    type: 'doughnut',
+
+    data: {
+
+        labels: {{ labels_os|safe }},
+
+        datasets: [{
+
+            data: {{ datos_os|safe }}
+
+        }]
+
+    },
+
+    options: {
+
+        responsive: true,
+
+        maintainAspectRatio: false,
+
+        plugins: {
+
+            datalabels: {
+
+                color: '#ffffff',
+
+                font: {
+
+                    weight: 'bold',
+
+                    size: 16
+
+                },
+
+                formatter: function(value, context) {
+
+                    let data = context.chart.data.datasets[0].data;
+
+                    let total = data.reduce((a, b) => a + b, 0);
+
+                    let porcentaje = ((value / total) * 100).toFixed(1);
+
+                    return porcentaje + '%';
+
+                }
+
+            },
+
+            legend: {
+
+                position: 'right'
+
+            }
+
+        }
+
+    }
+
+});
+
+</script>
+<script>
+
+const ctx = document.getElementById('graficoPacientes');
+
+new Chart(ctx, {
+
+    type: 'bar',
+
+    data: {
+
+        labels: {{ labels_mes|safe }},
+
+        datasets: [{
+
+            label: 'Pacientes Registrados',
+
+            data: {{ datos_mes|safe }},
+
+            backgroundColor: '#0d6efd',
+
+            borderRadius: 10,
+
+            borderSkipped: false,
+
+            maxBarThickness: 60
+
+        }]
+
+    },
+
+    options: {
+
+        responsive: true,
+
+        maintainAspectRatio: false,
+
+        plugins: {
+
+            legend: {
+
+                display: false
+
+            },
+
+            title: {
+
+                display: true,
+
+                text: 'Crecimiento de Pacientes',
+
+                font: {
+
+                    size: 18
+
+                }
+
+            }
+
+        },
+
+        scales: {
+
+            y: {
+
+                beginAtZero: true
+
+            }
+
+        }
+
+    }
+
+});
+
+</script>
+
+{% endblock %}

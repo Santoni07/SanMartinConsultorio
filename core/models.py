@@ -34,6 +34,7 @@ class PerfilUsuario(models.Model):
         ('ADMIN', 'Administrador'),
         ('RECEPCION', 'Recepción'),
         ('MEDICO', 'Médico'),
+        ('GERENCIA', 'Gerencia'),
     ]
     centro_principal = models.ForeignKey(
         CentroMedico,

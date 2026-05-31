@@ -32,6 +32,17 @@ def login_view(request):
 
     # 🔒 Si ya está logueado, no puede volver al login
     if request.user.is_authenticated:
+
+        try:
+
+            perfil = request.user.perfilusuario
+
+            if perfil.rol == 'GERENCIA':
+                return redirect('gerencia:dashboard')
+
+        except Exception:
+            pass
+
         if request.user.is_superuser or request.user.is_staff:
             return redirect('core:IndexAdmin')
 
@@ -41,12 +52,17 @@ def login_view(request):
         return redirect('core:index')
 
     if request.method == "POST":
+
         username = request.POST.get("username")
         password = request.POST.get("password")
 
         print("Intentando login con:", username)
 
-        user = authenticate(request, username=username, password=password)
+        user = authenticate(
+            request,
+            username=username,
+            password=password
+        )
 
         if user is not None:
 
@@ -86,22 +102,64 @@ def login_view(request):
 
             except Exception as e:
 
-                print("❌ Error asignando centro:", e)
+                print(
+                    "❌ Error asignando centro:",
+                    e
+                )
 
-            # 🔁 Redirección por rol
+            # ==================================================
+            # 🔥 REDIRECCIÓN POR ROL
+            # ==================================================
+
+            try:
+
+                perfil = user.perfilusuario
+
+                if perfil.rol == 'GERENCIA':
+
+                    return redirect(
+                        'gerencia:dashboard'
+                    )
+
+            except Exception:
+                pass
+
             if user.is_superuser or user.is_staff:
-                return redirect('core:IndexAdmin')
+
+                return redirect(
+                    'core:IndexAdmin'
+                )
 
             if hasattr(user, 'medico'):
-                return redirect('core:medico')
 
-            return redirect('core:index')
+                return redirect(
+                    'core:medico'
+                )
+
+            return redirect(
+                'core:index'
+            )
 
         else:
-            messages.error(request, "Usuario o contraseña incorrectos.")
 
-    return render(request, "registration/login.html")
+            messages.error(
+                request,
+                "Usuario o contraseña incorrectos."
+            )
 
+    return render(
+        request,
+        "registration/login.html"
+    )
+
+
+def logout_view(request):
+
+    logout(request)
+
+    return redirect(
+        'core:index'
+    )
 def logout_view(request):
     logout(request)
     return redirect('core:index')
