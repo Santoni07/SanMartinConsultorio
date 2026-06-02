@@ -1,126 +1,382 @@
 {% extends 'core/base.html' %}
 {% load static %}
+
 {% block title %}Cargar Profesional{% endblock %}
 
 {% block content %}
+
 <div class="container mt-5">
 
     <!-- TÍTULO -->
     <div class="text-center mb-4">
+
         <h2 class="fw-bold text-primary">
-            <i class="bi bi-person-badge-fill"></i> Nuevo Profesional
+
+            <i class="bi bi-person-badge-fill"></i>
+            Nuevo Profesional
+
         </h2>
-        <p class="text-muted">Complete los datos del profesional</p>
+
+        <p class="text-muted">
+
+            Complete los datos del profesional
+
+        </p>
+
     </div>
 
     <div class="card shadow border-0">
+
         <div class="card-body p-4">
 
+            <!-- ERRORES -->
+
+            {% if form.errors %}
+
+            <div class="alert alert-danger">
+
+                <h5>
+
+                    <i class="bi bi-exclamation-triangle-fill"></i>
+                    Debe corregir los siguientes errores
+
+                </h5>
+
+                <hr>
+
+                <ul class="mb-0">
+
+                    {% for field in form %}
+
+                        {% for error in field.errors %}
+
+                            <li>
+
+                                <strong>
+                                    {{ field.label }}
+                                </strong>
+
+                                : {{ error }}
+
+                            </li>
+
+                        {% endfor %}
+
+                    {% endfor %}
+
+                    {% for error in form.non_field_errors %}
+
+                        <li>{{ error }}</li>
+
+                    {% endfor %}
+
+                </ul>
+
+            </div>
+
+            {% endif %}
+
             <form method="post" enctype="multipart/form-data">
+
                 {% csrf_token %}
 
                 <div class="row">
 
-                    <!-- Nombre -->
+                    <!-- NOMBRE -->
+
                     <div class="col-md-6 mb-3">
-                        <label class="form-label fw-bold">Nombre</label>
+
+                        <label class="form-label fw-bold">
+
+                            Nombre
+                            <span class="text-danger">*</span>
+
+                        </label>
+
                         {{ form.nombre }}
+
                     </div>
 
-                    <!-- Apellido -->
+                    <!-- APELLIDO -->
+
                     <div class="col-md-6 mb-3">
-                        <label class="form-label fw-bold">Apellido</label>
+
+                        <label class="form-label fw-bold">
+
+                            Apellido
+                            <span class="text-danger">*</span>
+
+                        </label>
+
                         {{ form.apellido }}
+
                     </div>
 
-                    <!-- Matrícula -->
+                    <!-- MATRICULA -->
+
                     <div class="col-md-6 mb-3">
-                        <label class="form-label fw-bold">Matrícula</label>
+
+                        <label class="form-label fw-bold">
+
+                            Matrícula
+                            <span class="text-danger">*</span>
+
+                        </label>
+
                         {{ form.matricula }}
+
                     </div>
 
-                    <!-- Email -->
+                    <!-- EMAIL -->
+
                     <div class="col-md-6 mb-3">
-                        <label class="form-label fw-bold">Email</label>
+
+                        <label class="form-label fw-bold">
+
+                            Email
+                            <span class="text-danger">*</span>
+
+                        </label>
+
                         {{ form.email }}
+
                     </div>
 
-                    <!-- Especialidad -->
-                    <div class="col-12 mb-3">
-    <label class="form-label fw-bold">Especialidades</label>
-    <div class="border rounded p-3 bg-light">
-        {{ form.especialidad }}
-    </div>
-</div>
+                    <!-- TELEFONO -->
+
+                    <div class="col-md-6 mb-3">
+
+                        <label class="form-label fw-bold">
+
+                            Teléfono
+                            <span class="text-danger">*</span>
+
+                        </label>
+
+                        {{ form.telefono }}
+
+                    </div>
+
+                    <!-- ESPECIALIDADES -->
+
+                    <div class="col-md-12 mb-3">
+
+                        <label class="form-label fw-bold">
+
+                            Especialidades
+                            <span class="text-danger">*</span>
+
+                        </label>
+
+                        <div class="border rounded p-3 bg-light">
+
+                            {{ form.especialidad }}
+
+                        </div>
+
+                    </div>
+
+                    <!-- FOTO -->
+
+                    <div class="col-md-12 mb-3">
+
+                        <label class="form-label fw-bold">
+
+                            Foto Profesional
+
+                        </label>
+
+                        {{ form.img }}
+
+                        <small class="text-muted d-block mt-2">
+
+                            Formatos permitidos:
+                            JPG, PNG, WEBP
+
+                        </small>
+
+                    </div>
+
+                    <!-- PREVIEW -->
+
+                    <div class="col-md-12 mb-3 text-center">
+
+                        <img
+                            id="preview"
+                            src="#"
+                            class="img-thumbnail"
+                            style="
+                                display:none;
+                                max-height:220px;
+                            "
+                        >
+
+                    </div>
 
                 </div>
 
                 <!-- BOTONES -->
+
                 <div class="d-flex justify-content-between mt-4">
-                    <a href="{% url 'core:IndexAdmin' %}" class="btn btn-primary btn-lg">
-                        <i class="bi bi-arrow-left"></i> Volver
+
+                    <a href="{% url 'core:IndexAdmin' %}"
+                       class="btn btn-primary btn-lg">
+
+                        <i class="bi bi-arrow-left"></i>
+                        Volver
+
                     </a>
 
-                    <button type="button"
-                            class="btn btn-success btn-lg"
-                            data-bs-toggle="modal"
-                            data-bs-target="#confirmarModal">
-                        <i class="bi bi-save"></i> Guardar Profesional
+                    <button
+                        type="button"
+                        class="btn btn-success btn-lg"
+                        data-bs-toggle="modal"
+                        data-bs-target="#confirmarModal">
+
+                        <i class="bi bi-save"></i>
+                        Guardar Profesional
+
                     </button>
+
                 </div>
 
-                <!-- MODAL CONFIRMACION -->
-                <div class="modal fade" id="confirmarModal" tabindex="-1">
+                <!-- MODAL -->
+
+                <div class="modal fade"
+                     id="confirmarModal"
+                     tabindex="-1">
+
                     <div class="modal-dialog modal-dialog-centered">
+
                         <div class="modal-content shadow-lg border-0">
 
                             <div class="modal-header bg-success text-white">
+
                                 <h5 class="modal-title">
+
                                     Confirmar Registro
+
                                 </h5>
-                                <button type="button"
-                                        class="btn-close btn-close-white"
-                                        data-bs-dismiss="modal">
+
+                                <button
+                                    type="button"
+                                    class="btn-close btn-close-white"
+                                    data-bs-dismiss="modal">
                                 </button>
+
                             </div>
 
                             <div class="modal-body text-center">
-                                ¿Está seguro que desea guardar este profesional?
+
+                                <p class="fs-5">
+
+                                    ¿Está seguro que desea guardar este profesional?
+
+                                </p>
+
+                                <p class="text-muted">
+
+                                    Verifique los datos antes de continuar.
+
+                                </p>
+
                             </div>
 
                             <div class="modal-footer justify-content-center">
-                                <button type="button"
-                                        class="btn btn-outline-secondary btn-lg"
-                                        data-bs-dismiss="modal">
+
+                                <button
+                                    type="button"
+                                    class="btn btn-outline-secondary btn-lg"
+                                    data-bs-dismiss="modal">
+
                                     Cancelar
+
                                 </button>
 
-                                <button type="submit"
-                                        class="btn btn-success btn-lg">
+                                <button
+                                    type="submit"
+                                    class="btn btn-success btn-lg">
+
                                     Confirmar
+
                                 </button>
+
                             </div>
 
                         </div>
+
                     </div>
+
                 </div>
 
             </form>
 
         </div>
+
     </div>
 
 </div>
 
 <style>
+
 .card {
+
     border-left: 6px solid #0d6efd;
+
 }
 
 .card:hover {
+
     box-shadow: 0 12px 25px rgba(0,0,0,0.1);
-    transition: 0.2s ease;
+
+    transition: .2s ease;
+
 }
+
+.form-label {
+
+    margin-bottom: .3rem;
+
+}
+
+#preview {
+
+    border-radius: 10px;
+
+}
+
 </style>
+
+<script>
+
+document.addEventListener('DOMContentLoaded', function() {
+
+    const input = document.getElementById('id_img');
+
+    const preview = document.getElementById('preview');
+
+    if (input) {
+
+        input.addEventListener('change', function(e) {
+
+            const file = e.target.files[0];
+
+            if (file) {
+
+                preview.src =
+                    URL.createObjectURL(file);
+
+                preview.style.display =
+                    'block';
+
+            }
+
+        });
+
+    }
+
+});
+
+</script>
 
 {% endblock %}
