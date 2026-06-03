@@ -172,9 +172,17 @@ class HomePageView(TemplateView):
         context['Servicios'] = Servicios.objects.all()
         return context
 
+from turnos.utils.utils_turnos import actualizar_turnos_ausentes
+
+
 class AdminPageView(TemplateView):
     template_name = 'core/indexAdmin.html'
 
+    def get(self, request, *args, **kwargs):
+
+        actualizar_turnos_ausentes()
+
+        return super().get(request, *args, **kwargs)
 
 
 class MedicoPageView(LoginRequiredMixin,TemplateView):
