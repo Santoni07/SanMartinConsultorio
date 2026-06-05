@@ -1,0 +1,70 @@
+{% extends 'core/base.html' %}
+
+{% block content %}
+<div class="container mt-4">
+
+    <div class="card shadow-sm">
+        <div class="card-header bg-success text-white">
+            <h4 class="mb-0">
+                Abrir Caja - {{ centro_medico.nombre }}
+            </h4>
+        </div>
+
+        <div class="card-body">
+
+            <form method="post">
+                {% csrf_token %}
+
+                <div class="row">
+
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label fw-bold">
+                            Turno de Caja
+                        </label>
+                        {{ form.turno }}
+                    </div>
+
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label fw-bold">
+                            Saldo Inicial
+                        </label>
+                        {{ form.saldo_inicial }}
+                    </div>
+
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label fw-bold">
+                        Observación de Apertura
+                    </label>
+                    {{ form.observacion_apertura }}
+                </div>
+
+                <div class="alert alert-info">
+                    <strong>Importante:</strong>
+                    Cada sucursal puede tener una caja de
+                    <strong>Mañana</strong> y una caja de
+                    <strong>Tarde</strong> por día.
+                </div>
+
+                <div class="d-flex gap-2">
+
+                    <button type="submit" class="btn btn-success">
+                        <i class="bi bi-cash-stack"></i>
+                        Abrir Caja
+                    </button>
+
+                    <a href="{% url 'caja_home' %}" class="btn btn-secondary">
+                        <i class="bi bi-arrow-left-circle"></i>
+                        Cancelar
+                    </a>
+
+                </div>
+
+            </form>
+
+        </div>
+    </div>
+
+</div>
+{% endblock %}

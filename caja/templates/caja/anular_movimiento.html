@@ -1,0 +1,44 @@
+{% extends 'core/base.html' %}
+
+{% block content %}
+<div class="container mt-4">
+
+    <div class="card shadow-sm border-danger">
+        <div class="card-header bg-danger text-white">
+            <h4 class="mb-0">Anular Movimiento</h4>
+        </div>
+
+        <div class="card-body">
+
+            <div class="alert alert-warning">
+                Vas a anular el movimiento:
+                <br>
+                <strong>{{ movimiento.concepto }}</strong> -
+                ${{ movimiento.importe }} -
+                {{ movimiento.medio_pago.nombre }}
+            </div>
+
+            <form method="post">
+                {% csrf_token %}
+
+                <div class="mb-3">
+                    <label class="form-label">Motivo de anulación</label>
+                    {{ form.motivo_anulacion }}
+                </div>
+
+                <div class="d-flex gap-2">
+                    <button type="submit" class="btn btn-danger">
+                        Confirmar Anulación
+                    </button>
+
+                    <a href="{% url 'caja_home' %}" class="btn btn-secondary">
+                        Cancelar
+                    </a>
+                </div>
+            </form>
+
+        </div>
+    </div>
+
+</div>
+{% endblock %}

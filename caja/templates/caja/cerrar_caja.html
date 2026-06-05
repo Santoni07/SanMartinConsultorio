@@ -1,0 +1,219 @@
+{% extends 'core/base.html' %}
+{% load tz %}
+
+{% block content %}
+<div class="container mt-4">
+
+    <div class="card shadow-sm border-danger mb-4">
+        <div class="card-header bg-danger text-white">
+            <h4 class="mb-0">
+                Cierre de Caja - {{ centro_medico.nombre }}
+            </h4>
+        </div>
+
+        <div class="card-body">
+
+            <div class="alert alert-info">
+                <strong>Fecha:</strong> {{ caja.fecha|date:"d/m/Y" }} <br>
+                <strong>Turno:</strong> {{ caja.get_turno_display }} <br>
+                <strong>Abierta por:</strong> {{ caja.abierta_por.username }} <br>
+                <strong>Hora apertura:</strong> {{ caja.fecha_apertura|localtime|date:"H:i" }}
+            </div>
+
+            <div class="row text-center mb-4">
+                <div class="col-md-3 mb-3">
+                    <div class="card h-100">
+                        <div class="card-body">
+                            <h6>Saldo inicial</h6>
+                            <h4>${{ caja.saldo_inicial }}</h4>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-md-3 mb-3">
+                    <div class="card h-100 border-success">
+                        <div class="card-body">
+                            <h6>Ingresos</h6>
+                            <h4 class="text-success">${{ total_ingresos }}</h4>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-md-3 mb-3">
+                    <div class="card h-100 border-danger">
+                        <div class="card-body">
+                            <h6>Egresos</h6>
+                            <h4 class="text-danger">${{ total_egresos }}</h4>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-md-3 mb-3">
+                    <div class="card h-100 border-dark">
+                        <div class="card-body">
+                            <h6>Saldo final</h6>
+                            <h4 class="fw-bold">${{ saldo_final }}</h4>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-dark text-white">
+                    Resumen por medio de pago
+                </div>
+
+                <div class="card-body table-responsive">
+                    <table class="table table-bordered align-middle">
+                        <thead>
+                            <tr>
+                                <th>Medio de pago</th>
+                                <th>Tipo</th>
+                                <th class="text-end">Total</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for item in resumen_medios %}
+                            <tr>
+                                <td>{{ item.medio_pago__nombre }}</td>
+                                <td>
+                                    {% if item.tipo == 'INGRESO' %}
+                                        <span class="badge bg-success">Ingreso</span>
+                                    {% else %}
+                                        <span class="badge bg-danger">Egreso</span>
+                                    {% endif %}
+                                </td>
+                                <td class="text-end">${{ item.total }}</td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="3" class="text-center text-muted">
+                                    No hay movimientos para resumir.
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="card border-warning shadow-sm mb-4">
+    <div class="card-header bg-warning">
+        <h5 class="mb-0">
+            Rendición de Caja
+        </h5>
+    </div>
+
+    <div class="card-body text-center">
+
+        <h6 class="text-muted">
+            Efectivo a entregar al próximo turno
+        </h6>
+
+        <h1 class="display-4 fw-bold text-success">
+            ${{ efectivo_rendir }}
+        </h1>
+
+        <p class="mb-0">
+            Este importe corresponde únicamente al efectivo físico presente en caja.
+        </p>
+
+    </div>
+</div>
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-secondary text-white">
+                    Detalle de movimientos del turno
+                </div>
+
+                <div class="card-body table-responsive">
+                    <table class="table table-striped align-middle">
+                        <thead>
+                            <tr>
+                                <th>Hora</th>
+                                <th>Tipo</th>
+                                <th>Paciente</th>
+                                <th>Turno Médico</th>
+                                <th>Concepto</th>
+                                <th>Medio</th>
+                                <th class="text-end">Importe</th>
+                                <th>Usuario</th>
+                            </tr>
+                        </thead>
+
+                        <tbody>
+                            {% for mov in movimientos %}
+                            <tr>
+                                <td>{{ mov.fecha_creacion|localtime|date:"H:i" }}</td>
+
+                                <td>
+                                    {% if mov.tipo == 'INGRESO' %}
+                                        <span class="badge bg-success">Ingreso</span>
+                                    {% else %}
+                                        <span class="badge bg-danger">Egreso</span>
+                                    {% endif %}
+                                </td>
+
+                                <td>
+                                    {% if mov.paciente %}
+                                        {{ mov.paciente }}
+                                    {% else %}
+                                        -
+                                    {% endif %}
+                                </td>
+
+                                <td>
+                                    {% if mov.turno %}
+                                        {{ mov.turno.fecha|date:"d/m/Y" }} {{ mov.turno.hora|time:"H:i" }}
+                                    {% else %}
+                                        -
+                                    {% endif %}
+                                </td>
+
+                                <td>{{ mov.concepto }}</td>
+                                <td>{{ mov.medio_pago.nombre }}</td>
+                                <td class="text-end">${{ mov.importe }}</td>
+                                <td>{{ mov.creado_por.username }}</td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="8" class="text-center text-muted">
+                                    No hay movimientos registrados en este turno.
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <form method="post">
+                {% csrf_token %}
+
+                <div class="mb-3">
+                    <label class="form-label fw-bold">
+                        Observación de cierre / rendición
+                    </label>
+                    {{ form.observacion_cierre }}
+                </div>
+
+                <div class="alert alert-danger">
+                    Una vez cerrada la caja del turno
+                    <strong>{{ caja.get_turno_display }}</strong>,
+                    no se podrán cargar ni anular movimientos en esta caja.
+                </div>
+
+                <div class="d-flex gap-2">
+                    <button type="submit" class="btn btn-danger">
+                        Confirmar Cierre
+                    </button>
+
+                    <a href="{% url 'caja_home' %}" class="btn btn-secondary">
+                        Cancelar
+                    </a>
+                </div>
+            </form>
+
+        </div>
+    </div>
+
+</div>
+{% endblock %}

@@ -1,0 +1,182 @@
+{% extends 'core/base.html' %}
+{% load static %}
+{% load tz %}
+
+{% block content %}
+<div class="container mt-4">
+
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="fw-bold">Caja - {{ centro_medico.nombre }}</h2>
+            <p class="text-muted mb-0">Caja por turno: mañana y tarde</p>
+        </div>
+
+        <a href="{% url 'caja_home' %}" class="btn btn-secondary">
+            Volver
+        </a>
+    </div>
+
+    {% if messages %}
+        {% for message in messages %}
+            <div class="alert alert-{{ message.tags }} alert-dismissible fade show">
+                {{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+        {% endfor %}
+    {% endif %}
+
+    {% if caja %}
+        <div class="card shadow-sm mb-4 border-success">
+            <div class="card-header bg-success text-white">
+                <strong>
+                    Caja abierta -
+                    {{ caja.fecha|date:"d/m/Y" }} -
+                    {{ caja.get_turno_display }}
+                </strong>
+            </div>
+
+            <div class="card-body">
+                <div class="row text-center">
+                    <div class="col-md-3 mb-3">
+                        <h6>Saldo inicial</h6>
+                        <h4>${{ caja.saldo_inicial }}</h4>
+                    </div>
+
+                    <div class="col-md-3 mb-3">
+                        <h6>Ingresos</h6>
+                        <h4 class="text-success">${{ caja.total_ingresos }}</h4>
+                    </div>
+
+                    <div class="col-md-3 mb-3">
+                        <h6>Egresos</h6>
+                        <h4 class="text-danger">${{ caja.total_egresos }}</h4>
+                    </div>
+
+                    <div class="col-md-3 mb-3">
+                        <h6>Saldo final</h6>
+                        <h4 class="fw-bold">${{ caja.saldo_final }}</h4>
+                    </div>
+                </div>
+
+                <div class="alert alert-info mb-3">
+                    <strong>Turno actual:</strong> {{ caja.get_turno_display }}
+                    <br>
+                    <strong>Abierta por:</strong> {{ caja.abierta_por.username }}
+                    <br>
+                    <strong>Hora apertura:</strong> {{ caja.fecha_apertura|localtime|date:"H:i" }}
+                </div>
+
+                <div class="d-flex flex-wrap gap-2 mt-3">
+                    <a href="{% url 'registrar_cobro' %}" class="btn btn-success">
+                        Registrar Cobro
+                    </a>
+
+                    <a href="{% url 'registrar_movimiento' %}" class="btn btn-primary">
+                        Registrar Movimiento
+                    </a>
+
+                    <a href="{% url 'cerrar_caja' %}" class="btn btn-danger">
+                        Cerrar Caja
+                    </a>
+                </div>
+            </div>
+        </div>
+    {% else %}
+        <div class="alert alert-warning">
+            No hay caja abierta para la sede <strong>{{ centro_medico.nombre }}</strong>.
+            Recordá que ahora se abre una caja por turno: <strong>Mañana</strong> o <strong>Tarde</strong>.
+        </div>
+
+        <a href="{% url 'abrir_caja' %}" class="btn btn-success">
+            Abrir Caja
+        </a>
+    {% endif %}
+
+    <div class="card shadow-sm mt-4">
+        <div class="card-header bg-dark text-white">
+            Movimientos del turno actual
+        </div>
+
+        <div class="card-body table-responsive">
+            <table class="table table-striped align-middle">
+                <thead>
+                    <tr>
+                        <th>Hora</th>
+                        <th>Tipo</th>
+                        <th>Paciente</th>
+                        <th>Turno Médico</th>
+                        <th>Concepto</th>
+                        <th>Medio</th>
+                        <th>Importe</th>
+                        <th>Usuario</th>
+                        <th>Estado</th>
+                        <th class="text-end">Acción</th>
+                    </tr>
+                </thead>
+
+                <tbody>
+                    {% for mov in movimientos %}
+                    <tr>
+                        <td>{{ mov.fecha_creacion|localtime|date:"H:i" }}</td>
+
+                        <td>
+                            {% if mov.tipo == 'INGRESO' %}
+                                <span class="badge bg-success">Ingreso</span>
+                            {% else %}
+                                <span class="badge bg-danger">Egreso</span>
+                            {% endif %}
+                        </td>
+
+                        <td>
+                            {% if mov.paciente %}
+                                {{ mov.paciente }}
+                            {% else %}
+                                -
+                            {% endif %}
+                        </td>
+
+                        <td>
+                            {% if mov.turno %}
+                                {{ mov.turno.fecha|date:"d/m/Y" }} {{ mov.turno.hora|time:"H:i" }}
+                            {% else %}
+                                -
+                            {% endif %}
+                        </td>
+
+                        <td>{{ mov.concepto }}</td>
+                        <td>{{ mov.medio_pago.nombre }}</td>
+                        <td>${{ mov.importe }}</td>
+                        <td>{{ mov.creado_por.username }}</td>
+
+                        <td>
+                            {% if mov.estado == 'ACTIVO' %}
+                                <span class="badge bg-success">Activo</span>
+                            {% else %}
+                                <span class="badge bg-secondary">Anulado</span>
+                            {% endif %}
+                        </td>
+
+                        <td class="text-end">
+                            {% if mov.estado == 'ACTIVO' and caja and caja.estado == 'ABIERTA' %}
+                                <a href="{% url 'anular_movimiento' mov.id %}" class="btn btn-sm btn-outline-danger">
+                                    Anular
+                                </a>
+                            {% else %}
+                                -
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="10" class="text-center text-muted">
+                            No hay movimientos cargados para este turno.
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+</div>
+{% endblock %}

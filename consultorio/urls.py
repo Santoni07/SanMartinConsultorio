@@ -59,6 +59,8 @@ path(
     'gerencia/',
     include('gerencia.urls')
 ),
+# path caja 
+path('caja/', include('caja.urls')),
 ]
 
 

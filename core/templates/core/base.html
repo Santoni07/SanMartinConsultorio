@@ -538,7 +538,36 @@
                         </ul>
 
                     </li>
+                      <li class="dropdown">
 
+    <a href="#">
+        <span>Caja</span>
+        <i class="bi bi-chevron-down"></i>
+    </a>
+
+    <ul>
+
+        <li>
+            <a href="{% url 'caja_home' %}">
+                Dashboard Caja
+            </a>
+        </li>
+
+        <li>
+            <a href="{% url 'registrar_cobro' %}">
+                Cobros
+            </a>
+        </li>
+
+        <li>
+            <a href="{% url 'registrar_movimiento' %}">
+                Movimientos
+            </a>
+        </li>
+
+    </ul>
+
+</li>
                 {% endif %}
 
             <!-- 🔵 MÉDICO -->
