@@ -1,0 +1,362 @@
+{% extends 'core/base.html' %}
+
+{% block content %}
+
+<div class="row">
+
+    <!-- SIDEBAR -->
+    <div class="col-lg-2 mb-4">
+        {% include 'gerencia/sidebar_gerencia.html' %}
+    </div>
+
+    <!-- CONTENIDO -->
+    <div class="col-lg-10">
+
+        <!-- HEADER -->
+
+        <div class="d-flex justify-content-between align-items-center mb-4">
+
+            <div>
+
+                <h2 class="fw-bold mb-0">
+
+                    📦 Detalle de Caja
+
+                </h2>
+
+                <p class="text-muted mb-0">
+
+                    {{ caja.centro_medico.nombre }}
+                    -
+                    {{ caja.fecha|date:"d/m/Y" }}
+                    -
+                    {{ caja.get_turno_display }}
+
+                </p>
+
+            </div>
+
+            <a href="javascript:history.back()"
+               class="btn btn-secondary">
+
+                <i class="bi bi-arrow-left"></i>
+                Volver
+
+            </a>
+
+        </div>
+
+        <!-- INFORMACIÓN GENERAL -->
+
+        <div class="card shadow mb-4">
+
+            <div class="card-body">
+
+                <div class="row">
+
+                    <div class="col-md-3">
+
+                        <strong>Sucursal</strong>
+
+                        <br>
+
+                        {{ caja.centro_medico.nombre }}
+
+                    </div>
+
+                    <div class="col-md-3">
+
+                        <strong>Fecha</strong>
+
+                        <br>
+
+                        {{ caja.fecha|date:"d/m/Y" }}
+
+                    </div>
+
+                    <div class="col-md-3">
+
+                        <strong>Turno</strong>
+
+                        <br>
+
+                        {{ caja.get_turno_display }}
+
+                    </div>
+
+                    <div class="col-md-3">
+
+                        <strong>Estado</strong>
+
+                        <br>
+
+                        {% if caja.estado == 'CERRADA' %}
+                            <span class="badge bg-success">
+                                Cerrada
+                            </span>
+                        {% else %}
+                            <span class="badge bg-warning text-dark">
+                                Abierta
+                            </span>
+                        {% endif %}
+
+                    </div>
+
+                </div>
+
+            </div>
+
+        </div>
+
+        <!-- KPI -->
+
+        <div class="row mb-4">
+
+            <div class="col-lg-4 col-md-6 mb-4">
+
+                <div class="card border-start border-success border-4 shadow h-100">
+
+                    <div class="card-body text-center">
+
+                        <div class="text-uppercase fw-bold text-success mb-2">
+
+                            Total Ingresos
+
+                        </div>
+
+                        <div class="display-6 fw-bold">
+
+                            ${{ ingresos|floatformat:0 }}
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+            <div class="col-lg-4 col-md-6 mb-4">
+
+                <div class="card border-start border-danger border-4 shadow h-100">
+
+                    <div class="card-body text-center">
+
+                        <div class="text-uppercase fw-bold text-danger mb-2">
+
+                            Total Egresos
+
+                        </div>
+
+                        <div class="display-6 fw-bold">
+
+                            ${{ egresos|floatformat:0 }}
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+            <div class="col-lg-4 col-md-12 mb-4">
+
+                <div class="card border-start border-primary border-4 shadow h-100">
+
+                    <div class="card-body text-center">
+
+                        <div class="text-uppercase fw-bold text-primary mb-2">
+
+                            Saldo Neto
+
+                        </div>
+
+                        <div class="display-6 fw-bold">
+
+                            ${{ saldo|floatformat:0 }}
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+        </div>
+
+        <!-- MOVIMIENTOS -->
+
+        <div class="card shadow">
+
+            <div class="card-header bg-white">
+
+                <h5 class="mb-0 fw-bold">
+
+                    📋 Movimientos de Caja
+
+                </h5>
+
+            </div>
+
+            <div class="card-body">
+
+                <div class="table-responsive">
+
+                    <table class="table table-hover align-middle">
+
+                        <thead class="table-light">
+
+                            <tr>
+
+                                <th>Fecha</th>
+
+                                <th>Tipo</th>
+
+                                <th>Concepto</th>
+
+                                <th>Paciente</th>
+
+                                <th>Medio Pago</th>
+
+                                <th>Importe</th>
+
+                                <th>Estado</th>
+
+                                <th>Usuario</th>
+
+                            </tr>
+
+                        </thead>
+
+                        <tbody>
+
+                            {% for movimiento in movimientos %}
+
+                            <tr>
+
+                                <td>
+
+                                    {{ movimiento.fecha_creacion|date:"d/m/Y H:i" }}
+
+                                </td>
+
+                                <td>
+
+                                    {% if movimiento.tipo == 'INGRESO' %}
+
+                                        <span class="badge bg-success">
+
+                                            Ingreso
+
+                                        </span>
+
+                                    {% else %}
+
+                                        <span class="badge bg-danger">
+
+                                            Egreso
+
+                                        </span>
+
+                                    {% endif %}
+
+                                </td>
+
+                                <td>
+
+                                    {{ movimiento.concepto }}
+
+                                </td>
+
+                                <td>
+
+                                    {% if movimiento.paciente %}
+
+                                        {{ movimiento.paciente }}
+
+                                    {% else %}
+
+                                        -
+
+                                    {% endif %}
+
+                                </td>
+
+                                <td>
+
+                                    {{ movimiento.medio_pago.nombre }}
+
+                                </td>
+
+                                <td>
+
+                                    <strong>
+
+                                        ${{ movimiento.importe|floatformat:0 }}
+
+                                    </strong>
+
+                                </td>
+
+                                <td>
+
+                                    {% if movimiento.estado == 'ACTIVO' %}
+
+                                        <span class="badge bg-success">
+
+                                            Activo
+
+                                        </span>
+
+                                    {% else %}
+
+                                        <span class="badge bg-danger">
+
+                                            Anulado
+
+                                        </span>
+
+                                    {% endif %}
+
+                                </td>
+
+                                <td>
+
+                                    {{ movimiento.creado_por.username }}
+
+                                </td>
+
+                            </tr>
+
+                            {% empty %}
+
+                            <tr>
+
+                                <td colspan="8"
+                                    class="text-center text-muted">
+
+                                    No hay movimientos registrados.
+
+                                </td>
+
+                            </tr>
+
+                            {% endfor %}
+
+                        </tbody>
+
+                    </table>
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+{% endblock %}

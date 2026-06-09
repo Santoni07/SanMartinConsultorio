@@ -1,0 +1,565 @@
+{% extends 'core/base.html' %}
+
+{% block content %}
+
+<div class="row">
+
+    <!-- SIDEBAR -->
+    <div class="col-lg-2 mb-4">
+        {% include 'gerencia/sidebar_gerencia.html' %}
+    </div>
+
+    <!-- CONTENIDO -->
+    <div class="col-lg-10">
+
+        <!-- ================= HEADER EJECUTIVO ================= -->
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+
+    <div>
+
+        <h2 class="fw-bold mb-0">
+            💵 Facturación y Caja
+        </h2>
+
+        <p class="text-muted mb-0">
+            Dashboard financiero ejecutivo multi-sede
+        </p>
+
+    </div>
+
+    <span class="badge bg-primary fs-6">
+        {{ hoy|date:"d/m/Y" }}
+    </span>
+
+</div>
+
+<!-- ================= SELECTOR DE SUCURSAL ================= -->
+
+<div class="row mb-4">
+
+    <div class="col-lg-4 mb-3">
+
+        <a href="{% url 'gerencia:facturacion' %}"
+           class="card shadow border-0 text-decoration-none h-100">
+
+            <div class="card-body text-center">
+
+                <h4 class="fw-bold text-dark">
+                    📊 Consolidado
+                </h4>
+
+                <p class="text-muted mb-0">
+                    Todas las sucursales
+                </p>
+
+            </div>
+
+        </a>
+
+    </div>
+
+    <div class="col-lg-4 mb-3">
+
+        <a href="{% url 'gerencia:facturacion_casa_central' %}"
+           class="card shadow border-0 text-decoration-none h-100">
+
+            <div class="card-body text-center">
+
+                <h4 class="fw-bold text-primary">
+                    🏥 Casa Central
+                </h4>
+
+                <p class="text-muted mb-0">
+                    Análisis financiero completo
+                </p>
+
+            </div>
+
+        </a>
+
+    </div>
+
+    <div class="col-lg-4 mb-3">
+
+        <a href="{% url 'gerencia:facturacion_agua_oro' %}"
+           class="card shadow border-0 text-decoration-none h-100">
+
+            <div class="card-body text-center">
+
+                <h4 class="fw-bold text-success">
+                    🏥 Agua de Oro
+                </h4>
+
+                <p class="text-muted mb-0">
+                    Análisis financiero completo
+                </p>
+
+            </div>
+
+        </a>
+
+    </div>
+
+</div>
+
+
+        <!-- ================= KPI PRINCIPALES ================= -->
+        <div class="row mb-4">
+
+            <div class="col-lg-4 col-md-6 mb-4">
+
+                <div class="card border-start border-success border-4 shadow h-100">
+
+                    <div class="card-body d-flex flex-column justify-content-center text-center">
+
+                        <div class="text-uppercase fw-bold text-success mb-3">
+
+                            TOTAL INGRESOS
+
+                        </div>
+
+                        <div class="display-5 fw-bold">
+
+                            ${{ total_ingresos|floatformat:0 }}
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+            <div class="col-lg-4 col-md-6 mb-4">
+
+                <div class="card border-start border-danger border-4 shadow h-100">
+
+                    <div class="card-body d-flex flex-column justify-content-center text-center">
+
+                        <div class="text-uppercase fw-bold text-danger mb-3">
+
+                            TOTAL EGRESOS
+
+                        </div>
+
+                        <div class="display-5 fw-bold">
+
+                            ${{ total_egresos|floatformat:0 }}
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+            <div class="col-lg-4 col-md-12 mb-4">
+
+                <div class="card border-start border-primary border-4 shadow h-100">
+
+                    <div class="card-body d-flex flex-column justify-content-center text-center">
+
+                        <div class="text-uppercase fw-bold text-primary mb-3">
+
+                            SALDO NETO
+
+                        </div>
+
+                        <div class="display-5 fw-bold">
+
+                            ${{ saldo_neto|floatformat:0 }}
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+        </div>
+
+        <!-- ================= KPI SECUNDARIOS ================= -->
+
+        <div class="row">
+
+            <div class="col-xl-3 col-md-6 mb-4">
+                <div class="card shadow h-100">
+                    <div class="card-body text-center">
+                        <h6 class="text-primary">Bancarizado</h6>
+                        <h2 class="fw-bold text-primary">
+                            ${{ bancarizado|floatformat:0 }}
+                        </h2>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-xl-3 col-md-6 mb-4">
+                <div class="card shadow h-100">
+                    <div class="card-body text-center">
+                        <h6 class="text-success">Cajas Cerradas</h6>
+                        <h2 class="fw-bold text-success">
+                            {{ cantidad_cajas_cerradas }}
+                        </h2>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-xl-3 col-md-6 mb-4">
+                <div class="card shadow h-100">
+                    <div class="card-body text-center">
+                        <h6 class="text-warning">Cajas Abiertas</h6>
+                        <h2 class="fw-bold text-warning">
+                            {{ cantidad_cajas_abiertas }}
+                        </h2>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-xl-3 col-md-6 mb-4">
+                <div class="card shadow h-100">
+                    <div class="card-body text-center">
+                        <h6 class="text-danger">Movimientos Anulados</h6>
+                        <h2 class="fw-bold text-danger">
+                            ${{ total_anulados|floatformat:0 }}
+                        </h2>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- ================= RENDIMIENTO POR SUCURSAL ================= -->
+
+        <div class="card shadow mb-4">
+
+            <div class="card-header bg-white">
+                <h5 class="mb-0 fw-bold">
+                    🏢 Rendimiento por Sucursal
+                </h5>
+            </div>
+
+            <div class="card-body">
+
+                <div class="table-responsive">
+
+                    <table class="table table-hover align-middle">
+
+                        <thead class="table-light">
+                            <tr>
+                                <th>Sucursal</th>
+                                <th>Movimientos</th>
+                                <th>Efectivo</th>
+                                <th>Bancarizado</th>
+                                <th>Total</th>
+                            </tr>
+                        </thead>
+
+                        <tbody>
+
+                            {% for item in resumen_por_sede %}
+                            <tr>
+                                <td>
+                                    <strong>{{ item.centro_medico__nombre }}</strong>
+                                </td>
+
+                                <td>
+                                    <span class="badge bg-secondary">
+                                        {{ item.cantidad }}
+                                    </span>
+                                </td>
+
+                                <td>
+                                    ${{ item.efectivo|default:0|floatformat:0 }}
+                                </td>
+
+                                <td>
+                                    ${{ item.bancarizado|default:0|floatformat:0 }}
+                                </td>
+
+                                <td>
+                                    <strong>
+                                        ${{ item.total|floatformat:0 }}
+                                    </strong>
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="5" class="text-center text-muted">
+                                    No hay datos de sucursales.
+                                </td>
+                            </tr>
+                            {% endfor %}
+
+                        </tbody>
+
+                    </table>
+
+                </div>
+
+            </div>
+
+        </div>
+
+        <!-- ================= MEDIOS DE PAGO ================= -->
+
+        <div class="card shadow mb-4">
+
+            <div class="card-header bg-white">
+                <h5 class="mb-0 fw-bold">
+                    💳 Ingresos por Medio de Pago
+                </h5>
+            </div>
+
+            <div class="card-body">
+
+                <div class="table-responsive">
+
+                    <table class="table table-hover align-middle">
+
+                        <thead class="table-light">
+                            <tr>
+                                <th>Medio de Pago</th>
+                                <th>Movimientos</th>
+                                <th>Total</th>
+                            </tr>
+                        </thead>
+
+                        <tbody>
+
+                            {% for item in resumen_por_medio %}
+                            <tr>
+                                <td>
+                                    <strong>{{ item.medio_pago__nombre }}</strong>
+                                </td>
+
+                                <td>
+                                    <span class="badge bg-primary">
+                                        {{ item.cantidad }}
+                                    </span>
+                                </td>
+
+                                <td>
+                                    <strong>
+                                        ${{ item.total|floatformat:0 }}
+                                    </strong>
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="3" class="text-center text-muted">
+                                    No hay medios de pago registrados.
+                                </td>
+                            </tr>
+                            {% endfor %}
+
+                        </tbody>
+
+                    </table>
+
+                </div>
+
+            </div>
+
+        </div>
+
+        <!-- ================= SECRETARIAS ================= -->
+
+        <div class="card shadow mb-4">
+
+            <div class="card-header bg-white">
+                <h5 class="mb-0 fw-bold">
+                    👩‍💼 Rendimiento por Secretaria
+                </h5>
+            </div>
+
+            <div class="card-body">
+
+                <div class="table-responsive">
+
+                    <table class="table table-hover align-middle">
+
+                        <thead class="table-light">
+                            <tr>
+                                <th>Usuario</th>
+                                <th>Movimientos</th>
+                                <th>Total Cobrado</th>
+                            </tr>
+                        </thead>
+
+                        <tbody>
+
+                            {% for item in resumen_por_secretaria %}
+                            <tr>
+                                <td>
+                                    <strong>{{ item.creado_por__username }}</strong>
+                                </td>
+
+                                <td>
+                                    <span class="badge bg-secondary">
+                                        {{ item.cantidad }}
+                                    </span>
+                                </td>
+
+                                <td>
+                                    <strong>
+                                        ${{ item.total|floatformat:0 }}
+                                    </strong>
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="3" class="text-center text-muted">
+                                    No hay datos de secretarias.
+                                </td>
+                            </tr>
+                            {% endfor %}
+
+                        </tbody>
+
+                    </table>
+
+                </div>
+
+            </div>
+
+        </div>
+
+        <!-- ================= CAJAS ABIERTAS ================= -->
+
+        <div class="card shadow mb-4">
+
+            <div class="card-header bg-white">
+                <h5 class="mb-0 fw-bold">
+                    ⚠️ Cajas Abiertas Pendientes
+                </h5>
+            </div>
+
+            <div class="card-body">
+
+                <div class="table-responsive">
+
+                    <table class="table table-hover align-middle">
+
+                        <thead class="table-light">
+                            <tr>
+                                <th>Sucursal</th>
+                                <th>Fecha</th>
+                                <th>Turno</th>
+                                <th>Abierta por</th>
+                            </tr>
+                        </thead>
+
+                        <tbody>
+
+                            {% for caja in cajas_abiertas_pendientes %}
+                            <tr>
+                                <td>
+                                    <strong>{{ caja.centro_medico.nombre }}</strong>
+                                </td>
+
+                                <td>{{ caja.fecha|date:"d/m/Y" }}</td>
+
+                                <td>
+                                    <span class="badge bg-warning text-dark">
+                                        {{ caja.get_turno_display }}
+                                    </span>
+                                </td>
+
+                                <td>{{ caja.abierta_por.username }}</td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="4" class="text-center text-success">
+                                    No hay cajas abiertas pendientes.
+                                </td>
+                            </tr>
+                            {% endfor %}
+
+                        </tbody>
+
+                    </table>
+
+                </div>
+
+            </div>
+
+        </div>
+
+        <!-- ================= ÚLTIMAS CAJAS CERRADAS ================= -->
+
+        <div class="card shadow mb-4">
+
+            <div class="card-header bg-white">
+                <h5 class="mb-0 fw-bold">
+                    📦 Últimas Cajas Cerradas
+                </h5>
+            </div>
+
+            <div class="card-body">
+
+                <div class="table-responsive">
+
+                    <table class="table table-hover align-middle">
+
+                        <thead class="table-light">
+                            <tr>
+                                <th>Fecha</th>
+                                <th>Sucursal</th>
+                                <th>Turno</th>
+                                <th>Apertura</th>
+                                <th>Cierre</th>
+                            </tr>
+                        </thead>
+
+                        <tbody>
+
+                            {% for caja in cajas_cerradas %}
+                            <tr>
+                                <td>{{ caja.fecha|date:"d/m/Y" }}</td>
+
+                                <td>
+                                    <strong>{{ caja.centro_medico.nombre }}</strong>
+                                </td>
+
+                                <td>
+                                    <span class="badge bg-primary">
+                                        {{ caja.get_turno_display }}
+                                    </span>
+                                </td>
+
+                                <td>{{ caja.abierta_por.username }}</td>
+
+                                <td>
+                                    {% if caja.cerrada_por %}
+                                        {{ caja.cerrada_por.username }}
+                                    {% else %}
+                                        -
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="5" class="text-center text-muted">
+                                    No hay cajas cerradas.
+                                </td>
+                            </tr>
+                            {% endfor %}
+
+                        </tbody>
+
+                    </table>
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+{% endblock %}

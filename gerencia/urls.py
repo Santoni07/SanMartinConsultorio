@@ -34,4 +34,24 @@ urlpatterns = [
         views.sedes_gerencia,
         name='sedes'
     ),
+    
+    path(
+    'facturacion/casa-central/',
+    views.facturacion_sede,
+    {'centro_id': 1},
+    name='facturacion_casa_central'
+    ),
+
+    path(
+        'facturacion/agua-de-oro/',
+        views.facturacion_sede,
+        {'centro_id': 2},
+        name='facturacion_agua_oro'
+    ),
+    path('facturacion/', views.facturacion, name='facturacion'),
+    path(
+    'facturacion/caja/<int:caja_id>/',
+    views.detalle_caja,
+    name='detalle_caja'
+),
 ]

@@ -1,0 +1,545 @@
+{% extends 'core/base.html' %}
+
+{% block content %}
+
+<div class="row">
+
+    <!-- SIDEBAR -->
+    <div class="col-lg-2 mb-4">
+        {% include 'gerencia/sidebar_gerencia.html' %}
+    </div>
+
+    <!-- CONTENIDO -->
+    <div class="col-lg-10">
+
+        <!-- HEADER -->
+
+        <div class="d-flex justify-content-between align-items-center mb-4">
+
+            <div>
+
+                <h2 class="fw-bold mb-0">
+                    🏥 {{ centro.nombre }}
+                </h2>
+
+                <p class="text-muted mb-0">
+                    Análisis financiero detallado
+                </p>
+
+            </div>
+
+            <span class="badge bg-primary fs-6">
+                {{ hoy|date:"d/m/Y" }}
+            </span>
+
+        </div>
+
+        <!-- FILTROS -->
+
+        <div class="card shadow mb-4">
+
+            <div class="card-body">
+
+                <form method="get">
+
+                    <div class="row">
+
+                        <div class="col-md-3">
+
+                            <label class="form-label">
+                                Desde
+                            </label>
+
+                            <input
+                                type="date"
+                                name="desde"
+                                value="{{ fecha_desde }}"
+                                class="form-control">
+
+                        </div>
+
+                        <div class="col-md-3">
+
+                            <label class="form-label">
+                                Hasta
+                            </label>
+
+                            <input
+                                type="date"
+                                name="hasta"
+                                value="{{ fecha_hasta }}"
+                                class="form-control">
+
+                        </div>
+
+                        <div class="col-md-2">
+
+                            <label class="form-label">
+                                Mes
+                            </label>
+
+                            <input
+                                type="number"
+                                min="1"
+                                max="12"
+                                name="mes"
+                                value="{{ mes }}"
+                                class="form-control">
+
+                        </div>
+
+                        <div class="col-md-2">
+
+                            <label class="form-label">
+                                Año
+                            </label>
+
+                            <input
+                                type="number"
+                                name="anio"
+                                value="{{ anio }}"
+                                class="form-control">
+
+                        </div>
+
+                        <div class="col-md-2 d-flex align-items-end">
+
+                            <button
+                                type="submit"
+                                class="btn btn-primary w-100">
+
+                                Filtrar
+
+                            </button>
+
+                        </div>
+
+                    </div>
+
+                </form>
+
+            </div>
+
+        </div>
+
+        <!-- KPI PRINCIPALES -->
+
+        <div class="row mb-4">
+
+            <div class="col-lg-3 col-md-6 mb-4">
+
+                <div class="card border-start border-success border-4 shadow h-100">
+
+                    <div class="card-body text-center">
+
+                        <div class="fw-bold text-success text-uppercase mb-2">
+                            Ingresos
+                        </div>
+
+                        <div class="display-6 fw-bold">
+                            ${{ total_ingresos|floatformat:0 }}
+                        </div>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+            <div class="col-lg-3 col-md-6 mb-4">
+
+                <div class="card border-start border-danger border-4 shadow h-100">
+
+                    <div class="card-body text-center">
+
+                        <div class="fw-bold text-danger text-uppercase mb-2">
+                            Egresos
+                        </div>
+
+                        <div class="display-6 fw-bold">
+                            ${{ total_egresos|floatformat:0 }}
+                        </div>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+            <div class="col-lg-3 col-md-6 mb-4">
+
+                <div class="card border-start border-primary border-4 shadow h-100">
+
+                    <div class="card-body text-center">
+
+                        <div class="fw-bold text-primary text-uppercase mb-2">
+                            Neto
+                        </div>
+
+                        <div class="display-6 fw-bold">
+                            ${{ saldo_neto|floatformat:0 }}
+                        </div>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+            <div class="col-lg-3 col-md-6 mb-4">
+
+                <div class="card border-start border-info border-4 shadow h-100">
+
+                    <div class="card-body text-center">
+
+                        <div class="fw-bold text-info text-uppercase mb-2">
+                            Ticket Promedio
+                        </div>
+
+                        <div class="display-6 fw-bold">
+                            ${{ ticket_promedio|floatformat:0 }}
+                        </div>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+        </div>
+
+        <!-- KPI EJECUTIVOS -->
+
+        <div class="row mb-4">
+
+            <div class="col-lg-3 col-md-6 mb-4">
+
+                <div class="card shadow h-100">
+
+                    <div class="card-body text-center">
+
+                        <h6 class="text-secondary">
+                            Promedio Diario
+                        </h6>
+
+                        <h3 class="fw-bold">
+                            ${{ promedio_diario|floatformat:0 }}
+                        </h3>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+            <div class="col-lg-3 col-md-6 mb-4">
+
+                <div class="card shadow h-100">
+
+                    <div class="card-body text-center">
+
+                        <h6 class="text-success">
+                            Mejor Día
+                        </h6>
+
+                        <h3 class="fw-bold">
+
+                            {% if mejor_dia %}
+                                ${{ mejor_dia.total|floatformat:0 }}
+                            {% else %}
+                                -
+                            {% endif %}
+
+                        </h3>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+            <div class="col-lg-3 col-md-6 mb-4">
+
+                <div class="card shadow h-100">
+
+                    <div class="card-body text-center">
+
+                        <h6 class="text-primary">
+                            Turno Top
+                        </h6>
+
+                        <h3 class="fw-bold">
+
+                            {% if turno_top %}
+                                {{ turno_top.caja__turno }}
+                            {% else %}
+                                -
+                            {% endif %}
+
+                        </h3>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+            <div class="col-lg-3 col-md-6 mb-4">
+
+                <div class="card shadow h-100">
+
+                    <div class="card-body text-center">
+
+                        <h6 class="text-warning">
+                            Secretaria Top
+                        </h6>
+
+                        <h3 class="fw-bold">
+
+                            {% if secretaria_top %}
+                                {{ secretaria_top.creado_por__username }}
+                            {% else %}
+                                -
+                            {% endif %}
+
+                        </h3>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+        </div>
+
+        <!-- MEDIOS DE PAGO -->
+
+        <div class="card shadow mb-4">
+
+            <div class="card-header bg-white">
+
+                <h5 class="mb-0 fw-bold">
+                    💳 Medios de Pago
+                </h5>
+
+            </div>
+
+            <div class="card-body">
+
+                <div class="table-responsive">
+
+                    <table class="table table-hover align-middle">
+
+                        <thead class="table-light">
+
+                            <tr>
+                                <th>Medio</th>
+                                <th>Movimientos</th>
+                                <th>Total</th>
+                            </tr>
+
+                        </thead>
+
+                        <tbody>
+
+                            {% for item in resumen_medios %}
+
+                            <tr>
+
+                                <td>
+                                    <strong>{{ item.medio_pago__nombre }}</strong>
+                                </td>
+
+                                <td>
+                                    {{ item.cantidad }}
+                                </td>
+
+                                <td>
+                                    ${{ item.total|floatformat:0 }}
+                                </td>
+
+                            </tr>
+
+                            {% empty %}
+
+                            <tr>
+
+                                <td colspan="3" class="text-center text-muted">
+                                    No hay datos.
+                                </td>
+
+                            </tr>
+
+                            {% endfor %}
+
+                        </tbody>
+
+                    </table>
+
+                </div>
+
+            </div>
+
+        </div>
+
+        <!-- SECRETARIAS -->
+
+        <div class="card shadow mb-4">
+
+            <div class="card-header bg-white">
+
+                <h5 class="mb-0 fw-bold">
+                    👩‍💼 Rendimiento por Secretaria
+                </h5>
+
+            </div>
+
+            <div class="card-body">
+
+                <div class="table-responsive">
+
+                    <table class="table table-hover">
+
+                        <thead class="table-light">
+
+                            <tr>
+                                <th>Usuario</th>
+                                <th>Movimientos</th>
+                                <th>Total</th>
+                            </tr>
+
+                        </thead>
+
+                        <tbody>
+
+                            {% for item in resumen_secretarias %}
+
+                            <tr>
+
+                                <td>
+                                    <strong>{{ item.creado_por__username }}</strong>
+                                </td>
+
+                                <td>{{ item.cantidad }}</td>
+
+                                <td>
+                                    ${{ item.total|floatformat:0 }}
+                                </td>
+
+                            </tr>
+
+                            {% empty %}
+
+                            <tr>
+
+                                <td colspan="3" class="text-center text-muted">
+                                    Sin movimientos.
+                                </td>
+
+                            </tr>
+
+                            {% endfor %}
+
+                        </tbody>
+
+                    </table>
+
+                </div>
+
+            </div>
+
+        </div>
+
+        <!-- CAJAS -->
+
+        <div class="card shadow">
+
+            <div class="card-header bg-white">
+
+                <h5 class="mb-0 fw-bold">
+                    📦 Últimas Cajas Cerradas
+                </h5>
+
+            </div>
+
+            <div class="card-body">
+
+                <div class="table-responsive">
+
+                    <table class="table table-hover align-middle">
+
+                        <thead class="table-light">
+
+                          <tr>
+
+                            <th>Fecha</th>
+                            <th>Turno</th>
+                            <th>Estado</th>
+                            <th class="text-center">Detalle</th>
+
+                        </tr>
+
+                        </thead>
+
+                        <tbody>
+
+                            {% for caja in cajas %}
+
+                         <tr>
+
+                            <td>
+                                {{ caja.fecha|date:"d/m/Y" }}
+                            </td>
+
+                            <td>
+                                {{ caja.get_turno_display }}
+                            </td>
+
+                            <td>
+
+                                <span class="badge bg-success">
+                                    {{ caja.estado }}
+                                </span>
+
+                            </td>
+
+                            <td class="text-center">
+
+                                <a href="{% url 'gerencia:detalle_caja' caja.id %}"
+                                class="btn btn-sm btn-outline-primary">
+
+                                    <i class="bi bi-search"></i>
+                                    Ver
+
+                                </a>
+
+                            </td>
+
+                        </tr>
+                            {% empty %}
+
+                            <tr>
+
+                                <td colspan="3" class="text-center text-muted">
+                                    No hay cajas cerradas.
+                                </td>
+
+                            </tr>
+
+                            {% endfor %}
+
+                        </tbody>
+
+                    </table>
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+{% endblock %}

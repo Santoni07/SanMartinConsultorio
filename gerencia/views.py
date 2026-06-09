@@ -4,12 +4,17 @@ from datetime import date
 from django.db.models.functions import TruncMonth
 from django.db.models import Count
 import json
+from django.shortcuts import get_object_or_404
 from django.utils import timezone
 from turnos.models import (
     Turnos,
     Sobreturno
 )
+from django.contrib.auth.decorators import login_required
+from django.db.models import Sum, Count, Q
+from django.utils import timezone
 
+from caja.models import CajaDiaria, MovimientoCaja
 from paciente.models import Paciente
 from medicos.models import Medico
 from core.models import CentroMedico
@@ -873,4 +878,530 @@ def sedes_gerencia(request):
     return render(
         request,
         'gerencia/sedes.html'
+    )
+    
+@login_required
+def facturacion(request):
+    hoy = timezone.localdate()
+    mes_actual = hoy.month
+    anio_actual = hoy.year
+
+    cajas_cerradas = CajaDiaria.objects.filter(
+        estado='CERRADA'
+    ).select_related(
+        'centro_medico',
+        'abierta_por',
+        'cerrada_por'
+    ).order_by('-fecha', 'centro_medico', 'turno')
+
+    movimientos_activos = MovimientoCaja.objects.filter(
+        estado='ACTIVO',
+        caja__estado='CERRADA'
+    )
+
+    total_ingresos = movimientos_activos.filter(
+        tipo='INGRESO'
+    ).aggregate(
+        total=Sum('importe')
+    )['total'] or 0
+
+    total_egresos = movimientos_activos.filter(
+        tipo='EGRESO'
+    ).aggregate(
+        total=Sum('importe')
+    )['total'] or 0
+
+    saldo_neto = total_ingresos - total_egresos
+
+    efectivo_ingresos = movimientos_activos.filter(
+        tipo='INGRESO',
+        medio_pago__nombre__iexact='Efectivo'
+    ).aggregate(
+        total=Sum('importe')
+    )['total'] or 0
+
+    efectivo_egresos = movimientos_activos.filter(
+        tipo='EGRESO',
+        medio_pago__nombre__iexact='Efectivo'
+    ).aggregate(
+        total=Sum('importe')
+    )['total'] or 0
+
+    efectivo_neto = efectivo_ingresos - efectivo_egresos
+
+    bancarizado = movimientos_activos.filter(
+        tipo='INGRESO'
+    ).exclude(
+        medio_pago__nombre__iexact='Efectivo'
+    ).aggregate(
+        total=Sum('importe')
+    )['total'] or 0
+
+    total_anulados = MovimientoCaja.objects.filter(
+        estado='ANULADO',
+        caja__estado='CERRADA'
+    ).aggregate(
+        total=Sum('importe')
+    )['total'] or 0
+
+    cantidad_cajas_cerradas = cajas_cerradas.count()
+
+    cajas_abiertas_pendientes = CajaDiaria.objects.filter(
+        estado='ABIERTA'
+    ).select_related(
+        'centro_medico',
+        'abierta_por'
+    ).order_by('-fecha', 'centro_medico', 'turno')
+
+    cantidad_cajas_abiertas = cajas_abiertas_pendientes.count()
+
+    resumen_por_medio = movimientos_activos.filter(
+        tipo='INGRESO'
+    ).values(
+        'medio_pago__nombre'
+    ).annotate(
+        total=Sum('importe'),
+        cantidad=Count('id')
+    ).order_by('-total')
+
+    resumen_por_sede = movimientos_activos.filter(
+        tipo='INGRESO'
+    ).values(
+        'centro_medico__nombre'
+    ).annotate(
+        total=Sum('importe'),
+        cantidad=Count('id'),
+        efectivo=Sum(
+            'importe',
+            filter=Q(medio_pago__nombre__iexact='Efectivo')
+        ),
+        bancarizado=Sum(
+            'importe',
+            filter=~Q(medio_pago__nombre__iexact='Efectivo')
+        ),
+    ).order_by('-total')
+
+    resumen_por_turno = movimientos_activos.filter(
+        tipo='INGRESO'
+    ).values(
+        'caja__turno'
+    ).annotate(
+        total=Sum('importe'),
+        cantidad=Count('id')
+    ).order_by('caja__turno')
+
+    resumen_por_secretaria = movimientos_activos.filter(
+        tipo='INGRESO'
+    ).values(
+        'creado_por__username'
+    ).annotate(
+        total=Sum('importe'),
+        cantidad=Count('id')
+    ).order_by('-total')
+
+    anulaciones_por_usuario = MovimientoCaja.objects.filter(
+        estado='ANULADO'
+    ).values(
+        'anulado_por__username'
+    ).annotate(
+        total_anulado=Sum('importe'),
+        cantidad=Count('id')
+    ).order_by('-total_anulado')
+
+    movimientos_mes = movimientos_activos.filter(
+        fecha_creacion__year=anio_actual,
+        fecha_creacion__month=mes_actual,
+        tipo='INGRESO'
+    )
+
+    total_mes = movimientos_mes.aggregate(
+        total=Sum('importe')
+    )['total'] or 0
+
+    resumen_mes_por_sede = movimientos_mes.values(
+        'centro_medico__nombre'
+    ).annotate(
+        total=Sum('importe'),
+        cantidad=Count('id')
+    ).order_by('-total')
+
+    context = {
+        'hoy': hoy,
+        'cajas_cerradas': cajas_cerradas[:20],
+        'cajas_abiertas_pendientes': cajas_abiertas_pendientes,
+
+        'total_ingresos': total_ingresos,
+        'total_egresos': total_egresos,
+        'saldo_neto': saldo_neto,
+
+        'efectivo_ingresos': efectivo_ingresos,
+        'efectivo_egresos': efectivo_egresos,
+        'efectivo_neto': efectivo_neto,
+        'bancarizado': bancarizado,
+
+        'total_anulados': total_anulados,
+        'cantidad_cajas_cerradas': cantidad_cajas_cerradas,
+        'cantidad_cajas_abiertas': cantidad_cajas_abiertas,
+
+        'resumen_por_medio': resumen_por_medio,
+        'resumen_por_sede': resumen_por_sede,
+        'resumen_por_turno': resumen_por_turno,
+        'resumen_por_secretaria': resumen_por_secretaria,
+        'anulaciones_por_usuario': anulaciones_por_usuario,
+
+        'total_mes': total_mes,
+        'resumen_mes_por_sede': resumen_mes_por_sede,
+    }
+
+    return render(request, 'gerencia/facturacion.html', context)
+
+
+@login_required
+def facturacion_sede(request, centro_id):
+
+    centro = get_object_or_404(
+        CentroMedico,
+        id=centro_id
+    )
+
+    hoy = timezone.localdate()
+
+    fecha_desde = request.GET.get('desde')
+    fecha_hasta = request.GET.get('hasta')
+    mes = request.GET.get('mes')
+    anio = request.GET.get('anio')
+
+    movimientos = MovimientoCaja.objects.filter(
+        estado='ACTIVO',
+        caja__estado='CERRADA',
+        centro_medico=centro
+    )
+
+    cajas = CajaDiaria.objects.filter(
+        estado='CERRADA',
+        centro_medico=centro
+    )
+
+    # ==========================
+    # FILTROS
+    # ==========================
+
+    if fecha_desde:
+        movimientos = movimientos.filter(
+            fecha_creacion__date__gte=fecha_desde
+        )
+
+        cajas = cajas.filter(
+            fecha__gte=fecha_desde
+        )
+
+    if fecha_hasta:
+        movimientos = movimientos.filter(
+            fecha_creacion__date__lte=fecha_hasta
+        )
+
+        cajas = cajas.filter(
+            fecha__lte=fecha_hasta
+        )
+
+    if mes:
+        movimientos = movimientos.filter(
+            fecha_creacion__month=mes
+        )
+
+        cajas = cajas.filter(
+            fecha__month=mes
+        )
+
+    if anio:
+        movimientos = movimientos.filter(
+            fecha_creacion__year=anio
+        )
+
+        cajas = cajas.filter(
+            fecha__year=anio
+        )
+
+    # ==========================
+    # KPIS PRINCIPALES
+    # ==========================
+
+    total_ingresos = movimientos.filter(
+        tipo='INGRESO'
+    ).aggregate(
+        total=Sum('importe')
+    )['total'] or 0
+
+    total_egresos = movimientos.filter(
+        tipo='EGRESO'
+    ).aggregate(
+        total=Sum('importe')
+    )['total'] or 0
+
+    saldo_neto = total_ingresos - total_egresos
+
+    cantidad_movimientos = movimientos.count()
+
+    cantidad_cajas = cajas.count()
+
+    # ==========================
+    # EFECTIVO / BANCARIZADO
+    # ==========================
+
+    efectivo = movimientos.filter(
+        tipo='INGRESO',
+        medio_pago__nombre__iexact='Efectivo'
+    ).aggregate(
+        total=Sum('importe')
+    )['total'] or 0
+
+    bancarizado = movimientos.filter(
+        tipo='INGRESO'
+    ).exclude(
+        medio_pago__nombre__iexact='Efectivo'
+    ).aggregate(
+        total=Sum('importe')
+    )['total'] or 0
+
+    # ==========================
+    # PROMEDIOS
+    # ==========================
+
+    dias_con_movimientos = movimientos.values(
+        'fecha_creacion__date'
+    ).distinct().count()
+
+    promedio_diario = 0
+
+    if dias_con_movimientos:
+        promedio_diario = (
+            total_ingresos / dias_con_movimientos
+        )
+
+    ticket_promedio = 0
+
+    ingresos_count = movimientos.filter(
+        tipo='INGRESO'
+    ).count()
+
+    if ingresos_count:
+        ticket_promedio = (
+            total_ingresos / ingresos_count
+        )
+
+    # ==========================
+    # MEJOR DIA
+    # ==========================
+
+    mejor_dia = movimientos.filter(
+        tipo='INGRESO'
+    ).values(
+        'fecha_creacion__date'
+    ).annotate(
+        total=Sum('importe')
+    ).order_by('-total').first()
+
+    peor_dia = movimientos.filter(
+        tipo='INGRESO'
+    ).values(
+        'fecha_creacion__date'
+    ).annotate(
+        total=Sum('importe')
+    ).order_by('total').first()
+
+    # ==========================
+    # TURNO MAS RENTABLE
+    # ==========================
+
+    turno_top = movimientos.filter(
+        tipo='INGRESO'
+    ).values(
+        'caja__turno'
+    ).annotate(
+        total=Sum('importe')
+    ).order_by('-total').first()
+
+    # ==========================
+    # SECRETARIA TOP
+    # ==========================
+
+    resumen_secretarias = movimientos.filter(
+        tipo='INGRESO'
+    ).values(
+        'creado_por__username'
+    ).annotate(
+        total=Sum('importe'),
+        cantidad=Count('id')
+    ).order_by('-total')
+
+    secretaria_top = resumen_secretarias.first()
+
+    # ==========================
+    # MEDIOS DE PAGO
+    # ==========================
+
+    resumen_medios = movimientos.filter(
+        tipo='INGRESO'
+    ).values(
+        'medio_pago__nombre'
+    ).annotate(
+        total=Sum('importe'),
+        cantidad=Count('id')
+    ).order_by('-total')
+
+    # ==========================
+    # MAÑANA VS TARDE
+    # ==========================
+
+    resumen_turnos = movimientos.filter(
+        tipo='INGRESO'
+    ).values(
+        'caja__turno'
+    ).annotate(
+        total=Sum('importe')
+    )
+
+    # ==========================
+    # EVOLUCION DIARIA
+    # ==========================
+
+    evolucion_diaria = movimientos.filter(
+        tipo='INGRESO'
+    ).values(
+        'fecha_creacion__date'
+    ).annotate(
+        total=Sum('importe')
+    ).order_by(
+        'fecha_creacion__date'
+    )
+    # ==========================
+    # CHART MEDIOS DE PAGO
+    # ==========================
+
+    labels_medios = []
+    data_medios = []
+
+    for item in resumen_medios:
+        labels_medios.append(
+            item['medio_pago__nombre']
+        )
+
+        data_medios.append(
+            float(item['total'])
+        )
+
+    # ==========================
+    # CHART EVOLUCIÓN
+    # ==========================
+
+    labels_evolucion = []
+    data_evolucion = []
+
+    for item in evolucion_diaria:
+
+        labels_evolucion.append(
+            item['fecha_creacion__date'].strftime('%d/%m')
+        )
+
+        data_evolucion.append(
+            float(item['total'])
+        )
+    context = {
+
+        'centro': centro,
+
+        'hoy': hoy,
+
+        'fecha_desde': fecha_desde,
+        'fecha_hasta': fecha_hasta,
+        'mes': mes,
+        'anio': anio,
+
+        'total_ingresos': total_ingresos,
+        'total_egresos': total_egresos,
+        'saldo_neto': saldo_neto,
+        'labels_medios': labels_medios,
+        'data_medios': data_medios,
+
+        'labels_evolucion': labels_evolucion,
+        'data_evolucion': data_evolucion,
+        'cantidad_cajas': cantidad_cajas,
+        'cantidad_movimientos': cantidad_movimientos,
+        
+        'efectivo': efectivo,
+        'bancarizado': bancarizado,
+
+        'promedio_diario': promedio_diario,
+        'ticket_promedio': ticket_promedio,
+
+        'mejor_dia': mejor_dia,
+        'peor_dia': peor_dia,
+
+        'turno_top': turno_top,
+        'secretaria_top': secretaria_top,
+
+        'resumen_medios': resumen_medios,
+        'resumen_turnos': resumen_turnos,
+        'resumen_secretarias': resumen_secretarias,
+
+        'evolucion_diaria': evolucion_diaria,
+
+        'cajas': cajas[:50],
+    }
+
+    return render(
+        request,
+        'gerencia/facturacion_sede.html',
+        context
+    )
+    
+@login_required
+def detalle_caja(request, caja_id):
+
+    caja = get_object_or_404(
+        CajaDiaria,
+        id=caja_id
+    )
+
+    movimientos = MovimientoCaja.objects.filter(
+        caja=caja
+    ).select_related(
+        'medio_pago',
+        'paciente',
+        'creado_por'
+    ).order_by(
+        '-fecha_creacion'
+    )
+
+    ingresos = movimientos.filter(
+        tipo='INGRESO',
+        estado='ACTIVO'
+    ).aggregate(
+        total=Sum('importe')
+    )['total'] or 0
+
+    egresos = movimientos.filter(
+        tipo='EGRESO',
+        estado='ACTIVO'
+    ).aggregate(
+        total=Sum('importe')
+    )['total'] or 0
+
+    saldo = ingresos - egresos
+
+    context = {
+
+        'caja': caja,
+        'movimientos': movimientos,
+
+        'ingresos': ingresos,
+        'egresos': egresos,
+        'saldo': saldo,
+
+    }
+
+    return render(
+        request,
+        'gerencia/detalle_caja.html',
+        context
     )
