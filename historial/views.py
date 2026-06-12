@@ -9,7 +9,7 @@ from datetime import date
 from turnos.models import Turnos, Sobreturno
 from django.contrib import messages
 from datetime import date, datetime
-
+from estudios.forms import EstudioForm
 
 @login_required
 def ver_historia_clinica(request, paciente_id):
@@ -168,6 +168,27 @@ def cargar_consulta_paciente(request, turno_id):
         if form.is_valid():
 
             consulta = form.save(commit=False)
+            historia.antecedentes_patologicos = request.POST.get(
+            'antecedentes_patologicos'
+            )
+
+            historia.antecedentes_alergicos = request.POST.get(
+                'antecedentes_alergicos'
+            )
+
+            historia.antecedentes_toxicos = request.POST.get(
+                'antecedentes_toxicos'
+            )
+
+            historia.antecedentes_quirurgicos = request.POST.get(
+                'antecedentes_quirurgicos'
+            )
+
+            historia.medicacion_base = request.POST.get(
+                'medicacion_base'
+            )
+
+            historia.save()
 
             consulta.historia_clinica = historia
             consulta.medico = request.user.medico
@@ -184,9 +205,9 @@ def cargar_consulta_paciente(request, turno_id):
                 consulta.save()
 
                 messages.success(
-                    request,
-                    "Consulta guardada parcialmente."
-                )
+                request,
+                "CONSULTA_GUARDADA"
+)
 
             elif "finalizar_consulta" in request.POST:
 
@@ -196,14 +217,11 @@ def cargar_consulta_paciente(request, turno_id):
                 turno.estado = 'ATENDIDO'
                 turno.save()
 
-                messages.success(
-                    request,
-                    "Consulta finalizada correctamente."
-                )
+                request.session['mostrar_modal'] = 'CONSULTA_FINALIZADA'
 
                 return redirect(
-                    'ver_historia_clinica',
-                    paciente_id=paciente.id
+                    'cargar_consulta_paciente',
+                    turno_id=turno.id
                 )
 
             return redirect(
@@ -221,13 +239,24 @@ def cargar_consulta_paciente(request, turno_id):
 
         for field in form.fields.values():
             field.disabled = True
-
+    estudio_form = EstudioForm(
+        paciente=paciente
+    )
+    estudios = paciente.estudios.all().order_by('-fecha')
+    modal = request.session.pop(
+    'mostrar_modal',
+    None
+)
     return render(request, 'historial/cargar_consulta.html', {
         'form': form,
+        'historia': historia,
+         'modal': modal,
+        'estudios': estudios,
         'paciente': paciente,
         'turno': turno,
         'consultas': consultas,
         'consulta': consulta_existente,
+        'estudio_form': estudio_form,
         'es_sobreturno': es_sobreturno
     })
     

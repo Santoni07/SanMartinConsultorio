@@ -1,8 +1,13 @@
 from django.urls import path
-from .views import buscar_y_cargar_estudio,  eliminar_estudio,ver_estudios_paciente
+from .views import buscar_y_cargar_estudio,  eliminar_estudio,ver_estudios_paciente,guardar_estudio_consulta
 
 urlpatterns = [
     path('cargar/', buscar_y_cargar_estudio, name='buscar_y_cargar_estudio'),
     path('eliminar/<int:estudio_id>/', eliminar_estudio, name='eliminar_estudio'),
     path('ver/', ver_estudios_paciente, name='ver_estudios'),
+  path(
+    'guardar-estudio-consulta/<int:paciente_id>/<int:turno_id>/',
+    guardar_estudio_consulta,
+    name='guardar_estudio_consulta'
+)
 ]

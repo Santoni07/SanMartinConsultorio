@@ -6,9 +6,45 @@ from medicos.models import Medico
 from turnos.models import Turnos
 
 class HistoriaClinica(models.Model):
-    paciente = models.OneToOneField(Paciente, on_delete=models.CASCADE)
-    fecha_creacion = models.DateTimeField(auto_now_add=True)
-    observaciones_generales = models.TextField(blank=True, null=True)
+
+    paciente = models.OneToOneField(
+        Paciente,
+        on_delete=models.CASCADE
+    )
+
+    fecha_creacion = models.DateTimeField(
+        auto_now_add=True
+    )
+
+    observaciones_generales = models.TextField(
+        blank=True,
+        null=True
+    )
+
+    antecedentes_patologicos = models.TextField(
+        blank=True,
+        null=True
+    )
+
+    antecedentes_alergicos = models.TextField(
+        blank=True,
+        null=True
+    )
+
+    antecedentes_toxicos = models.TextField(
+        blank=True,
+        null=True
+    )
+
+    antecedentes_quirurgicos = models.TextField(
+        blank=True,
+        null=True
+    )
+
+    medicacion_base = models.TextField(
+        blank=True,
+        null=True
+    )
 
     def __str__(self):
         return f"Historia Clínica de {self.paciente}"

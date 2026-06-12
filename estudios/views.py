@@ -96,3 +96,41 @@ def ver_estudios_paciente(request):
         'paciente': paciente,
         'estudios': estudios,
     })
+    
+@login_required
+def guardar_estudio_consulta(
+    request,
+    paciente_id,
+    turno_id
+):
+
+    paciente = get_object_or_404(
+        Paciente,
+        id=paciente_id
+    )
+
+    if request.method == 'POST':
+
+        form = EstudioForm(
+            request.POST,
+            request.FILES,
+            paciente=paciente
+        )
+
+        if form.is_valid():
+
+            estudio = form.save(commit=False)
+
+            estudio.paciente = paciente
+
+            estudio.save()
+
+            messages.success(
+                request,
+                "ESTUDIO_OK"
+)
+
+    return redirect(
+        'cargar_consulta_paciente',
+        turno_id=turno_id
+    )

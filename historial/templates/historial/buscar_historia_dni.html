@@ -79,6 +79,87 @@
                 </p>
             </div>
         </div>
+        
+        <!-- ANTECEDENTES MÉDICOS -->
+
+        <div class="card shadow border-0 mb-4">
+
+            <div class="card-header bg-danger text-white">
+                <i class="bi bi-heart-pulse"></i>
+                Antecedentes Médicos
+            </div>
+
+            <div class="card-body">
+
+                <div class="row">
+
+                    <div class="col-md-6 mb-3">
+                        <div class="border rounded p-3 h-100 bg-light">
+                            <strong class="text-danger">
+                                Antecedentes Patológicos
+                            </strong>
+
+                            <hr>
+
+                            {{ historia.antecedentes_patologicos|default:"Sin datos registrados"|linebreaks }}
+                        </div>
+                    </div>
+
+                    <div class="col-md-6 mb-3">
+                        <div class="border rounded p-3 h-100 bg-light">
+                            <strong class="text-danger">
+                                Antecedentes Alérgicos
+                            </strong>
+
+                            <hr>
+
+                            {{ historia.antecedentes_alergicos|default:"Sin datos registrados"|linebreaks }}
+                        </div>
+                    </div>
+
+                    <div class="col-md-6 mb-3">
+                        <div class="border rounded p-3 h-100 bg-light">
+                            <strong class="text-danger">
+                                Antecedentes Tóxicos
+                            </strong>
+
+                            <hr>
+
+                            {{ historia.antecedentes_toxicos|default:"Sin datos registrados"|linebreaks }}
+                        </div>
+                    </div>
+
+                    <div class="col-md-6 mb-3">
+                        <div class="border rounded p-3 h-100 bg-light">
+                            <strong class="text-danger">
+                                Antecedentes Quirúrgicos
+                            </strong>
+
+                            <hr>
+
+                            {{ historia.antecedentes_quirurgicos|default:"Sin datos registrados"|linebreaks }}
+                        </div>
+                    </div>
+
+                    <div class="col-12">
+                        <div class="border rounded p-3 bg-light">
+                            <strong class="text-danger">
+                                Medicación Base
+                            </strong>
+
+                            <hr>
+
+                            {{ historia.medicacion_base|default:"Sin datos registrados"|linebreaks }}
+                        </div>
+                    </div>
+
+                </div>
+
+            </div>
+
+        </div>
+
+
 
         <!-- FILTRO POR FECHA -->
         <div class="card shadow border-0 mb-4">

@@ -2,6 +2,7 @@
 {% load static %}
 
 {% block content %}
+
 <div class="container-fluid mt-4">
 
     <h2 class="text-center mb-4">
@@ -17,52 +18,211 @@
     <div class="row">
 
         <!-- 🔵 COLUMNA IZQUIERDA — FORMULARIO -->
-        <div class="col-lg-7">
+<div class="col-lg-7">
 
-            <div class="card shadow border-0 h-100">
-                <div class="card-header bg-success text-white">
-                    <i class="bi bi-plus-circle"></i> Nueva Consulta
+    <div class="card shadow border-0 h-100">
+
+        <div class="card-header bg-success text-white">
+            <i class="bi bi-journal-medical"></i>
+            Consulta Médica
+        </div>
+
+        <div class="card-body">
+
+            <form method="post">
+                {% csrf_token %}
+
+                <!-- DATOS DEL PACIENTE -->
+                <h5 class="text-primary mb-3">
+                    <i class="bi bi-person-circle"></i>
+                    Datos del Paciente
+                </h5>
+
+                <div class="row">
+
+                    <div class="col-md-4 mb-3">
+                        <label class="fw-bold">Nombre y Apellido</label>
+                        <input type="text"
+                               class="form-control"
+                               value="{{ paciente.nombre }} {{ paciente.apellido }}"
+                               readonly>
+                    </div>
+
+                    <div class="col-md-2 mb-3">
+                        <label class="fw-bold">DNI</label>
+                        <input type="text"
+                               class="form-control"
+                               value="{{ paciente.dni }}"
+                               readonly>
+                    </div>
+
+                    <div class="col-md-2 mb-3">
+                        <label class="fw-bold">Edad</label>
+                        <input type="text"
+                               class="form-control"
+                               value="{{ paciente.edad }}"
+                               readonly>
+                    </div>
+
+                    <div class="col-md-4 mb-3">
+                        <label class="fw-bold">Obra Social</label>
+                        <input type="text"
+                               class="form-control"
+                               value="{{ paciente.obrasocial }}"
+                               readonly>
+                    </div>
+
                 </div>
 
-                <div class="card-body">
+                <hr>
 
-                    <form method="post">
-                        {% csrf_token %}
-                        {{ form.as_p }}
+                <!-- ANTECEDENTES -->
+                <h5 class="text-danger mb-3">
+                    <i class="bi bi-heart-pulse"></i>
+                    Antecedentes Médicos
+                </h5>
 
-                        <div class="text-center mt-4">
+                <div class="mb-3">
+                    <label class="fw-bold">
+                        Antecedentes Patológicos
+                    </label>
 
-                            {% if consulta and consulta.estado == "FINALIZADA" %}
-                                <div class="alert alert-danger">
-                                    Esta consulta está FINALIZADA y no puede modificarse.
-                                </div>
-                            {% else %}
+                    <textarea
+                        name="antecedentes_patologicos"
+                        class="form-control"
+                        rows="3">{{ historia.antecedentes_patologicos }}</textarea>
+                </div>
 
-                                <button type="submit" name="guardar_parcial"
-                                        class="btn btn-warning">
-                                    <i class="bi bi-save"></i> Guardar Parcial
-                                </button>
+                <div class="mb-3">
+                    <label class="fw-bold">
+                        Antecedentes Alérgicos
+                    </label>
 
-                                <button type="submit" name="finalizar_consulta"
-                                        class="btn btn-success ms-2">
-                                    <i class="bi bi-check-circle"></i> Finalizar Consulta
-                                </button>
+                    <textarea
+                        name="antecedentes_alergicos"
+                        class="form-control"
+                        rows="3">{{ historia.antecedentes_alergicos }}</textarea>
+                </div>
 
-                            {% endif %}
+                <div class="mb-3">
+                    <label class="fw-bold">
+                        Antecedentes Tóxicos
+                    </label>
 
-                            <a href="{% url 'buscar_paciente_consulta' %}"
-                            class="btn btn-secondary ms-2">
-                                Volver
-                            </a>
+                    <textarea
+                        name="antecedentes_toxicos"
+                        class="form-control"
+                        rows="3">{{ historia.antecedentes_toxicos }}</textarea>
+                </div>
 
+                <div class="mb-3">
+                    <label class="fw-bold">
+                        Antecedentes Quirúrgicos
+                    </label>
+
+                    <textarea
+                        name="antecedentes_quirurgicos"
+                        class="form-control"
+                        rows="3">{{ historia.antecedentes_quirurgicos }}</textarea>
+                </div>
+
+                <div class="mb-3">
+                    <label class="fw-bold">
+                        Medicación Base
+                    </label>
+
+                    <textarea
+                        name="medicacion_base"
+                        class="form-control"
+                        rows="3">{{ historia.medicacion_base }}</textarea>
+                </div>
+
+                <hr>
+
+                <!-- CONSULTA -->
+                <h5 class="text-success mb-3">
+                    <i class="bi bi-clipboard2-pulse"></i>
+                    Nueva Consulta
+                </h5>
+
+                {{ form.as_p }}
+
+                <hr>
+
+                <div class="card border-info mb-4">
+
+    <div class="card-header bg-info text-white">
+        <i class="bi bi-file-earmark-medical"></i>
+        Estudios Médicos
+    </div>
+
+    <div class="card-body text-center">
+
+        <p class="mb-3">
+            Desde aquí puede adjuntar estudios médicos al paciente.
+        </p>
+
+        <button
+            type="button"
+            class="btn btn-info btn-lg"
+            data-bs-toggle="modal"
+            data-bs-target="#estudioModal">
+
+            <i class="bi bi-plus-circle"></i>
+            Cargar Estudio
+
+        </button>
+
+    </div>
+
+</div>
+
+                <div class="text-center mt-4">
+
+                    {% if consulta and consulta.estado == "FINALIZADA" %}
+
+                        <div class="alert alert-danger">
+                            Esta consulta está FINALIZADA y no puede modificarse.
                         </div>
-                    </form>
+
+                    {% else %}
+
+                        <button type="submit"
+                                name="guardar_parcial"
+                                class="btn btn-warning">
+
+                            <i class="bi bi-save"></i>
+                            Guardar Parcial
+
+                        </button>
+
+                        <button type="submit"
+                                name="finalizar_consulta"
+                                class="btn btn-success ms-2">
+
+                            <i class="bi bi-check-circle"></i>
+                            Finalizar Consulta
+
+                        </button>
+
+                    {% endif %}
+
+                    <a href="{% url 'buscar_paciente_consulta' %}"
+                       class="btn btn-secondary ms-2">
+
+                        Volver
+
+                    </a>
 
                 </div>
-            </div>
+
+            </form>
 
         </div>
 
+    </div>
+
+</div>
 
        <!-- 🟣 COLUMNA DERECHA — HISTORIAL COMPLETO -->
 <div class="col-lg-5">
@@ -74,135 +234,470 @@
         </div>
 
         <div class="card-body"
-             style="max-height: 75vh; overflow-y: auto;">
+     style="height: calc(100vh - 250px); overflow-y: auto;">
 
-            {% if consultas %}
-                {% for consulta in consultas %}
-                <div class="mb-4 p-3 rounded shadow-sm bg-light border-start border-4 border-primary">
+    <!-- ANTECEDENTES -->
 
-                    <!-- FECHA Y MÉDICO -->
-                    <div class="d-flex justify-content-between mb-2">
-                        <strong class="text-dark">
-                            {{ consulta.fecha }}
-                        </strong>
-                        <span class="badge bg-secondary">
-                            Dr/a {{ consulta.medico }}
-                        </span>
-                    </div>
+  {% comment %}   <div class="card border-danger mb-4">
 
-                    <!-- MOTIVO -->
-                    <div class="mb-2">
-                        <strong class="text-primary">
-                            Motivo:
-                        </strong>
-                        <div class="ps-2">
-                            {{ consulta.motivo|linebreaks }}
-                        </div>
-                    </div>
+        <div class="card-header bg-danger text-white">
+            <i class="bi bi-heart-pulse"></i>
+            Antecedentes Médicos
+        </div>
 
-                    <!-- EXAMEN FISICO -->
-                    {% if consulta.examen_fisico %}
-                    <div class="mb-2">
-                        <strong class="text-warning">
-                            🩺 Examen Físico:
-                        </strong>
-                        <div class="ps-2">
-                            {{ consulta.examen_fisico|linebreaks }}
-                        </div>
-                    </div>
-                    {% endif %}
+        <div class="card-body">
 
-                    <!-- DIAGNÓSTICO -->
-                    <div class="mb-2">
-                        <strong class="text-danger">
-                            Diagnóstico:
-                        </strong>
-                        <div class="ps-2">
-                            {{ consulta.diagnostico|linebreaks }}
-                        </div>
-                    </div>
+            <div class="mb-3">
+                <strong>Antecedentes Patológicos</strong>
 
-                    <!-- TRATAMIENTO -->
-                    <div class="mb-2">
-                        <strong class="text-success">
-                            Tratamiento:
-                        </strong>
-                        <div class="ps-2">
-                            {{ consulta.tratamiento|linebreaks }}
-                        </div>
-                    </div>
-
-                    <!-- OBSERVACIONES -->
-                    {% if consulta.observaciones %}
-                    <div class="mb-2">
-                        <strong class="text-dark">
-                            Observaciones:
-                        </strong>
-                        <div class="ps-2">
-                            {{ consulta.observaciones|linebreaks }}
-                        </div>
-                    </div>
-                    {% endif %}
-
+                <div class="border rounded p-2 bg-light">
+                    {{ historia.antecedentes_patologicos|default:"Sin datos"|linebreaks }}
                 </div>
-                {% endfor %}
+            </div>
+
+            <div class="mb-3">
+                <strong>Antecedentes Alérgicos</strong>
+
+                <div class="border rounded p-2 bg-light">
+                    {{ historia.antecedentes_alergicos|default:"Sin datos"|linebreaks }}
+                </div>
+            </div>
+
+            <div class="mb-3">
+                <strong>Antecedentes Tóxicos</strong>
+
+                <div class="border rounded p-2 bg-light">
+                    {{ historia.antecedentes_toxicos|default:"Sin datos"|linebreaks }}
+                </div>
+            </div>
+
+            <div class="mb-3">
+                <strong>Antecedentes Quirúrgicos</strong>
+
+                <div class="border rounded p-2 bg-light">
+                    {{ historia.antecedentes_quirurgicos|default:"Sin datos"|linebreaks }}
+                </div>
+            </div>
+
+            <div>
+                <strong>Medicación Base</strong>
+
+                <div class="border rounded p-2 bg-light">
+                    {{ historia.medicacion_base|default:"Sin datos"|linebreaks }}
+                </div>
+            </div>
+
+        </div>
+
+    </div> {% endcomment %}
+
+    <!-- ESTUDIOS -->
+
+    <div class="card border-info mb-4">
+
+        <div class="card-header bg-info text-white">
+            <i class="bi bi-file-earmark-medical"></i>
+            Estudios Médicos
+        </div>
+
+        <div class="card-body">
+
+            {% if estudios %}
+
+            <div class="table-responsive">
+
+                <table class="table table-sm table-hover">
+
+                    <thead class="table-light">
+
+                        <tr>
+                            <th>Fecha</th>
+                            <th>Tipo</th>
+                            <th>Archivo</th>
+                        </tr>
+
+                    </thead>
+
+                    <tbody>
+
+                    {% for estudio in estudios %}
+
+                        <tr>
+
+                            <td>
+                                {{ estudio.fecha }}
+                            </td>
+
+                            <td>
+                                {{ estudio.get_tipo_display }}
+                            </td>
+
+                            <td>
+
+                                {% if estudio.archivo %}
+
+                                <a href="{{ estudio.archivo.url }}"
+                                   target="_blank"
+                                   class="btn btn-success btn-sm">
+
+                                    <i class="bi bi-eye"></i>
+
+                                </a>
+
+                                {% else %}
+
+                                -
+
+                                {% endif %}
+
+                            </td>
+
+                        </tr>
+
+                    {% endfor %}
+
+                    </tbody>
+
+                </table>
+
+            </div>
+
             {% else %}
-                <div class="alert alert-warning text-center">
-                    No hay consultas previas.
-                </div>
+
+            <div class="alert alert-warning mb-0">
+                No hay estudios cargados.
+            </div>
+
             {% endif %}
 
         </div>
 
     </div>
 
+    <!-- HISTORIAL -->
+
+    <h5 class="text-primary mb-3">
+        <i class="bi bi-clock-history"></i>
+        Historial de Consultas
+    </h5>
+
+    {% if consultas %}
+
+        {% for consulta in consultas %}
+
+        <div class="mb-4 p-3 rounded shadow-sm bg-light border-start border-4 border-primary">
+
+            <div class="d-flex justify-content-between mb-2">
+
+                <strong class="text-dark">
+                    {{ consulta.fecha }}
+                </strong>
+
+                <span class="badge bg-secondary">
+                    Dr/a {{ consulta.medico }}
+                </span>
+
+            </div>
+
+            <div class="mb-2">
+
+                <strong class="text-primary">
+                    Motivo:
+                </strong>
+
+                <div class="ps-2">
+                    {{ consulta.motivo|linebreaks }}
+                </div>
+
+            </div>
+
+            {% if consulta.examen_fisico %}
+            <div class="mb-2">
+
+                <strong class="text-warning">
+                    🩺 Examen Físico:
+                </strong>
+
+                <div class="ps-2">
+                    {{ consulta.examen_fisico|linebreaks }}
+                </div>
+
+            </div>
+            {% endif %}
+
+            <div class="mb-2">
+
+                <strong class="text-danger">
+                    Diagnóstico:
+                </strong>
+
+                <div class="ps-2">
+                    {{ consulta.diagnostico|linebreaks }}
+                </div>
+
+            </div>
+
+            <div class="mb-2">
+
+                <strong class="text-success">
+                    Tratamiento:
+                </strong>
+
+                <div class="ps-2">
+                    {{ consulta.tratamiento|linebreaks }}
+                </div>
+
+            </div>
+
+            {% if consulta.observaciones %}
+            <div class="mb-2">
+
+                <strong>
+                    Observaciones:
+                </strong>
+
+                <div class="ps-2">
+                    {{ consulta.observaciones|linebreaks }}
+                </div>
+
+            </div>
+            {% endif %}
+
+        </div>
+
+        {% endfor %}
+
+    {% else %}
+
+        <div class="alert alert-warning text-center">
+            No hay consultas previas.
+        </div>
+
+    {% endif %}
+
+</div>
+
+    </div>
+
 </div>
 
     </div>
 </div>
+{% if messages %}
 
+<div id="mensajesOcultos" style="display:none;">
+{% for message in messages %}
+<span class="mensaje">{{ message.message }}</span>
+{% endfor %}
+</div>
+{% endif %}
 
-<!-- MODAL ÉXITO -->
+<!-- MODAL CONSULTA -->
+
 <div class="modal fade" id="successModal" tabindex="-1">
-  <div class="modal-dialog modal-dialog-centered">
+
+```
+<div class="modal-dialog modal-dialog-centered">
+
     <div class="modal-content">
 
-      <div class="modal-header bg-success text-white">
-        <h5 class="modal-title">
-            <i class="bi bi-check-circle"></i> Éxito
-        </h5>
-        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-      </div>
+        <div class="modal-header bg-success text-white">
 
-      <div class="modal-body text-center">
-        <h5 class="mt-2">Consulta médica guardada con éxito</h5>
-        <p class="text-muted">La información fue registrada correctamente.</p>
-      </div>
+            <h5 class="modal-title">
+                <i class="bi bi-check-circle"></i>
+                Consulta Médica
+            </h5>
 
-      <div class="modal-footer justify-content-center">
-        <button type="button" class="btn btn-success" data-bs-dismiss="modal">
-            Aceptar
-        </button>
-      </div>
+            <button type="button"
+                    class="btn-close btn-close-white"
+                    data-bs-dismiss="modal"></button>
+
+        </div>
+
+        <div class="modal-body text-center">
+
+            <h5 id="textoModalConsulta">
+                Operación realizada correctamente
+            </h5>
+
+        </div>
+
+        <div class="modal-footer">
+
+            <button type="button"
+                    class="btn btn-success"
+                    data-bs-dismiss="modal">
+
+                Aceptar
+
+            </button>
+
+        </div>
 
     </div>
-  </div>
+
+</div>
+```
+
 </div>
 
-{% endblock %}
+<!-- MODAL ÉXITO ESTUDIO -->
 
+<div class="modal fade" id="estudioExitoModal" tabindex="-1">
 
-{% block extra_js %}
+```
+<div class="modal-dialog modal-dialog-centered">
+
+    <div class="modal-content">
+
+        <div class="modal-header bg-info text-white">
+
+            <h5 class="modal-title">
+                Estudio Médico
+            </h5>
+
+            <button type="button"
+                    class="btn-close btn-close-white"
+                    data-bs-dismiss="modal"></button>
+
+        </div>
+
+        <div class="modal-body text-center">
+
+            <h5>
+                Estudio cargado correctamente
+            </h5>
+
+        </div>
+
+        <div class="modal-footer">
+
+            <button type="button"
+                    class="btn btn-info"
+                    data-bs-dismiss="modal">
+
+                Aceptar
+
+            </button>
+
+        </div>
+
+    </div>
+
+</div>
+```
+
+</div>
+
+<!-- MODAL CARGAR ESTUDIO -->
+
+<div class="modal fade"
+     id="estudioModal"
+     tabindex="-1">
+
+```
+<div class="modal-dialog modal-dialog-centered modal-lg">
+
+    <div class="modal-content">
+
+        <div class="modal-header bg-info text-white">
+
+            <h5 class="modal-title">
+                Cargar Estudio Médico
+            </h5>
+
+            <button type="button"
+                    class="btn-close btn-close-white"
+                    data-bs-dismiss="modal"></button>
+
+        </div>
+
+        <form method="post"
+              enctype="multipart/form-data"
+              action="{% url 'guardar_estudio_consulta' paciente.id turno.id %}">
+
+            {% csrf_token %}
+
+            <div class="modal-body">
+
+                {{ estudio_form.as_p }}
+
+            </div>
+
+            <div class="modal-footer">
+
+                <button type="button"
+                        class="btn btn-secondary"
+                        data-bs-dismiss="modal">
+
+                    Cancelar
+
+                </button>
+
+                <button type="submit"
+                        class="btn btn-success">
+
+                    Guardar Estudio
+
+                </button>
+
+            </div>
+
+        </form>
+
+    </div>
+
+</div>
+```
+
+</div>
+
 <script>
-document.addEventListener("DOMContentLoaded", function() {
-    {% if messages %}
-        {% for message in messages %}
-            {% if message.tags == "success" %}
-                var successModal = new bootstrap.Modal(document.getElementById('successModal'));
-                successModal.show();
-            {% endif %}
-        {% endfor %}
-    {% endif %}
-});
+
+window.onload = function() {
+
+    const mensajes = document.querySelectorAll('.mensaje');
+
+    mensajes.forEach(function(item){
+
+        const texto = item.innerText.trim();
+
+        if(texto === "ESTUDIO_OK"){
+
+            new bootstrap.Modal(
+                document.getElementById('estudioExitoModal')
+            ).show();
+
+        }
+
+        if(texto === "CONSULTA_GUARDADA"){
+
+            document.getElementById(
+                'textoModalConsulta'
+            ).innerText = "Consulta guardada parcialmente";
+
+            new bootstrap.Modal(
+                document.getElementById('successModal')
+            ).show();
+
+        }
+
+        if(texto === "CONSULTA_FINALIZADA"){
+
+            document.getElementById(
+                'textoModalConsulta'
+            ).innerText = "Consulta finalizada correctamente";
+
+            new bootstrap.Modal(
+                document.getElementById('successModal')
+            ).show();
+
+        }
+
+    });
+
+};
+
 </script>
+
 {% endblock %}
