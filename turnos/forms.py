@@ -97,7 +97,7 @@ class AgendaMedicoForm(forms.Form):
 # 🔥 Generador de horarios
 def generar_horas():
     horas = []
-    for h in range(7, 21):  # 07:00 a 20:40
+    for h in range(8, 22):  # 07:00 a 20:40
         for m in [0, 20, 40]:
             hora = f"{h:02d}:{m:02d}"
             horas.append((hora, hora))
@@ -124,6 +124,7 @@ class ConfiguracionAgendaForm(forms.Form):
     miercoles = forms.BooleanField(required=False)
     jueves = forms.BooleanField(required=False)
     viernes = forms.BooleanField(required=False)
+    sabado = forms.BooleanField(required=False)
 
     # HORARIOS (AHORA DROPDOWN 🔥)
     lunes_inicio = forms.ChoiceField(choices=HORAS, required=False)
@@ -140,6 +141,9 @@ class ConfiguracionAgendaForm(forms.Form):
 
     viernes_inicio = forms.ChoiceField(choices=HORAS, required=False)
     viernes_fin = forms.ChoiceField(choices=HORAS, required=False)
+    
+    sabado_inicio = forms.ChoiceField(choices=HORAS, required=False)
+    sabado_fin = forms.ChoiceField(choices=HORAS, required=False)
     
 
 class ExcepcionAgendaForm(forms.ModelForm):

@@ -48,39 +48,192 @@
     </div>
 
 </div>
+<hr>
+<div class="mb-3">
+    <label class="form-label fw-bold">
+        Duración del turno
+    </label>
 
+    <div class="btn-group w-100" role="group">
+
+        <input type="radio"
+               class="btn-check"
+               name="duracion_turno"
+               id="d10"
+               value="10">
+
+        <label class="btn btn-outline-primary" for="d10">
+            10 min
+        </label>
+
+        <input type="radio"
+               class="btn-check"
+               name="duracion_turno"
+               id="d15"
+               value="15"
+               checked>
+
+        <label class="btn btn-outline-primary" for="d15">
+            15 min
+        </label>
+
+        <input type="radio"
+               class="btn-check"
+               name="duracion_turno"
+               id="d20"
+               value="20">
+
+        <label class="btn btn-outline-primary" for="d20">
+            20 min
+        </label>
+
+        <input type="radio"
+               class="btn-check"
+               name="duracion_turno"
+               id="d30"
+               value="30">
+
+        <label class="btn btn-outline-primary" for="d30">
+            30 min
+        </label>
+
+        <input type="radio"
+               class="btn-check"
+               name="duracion_turno"
+               id="d45"
+               value="45">
+
+        <label class="btn btn-outline-primary" for="d45">
+            45 min
+        </label>
+
+    </div>
+</div>
 <hr>
 
-<h5>Días y horarios</h5>
+<h5 class="mb-4">
+    <i class="bi bi-calendar-week"></i>
+    Días y horarios
+</h5>
 
-<div class="row">
+<div class="row g-3">
 
-<div class="col-md-6 mb-3">
-    <label>{{ form.lunes }} Lunes</label><br>
-    {{ form.lunes_inicio }} - {{ form.lunes_fin }}
+    <!-- Lunes -->
+    <div class="col-md-4">
+        <div class="card shadow-sm border-0 h-100">
+            <div class="card-body text-center">
+
+                <h6 class="fw-bold mb-3">
+                    {{ form.lunes }} Lunes
+                </h6>
+
+                <div class="d-flex justify-content-center align-items-center gap-2">
+                    {{ form.lunes_inicio }}
+                    <span>-</span>
+                    {{ form.lunes_fin }}
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    <!-- Martes -->
+    <div class="col-md-4">
+        <div class="card shadow-sm border-0 h-100">
+            <div class="card-body text-center">
+
+                <h6 class="fw-bold mb-3">
+                    {{ form.martes }} Martes
+                </h6>
+
+                <div class="d-flex justify-content-center align-items-center gap-2">
+                    {{ form.martes_inicio }}
+                    <span>-</span>
+                    {{ form.martes_fin }}
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    <!-- Miércoles -->
+    <div class="col-md-4">
+        <div class="card shadow-sm border-0 h-100">
+            <div class="card-body text-center">
+
+                <h6 class="fw-bold mb-3">
+                    {{ form.miercoles }} Miércoles
+                </h6>
+
+                <div class="d-flex justify-content-center align-items-center gap-2">
+                    {{ form.miercoles_inicio }}
+                    <span>-</span>
+                    {{ form.miercoles_fin }}
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    <!-- Jueves -->
+    <div class="col-md-4">
+        <div class="card shadow-sm border-0 h-100">
+            <div class="card-body text-center">
+
+                <h6 class="fw-bold mb-3">
+                    {{ form.jueves }} Jueves
+                </h6>
+
+                <div class="d-flex justify-content-center align-items-center gap-2">
+                    {{ form.jueves_inicio }}
+                    <span>-</span>
+                    {{ form.jueves_fin }}
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    <!-- Viernes -->
+    <div class="col-md-4">
+        <div class="card shadow-sm border-0 h-100">
+            <div class="card-body text-center">
+
+                <h6 class="fw-bold mb-3">
+                    {{ form.viernes }} Viernes
+                </h6>
+
+                <div class="d-flex justify-content-center align-items-center gap-2">
+                    {{ form.viernes_inicio }}
+                    <span>-</span>
+                    {{ form.viernes_fin }}
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    <!-- Sábado -->
+    <div class="col-md-4">
+        <div class="card shadow-sm border-0 h-100">
+            <div class="card-body text-center">
+
+                <h6 class="fw-bold mb-3">
+                    {{ form.sabado }} Sábado
+                </h6>
+
+                <div class="d-flex justify-content-center align-items-center gap-2">
+                    {{ form.sabado_inicio }}
+                    <span>-</span>
+                    {{ form.sabado_fin }}
+                </div>
+
+            </div>
+        </div>
+    </div>
+
 </div>
 
-<div class="col-md-6 mb-3">
-    <label>{{ form.martes }} Martes</label><br>
-    {{ form.martes_inicio }} - {{ form.martes_fin }}
-</div>
-
-<div class="col-md-6 mb-3">
-    <label>{{ form.miercoles }} Miércoles</label><br>
-    {{ form.miercoles_inicio }} - {{ form.miercoles_fin }}
-</div>
-
-<div class="col-md-6 mb-3">
-    <label>{{ form.jueves }} Jueves</label><br>
-    {{ form.jueves_inicio }} - {{ form.jueves_fin }}
-</div>
-
-<div class="col-md-6 mb-3">
-    <label>{{ form.viernes }} Viernes</label><br>
-    {{ form.viernes_inicio }} - {{ form.viernes_fin }}
-</div>
-
-</div>
 
 <button class="btn btn-primary w-100">
     Generar Preview

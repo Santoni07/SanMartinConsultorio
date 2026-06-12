@@ -1,5 +1,6 @@
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import render, redirect, get_object_or_404
+from collections import OrderedDict
 from .forms import  SeleccionMedicoForm
 from .models import Turnos, DisponibilidadMedico,AgendaMedico,Sobreturno,Consultorio,HistorialTurno
 from paciente.models import Paciente
@@ -227,10 +228,43 @@ def ver_disponibilidad(request):
         disponibilidad[dia] = dia_data
 
     horarios_ordenados = sorted(horarios_globales)
+    
+    
+
+    agendas_medico = AgendaMedico.objects.filter(
+        medico=medico
+    ).order_by('fecha')
+
+    resumen_agenda = OrderedDict()
+
+    for agenda in agendas_medico:
+
+        dia = agenda.fecha.strftime('%A')
+
+        dias_es = {
+            'Monday': 'Lunes',
+            'Tuesday': 'Martes',
+            'Wednesday': 'Miércoles',
+            'Thursday': 'Jueves',
+            'Friday': 'Viernes',
+            'Saturday': 'Sábado',
+            'Sunday': 'Domingo',
+        }
+
+        nombre_dia = dias_es[dia]
+
+        resumen_agenda[nombre_dia] = {
+            'inicio': agenda.hora_inicio.strftime('%H:%M'),
+            'fin': agenda.hora_fin.strftime('%H:%M'),
+            'duracion': agenda.duracion_turno,
+            'consultorio': agenda.consultorio.numero
+                if agenda.consultorio else '-'
+        }
 
     return render(request, 'turnos/disponibilidad.html', {
         'medico': medico,
         'disponibilidad': disponibilidad,
+         'resumen_agenda': resumen_agenda,
         'horarios': horarios_ordenados,
         'offset': offset,
     })
@@ -2675,12 +2709,49 @@ def ver_disponibilidad_consulta(request):
         horarios_globales
     )
 
+    agendas_medico = AgendaMedico.objects.filter(
+    medico=medico
+).order_by('fecha')
+
+    resumen_agenda = OrderedDict()
+
+    for agenda in agendas_medico:
+
+        dia = agenda.fecha.strftime('%A')
+
+        dias_es = {
+            'Monday': 'Lunes',
+            'Tuesday': 'Martes',
+            'Wednesday': 'Miércoles',
+            'Thursday': 'Jueves',
+            'Friday': 'Viernes',
+            'Saturday': 'Sábado',
+            'Sunday': 'Domingo',
+        }
+
+        nombre_dia = dias_es[dia]
+
+        resumen_agenda[nombre_dia] = {
+            'inicio': agenda.hora_inicio.strftime('%H:%M'),
+            'fin': agenda.hora_fin.strftime('%H:%M'),
+            'duracion': agenda.duracion_turno,
+            'consultorio': agenda.consultorio.numero
+                if agenda.consultorio else '-'
+        }
+        duracion_turno = None
+
+        if resumen_agenda:
+            primer_dia = next(iter(resumen_agenda.values()))
+            duracion_turno = primer_dia['duracion']
+        
     return render(
         request,
         'turnos/disponibilidad_consulta.html',
         {
 
             'medico': medico,
+            'resumen_agenda': resumen_agenda,
+            'duracion_turno': duracion_turno,
 
             'centro_activo': centro_activo,
 

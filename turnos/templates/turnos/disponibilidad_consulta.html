@@ -3,7 +3,45 @@
 {% block content %}
 <div class="container mt-4">
 
-  <h2>Disponibilidad de {{ medico }}</h2>
+  <div class="mb-4">
+
+              <h2 class="mb-3">
+                  Disponibilidad de {{ medico }}
+              </h2>
+
+              <div class="card border-0 shadow-sm">
+
+                  <div class="card-body">
+                      <div class="d-flex flex-wrap align-items-center gap-3 small">
+
+    {% for dia, datos in resumen_agenda.items %}
+
+        <span class="badge bg-light text-dark border p-2">
+
+            📅 {{ dia }}
+            {{ datos.inicio }} - {{ datos.fin }}
+
+        </span>
+
+    {% endfor %}
+
+    {% if duracion_turno %}
+
+        <span class="badge bg-primary p-2">
+
+            ⏱ {{ duracion_turno }} min
+
+        </span>
+
+    {% endif %}
+
+</div>
+
+              </div>
+
+  </div>
+
+</div>
 
   <!-- 🔵 MENÚ SUPERIOR -->
   <div class="d-flex justify-content-between align-items-center mt-3">
