@@ -43,4 +43,9 @@ urlpatterns = [
     name='consultar_consultorios'
 ),
     path("mis-turnos-medico/", views.mis_turnos_medico, name="mis_turnos_medico"),
+    path(
+    'previsualizar-excepcion/',
+    views.previsualizar_excepcion,
+    name='previsualizar_excepcion'
+),
 ]

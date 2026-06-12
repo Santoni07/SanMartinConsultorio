@@ -60,48 +60,56 @@
                class="btn-check"
                name="duracion_turno"
                id="d10"
-               value="10">
+               value="10"
+               {% if request.POST.duracion_turno == '10' %}checked{% endif %}>
 
         <label class="btn btn-outline-primary" for="d10">
             10 min
         </label>
+
 
         <input type="radio"
                class="btn-check"
                name="duracion_turno"
                id="d15"
                value="15"
-               checked>
+               {% if request.POST.duracion_turno == '15' %}checked{% endif %}>
 
         <label class="btn btn-outline-primary" for="d15">
             15 min
         </label>
 
+
         <input type="radio"
                class="btn-check"
                name="duracion_turno"
                id="d20"
-               value="20">
+               value="20"
+               {% if request.POST.duracion_turno == '20' or not request.POST.duracion_turno %}checked{% endif %}>
 
         <label class="btn btn-outline-primary" for="d20">
             20 min
         </label>
 
+
         <input type="radio"
                class="btn-check"
                name="duracion_turno"
                id="d30"
-               value="30">
+               value="30"
+               {% if request.POST.duracion_turno == '30' %}checked{% endif %}>
 
         <label class="btn btn-outline-primary" for="d30">
             30 min
         </label>
 
+
         <input type="radio"
                class="btn-check"
                name="duracion_turno"
                id="d45"
-               value="45">
+               value="45"
+               {% if request.POST.duracion_turno == '45' %}checked{% endif %}>
 
         <label class="btn btn-outline-primary" for="d45">
             45 min

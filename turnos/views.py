@@ -1767,6 +1767,8 @@ def agenda_mensual_medico(request):
     })
 
 def generar_preview(data):
+    print("DATA:")
+    print(data)
     dias_preview = []
 
     dia = data['fecha_desde']
@@ -2359,6 +2361,8 @@ def agenda_rapida(request):
 
             # 🔥 GENERAR PREVIEW CORRECTO
             preview = generar_preview(data)
+            print("PREVIEW:", preview)
+            
 
             for d in preview:
 
@@ -2372,7 +2376,9 @@ def agenda_rapida(request):
                     defaults={
                         'hora_inicio': hora_inicio,
                         'hora_fin': hora_fin,
-                        'duracion_turno': 20,
+                        'duracion_turno': int(
+                            data['duracion_turno']
+                        ),
                         'consultorio': consultorio
                     }
                 )
@@ -2400,6 +2406,7 @@ def agenda_rapida(request):
 
             # 🔥 GENERAR PREVIEW
             preview = generar_preview(data)
+            print("Previews", preview)
 
             # ===============================
             # 🔴 DETECTAR CONFLICTOS DEL MÉDICO
@@ -2425,7 +2432,10 @@ def agenda_rapida(request):
             # ===============================
             from .models import Consultorio
 
-            consultorios = Consultorio.objects.all()
+            consultorios = Consultorio.objects.filter(
+                centro_medico=centro_activo
+)
+
             consultorios_disponibles = []
 
             for c in consultorios:
@@ -2708,42 +2718,52 @@ def ver_disponibilidad_consulta(request):
     horarios_ordenados = sorted(
         horarios_globales
     )
+    # ===============================
+    # 🔵 RESUMEN DE AGENDA (MULTI-SEDE)
+    # ===============================
 
     agendas_medico = AgendaMedico.objects.filter(
-    medico=medico
-).order_by('fecha')
+        medico=medico,
+        centro_medico=centro_activo
+    ).order_by('fecha')
 
     resumen_agenda = OrderedDict()
+
+    dias_es = {
+        'Monday': 'Lunes',
+        'Tuesday': 'Martes',
+        'Wednesday': 'Miércoles',
+        'Thursday': 'Jueves',
+        'Friday': 'Viernes',
+        'Saturday': 'Sábado',
+        'Sunday': 'Domingo',
+    }
 
     for agenda in agendas_medico:
 
         dia = agenda.fecha.strftime('%A')
-
-        dias_es = {
-            'Monday': 'Lunes',
-            'Tuesday': 'Martes',
-            'Wednesday': 'Miércoles',
-            'Thursday': 'Jueves',
-            'Friday': 'Viernes',
-            'Saturday': 'Sábado',
-            'Sunday': 'Domingo',
-        }
-
         nombre_dia = dias_es[dia]
 
         resumen_agenda[nombre_dia] = {
             'inicio': agenda.hora_inicio.strftime('%H:%M'),
             'fin': agenda.hora_fin.strftime('%H:%M'),
             'duracion': agenda.duracion_turno,
-            'consultorio': agenda.consultorio.numero
+            'consultorio': (
+                agenda.consultorio.numero
                 if agenda.consultorio else '-'
+            )
         }
-        duracion_turno = None
 
-        if resumen_agenda:
-            primer_dia = next(iter(resumen_agenda.values()))
-            duracion_turno = primer_dia['duracion']
-        
+    # 🔥 Duración para mostrar en el badge
+    duracion_turno = None
+
+    if resumen_agenda:
+
+        primer_dia = next(
+            iter(resumen_agenda.values())
+        )
+
+        duracion_turno = primer_dia['duracion']
     return render(
         request,
         'turnos/disponibilidad_consulta.html',
@@ -3235,3 +3255,106 @@ def historial_turno(request, turno_id):
             'historial': historial
         }
     )
+    
+@login_required
+def previsualizar_excepcion(request):
+
+    medico_id = request.GET.get('medico_id')
+    fecha = request.GET.get('fecha')
+    tipo = request.GET.get('tipo')
+
+    hora_inicio = request.GET.get('hora_inicio')
+    hora_fin = request.GET.get('hora_fin')
+
+    centro_id = request.session.get('centro_id')
+
+    turnos = Turnos.objects.filter(
+        medico_id=medico_id,
+        fecha=fecha,
+        centro_medico_id=centro_id
+    ).exclude(
+        estado='CANCELADO'
+    )
+
+    sobreturnos = Sobreturno.objects.filter(
+        medico_id=medico_id,
+        fecha=fecha
+    ).exclude(
+        estado='CANCELADO'
+    )
+
+    # ==========================
+    # CERRADO
+    # ==========================
+
+    if tipo == 'CERRADO':
+
+        turnos_afectados = turnos.count()
+        sobreturnos_afectados = sobreturnos.count()
+
+    # ==========================
+    # MODIFICADO
+    # ==========================
+
+    elif tipo == 'MODIFICADO':
+
+        if hora_inicio and hora_fin:
+
+            hi = datetime.strptime(
+                hora_inicio,
+                '%H:%M'
+            ).time()
+
+            hf = datetime.strptime(
+                hora_fin,
+                '%H:%M'
+            ).time()
+
+            turnos_afectados = turnos.exclude(
+                hora__gte=hi,
+                hora__lt=hf
+            ).count()
+
+            sobreturnos_afectados = sobreturnos.exclude(
+                hora__gte=hi,
+                hora__lt=hf
+            ).count()
+
+        else:
+            turnos_afectados = 0
+            sobreturnos_afectados = 0
+
+    # ==========================
+    # REPROGRAMAR
+    # ==========================
+
+    elif tipo == 'REPROGRAMAR':
+
+        turnos_afectados = turnos.count()
+        sobreturnos_afectados = sobreturnos.count()
+
+    else:
+
+        turnos_afectados = 0
+        sobreturnos_afectados = 0
+
+    pacientes = list(
+        turnos.select_related('paciente')
+        .values_list(
+            'paciente__apellido',
+            'paciente__nombre'
+        )[:5]
+    )
+
+    pacientes = [
+        f'{a}, {n}'
+        for a, n in pacientes
+    ]
+
+    return JsonResponse({
+
+        'turnos': turnos_afectados,
+        'sobreturnos': sobreturnos_afectados,
+        'pacientes': pacientes
+
+    })

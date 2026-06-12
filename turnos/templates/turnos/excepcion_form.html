@@ -20,7 +20,7 @@
         </a>
     </div>
 
-    <form method="POST" class="card p-4 shadow">
+    <form  id="formExcepcion" method="POST" class="card p-4 shadow">
         {% csrf_token %}
 
         <!-- 🔵 MÉDICO -->
@@ -82,11 +82,28 @@
                 <label class="fw-bold">Motivo</label>
                 {{ form.motivo }}
             </div>
+            <div id="impactoCard" class="alert alert-warning d-none mt-3">
+
+                <h5 class="mb-3">
+                    ⚠️ Impacto estimado
+                </h5>
+
+                <div id="impactoContenido">
+
+                </div>
+
+            </div>
+
 
             <!-- 🔵 BOTONES -->
             <div class="d-flex flex-column flex-md-row gap-2 mt-3">
-                <button class="btn btn-primary flex-fill">
+                <button
+                    type="button"
+                    class="btn btn-primary flex-fill"
+                    onclick="mostrarConfirmacion()">
+
                     Guardar Excepción
+
                 </button>
 
                 <a href="{% url 'turnos:agenda_rapida' %}?medico_id={{ medico.id }}" 
@@ -103,7 +120,10 @@
 
 <!-- 🔥 JAVASCRIPT DINÁMICO -->
 <script>
+
 document.addEventListener('DOMContentLoaded', function() {
+    console.log("SCRIPT CARGADO");
+
 
     const tipo = document.getElementById('tipo');
     const fecha = document.querySelector("[name='fecha']");
@@ -111,12 +131,21 @@ document.addEventListener('DOMContentLoaded', function() {
     const horaInicio = document.getElementById('hora_inicio');
     const horaFin = document.getElementById('hora_fin');
     const medico = document.querySelector("[name='medico_id']");
-
+    console.log(tipo);
+console.log(fecha);
     const bloqueHorario = document.getElementById('bloque_horario');
     const bloqueFecha = document.getElementById('bloque_fecha');
     const bloqueMotivo = document.getElementById('bloque_motivo');
     const bloqueConsultorios = document.getElementById('bloque_consultorios');
+
     const selectConsultorio = document.getElementById('consultorio_select');
+
+    const impactoCard = document.getElementById('impactoCard');
+    const impactoContenido = document.getElementById('impactoContenido');
+
+    // ==========================
+    // MOSTRAR / OCULTAR CAMPOS
+    // ==========================
 
     function actualizarCampos() {
 
@@ -140,71 +169,327 @@ document.addEventListener('DOMContentLoaded', function() {
             bloqueHorario.classList.remove('d-none');
         }
 
-        // 🔥 cada vez que cambia el tipo → recalcular
         buscarConsultorios();
+        actualizarImpacto();
     }
+
+    // ==========================
+    // CONSULTORIOS DISPONIBLES
+    // ==========================
 
     function buscarConsultorios() {
 
-        // 🔴 validaciones fuertes
         if (!tipo || !horaInicio || !horaFin || !medico) return;
 
-        if (tipo.value !== 'MODIFICADO' && tipo.value !== 'REPROGRAMAR') return;
+        if (
+            tipo.value !== 'MODIFICADO' &&
+            tipo.value !== 'REPROGRAMAR'
+        ){
+            return;
+        }
 
         let fechaFinal = fecha?.value;
 
         if (tipo.value === 'REPROGRAMAR') {
-            if (!nuevaFecha || !nuevaFecha.value) return;
+
+            if (!nuevaFecha || !nuevaFecha.value) {
+                return;
+            }
+
             fechaFinal = nuevaFecha.value;
         }
 
-        if (!fechaFinal || !horaInicio.value || !horaFin.value || !medico.value) return;
+        if (
+            !fechaFinal ||
+            !horaInicio.value ||
+            !horaFin.value ||
+            !medico.value
+        ){
+            return;
+        }
 
-        console.log("Buscando consultorios...");
+        fetch(
+            `/turnos/consultar-consultorios-disponibles/?` +
+            `fecha=${fechaFinal}` +
+            `&hora_inicio=${horaInicio.value}` +
+            `&hora_fin=${horaFin.value}` +
+            `&medico_id=${medico.value}`
+        )
 
-        fetch(`/turnos/consultar-consultorios-disponibles/?fecha=${fechaFinal}&hora_inicio=${horaInicio.value}&hora_fin=${horaFin.value}&medico_id=${medico.value}`)
         .then(res => res.json())
+
         .then(data => {
 
-            console.log("Respuesta:", data);
+            selectConsultorio.innerHTML =
+                '<option value="">-- Seleccionar consultorio --</option>';
 
-            selectConsultorio.innerHTML = '<option value="">-- Seleccionar consultorio --</option>';
+            if (
+                !data.consultorios ||
+                data.consultorios.length === 0
+            ){
 
-            if (!data.consultorios || data.consultorios.length === 0) {
-
-                selectConsultorio.innerHTML = '<option value="">No hay disponibles</option>';
+                selectConsultorio.innerHTML =
+                    '<option value="">No hay disponibles</option>';
 
             } else {
 
                 data.consultorios.forEach(c => {
-                    let option = document.createElement('option');
+
+                    let option =
+                        document.createElement('option');
+
                     option.value = c.id;
-                    option.textContent = `Consultorio ${c.numero}`;
+                    option.textContent =
+                        `Consultorio ${c.numero}`;
+
                     selectConsultorio.appendChild(option);
+
                 });
 
             }
 
             bloqueConsultorios.classList.remove('d-none');
+
         })
+
         .catch(error => {
-            console.error("Error:", error);
+            console.error(error);
         });
     }
 
-    // 🔥 EVENTOS
-    if (tipo) tipo.addEventListener('change', actualizarCampos);
+    // ==========================
+    // IMPACTO ESTIMADO
+    // ==========================
 
-    if (horaInicio) horaInicio.addEventListener('change', buscarConsultorios);
-    if (horaFin) horaFin.addEventListener('change', buscarConsultorios);
-    if (nuevaFecha) nuevaFecha.addEventListener('change', buscarConsultorios);
-    if (fecha) fecha.addEventListener('change', buscarConsultorios);
+   
 
-    // 🔥 inicializar todo al cargar
+    // ==========================
+// IMPACTO ESTIMADO
+// ==========================
+
+function actualizarImpacto() {
+
+    console.log("IMPACTO");
+
+    if (!tipo || !fecha || !medico) {
+        return;
+    }
+
+    if (
+        !medico.value ||
+        !fecha.value ||
+        !tipo.value
+    ){
+        return;
+    }
+
+    fetch(
+        `/turnos/previsualizar-excepcion/?` +
+        `medico_id=${medico.value}` +
+        `&fecha=${fecha.value}` +
+        `&tipo=${tipo.value}` +
+        `&hora_inicio=${horaInicio ? horaInicio.value : ''}` +
+        `&hora_fin=${horaFin ? horaFin.value : ''}` +
+        `&nueva_fecha=${nuevaFecha ? nuevaFecha.value : ''}`
+    )
+
+    .then(res => res.json())
+
+    .then(data => {
+
+        console.log("IMPACTO DATA:", data);
+
+        let html = `
+            <p>
+                <strong>${data.turnos}</strong>
+                turnos afectados
+            </p>
+
+            <p>
+                <strong>${data.sobreturnos}</strong>
+                sobreturnos afectados
+            </p>
+        `;
+
+        if (
+            data.pacientes &&
+            data.pacientes.length > 0
+        ){
+
+            html += `
+                <hr>
+                <strong>Pacientes afectados:</strong>
+
+                <ul class="mb-0">
+            `;
+
+            data.pacientes.forEach(function(p){
+
+                html += `
+                    <li>${p}</li>
+                `;
+
+            });
+
+            html += `
+                </ul>
+            `;
+        }
+
+        impactoContenido.innerHTML = html;
+
+        impactoCard.classList.remove(
+            'd-none'
+        );
+
+    })
+
+    .catch(error => {
+
+        console.error(
+            'ERROR IMPACTO:',
+            error
+        );
+
+    });
+
+}
+
+    // ==========================
+    // EVENTOS
+    // ==========================
+
+    if (tipo)
+        tipo.addEventListener(
+            'change',
+            actualizarCampos
+        );
+
+    if (fecha)
+        fecha.addEventListener(
+            'change',
+            actualizarImpacto
+        );
+
+    if (horaInicio)
+        horaInicio.addEventListener(
+            'change',
+            actualizarImpacto
+        );
+
+    if (horaFin)
+        horaFin.addEventListener(
+            'change',
+            actualizarImpacto
+        );
+
+    if (nuevaFecha)
+        nuevaFecha.addEventListener(
+            'change',
+            actualizarImpacto
+        );
+
+    // ==========================
+    // MODAL CONFIRMAR
+    // ==========================
+
+    window.mostrarConfirmacion = function() {
+
+        document.getElementById(
+            'resumenModal'
+        ).innerHTML =
+            impactoContenido.innerHTML;
+
+        new bootstrap.Modal(
+            document.getElementById(
+                'confirmarModal'
+            )
+        ).show();
+    };
+
+    const confirmar =
+        document.getElementById(
+            'confirmarGuardar'
+        );
+
+    if (confirmar){
+
+        confirmar.addEventListener(
+            'click',
+            function(){
+
+                document.getElementById(
+                    'formExcepcion'
+                ).submit();
+
+            }
+        );
+
+    }
+
+    // ==========================
+    // INICIALIZAR
+    // ==========================
+
     actualizarCampos();
-    buscarConsultorios();
+    actualizarImpacto();
 
 });
+
 </script>
 
+
+
+<div class="modal fade"
+     id="confirmarModal"
+     tabindex="-1">
+
+    <div class="modal-dialog"
+     style="margin-top: 180px;">
+
+        <div class="modal-content">
+
+            <div class="modal-header bg-warning">
+
+                <h5 class="modal-title">
+                    Confirmar excepción
+                </h5>
+
+            </div>
+
+            <div class="modal-body">
+
+                <div id="resumenModal">
+
+                </div>
+
+            </div>
+
+            <div class="modal-footer">
+
+                <button
+                    type="button"
+                    class="btn btn-secondary"
+                    data-bs-dismiss="modal">
+
+                    Cancelar
+
+                </button>
+
+                <button
+                    type="button"
+                    class="btn btn-danger"
+                    id="confirmarGuardar">
+
+                    Confirmar
+
+                </button>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
 {% endblock %}

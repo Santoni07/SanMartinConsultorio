@@ -117,6 +117,18 @@ class ConfiguracionAgendaForm(forms.Form):
     )
     fecha_desde = forms.DateField(widget=forms.DateInput(attrs={'type': 'date'}))
     fecha_hasta = forms.DateField(widget=forms.DateInput(attrs={'type': 'date'}))
+    
+    duracion_turno = forms.ChoiceField(
+        choices=[
+            ('10', '10 min'),
+            ('15', '15 min'),
+            ('20', '20 min'),
+            ('30', '30 min'),
+            ('45', '45 min'),
+        ],
+        initial='20',
+        widget=forms.RadioSelect
+    )
 
     # DÍAS
     lunes = forms.BooleanField(required=False)
