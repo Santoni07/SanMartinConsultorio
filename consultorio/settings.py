@@ -52,6 +52,7 @@ INSTALLED_APPS = [
     'turnos',
     'estudios',
     'historial',
+    'honorarios',
     'gerencia',
     'caja',
     

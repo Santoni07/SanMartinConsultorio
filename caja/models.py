@@ -1,6 +1,7 @@
 from django.db import models
 from django.contrib.auth.models import User
 from django.utils import timezone
+from honorarios.models import LiquidacionMedica
 
 from core.models import CentroMedico
 from paciente.models import Paciente
@@ -116,6 +117,39 @@ class MedioPago(models.Model):
         return self.nombre
 
 
+
+class ConceptoFacturacion(models.Model):
+
+    nombre = models.CharField(
+        max_length=100
+    )
+
+    porcentaje_iva = models.DecimalField(
+        max_digits=5,
+        decimal_places=2,
+        default=0
+    )
+
+    porcentaje_medico = models.DecimalField(
+        max_digits=5,
+        decimal_places=2
+    )
+
+    porcentaje_consultorio = models.DecimalField(
+        max_digits=5,
+        decimal_places=2
+    )
+
+    activo = models.BooleanField(
+        default=True
+    )
+
+    class Meta:
+        ordering = ['nombre']
+
+    def __str__(self):
+        return self.nombre
+    
 class MovimientoCaja(models.Model):
     TIPOS = [
         ('INGRESO', 'Ingreso'),
@@ -138,7 +172,12 @@ class MovimientoCaja(models.Model):
         on_delete=models.PROTECT,
         related_name='movimientos_caja'
     )
-
+    concepto_facturacion = models.ForeignKey(
+        ConceptoFacturacion,
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True
+    )
     turno = models.ForeignKey(
         Turnos,
         on_delete=models.SET_NULL,
@@ -200,10 +239,56 @@ class MovimientoCaja(models.Model):
         blank=True,
         related_name='movimientos_caja_anulados'
     )
+    liquidado = models.BooleanField(
+    default=False
+)
 
+    liquidacion = models.ForeignKey(
+        LiquidacionMedica,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True
+    )
     fecha_anulacion = models.DateTimeField(null=True, blank=True)
     motivo_anulacion = models.TextField(blank=True, null=True)
 
+    importe_bruto = models.DecimalField(
+        max_digits=12,
+        decimal_places=2,
+        default=0
+    )
+
+    importe_iva = models.DecimalField(
+        max_digits=12,
+        decimal_places=2,
+        default=0
+    )
+
+    retencion_monto = models.DecimalField(
+        max_digits=12,
+        decimal_places=2,
+        default=0
+    )
+
+    importe_neto = models.DecimalField(
+        max_digits=12,
+        decimal_places=2,
+        default=0
+    )
+
+    importe_medico = models.DecimalField(
+        max_digits=12,
+        decimal_places=2,
+        default=0
+    )
+
+    importe_consultorio = models.DecimalField(
+        max_digits=12,
+        decimal_places=2,
+        default=0
+    )
+        
+    
     class Meta:
         verbose_name = 'Movimiento de caja'
         verbose_name_plural = 'Movimientos de caja'
@@ -274,3 +359,4 @@ class HistorialMovimientoCaja(models.Model):
 
     def __str__(self):
         return f'{self.fecha_hora:%d/%m/%Y %H:%M} - {self.accion} - {self.usuario}'
+    
