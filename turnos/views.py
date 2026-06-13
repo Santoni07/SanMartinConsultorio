@@ -1811,6 +1811,12 @@ def generar_preview(data):
                 'inicio': data['viernes_inicio'],
                 'fin': data['viernes_fin']
             })
+        if wd == 5 and data['sabado']:
+            dias_preview.append({
+                'fecha': dia,
+                'inicio': data['sabado_inicio'],
+                'fin': data['sabado_fin']
+            })
 
         dia += timedelta(days=1)
 
