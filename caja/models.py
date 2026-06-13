@@ -131,17 +131,35 @@ class ConceptoFacturacion(models.Model):
     )
 
     porcentaje_medico = models.DecimalField(
-        max_digits=5,
-        decimal_places=2
-    )
+    max_digits=5,
+    decimal_places=2,
+    default=0
+)
 
     porcentaje_consultorio = models.DecimalField(
         max_digits=5,
-        decimal_places=2
+        decimal_places=2,
+        default=0
     )
 
     activo = models.BooleanField(
-        default=True
+            default=True
+        )
+    TIPOS_CALCULO = [
+        ('PORCENTAJE', 'Porcentaje'),
+        ('FIJO_MEDICO', 'Honorario fijo médico'),
+    ]
+
+    tipo_calculo = models.CharField(
+        max_length=20,
+        choices=TIPOS_CALCULO,
+        default='PORCENTAJE'
+    )
+
+    honorario_fijo_medico = models.DecimalField(
+        max_digits=12,
+        decimal_places=2,
+        default=0
     )
 
     class Meta:

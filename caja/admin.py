@@ -276,16 +276,54 @@ class ConceptoFacturacionAdmin(admin.ModelAdmin):
 
     list_display = (
         'nombre',
+        'tipo_calculo',
         'porcentaje_iva',
         'porcentaje_medico',
         'porcentaje_consultorio',
+        'honorario_fijo_medico',
         'activo',
     )
 
     list_filter = (
+        'tipo_calculo',
         'activo',
     )
 
     search_fields = (
         'nombre',
+    )
+
+    fieldsets = (
+
+        (
+            'Información General',
+            {
+                'fields': (
+                    'nombre',
+                    'tipo_calculo',
+                    'activo',
+                )
+            }
+        ),
+
+        (
+            'Cálculo por Porcentaje',
+            {
+                'fields': (
+                    'porcentaje_iva',
+                    'porcentaje_medico',
+                    'porcentaje_consultorio',
+                )
+            }
+        ),
+
+        (
+            'Honorario Fijo Médico',
+            {
+                'fields': (
+                    'honorario_fijo_medico',
+                )
+            }
+        ),
+
     )

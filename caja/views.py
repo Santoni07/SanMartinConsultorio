@@ -235,94 +235,206 @@ def registrar_movimiento(request):
 @login_required
 @transaction.atomic
 def registrar_cobro(request):
+
+
     centro_medico = obtener_centro_activo(request)
 
     if not centro_medico:
-        messages.error(request, 'No hay una sede activa seleccionada.')
+        messages.error(
+            request,
+            'No hay una sede activa seleccionada.'
+        )
         return redirect('caja_home')
 
-    caja = obtener_caja_abierta(centro_medico)
+    caja = obtener_caja_abierta(
+        centro_medico
+    )
 
     if not caja:
-        messages.error(request, 'Primero debe abrir la caja de esta sede.')
+        messages.error(
+            request,
+            'Primero debe abrir la caja de esta sede.'
+        )
         return redirect('abrir_caja')
 
     if request.method == 'POST':
+
         form = CobroConsultaForm(
             request.POST,
             centro_medico=centro_medico
         )
 
         if form.is_valid():
-            turno = form.cleaned_data['turno']
 
-            movimiento = form.save(commit=False)
+            turno = form.cleaned_data[
+                'turno'
+            ]
+
+            movimiento = form.save(
+                commit=False
+            )
 
             movimiento.caja = caja
-            movimiento.centro_medico = centro_medico
+
+            movimiento.centro_medico = (
+                centro_medico
+            )
+
             movimiento.turno = turno
-            movimiento.paciente = turno.paciente
+
+            movimiento.paciente = (
+                turno.paciente
+            )
+
             movimiento.tipo = 'INGRESO'
-            movimiento.creado_por = request.user
+
+            movimiento.creado_por = (
+                request.user
+            )
+
             movimiento.estado = 'ACTIVO'
 
-            # =====================================
-            # CONCEPTO AUTOMÁTICO
-            # =====================================
+            concepto = (
+                movimiento.concepto_facturacion
+            )
 
             movimiento.concepto = (
-                movimiento.concepto_facturacion.nombre
+                concepto.nombre
             )
 
             # =====================================
-            # CÁLCULOS ECONÓMICOS
+            # IMPORTE BRUTO
             # =====================================
 
-            movimiento.importe_bruto = movimiento.importe
+            movimiento.importe_bruto = (
+                movimiento.importe
+            )
+
+            # =====================================
+            # IVA
+            # =====================================
 
             movimiento.importe_iva = (
-                movimiento.importe *
-                movimiento.concepto_facturacion.porcentaje_iva
+
+                movimiento.importe_bruto *
+
+                concepto.porcentaje_iva
+
             ) / 100
 
+            # =====================================
+            # NETO
+            # =====================================
+
             movimiento.importe_neto = (
+
                 movimiento.importe_bruto
+
                 - movimiento.importe_iva
+
                 - movimiento.retencion_monto
             )
 
-            movimiento.importe_medico = (
-                movimiento.importe_neto *
-                movimiento.concepto_facturacion.porcentaje_medico
-            ) / 100
+            # =====================================
+            # TIPO PORCENTAJE
+            # =====================================
 
-            movimiento.importe_consultorio = (
-                movimiento.importe_neto *
-                movimiento.concepto_facturacion.porcentaje_consultorio
-            ) / 100
+            if (
+                concepto.tipo_calculo
+                ==
+                'PORCENTAJE'
+            ):
+
+                movimiento.importe_medico = (
+
+                    movimiento.importe_neto *
+
+                    concepto.porcentaje_medico
+
+                ) / 100
+
+                movimiento.importe_consultorio = (
+
+                    movimiento.importe_neto *
+
+                    concepto.porcentaje_consultorio
+
+                ) / 100
+
+            # =====================================
+            # TIPO FIJO MÉDICO
+            # =====================================
+
+            elif (
+                concepto.tipo_calculo
+                ==
+                'FIJO_MEDICO'
+            ):
+
+                movimiento.importe_medico = (
+                    concepto.honorario_fijo_medico
+                )
+
+                movimiento.importe_consultorio = (
+
+                    movimiento.importe_neto
+
+                    - movimiento.importe_medico
+                )
 
             movimiento.save()
 
             HistorialMovimientoCaja.objects.create(
+
                 caja=caja,
+
                 movimiento=movimiento,
+
                 accion='CREADO',
+
                 usuario=request.user,
+
                 centro_medico=centro_medico,
-                descripcion=f'Cobro asociado al turno #{turno.id}.',
+
+                descripcion=(
+                    f'Cobro asociado '
+                    f'al turno #{turno.id}.'
+                ),
+
                 datos_nuevos={
-                    'turno_id': turno.id,
-                    'paciente': str(turno.paciente),
-                    'medico': str(turno.medico),
-                    'fecha_turno': str(turno.fecha),
-                    'hora_turno': str(turno.hora),
-                    'tipo': movimiento.tipo,
-                    'medio_pago': movimiento.medio_pago.nombre,
-                    'importe': str(movimiento.importe),
-                    'concepto': movimiento.concepto,
-                    'observacion': movimiento.observacion,
+
+                    'turno_id':
+                        turno.id,
+
+                    'paciente':
+                        str(turno.paciente),
+
+                    'medico':
+                        str(turno.medico),
+
+                    'fecha_turno':
+                        str(turno.fecha),
+
+                    'hora_turno':
+                        str(turno.hora),
+
+                    'tipo':
+                        movimiento.tipo,
+
+                    'medio_pago':
+                        movimiento.medio_pago.nombre,
+
+                    'importe':
+                        str(movimiento.importe),
+
+                    'concepto':
+                        movimiento.concepto,
+
+                    'observacion':
+                        movimiento.observacion,
+
                     'concepto_facturacion':
-                        movimiento.concepto_facturacion.nombre,
+                        concepto.nombre,
 
                     'importe_bruto':
                         str(movimiento.importe_bruto),
@@ -340,22 +452,37 @@ def registrar_cobro(request):
                         str(movimiento.importe_medico),
 
                     'importe_consultorio':
-                        str(movimiento.importe_consultorio),
-                                    }
+                        str(
+                            movimiento.importe_consultorio
+                        ),
+                }
             )
 
-            messages.success(request, 'Cobro asociado al turno correctamente.')
-            return redirect('caja_home')
+            messages.success(
+                request,
+                'Cobro asociado al turno correctamente.'
+            )
+
+            return redirect(
+                'caja_home'
+            )
+
     else:
+
         form = CobroConsultaForm(
             centro_medico=centro_medico
         )
 
-    return render(request, 'caja/registrar_cobro.html', {
-        'form': form,
-        'caja': caja,
-        'centro_medico': centro_medico,
-    })
+    return render(
+        request,
+        'caja/registrar_cobro.html',
+        {
+            'form': form,
+            'caja': caja,
+            'centro_medico': centro_medico,
+        }
+    )
+
 
 @login_required
 @transaction.atomic
