@@ -18,6 +18,7 @@ from agendas.urls import Agenda_patterns
 
 
 
+
 urlpatterns = [
     path('admin/', admin.site.urls),
     
@@ -61,6 +62,8 @@ path(
 ),
 # path caja 
 path('caja/', include('caja.urls')),
+# path honorarios
+path('honorarios/', include('honorarios.urls')),
 ]
 
 

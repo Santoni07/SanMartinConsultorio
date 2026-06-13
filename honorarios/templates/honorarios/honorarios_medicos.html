@@ -1,0 +1,201 @@
+{% extends 'core/base.html' %}
+
+{% block content %}
+
+<div class="container mt-4">
+
+
+<div class="card shadow-sm">
+
+    <div class="card-header bg-dark text-white">
+        <h4 class="mb-0">
+            Honorarios Médicos
+        </h4>
+    </div>
+
+    <div class="card-body">
+
+        <form method="get">
+
+            <div class="row">
+
+                <div class="col-md-6">
+
+                    <label class="form-label">
+                        Médico
+                    </label>
+
+                    <select
+                        name="medico"
+                        class="form-select"
+                        onchange="this.form.submit()"
+                    >
+
+                        <option value="">
+                            Seleccionar médico
+                        </option>
+
+                        {% for medico in medicos %}
+
+                            <option
+                                value="{{ medico.id }}"
+                                {% if medico.id|stringformat:"s" == medico_id %}
+                                    selected
+                                {% endif %}
+                            >
+                                {{ medico.apellido }},
+                                {{ medico.nombre }}
+                            </option>
+
+                        {% endfor %}
+
+                    </select>
+
+                </div>
+
+            </div>
+
+        </form>
+
+    </div>
+
+</div>
+
+{% if movimientos %}
+
+<div class="card mt-4 shadow-sm">
+
+    <div class="card-header">
+        Prestaciones Pendientes de Liquidar
+    </div>
+
+    <div class="card-body">
+
+        <div class="table-responsive">
+
+            <table class="table table-striped">
+
+                <thead>
+
+                    <tr>
+                        <th>Fecha</th>
+                        <th>Paciente</th>
+                        <th>Prestación</th>
+                        <th class="text-end">
+                            Honorario
+                        </th>
+                    </tr>
+
+                </thead>
+
+                <tbody>
+
+                    {% for m in movimientos %}
+
+                    <tr>
+
+                        <td>
+                            {{ m.fecha_creacion|date:"d/m/Y" }}
+                        </td>
+
+                        <td>
+                            {{ m.paciente }}
+                        </td>
+
+                        <td>
+                            {{ m.concepto_facturacion }}
+                        </td>
+
+                        <td class="text-end">
+                            $ {{ m.importe_medico }}
+                        </td>
+
+                    </tr>
+
+                    {% endfor %}
+
+                </tbody>
+
+            </table>
+
+        </div>
+
+    </div>
+
+</div>
+
+<div class="card mt-4 shadow-sm">
+
+    <div class="card-header">
+        Resumen
+    </div>
+
+    <div class="card-body">
+
+        <div class="row">
+
+            <div class="col-md-4">
+
+                <p>
+                    <strong>Facturación Bruta:</strong><br>
+                    $ {{ resumen.total_bruto|default:0 }}
+                </p>
+
+                <p>
+                    <strong>IVA:</strong><br>
+                    $ {{ resumen.total_iva|default:0 }}
+                </p>
+
+            </div>
+
+            <div class="col-md-4">
+
+                <p>
+                    <strong>Retenciones:</strong><br>
+                    $ {{ resumen.total_retenciones|default:0 }}
+                </p>
+
+                <p>
+                    <strong>Consultorio:</strong><br>
+                    $ {{ resumen.total_consultorio|default:0 }}
+                </p>
+
+            </div>
+
+            <div class="col-md-4">
+
+                <h4 class="text-success">
+
+                    Honorarios Médico
+
+                </h4>
+
+                <h2>
+
+                    $ {{ resumen.total_honorarios|default:0 }}
+
+                </h2>
+
+            </div>
+
+        </div>
+
+        <hr>
+
+<a
+    href="{% url 'previsualizar_liquidacion' medico_id %}"
+    class="btn btn-success"
+>
+    Preparar Liquidación
+</a>
+
+    </div>
+
+</div>
+
+{% endif %}
+
+
+</div>
+
+{% endblock %}

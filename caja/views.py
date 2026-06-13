@@ -14,6 +14,7 @@ from .forms import (
 )
 from core.models import CentroMedico, PerfilUsuario
 
+
 def obtener_centro_activo(request):
     centro = getattr(request, 'centro_activo', None)
 
@@ -256,6 +257,7 @@ def registrar_cobro(request):
             turno = form.cleaned_data['turno']
 
             movimiento = form.save(commit=False)
+
             movimiento.caja = caja
             movimiento.centro_medico = centro_medico
             movimiento.turno = turno
@@ -263,6 +265,42 @@ def registrar_cobro(request):
             movimiento.tipo = 'INGRESO'
             movimiento.creado_por = request.user
             movimiento.estado = 'ACTIVO'
+
+            # =====================================
+            # CONCEPTO AUTOMÁTICO
+            # =====================================
+
+            movimiento.concepto = (
+                movimiento.concepto_facturacion.nombre
+            )
+
+            # =====================================
+            # CÁLCULOS ECONÓMICOS
+            # =====================================
+
+            movimiento.importe_bruto = movimiento.importe
+
+            movimiento.importe_iva = (
+                movimiento.importe *
+                movimiento.concepto_facturacion.porcentaje_iva
+            ) / 100
+
+            movimiento.importe_neto = (
+                movimiento.importe_bruto
+                - movimiento.importe_iva
+                - movimiento.retencion_monto
+            )
+
+            movimiento.importe_medico = (
+                movimiento.importe_neto *
+                movimiento.concepto_facturacion.porcentaje_medico
+            ) / 100
+
+            movimiento.importe_consultorio = (
+                movimiento.importe_neto *
+                movimiento.concepto_facturacion.porcentaje_consultorio
+            ) / 100
+
             movimiento.save()
 
             HistorialMovimientoCaja.objects.create(
@@ -283,7 +321,27 @@ def registrar_cobro(request):
                     'importe': str(movimiento.importe),
                     'concepto': movimiento.concepto,
                     'observacion': movimiento.observacion,
-                }
+                    'concepto_facturacion':
+                        movimiento.concepto_facturacion.nombre,
+
+                    'importe_bruto':
+                        str(movimiento.importe_bruto),
+
+                    'importe_iva':
+                        str(movimiento.importe_iva),
+
+                    'retencion':
+                        str(movimiento.retencion_monto),
+
+                    'importe_neto':
+                        str(movimiento.importe_neto),
+
+                    'importe_medico':
+                        str(movimiento.importe_medico),
+
+                    'importe_consultorio':
+                        str(movimiento.importe_consultorio),
+                                    }
             )
 
             messages.success(request, 'Cobro asociado al turno correctamente.')

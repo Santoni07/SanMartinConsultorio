@@ -3,7 +3,8 @@ from .models import (
     CajaDiaria,
     MedioPago,
     MovimientoCaja,
-    HistorialMovimientoCaja
+    HistorialMovimientoCaja,
+     ConceptoFacturacion,
 )
 
 
@@ -84,21 +85,29 @@ class CajaDiariaAdmin(admin.ModelAdmin):
 @admin.register(MovimientoCaja)
 class MovimientoCajaAdmin(admin.ModelAdmin):
 
+
     list_display = (
         'id',
         'fecha_creacion',
         'centro_medico',
         'tipo',
         'importe',
+        'concepto_facturacion',
+        'importe_medico',
+        'importe_consultorio',
+        'liquidado',
         'medio_pago',
         'paciente',
         'estado',
+        'importe_iva',
+        'retencion_monto',
         'creado_por',
     )
 
     list_filter = (
         'tipo',
         'estado',
+        'liquidado',
         'medio_pago',
         'centro_medico',
         'fecha_creacion',
@@ -114,6 +123,17 @@ class MovimientoCajaAdmin(admin.ModelAdmin):
     readonly_fields = (
         'fecha_creacion',
         'fecha_anulacion',
+
+        'importe_bruto',
+        'importe_iva',
+
+        'retencion_monto',
+        'retencion_motivo',
+
+        'importe_neto',
+
+        'importe_medico',
+        'importe_consultorio',
     )
 
     autocomplete_fields = (
@@ -124,6 +144,7 @@ class MovimientoCajaAdmin(admin.ModelAdmin):
     )
 
     fieldsets = (
+
         (
             'Información General',
             {
@@ -135,6 +156,7 @@ class MovimientoCajaAdmin(admin.ModelAdmin):
                 )
             }
         ),
+
         (
             'Movimiento',
             {
@@ -147,6 +169,30 @@ class MovimientoCajaAdmin(admin.ModelAdmin):
                 )
             }
         ),
+
+        (
+            'Distribución Económica',
+            {
+                'fields': (
+                    'concepto_facturacion',
+
+                    'importe_bruto',
+                    'importe_iva',
+
+                    'retencion_monto',
+                    'retencion_motivo',
+
+                    'importe_neto',
+
+                    'importe_medico',
+                    'importe_consultorio',
+
+                    'liquidado',
+                    'liquidacion',
+                )
+            }
+        ),
+
         (
             'Auditoría',
             {
@@ -160,7 +206,9 @@ class MovimientoCajaAdmin(admin.ModelAdmin):
                 )
             }
         ),
-    )
+)
+
+
 
 
 @admin.register(HistorialMovimientoCaja)
@@ -221,4 +269,23 @@ class HistorialMovimientoCajaAdmin(admin.ModelAdmin):
                 )
             }
         ),
+    )
+    
+@admin.register(ConceptoFacturacion)
+class ConceptoFacturacionAdmin(admin.ModelAdmin):
+
+    list_display = (
+        'nombre',
+        'porcentaje_iva',
+        'porcentaje_medico',
+        'porcentaje_consultorio',
+        'activo',
+    )
+
+    list_filter = (
+        'activo',
+    )
+
+    search_fields = (
+        'nombre',
     )

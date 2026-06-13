@@ -1,0 +1,178 @@
+{% extends 'core/base.html' %}
+
+{% block content %}
+
+<div class="container mt-4">
+
+<div class="card shadow-sm">
+
+    <div class="card-header bg-success text-white">
+
+        <h4 class="mb-0">
+            Registrar Pago de Honorarios
+        </h4>
+
+    </div>
+
+    <div class="card-body">
+
+        <div class="row mb-4">
+
+            <div class="col-md-6">
+
+                <h5>Médico</h5>
+
+                <p>
+                    {{ liquidacion.medico }}
+                </p>
+
+            </div>
+
+            <div class="col-md-6">
+
+                <h5>Estado</h5>
+
+                {% if liquidacion.estado == 'PAGADA' %}
+
+                    <span class="badge bg-success">
+                        Pagada
+                    </span>
+
+                {% elif liquidacion.estado == 'PARCIAL' %}
+
+                    <span class="badge bg-warning">
+                        Pago Parcial
+                    </span>
+
+                {% else %}
+
+                    <span class="badge bg-danger">
+                        Pendiente
+                    </span>
+
+                {% endif %}
+
+            </div>
+
+        </div>
+
+        <div class="row text-center mb-4">
+
+            <div class="col-md-4">
+
+                <div class="card border-primary">
+
+                    <div class="card-body">
+
+                        <h6>Total Honorarios</h6>
+
+                        <h4 class="text-primary">
+                            $ {{ liquidacion.total_honorarios }}
+                        </h4>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+            <div class="col-md-4">
+
+                <div class="card border-success">
+
+                    <div class="card-body">
+
+                        <h6>Total Pagado</h6>
+
+                        <h4 class="text-success">
+                            $ {{ liquidacion.total_pagado }}
+                        </h4>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+            <div class="col-md-4">
+
+                <div class="card border-danger">
+
+                    <div class="card-body">
+
+                        <h6>Saldo Pendiente</h6>
+
+                        <h4 class="text-danger">
+                            $ {{ liquidacion.saldo_pendiente }}
+                        </h4>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+        </div>
+
+        <form method="post">
+
+            {% csrf_token %}
+
+            <div class="mb-3">
+
+                <label class="form-label">
+                    Medio de Pago
+                </label>
+
+                {{ form.medio_pago }}
+
+            </div>
+
+            <div class="mb-3">
+
+                <label class="form-label">
+                    Importe a Pagar
+                </label>
+
+                {{ form.importe }}
+
+            </div>
+
+            <div class="mb-3">
+
+                <label class="form-label">
+                    Observación
+                </label>
+
+                {{ form.observacion }}
+
+            </div>
+
+            <div class="d-flex gap-2">
+
+                <button
+                    type="submit"
+                    class="btn btn-success"
+                >
+                    Registrar Pago
+                </button>
+
+                <a
+                    href="{% url 'liquidaciones_pendientes' %}"
+                    class="btn btn-secondary"
+                >
+                    Cancelar
+                </a>
+
+            </div>
+
+        </form>
+
+    </div>
+
+</div>
+
+
+</div>
+
+{% endblock %}

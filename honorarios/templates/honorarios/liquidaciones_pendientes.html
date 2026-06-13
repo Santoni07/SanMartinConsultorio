@@ -1,0 +1,144 @@
+{% extends 'core/base.html' %}
+
+{% block content %}
+
+<div class="container mt-4">
+
+<div class="card shadow-sm">
+
+    <div class="card-header bg-warning">
+
+        <h4 class="mb-0">
+            Liquidaciones Pendientes
+        </h4>
+
+    </div>
+
+    <div class="card-body">
+
+        <div class="table-responsive">
+
+            <table class="table table-hover align-middle">
+
+                <thead>
+
+                    <tr>
+
+                        <th>Fecha</th>
+
+                        <th>Médico</th>
+
+                        <th>Prestaciones</th>
+
+                        <th>Honorarios</th>
+
+                        <th>Pagado</th>
+
+                        <th>Saldo</th>
+
+                        <th>Estado</th>
+
+                        <th></th>
+
+                    </tr>
+
+                </thead>
+
+                <tbody>
+
+                    {% for liquidacion in liquidaciones %}
+
+                    <tr>
+
+                        <td>
+                            {{ liquidacion.fecha|date:"d/m/Y H:i" }}
+                        </td>
+
+                        <td>
+                            {{ liquidacion.medico }}
+                        </td>
+
+                        <td>
+                            {{ liquidacion.cantidad_prestaciones }}
+                        </td>
+
+                        <td>
+                            $ {{ liquidacion.total_honorarios }}
+                        </td>
+
+                        <td>
+                            $ {{ liquidacion.total_pagado }}
+                        </td>
+
+                        <td>
+                            $ {{ liquidacion.saldo_pendiente }}
+                        </td>
+
+                        <td>
+
+                            {% if liquidacion.estado == 'PAGADA' %}
+
+                                <span class="badge bg-success">
+                                    Pagada
+                                </span>
+
+                            {% elif liquidacion.estado == 'PARCIAL' %}
+
+                                <span class="badge bg-warning text-dark">
+                                    Parcial
+                                </span>
+
+                            {% else %}
+
+                                <span class="badge bg-danger">
+                                    Pendiente
+                                </span>
+
+                            {% endif %}
+
+                        </td>
+
+                        <td>
+
+                            <a
+                                href="{% url 'registrar_pago_liquidacion' liquidacion.id %}"
+                                class="btn btn-success btn-sm"
+                            >
+                                Registrar Pago
+                            </a>
+
+                        </td>
+
+                    </tr>
+
+                    {% empty %}
+
+                    <tr>
+
+                        <td colspan="8">
+
+                            <div class="alert alert-success mb-0">
+
+                                No existen liquidaciones pendientes.
+
+                            </div>
+
+                        </td>
+
+                    </tr>
+
+                    {% endfor %}
+
+                </tbody>
+
+            </table>
+
+        </div>
+
+    </div>
+
+
+
+</div>
+
+{% endblock %}

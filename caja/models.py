@@ -269,7 +269,11 @@ class MovimientoCaja(models.Model):
         decimal_places=2,
         default=0
     )
-
+    retencion_motivo = models.CharField(
+    max_length=255,
+    blank=True,
+    null=True
+)
     importe_neto = models.DecimalField(
         max_digits=12,
         decimal_places=2,
