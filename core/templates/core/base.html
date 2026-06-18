@@ -555,7 +555,7 @@
             </a>
         </li>
 
-        <li>
+      {% comment %}   <li>
             <a href="{% url 'registrar_cobro' %}">
                 Cobros
             </a>
@@ -565,7 +565,11 @@
             <a href="{% url 'registrar_movimiento' %}">
                 Movimientos
             </a>
-        </li>
+        </li> {% endcomment %}
+
+ <a href="{% url 'cajas_cerradas' %}">
+    Cajas Cerradas
+</a>
          <li>
                                 <a href="{% url 'honorarios_medicos' %}">
                                     Honorarios

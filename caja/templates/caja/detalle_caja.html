@@ -1,0 +1,278 @@
+{% extends 'core/base.html' %}
+
+{% block content %}
+
+<div class="container mt-4">
+
+<!-- INFORMACIÓN DE LA CAJA -->
+
+<div class="card shadow-sm mb-4">
+
+    <div class="card-header bg-dark text-white">
+        <h4 class="mb-0">
+            Detalle Caja #{{ caja.id }}
+        </h4>
+    </div>
+
+    <div class="card-body">
+
+        <div class="row">
+
+            <div class="col-md-3">
+                <strong>Sede</strong><br>
+                {{ caja.centro_medico.nombre }}
+            </div>
+
+            <div class="col-md-3">
+                <strong>Fecha</strong><br>
+                {{ caja.fecha }}
+            </div>
+
+            <div class="col-md-3">
+                <strong>Turno</strong><br>
+                {{ caja.get_turno_display }}
+            </div>
+
+            <div class="col-md-3">
+                <strong>Estado</strong><br>
+                {{ caja.estado }}
+            </div>
+
+        </div>
+
+        <hr>
+
+        <div class="row">
+
+            <div class="col-md-4">
+                <strong>Abierta por</strong><br>
+                {{ caja.abierta_por }}
+            </div>
+
+            <div class="col-md-4">
+                <strong>Cerrada por</strong><br>
+                {{ caja.cerrada_por|default:"-" }}
+            </div>
+
+            <div class="col-md-4">
+                <strong>Saldo Inicial</strong><br>
+                $ {{ caja.saldo_inicial }}
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+<!-- RESUMEN -->
+
+<div class="card shadow-sm mb-4">
+
+    <div class="card-header">
+        <h5 class="mb-0">
+            Resumen Financiero
+        </h5>
+    </div>
+
+    <div class="card-body">
+
+        <div class="row text-center">
+
+            <div class="col-md-4">
+                <h6>Ingresos</h6>
+                <h3 class="text-success">
+                    $ {{ total_ingresos }}
+                </h3>
+            </div>
+
+            <div class="col-md-4">
+                <h6>Egresos</h6>
+                <h3 class="text-danger">
+                    $ {{ total_egresos }}
+                </h3>
+            </div>
+
+            <div class="col-md-4">
+                <h6>Resultado</h6>
+                <h3 class="text-primary">
+                    $
+                    {{ total_ingresos|add:total_egresos|default:0 }}
+                </h3>
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+<!-- MEDIOS DE PAGO -->
+
+<div class="card shadow-sm mb-4">
+
+    <div class="card-header">
+        <h5 class="mb-0">
+            Totales por Medio de Pago
+        </h5>
+    </div>
+
+    <div class="card-body">
+
+        <table class="table table-sm">
+
+            <thead>
+                <tr>
+                    <th>Medio de Pago</th>
+                    <th class="text-end">Total</th>
+                </tr>
+            </thead>
+
+            <tbody>
+
+                {% for item in medios_pago %}
+
+                <tr>
+                    <td>
+                        {{ item.medio_pago__nombre }}
+                    </td>
+
+                    <td class="text-end">
+                        $ {{ item.total }}
+                    </td>
+                </tr>
+
+                {% endfor %}
+
+            </tbody>
+
+        </table>
+
+    </div>
+
+</div>
+
+<!-- MOVIMIENTOS -->
+
+<div class="card shadow-sm">
+
+    <div class="card-header">
+        <h5 class="mb-0">
+            Movimientos de Caja
+        </h5>
+    </div>
+
+    <div class="card-body p-0">
+
+        <div class="table-responsive">
+
+            <table class="table table-hover table-striped mb-0">
+
+                <thead class="table-light">
+
+                    <tr>
+
+                        <th>Hora</th>
+
+                        <th>Tipo</th>
+
+                        <th>Concepto</th>
+
+                        <th>Paciente</th>
+
+                        <th>Medio Pago</th>
+
+                        <th>Usuario</th>
+
+                        <th class="text-end">
+                            Importe
+                        </th>
+
+                    </tr>
+
+                </thead>
+
+                <tbody>
+
+                    {% for m in movimientos %}
+
+                    <tr>
+
+                        <td>
+                            {{ m.fecha_creacion|date:"H:i" }}
+                        </td>
+
+                        <td>
+
+                            {% if m.tipo == 'INGRESO' %}
+                                <span class="badge bg-success">
+                                    INGRESO
+                                </span>
+                            {% else %}
+                                <span class="badge bg-danger">
+                                    EGRESO
+                                </span>
+                            {% endif %}
+
+                        </td>
+
+                        <td>
+                            {{ m.concepto }}
+                        </td>
+
+                        <td>
+                            {{ m.paciente|default:"-" }}
+                        </td>
+
+                        <td>
+                            {{ m.medio_pago }}
+                        </td>
+
+                        <td>
+                            {{ m.creado_por }}
+                        </td>
+
+                        <td class="text-end">
+
+                            {% if m.tipo == 'INGRESO' %}
+                                <span class="text-success">
+                                    $ {{ m.importe }}
+                                </span>
+                            {% else %}
+                                <span class="text-danger">
+                                    $ {{ m.importe }}
+                                </span>
+                            {% endif %}
+
+                        </td>
+
+                    </tr>
+
+                    {% empty %}
+
+                    <tr>
+
+                        <td colspan="7" class="text-center">
+
+                            No existen movimientos.
+
+                        </td>
+
+                    </tr>
+
+                    {% endfor %}
+
+                </tbody>
+
+            </table>
+
+        </div>
+
+    </div>
+
+</div>
+
+
+</div>
+
+{% endblock %}

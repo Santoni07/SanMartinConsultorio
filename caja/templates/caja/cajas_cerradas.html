@@ -1,0 +1,260 @@
+{% extends 'core/base.html' %}
+
+{% block content %}
+
+<div class="container mt-4">
+
+<div class="card shadow-sm">
+
+    <div class="card-header bg-dark text-white">
+
+        <div class="d-flex justify-content-between align-items-center">
+
+            <div>
+
+                <h3 class="mb-0">
+                    Cajas Cerradas
+                </h3>
+
+                <small>
+                    {{ centro_medico.nombre }}
+                </small>
+
+            </div>
+
+            <div>
+
+                <span class="badge bg-light text-dark">
+                    {{ cajas|length }} resultado{{ cajas|length|pluralize }}
+                </span>
+
+            </div>
+
+        </div>
+
+    </div>
+
+    <div class="card-body">
+
+        <!-- FILTRO -->
+
+        <div class="card bg-light border-0 mb-4">
+
+            <div class="card-body">
+
+                <form method="get">
+
+                    <div class="row align-items-end">
+
+                        <div class="col-md-4">
+
+                            <label class="form-label fw-semibold">
+                                Buscar por fecha
+                            </label>
+
+                            <input
+                                type="date"
+                                name="fecha"
+                                value="{{ fecha }}"
+                                class="form-control"
+                            >
+
+                        </div>
+
+                        <div class="col-md-2">
+
+                            <button
+                                type="submit"
+                                class="btn btn-primary w-100"
+                            >
+                                Buscar
+                            </button>
+
+                        </div>
+
+                        <div class="col-md-2">
+
+                            <a
+                                href="{% url 'cajas_cerradas' %}"
+                                class="btn btn-secondary w-100"
+                            >
+                                Limpiar
+                            </a>
+
+                        </div>
+
+                        <div class="col-md-4 text-end">
+
+                            <small class="text-muted">
+
+                                {% if fecha %}
+                                    Mostrando cajas del día seleccionado
+                                {% else %}
+                                    Mostrando las últimas 5 cajas cerradas
+                                {% endif %}
+
+                            </small>
+
+                        </div>
+
+                    </div>
+
+                </form>
+
+            </div>
+
+        </div>
+
+        {% if cajas %}
+
+        <div class="table-responsive">
+
+            <table class="table table-hover align-middle">
+
+                <thead class="table-light">
+
+                    <tr>
+
+                        <th>Fecha</th>
+
+                        <th>Turno</th>
+
+                        <th>Apertura</th>
+
+                        <th>Cierre</th>
+
+                        <th class="text-end">
+                            Saldo Inicial
+                        </th>
+
+                        <th class="text-end">
+                            Ingresos
+                        </th>
+
+                        <th class="text-end">
+                            Egresos
+                        </th>
+
+                        <th class="text-end">
+                            Saldo Final
+                        </th>
+
+                        <th class="text-center">
+                            Acción
+                        </th>
+
+                    </tr>
+
+                </thead>
+
+                <tbody>
+
+                    {% for caja in cajas %}
+
+                    <tr>
+
+                        <td>
+                            <strong>
+                                {{ caja.fecha|date:"d/m/Y" }}
+                            </strong>
+                        </td>
+
+                        <td>
+
+                            {% if caja.turno == 'MANANA' %}
+
+                                <span class="text-muted fw-semibold">
+                                    Mañana
+                                </span>
+
+                            {% else %}
+
+                                <span class="text-muted fw-semibold">
+                                    Tarde
+                                </span>
+
+                            {% endif %}
+
+                        </td>
+
+                        <td>
+                            {{ caja.abierta_por }}
+                        </td>
+
+                        <td>
+                            {{ caja.cerrada_por }}
+                        </td>
+
+                        <td class="text-end">
+                            $ {{ caja.saldo_inicial }}
+                        </td>
+
+                        <td class="text-end">
+
+                            <span class="text-success fw-semibold">
+                                $ {{ caja.total_ingresos }}
+                            </span>
+
+                        </td>
+
+                        <td class="text-end">
+
+                            <span class="text-danger fw-semibold">
+                                $ {{ caja.total_egresos }}
+                            </span>
+
+                        </td>
+
+                        <td class="text-end">
+
+                            <span class="text-primary fw-semibold">
+                                $ {{ caja.saldo_final }}
+                            </span>
+
+                        </td>
+
+                        <td class="text-center">
+
+                            <a
+                                href="{% url 'detalle_caja' caja.id %}"
+                                class="btn btn-outline-primary btn-sm"
+                            >
+                                Ver detalle
+                            </a>
+
+                        </td>
+
+                    </tr>
+
+                    {% endfor %}
+
+                </tbody>
+
+            </table>
+
+        </div>
+
+        {% else %}
+
+        <div class="alert alert-info text-center mb-0">
+
+            <h5 class="mb-1">
+                No se encontraron cajas cerradas
+            </h5>
+
+            <small>
+                No existen registros para los filtros seleccionados.
+            </small>
+
+        </div>
+
+        {% endif %}
+
+    </div>
+
+</div>
+
+
+</div>
+
+{% endblock %}

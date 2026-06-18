@@ -8,4 +8,15 @@ urlpatterns = [
     path('registrar-movimiento/', views.registrar_movimiento, name='registrar_movimiento'),
     path('anular/<int:movimiento_id>/', views.anular_movimiento, name='anular_movimiento'),
     path('cerrar/', views.cerrar_caja, name='cerrar_caja'),
+    path(
+    'cajas-cerradas/',
+    views.cajas_cerradas,
+    name='cajas_cerradas'
+),
+    path(
+    'detalle/<int:caja_id>/',
+    views.detalle_caja,
+    name='detalle_caja'
+),
+    
 ]

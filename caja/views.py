@@ -663,52 +663,88 @@ def cerrar_caja(request):
         'saldo_final': saldo_final,
     })
 
+@login_required
+def detalle_caja(request, caja_id):
 
+    caja = get_object_or_404(
+        CajaDiaria,
+        pk=caja_id
+    )
 
+    movimientos = MovimientoCaja.objects.filter(
+        caja=caja,
+        estado='ACTIVO'
+    ).select_related(
+        'paciente',
+        'medio_pago',
+        'creado_por'
+    ).order_by(
+        'fecha_creacion'
+    )
+
+    total_ingresos = movimientos.filter(
+        tipo='INGRESO'
+    ).aggregate(
+        total=Sum('importe')
+    )['total'] or 0
+
+    total_egresos = movimientos.filter(
+        tipo='EGRESO'
+    ).aggregate(
+        total=Sum('importe')
+    )['total'] or 0
+
+    medios_pago = movimientos.values(
+        'medio_pago__nombre'
+    ).annotate(
+        total=Sum('importe')
+    ).order_by()
+
+    return render(
+        request,
+        'caja/detalle_caja.html',
+        {
+            'caja': caja,
+            'movimientos': movimientos,
+            'total_ingresos': total_ingresos,
+            'total_egresos': total_egresos,
+            'medios_pago': medios_pago,
+        }
+    )
+@login_required
+def cajas_cerradas(request):
+
+    
     centro_medico = obtener_centro_activo(request)
 
-    if not centro_medico:
-        messages.error(request, 'No hay una sede activa seleccionada.')
-        return redirect('core:index')
+    fecha = request.GET.get('fecha')
 
-    caja = obtener_caja_abierta(centro_medico)
+    cajas = CajaDiaria.objects.filter(
+        centro_medico=centro_medico,
+        estado='CERRADA'
+    )
 
-    if not caja:
-        messages.error(request, 'No hay caja abierta para cerrar.')
-        return redirect('caja_home')
+    if fecha:
 
-    if request.method == 'POST':
-        form = CerrarCajaForm(request.POST, instance=caja)
+        cajas = cajas.filter(
+            fecha=fecha
+        )
 
-        if form.is_valid():
-            caja = form.save(commit=False)
-            caja.estado = 'CERRADA'
-            caja.cerrada_por = request.user
-            caja.fecha_cierre = timezone.now()
-            caja.save()
+    cajas = cajas.order_by(
+        '-fecha',
+        '-id'
+    )
 
-            HistorialMovimientoCaja.objects.create(
-                caja=caja,
-                accion='CIERRE_CAJA',
-                usuario=request.user,
-                centro_medico=centro_medico,
-                descripcion=f'Cierre de caja de {centro_medico}.',
-                datos_nuevos={
-                    'saldo_inicial': str(caja.saldo_inicial),
-                    'total_ingresos': str(caja.total_ingresos),
-                    'total_egresos': str(caja.total_egresos),
-                    'saldo_final': str(caja.saldo_final),
-                    'observacion_cierre': caja.observacion_cierre,
-                }
-            )
+    if not fecha:
+        cajas = cajas[:5]
 
-            messages.success(request, 'Caja cerrada correctamente.')
-            return redirect('caja_home')
-    else:
-        form = CerrarCajaForm(instance=caja)
+    return render(
+        request,
+        'caja/cajas_cerradas.html',
+        {
+            'cajas': cajas,
+            'centro_medico': centro_medico,
+            'fecha': fecha,
+        }
+    )
 
-    return render(request, 'caja/cerrar_caja.html', {
-        'form': form,
-        'caja': caja,
-        'centro_medico': centro_medico,
-    })
