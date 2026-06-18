@@ -5,6 +5,7 @@ __pycache__/
 # SQLite
 db.sqlite3
 *_backup*.sqlite3
+*.sql
 
 # Media
 media/
