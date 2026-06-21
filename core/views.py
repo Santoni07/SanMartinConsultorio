@@ -157,6 +157,10 @@ class CustomLoginView(LoginView):
         print("🔎 Resultado authenticate:", user)
 
         return super().post(request, *args, **kwargs)
+
+
+
+
 class HomePageView(TemplateView):
     template_name = 'core/index.html'
 
