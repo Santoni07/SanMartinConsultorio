@@ -30,7 +30,8 @@ DEBUG = False
 
 ALLOWED_HOSTS = [
     'app.centromedicosanmartin.ar',
-    'consultorioSanMartin.pythonanywhere.com',
+    #'consultorioSanMartin.pythonanywhere.com',
+    'webapp-3113750.pythonanywhere.com',
 ]
 
 
