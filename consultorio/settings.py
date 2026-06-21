@@ -101,7 +101,7 @@ WSGI_APPLICATION = 'consultorio.wsgi.application'
         'ENGINE': 'django.db.backends.sqlite3',
         'NAME': BASE_DIR / 'db.sqlite3',
     }
-}  """  
+}  
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
@@ -111,7 +111,20 @@ DATABASES = {
         'HOST': 'localhost',
         'PORT': '5432',
     }
-}  
+}   """
+
+#Base de Datos del servido Postgresql
+
+DATABASES = {
+    'default': {
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': 'consultorio',
+        'USER': 'super',
+        'PASSWORD': 'Sm2026!Pg#A9k7xL2',
+        'HOST': 'consultorioSanMartin-5331.postgres.pythonanywhere-services.com',
+        'PORT': '15331',
+    }
+}
 
 # Password validation
 # https://docs.djangoproject.com/en/5.0/ref/settings/#auth-password-validators
