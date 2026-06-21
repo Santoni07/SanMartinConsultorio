@@ -159,17 +159,25 @@ class CustomLoginView(LoginView):
         return super().post(request, *args, **kwargs)
 class HomePageView(TemplateView):
     template_name = 'core/index.html'
-   
-    
+
+    def dispatch(self, request, *args, **kwargs):
+
+        host = request.get_host().lower()
+
+        if host.startswith('app.'):
+            return redirect('/accounts/login/')
+
+        return super().dispatch(request, *args, **kwargs)
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context['especialidades'] = Especialidades.objects.all()  # Obtén todas las especialidades
-        context['medicos'] = Medico.objects.all()  # Obtén todos los médicos
+
+        context['especialidades'] = Especialidades.objects.all()
+        context['medicos'] = Medico.objects.all()
         context['especialidades_count'] = Especialidades.objects.count()
         context['medicos_count'] = Medico.objects.count()
-    
         context['Servicios'] = Servicios.objects.all()
+
         return context
 
 from turnos.utils.utils_turnos import actualizar_turnos_ausentes
