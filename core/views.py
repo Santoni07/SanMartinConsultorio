@@ -188,7 +188,7 @@ from turnos.utils.utils_turnos import actualizar_turnos_ausentes
 
 
 class AdminPageView(TemplateView):
-    template_name = 'core/indexAdmin.html'
+    template_name = 'core/IndexAdmin.html'
 
     def get(self, request, *args, **kwargs):
 
