@@ -123,7 +123,7 @@ DATABASES = {
         'ENGINE': 'django.db.backends.postgresql',
         'NAME': 'consultorio',
         'USER': 'super',
-        'PASSWORD': 'Sm2026!Pg#A9k7xL2',
+        'PASSWORD': 'Sm2026!Pg#A9K7xL2',
         'HOST': 'consultorioSanMartin-5331.postgres.pythonanywhere-services.com',
         'PORT': '15331',
     }
