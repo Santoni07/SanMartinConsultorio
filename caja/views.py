@@ -44,7 +44,15 @@ def obtener_centro_activo(request):
 
     return CentroMedico.objects.filter(activo=True).first()
 
+def validar_permiso_caja(request):
 
+    perfil = request.user.perfilusuario
+    centro = obtener_centro_activo(request)
+
+    return not (
+        perfil.rol == 'RECEPCION'
+        and centro != perfil.centro_principal
+    )
 def obtener_caja_abierta(centro_medico):
     return CajaDiaria.objects.filter(
         centro_medico=centro_medico,
@@ -56,6 +64,14 @@ def obtener_caja_abierta(centro_medico):
 @login_required
 def caja_home(request):
     centro_medico = obtener_centro_activo(request)
+    if not validar_permiso_caja(request):
+
+        messages.error(
+            request,
+            'No tiene permisos para acceder a la caja de esta sede.'
+        )
+
+        return redirect('ver_disponibilidad')
 
     if not centro_medico:
         messages.error(request, 'No hay una sede activa seleccionada.')
@@ -88,6 +104,14 @@ def caja_home(request):
 def abrir_caja(request):
 
     centro_medico = obtener_centro_activo(request)
+    if not validar_permiso_caja(request):
+
+        messages.error(
+            request,
+            'No tiene permisos para acceder a la caja de esta sede.'
+        )
+
+        return redirect('ver_disponibilidad')
 
     if not centro_medico:
         messages.error(
@@ -182,6 +206,14 @@ def abrir_caja(request):
 @transaction.atomic
 def registrar_movimiento(request):
     centro_medico = obtener_centro_activo(request)
+    if not validar_permiso_caja(request):
+
+        messages.error(
+            request,
+            'No tiene permisos para acceder a la caja de esta sede.'
+        )
+
+        return redirect('ver_disponibilidad')
 
     if not centro_medico:
         messages.error(request, 'No hay una sede activa seleccionada.')
@@ -238,6 +270,14 @@ def registrar_cobro(request):
 
 
     centro_medico = obtener_centro_activo(request)
+    if not validar_permiso_caja(request):
+
+        messages.error(
+            request,
+            'No tiene permisos para acceder a la caja de esta sede.'
+        )
+
+        return redirect('ver_disponibilidad')
 
     if not centro_medico:
         messages.error(
@@ -488,6 +528,14 @@ def registrar_cobro(request):
 @transaction.atomic
 def anular_movimiento(request, movimiento_id):
     centro_medico = obtener_centro_activo(request)
+    if not validar_permiso_caja(request):
+
+        messages.error(
+            request,
+            'No tiene permisos para acceder a la caja de esta sede.'
+        )
+
+        return redirect('ver_disponibilidad')
 
     movimiento = get_object_or_404(
         MovimientoCaja,
@@ -550,6 +598,14 @@ def anular_movimiento(request, movimiento_id):
 @transaction.atomic
 def cerrar_caja(request):
     centro_medico = obtener_centro_activo(request)
+    if not validar_permiso_caja(request):
+
+        messages.error(
+            request,
+            'No tiene permisos para acceder a la caja de esta sede.'
+        )
+
+        return redirect('ver_disponibilidad')
 
     if not centro_medico:
         messages.error(request, 'No hay una sede activa seleccionada.')
@@ -666,9 +722,21 @@ def cerrar_caja(request):
 @login_required
 def detalle_caja(request, caja_id):
 
+    centro_medico = obtener_centro_activo(request)
+
+    if not validar_permiso_caja(request):
+
+        messages.error(
+            request,
+            'No tiene permisos para acceder a la caja de esta sede.'
+        )
+
+        return redirect('ver_disponibilidad')
+
     caja = get_object_or_404(
         CajaDiaria,
-        pk=caja_id
+        pk=caja_id,
+        centro_medico=centro_medico
     )
 
     movimientos = MovimientoCaja.objects.filter(
@@ -716,6 +784,14 @@ def cajas_cerradas(request):
 
     
     centro_medico = obtener_centro_activo(request)
+    if not validar_permiso_caja(request):
+
+        messages.error(
+            request,
+            'No tiene permisos para acceder a la caja de esta sede.'
+        )
+
+        return redirect('ver_disponibilidad')
 
     fecha = request.GET.get('fecha')
 
