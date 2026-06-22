@@ -226,6 +226,7 @@ def registrar_movimiento(request):
         return redirect('abrir_caja')
 
     if request.method == 'POST':
+        print("POST RECIBIDO")
         form = MovimientoCajaForm(request.POST)
 
         if form.is_valid():
@@ -234,6 +235,7 @@ def registrar_movimiento(request):
             movimiento.centro_medico = centro_medico
             movimiento.creado_por = request.user
             movimiento.estado = 'ACTIVO'
+            print("FORM VALIDO")
             movimiento.save()
 
             HistorialMovimientoCaja.objects.create(
@@ -251,6 +253,11 @@ def registrar_movimiento(request):
                     'observacion': movimiento.observacion,
                 }
             )
+        else:
+            print("FORM INVALIDO")
+            print(form.errors)
+          
+            
 
             messages.success(request, 'Movimiento registrado correctamente.')
             return redirect('caja_home')
