@@ -194,7 +194,34 @@
     </div>
 
 </div>
+<!-- Modal Error Login -->
+<div class="modal fade" id="loginErrorModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
 
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title">
+                    Error de acceso
+                </h5>
+            </div>
+
+            <div class="modal-body">
+                Usuario o contraseña incorrectos.
+                Verifique los datos e intente nuevamente.
+            </div>
+
+            <div class="modal-footer">
+                <button
+                    type="button"
+                    class="btn btn-secondary"
+                    data-bs-dismiss="modal">
+                    Cerrar
+                </button>
+            </div>
+
+        </div>
+    </div>
+</div>
 <script>
 function togglePassword() {
     const input = document.getElementById("passwordInput");
@@ -209,6 +236,23 @@ function togglePassword() {
     }
 }
 </script>
+
+{% if form.errors %}
+<script>
+
+document.addEventListener(
+    'DOMContentLoaded',
+    function() {
+
+        new bootstrap.Modal(
+            document.getElementById('loginErrorModal')
+        ).show();
+
+    }
+);
+
+</script>
+{% endif %}
 
 </body>
 </html>
