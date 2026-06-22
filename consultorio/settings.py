@@ -22,17 +22,19 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/5.0/howto/deployment/checklist/
 
+
+
+ALLOWED_HOSTS = [
+    'app.centromedicosanmartin.ar',
+    'consultorioSanMartin.pythonanywhere.com',
+
+]
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = 'django-insecure-if##f6q2py9_6fih+1^xe*a^7=47bcubuhs=&*vky4m(=dccuv'
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = False
 
-ALLOWED_HOSTS = [
-    'app.centromedicosanmartin.ar',
-    #'consultorioSanMartin.pythonanywhere.com',
-    'webapp-3113750.pythonanywhere.com',
-]
 
 
 # Application definition
@@ -59,12 +61,12 @@ INSTALLED_APPS = [
     'honorarios',
     'gerencia',
     'caja',
-    
+
 ]
 
 MIDDLEWARE = [
-    
-    
+
+
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -86,7 +88,7 @@ TEMPLATES = [
                 'django.template.context_processors.debug',
                 'django.template.context_processors.request',
                 'core.context_processors.centro_activo',
-                
+
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
             ],
@@ -105,7 +107,7 @@ WSGI_APPLICATION = 'consultorio.wsgi.application'
         'ENGINE': 'django.db.backends.sqlite3',
         'NAME': BASE_DIR / 'db.sqlite3',
     }
-}  
+}
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
@@ -191,19 +193,3 @@ else:
     # Aquí hay que configurar un email real para producción
    pass
 
-
-# HTTPS / PRODUCCION
-
-SECURE_SSL_REDIRECT = True
-
-SESSION_COOKIE_SECURE = True
-
-CSRF_COOKIE_SECURE = True
-
-SECURE_PROXY_SSL_HEADER = (
-    ('HTTP_X_FORWARDED_PROTO', 'https')
-)
-
-CSRF_TRUSTED_ORIGINS = [
-    'https://app.centromedicosanmartin.ar',
-]
