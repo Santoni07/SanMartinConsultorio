@@ -88,6 +88,8 @@ class MovimientoCajaForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
 
         super().__init__(*args, **kwargs)
+        self.fields['retencion_monto'].required = False
+        self.fields['retencion_motivo'].required = False
 
         self.fields[
             'medio_pago'
@@ -100,6 +102,13 @@ class MovimientoCajaForm(forms.ModelForm):
         ].queryset = ConceptoFacturacion.objects.filter(
             activo=True
         ).order_by('nombre')
+
+
+
+
+
+
+
 class CobroConsultaForm(forms.ModelForm):
     turno = forms.ModelChoiceField(
         queryset=Turnos.objects.none(),
