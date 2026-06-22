@@ -71,7 +71,7 @@ def caja_home(request):
             'No tiene permisos para acceder a la caja de esta sede.'
         )
 
-        return redirect('ver_disponibilidad')
+        return redirect('turnos:ver_disponibilidad')
 
     if not centro_medico:
         messages.error(request, 'No hay una sede activa seleccionada.')
@@ -111,7 +111,7 @@ def abrir_caja(request):
             'No tiene permisos para acceder a la caja de esta sede.'
         )
 
-        return redirect('ver_disponibilidad')
+        return redirect('turnos:ver_disponibilidad')
 
     if not centro_medico:
         messages.error(
@@ -213,7 +213,7 @@ def registrar_movimiento(request):
             'No tiene permisos para acceder a la caja de esta sede.'
         )
 
-        return redirect('ver_disponibilidad')
+        return redirect('turnos:ver_disponibilidad')
 
     if not centro_medico:
         messages.error(request, 'No hay una sede activa seleccionada.')
@@ -277,7 +277,7 @@ def registrar_cobro(request):
             'No tiene permisos para acceder a la caja de esta sede.'
         )
 
-        return redirect('ver_disponibilidad')
+        return redirect('turnos:ver_disponibilidad')
 
     if not centro_medico:
         messages.error(
@@ -535,7 +535,7 @@ def anular_movimiento(request, movimiento_id):
             'No tiene permisos para acceder a la caja de esta sede.'
         )
 
-        return redirect('ver_disponibilidad')
+        return redirect('turnos:ver_disponibilidad')
 
     movimiento = get_object_or_404(
         MovimientoCaja,
@@ -605,7 +605,7 @@ def cerrar_caja(request):
             'No tiene permisos para acceder a la caja de esta sede.'
         )
 
-        return redirect('ver_disponibilidad')
+        return redirect('turnos:ver_disponibilidad')
 
     if not centro_medico:
         messages.error(request, 'No hay una sede activa seleccionada.')
@@ -731,7 +731,7 @@ def detalle_caja(request, caja_id):
             'No tiene permisos para acceder a la caja de esta sede.'
         )
 
-        return redirect('ver_disponibilidad')
+        return redirect('turnos:ver_disponibilidad')
 
     caja = get_object_or_404(
         CajaDiaria,
@@ -791,7 +791,7 @@ def cajas_cerradas(request):
             'No tiene permisos para acceder a la caja de esta sede.'
         )
 
-        return redirect('ver_disponibilidad')
+        return redirect('turnos:turnos:ver_disponibilidad')
 
     fecha = request.GET.get('fecha')
 
