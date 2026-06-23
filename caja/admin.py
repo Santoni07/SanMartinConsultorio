@@ -275,12 +275,14 @@ class HistorialMovimientoCajaAdmin(admin.ModelAdmin):
 class ConceptoFacturacionAdmin(admin.ModelAdmin):
 
     list_display = (
+        'codigo',
         'nombre',
         'tipo_calculo',
         'porcentaje_iva',
         'porcentaje_medico',
         'porcentaje_consultorio',
         'honorario_fijo_medico',
+        
         'activo',
     )
 
@@ -291,6 +293,7 @@ class ConceptoFacturacionAdmin(admin.ModelAdmin):
 
     search_fields = (
         'nombre',
+        'codigo',
     )
 
     fieldsets = (
@@ -299,6 +302,7 @@ class ConceptoFacturacionAdmin(admin.ModelAdmin):
             'Información General',
             {
                 'fields': (
+                    'codigo',
                     'nombre',
                     'tipo_calculo',
                     'activo',
