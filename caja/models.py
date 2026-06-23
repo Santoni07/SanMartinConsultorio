@@ -156,9 +156,10 @@ class ConceptoFacturacion(models.Model):
         default='PORCENTAJE'
     )
     codigo = models.CharField(
-        max_length=20,
-        unique=True
-    )
+    max_length=20,
+    blank=True,
+    null=True
+)
     honorario_fijo_medico = models.DecimalField(
         max_digits=12,
         decimal_places=2,
