@@ -155,7 +155,10 @@ class ConceptoFacturacion(models.Model):
         choices=TIPOS_CALCULO,
         default='PORCENTAJE'
     )
-
+    codigo = models.CharField(
+        max_length=20,
+        unique=True
+    )
     honorario_fijo_medico = models.DecimalField(
         max_digits=12,
         decimal_places=2,
@@ -168,6 +171,8 @@ class ConceptoFacturacion(models.Model):
     def __str__(self):
         return self.nombre
     
+
+
 class MovimientoCaja(models.Model):
     TIPOS = [
         ('INGRESO', 'Ingreso'),
