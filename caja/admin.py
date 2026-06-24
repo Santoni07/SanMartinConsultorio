@@ -283,6 +283,7 @@ class ConceptoFacturacionAdmin(admin.ModelAdmin):
         'porcentaje_consultorio',
         'honorario_fijo_medico',
         
+        'tipos_conceptos',
         
         'activo',
     )
