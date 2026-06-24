@@ -165,7 +165,11 @@ class ConceptoFacturacion(models.Model):
         decimal_places=2,
         default=0
     )
-
+    Tipos_Conceptos = [
+    ('CONSULTA', 'Consulta'),
+    ('ESTUDIO', 'Estudio'),
+    ('PRACTICA', 'Práctica'),
+]
     class Meta:
         ordering = ['nombre']
 
