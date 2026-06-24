@@ -165,11 +165,17 @@ class ConceptoFacturacion(models.Model):
         decimal_places=2,
         default=0
     )
-    Tipos_Conceptos = [
+    TIPOS_CONCEPTOS = [
     ('CONSULTA', 'Consulta'),
     ('ESTUDIO', 'Estudio'),
     ('PRACTICA', 'Práctica'),
-]
+    ]
+    tipos_conceptos = models.CharField(
+        max_length=20,
+        choices=TIPOS_CONCEPTOS,
+        default='CONSULTA'
+    ) 
+    
     class Meta:
         ordering = ['nombre']
 
