@@ -308,6 +308,7 @@ class ConceptoFacturacionAdmin(admin.ModelAdmin):
                     'nombre',
                     'tipo_calculo',
                     'activo',
+                    'tipos_conceptos',
                 )
             }
         ),
