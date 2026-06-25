@@ -284,6 +284,7 @@ class ConceptoFacturacionAdmin(admin.ModelAdmin):
         'honorario_fijo_medico',
         'tipos_proveedores',
         'tipos_conceptos',
+        'importe_proveedor',
         
         'activo',
     )
@@ -320,6 +321,7 @@ class ConceptoFacturacionAdmin(admin.ModelAdmin):
                 'fields': (
                     'porcentaje_iva',
                     'tipos_proveedores',
+                    'importe_proveedor',
                     'porcentaje_medico',
                     'porcentaje_consultorio',
                 )

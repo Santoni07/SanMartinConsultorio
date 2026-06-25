@@ -186,6 +186,11 @@ class ConceptoFacturacion(models.Model):
         blank=True,
         default=''
     )
+    importe_proveedor = models.DecimalField(
+    max_digits=12,
+    decimal_places=2,
+    default=0
+)
     class Meta:
         ordering = ['nombre']
 
