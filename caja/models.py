@@ -175,7 +175,17 @@ class ConceptoFacturacion(models.Model):
         choices=TIPOS_CONCEPTOS,
         default='CONSULTA'
     ) 
-    
+    TIPOS_PROVEEDORES = [
+    ('PATOLOGO', 'Patólogo'),
+    ('BIOQUIMICO', 'Bioquímico'),
+    ]
+
+    tipos_proveedores = models.CharField(
+        max_length=20,
+        choices=TIPOS_PROVEEDORES,
+        blank=True,
+        default=''
+    )
     class Meta:
         ordering = ['nombre']
 
