@@ -309,7 +309,7 @@ class ConceptoFacturacionAdmin(admin.ModelAdmin):
                     'tipo_calculo',
                     'activo',
                     'tipos_conceptos',
-                    'tipos_proveedores',
+                    
                 )
             }
         ),
@@ -319,6 +319,7 @@ class ConceptoFacturacionAdmin(admin.ModelAdmin):
             {
                 'fields': (
                     'porcentaje_iva',
+                    'tipos_proveedores',
                     'porcentaje_medico',
                     'porcentaje_consultorio',
                 )
