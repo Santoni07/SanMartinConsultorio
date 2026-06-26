@@ -4,7 +4,7 @@ from django.contrib.auth.decorators import login_required
 from django.utils import timezone
 from django.db import transaction
 from django.db.models import Sum
-from .models import CajaDiaria, MovimientoCaja, HistorialMovimientoCaja
+from .models import CajaDiaria, MovimientoCaja, HistorialMovimientoCaja, ConceptoFacturacion
 from .forms import (
     AperturaCajaForm,
     MovimientoCajaForm,
@@ -849,3 +849,26 @@ def cajas_cerradas(request):
         }
     )
 
+
+from django.http import JsonResponse
+
+@login_required
+def ajax_prestaciones(request):
+
+    tipo = request.GET.get('tipo')
+
+    prestaciones = ConceptoFacturacion.objects.filter(
+        activo=True,
+        tipos_conceptos=tipo
+    ).order_by('nombre')
+
+    data = []
+
+    for p in prestaciones:
+
+        data.append({
+            'id': p.id,
+            'nombre': f'{p.codigo} - {p.nombre}'
+        })
+
+    return JsonResponse(data, safe=False)

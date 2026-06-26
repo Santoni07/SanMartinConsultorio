@@ -17,10 +17,81 @@
         {{ form.turno }}
     </div>
 
-    <div class="mb-3">
-        <label class="form-label">Prestación</label>
-        {{ form.concepto_facturacion }}
-    </div>
+    <!-- ========================= -->
+<!-- COBERTURA -->
+<!-- ========================= -->
+
+<div class="mb-3">
+    <label class="form-label">
+        Tipo de Cobertura
+    </label>
+
+    <select
+        class="form-select"
+        id="tipo_cobertura">
+
+        <option value="PARTICULAR" selected>
+            Particular
+        </option>
+
+        <option value="OBRA_SOCIAL">
+            Obra Social
+        </option>
+
+    </select>
+</div>
+
+<!-- ========================= -->
+<!-- TIPO DE CONCEPTO -->
+<!-- ========================= -->
+
+<div class="mb-3">
+
+    <label class="form-label">
+        Tipo de Concepto
+    </label>
+
+    <select
+        class="form-select"
+        id="tipo_concepto">
+
+        <option value="">
+            ---------
+        </option>
+
+        <option value="CONSULTA">
+            Consulta
+        </option>
+
+        <option value="ESTUDIO">
+            Estudio
+        </option>
+
+        <option value="PRACTICA">
+            Práctica
+        </option>
+
+        <option value="CERTIFICADOS">
+            Certificados
+        </option>
+
+    </select>
+
+</div>
+
+<!-- ========================= -->
+<!-- PRESTACIÓN -->
+<!-- ========================= -->
+
+<div class="mb-3">
+
+    <label class="form-label">
+        Prestación
+    </label>
+
+    {{ form.concepto_facturacion }}
+
+</div>
 
     <div class="mb-3">
         <label class="form-label">Medio de pago</label>
@@ -62,4 +133,49 @@
     </div>
 
 </div>
+
+
+<script>
+
+document.addEventListener('DOMContentLoaded', function () {
+
+    const tipo = document.getElementById('tipo_concepto');
+
+    const prestacion = document.getElementById('id_concepto_facturacion');
+
+    tipo.addEventListener('change', function () {
+
+        prestacion.innerHTML =
+            '<option value="">---------</option>';
+
+        if (!this.value)
+            return;
+
+        fetch(
+            "{% url 'ajax_prestaciones' %}?tipo=" + this.value
+        )
+
+        .then(response => response.json())
+
+        .then(data => {
+
+            data.forEach(function(item){
+
+                let option = document.createElement('option');
+
+                option.value = item.id;
+
+                option.textContent = item.nombre;
+
+                prestacion.appendChild(option);
+
+            });
+
+        });
+
+    });
+
+});
+
+</script>
 {% endblock %}

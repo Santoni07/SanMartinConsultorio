@@ -18,5 +18,10 @@ urlpatterns = [
     views.detalle_caja,
     name='detalle_caja'
 ),
+    path(
+    'ajax/prestaciones/',
+    views.ajax_prestaciones,
+    name='ajax_prestaciones'
+),
     
 ]
