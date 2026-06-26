@@ -169,6 +169,7 @@ class ConceptoFacturacion(models.Model):
     ('CONSULTA', 'Consulta'),
     ('ESTUDIO', 'Estudio'),
     ('PRACTICA', 'Práctica'),
+    ('CERTIFICADOS', 'Certificados')
     ]
     tipos_conceptos = models.CharField(
         max_length=20,
