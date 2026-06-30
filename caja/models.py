@@ -2,7 +2,7 @@ from django.db import models
 from django.contrib.auth.models import User
 from django.utils import timezone
 from honorarios.models import LiquidacionMedica
-
+from nomenclador.models import NomencladorGeneral
 from core.models import CentroMedico
 from paciente.models import Paciente
 from turnos.models import Turnos
@@ -120,8 +120,10 @@ class MedioPago(models.Model):
 
 class ConceptoFacturacion(models.Model):
 
-    nombre = models.CharField(
-        max_length=100
+    nomenclador = models.OneToOneField(
+        NomencladorGeneral,
+        on_delete=models.PROTECT,
+        related_name="particular"
     )
 
     porcentaje_iva = models.DecimalField(
@@ -131,10 +133,10 @@ class ConceptoFacturacion(models.Model):
     )
 
     porcentaje_medico = models.DecimalField(
-    max_digits=5,
-    decimal_places=2,
-    default=0
-)
+        max_digits=5,
+        decimal_places=2,
+        default=0
+    )
 
     porcentaje_consultorio = models.DecimalField(
         max_digits=5,
@@ -143,8 +145,9 @@ class ConceptoFacturacion(models.Model):
     )
 
     activo = models.BooleanField(
-            default=True
-        )
+        default=True
+    )
+
     TIPOS_CALCULO = [
         ('PORCENTAJE', 'Porcentaje'),
         ('FIJO_MEDICO', 'Honorario fijo médico'),
@@ -155,49 +158,52 @@ class ConceptoFacturacion(models.Model):
         choices=TIPOS_CALCULO,
         default='PORCENTAJE'
     )
-    codigo = models.CharField(
-    max_length=20,
-    blank=True,
-    null=True
-)
+
     honorario_fijo_medico = models.DecimalField(
         max_digits=12,
         decimal_places=2,
         default=0
     )
+
     TIPOS_CONCEPTOS = [
-    ('CONSULTA', 'Consulta'),
-    ('ESTUDIO', 'Estudio'),
-    ('PRACTICA', 'Práctica'),
-    ('CERTIFICADOS', 'Certificados')
+        ('CONSULTA', 'Consulta'),
+        ('ESTUDIO', 'Estudio'),
+        ('PRACTICA', 'Práctica'),
+        ('CERTIFICADOS', 'Certificados'),
     ]
-    tipos_conceptos = models.CharField(
+
+    tipo_concepto = models.CharField(
         max_length=20,
         choices=TIPOS_CONCEPTOS,
         default='CONSULTA'
-    ) 
+    )
+
     TIPOS_PROVEEDORES = [
-    ('PATOLOGO', 'Patólogo'),
-    ('BIOQUIMICO', 'Bioquímico'),
+        ('', '---------'),
+        ('PATOLOGO', 'Patólogo'),
+        ('BIOQUIMICO', 'Bioquímico'),
     ]
 
-    tipos_proveedores = models.CharField(
+    tipo_proveedor = models.CharField(
         max_length=20,
         choices=TIPOS_PROVEEDORES,
         blank=True,
         default=''
     )
+
     importe_proveedor = models.DecimalField(
-    max_digits=12,
-    decimal_places=2,
-    default=0
-)
+        max_digits=12,
+        decimal_places=2,
+        default=0
+    )
+
     class Meta:
-        ordering = ['nombre']
+        ordering = ['nomenclador__descripcion']
+        verbose_name = "Concepto de Facturación"
+        verbose_name_plural = "Conceptos de Facturación"
 
     def __str__(self):
-        return self.nombre
-    
+        return f"{self.nomenclador.codigo} - {self.nomenclador.descripcion}"
 
 
 class MovimientoCaja(models.Model):
