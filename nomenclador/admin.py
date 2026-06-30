@@ -13,10 +13,6 @@ class NomencladorGeneralAdmin(admin.ModelAdmin):
         'activo',
     )
 
-    list_filter = (
-        'activo',
-    )
-
     search_fields = (
         'codigo',
         'descripcion',

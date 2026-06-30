@@ -275,66 +275,34 @@ class HistorialMovimientoCajaAdmin(admin.ModelAdmin):
 class ConceptoFacturacionAdmin(admin.ModelAdmin):
 
     list_display = (
-        'codigo',
-        'nombre',
+        'nomenclador',
+        'tipo_concepto',
         'tipo_calculo',
-        'porcentaje_iva',
         'porcentaje_medico',
         'porcentaje_consultorio',
+        'porcentaje_iva',
         'honorario_fijo_medico',
-        'tipos_proveedores',
-        'tipos_conceptos',
+        'tipo_proveedor',
         'importe_proveedor',
-        
-        'activo',
-    )
-
-    list_filter = (
-        'tipo_calculo',
         'activo',
     )
 
     search_fields = (
-        'nombre',
-        'codigo',
+        'nomenclador__codigo',
+        'nomenclador__descripcion',
     )
 
-    fieldsets = (
+    list_filter = (
+        'activo',
+        'tipo_concepto',
+        'tipo_calculo',
+        'tipo_proveedor',
+    )
 
-        (
-            'Información General',
-            {
-                'fields': (
-                    'codigo',
-                    'nombre',
-                    'tipo_calculo',
-                    'activo',
-                    'tipos_conceptos',
-                    
-                )
-            }
-        ),
+    ordering = (
+        'nomenclador__codigo',
+    )
 
-        (
-            'Cálculo por Porcentaje',
-            {
-                'fields': (
-                    'porcentaje_iva',
-                    'tipos_proveedores',
-                    'importe_proveedor',
-                    'porcentaje_medico',
-                    'porcentaje_consultorio',
-                )
-            }
-        ),
-
-        (
-            'Honorario Fijo Médico',
-            {
-                'fields': (
-                    'honorario_fijo_medico',
-                )
-            }
-        ),
-
+    autocomplete_fields = (
+        'nomenclador',
     )
