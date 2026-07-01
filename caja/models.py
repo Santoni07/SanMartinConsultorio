@@ -121,10 +121,12 @@ class MedioPago(models.Model):
 class ConceptoFacturacion(models.Model):
 
     nomenclador = models.OneToOneField(
-        NomencladorGeneral,
-        on_delete=models.PROTECT,
-        related_name="particular"
-    )
+    NomencladorGeneral,
+    on_delete=models.PROTECT,
+    null=True,
+    blank=True,
+    related_name="particular"
+)
 
     porcentaje_iva = models.DecimalField(
         max_digits=5,
