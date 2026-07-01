@@ -123,6 +123,8 @@ class ConceptoFacturacion(models.Model):
     nomenclador = models.OneToOneField(
     NomencladorGeneral,
     on_delete=models.PROTECT,
+    blank=True,
+    null=True,
    
     related_name="particular"
 )
