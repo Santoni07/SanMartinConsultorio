@@ -123,8 +123,7 @@ class ConceptoFacturacion(models.Model):
     nomenclador = models.OneToOneField(
     NomencladorGeneral,
     on_delete=models.PROTECT,
-    null=True,
-    blank=True,
+   
     related_name="particular"
 )
 
@@ -154,7 +153,12 @@ class ConceptoFacturacion(models.Model):
         ('PORCENTAJE', 'Porcentaje'),
         ('FIJO_MEDICO', 'Honorario fijo médico'),
     ]
-
+    importe_particular = models.DecimalField(
+    max_digits=12,
+    decimal_places=2,
+    default=0,
+    verbose_name="Importe Particular"
+)
     tipo_calculo = models.CharField(
         max_length=20,
         choices=TIPOS_CALCULO,

@@ -288,20 +288,17 @@ def registrar_movimiento(request):
         'centro_medico': centro_medico,
     })
 
-
 @login_required
 @transaction.atomic
 def registrar_cobro(request):
 
-
     centro_medico = obtener_centro_activo(request)
-    if not validar_permiso_caja(request):
 
+    if not validar_permiso_caja(request):
         messages.error(
             request,
             'No tiene permisos para acceder a la caja de esta sede.'
         )
-
         return redirect('turnos:ver_disponibilidad')
 
     if not centro_medico:
@@ -311,9 +308,7 @@ def registrar_cobro(request):
         )
         return redirect('caja_home')
 
-    caja = obtener_caja_abierta(
-        centro_medico
-    )
+    caja = obtener_caja_abierta(centro_medico)
 
     if not caja:
         messages.error(
@@ -331,60 +326,82 @@ def registrar_cobro(request):
 
         if form.is_valid():
 
-            turno = form.cleaned_data[
-                'turno'
-            ]
+            turno = form.cleaned_data['turno']
 
-            movimiento = form.save(
-                commit=False
-            )
+            movimiento = form.save(commit=False)
 
             movimiento.caja = caja
-
-            movimiento.centro_medico = (
-                centro_medico
-            )
-
+            movimiento.centro_medico = centro_medico
             movimiento.turno = turno
-
-            movimiento.paciente = (
-                turno.paciente
-            )
-
+            movimiento.paciente = turno.paciente
             movimiento.tipo = 'INGRESO'
-
-            movimiento.creado_por = (
-                request.user
-            )
-
+            movimiento.creado_por = request.user
             movimiento.estado = 'ACTIVO'
 
-            concepto = (
-                movimiento.concepto_facturacion
-            )
+            # =====================================
+            # CONCEPTO DE FACTURACIÓN
+            # =====================================
+
+            concepto = movimiento.concepto_facturacion
+
+            if not concepto:
+
+                messages.error(
+                    request,
+                    'Debe seleccionar una prestación.'
+                )
+
+                return render(
+                    request,
+                    'caja/registrar_cobro.html',
+                    {
+                        'form': form,
+                        'caja': caja,
+                        'centro_medico': centro_medico,
+                    }
+                )
+
+            if concepto.importe_particular <= 0:
+
+                messages.error(
+                    request,
+                    'La prestación seleccionada no tiene un importe configurado.'
+                )
+
+                return render(
+                    request,
+                    'caja/registrar_cobro.html',
+                    {
+                        'form': form,
+                        'caja': caja,
+                        'centro_medico': centro_medico,
+                    }
+                )
+
+            # =====================================
+            # DATOS DE LA PRESTACIÓN
+            # =====================================
+
+            movimiento.importe = concepto.importe_particular
 
             movimiento.concepto = (
-                concepto.nombre
+                f"{concepto.nomenclador.codigo} - "
+                f"{concepto.nomenclador.descripcion}"
             )
 
             # =====================================
             # IMPORTE BRUTO
             # =====================================
 
-            movimiento.importe_bruto = (
-                movimiento.importe
-            )
+            movimiento.importe_bruto = movimiento.importe
 
             # =====================================
             # IVA
             # =====================================
 
             movimiento.importe_iva = (
-
                 movimiento.importe_bruto *
-
                 concepto.porcentaje_iva
-
             ) / 100
 
             # =====================================
@@ -392,58 +409,35 @@ def registrar_cobro(request):
             # =====================================
 
             movimiento.importe_neto = (
-
                 movimiento.importe_bruto
-
                 - movimiento.importe_iva
-
                 - movimiento.retencion_monto
             )
 
             # =====================================
-            # TIPO PORCENTAJE
+            # DISTRIBUCIÓN
             # =====================================
 
-            if (
-                concepto.tipo_calculo
-                ==
-                'PORCENTAJE'
-            ):
+            if concepto.tipo_calculo == 'PORCENTAJE':
 
                 movimiento.importe_medico = (
-
                     movimiento.importe_neto *
-
                     concepto.porcentaje_medico
-
                 ) / 100
 
                 movimiento.importe_consultorio = (
-
                     movimiento.importe_neto *
-
                     concepto.porcentaje_consultorio
-
                 ) / 100
 
-            # =====================================
-            # TIPO FIJO MÉDICO
-            # =====================================
-
-            elif (
-                concepto.tipo_calculo
-                ==
-                'FIJO_MEDICO'
-            ):
+            elif concepto.tipo_calculo == 'FIJO_MEDICO':
 
                 movimiento.importe_medico = (
                     concepto.honorario_fijo_medico
                 )
 
                 movimiento.importe_consultorio = (
-
                     movimiento.importe_neto
-
                     - movimiento.importe_medico
                 )
 
@@ -462,8 +456,7 @@ def registrar_cobro(request):
                 centro_medico=centro_medico,
 
                 descripcion=(
-                    f'Cobro asociado '
-                    f'al turno #{turno.id}.'
+                    f'Cobro asociado al turno #{turno.id}.'
                 ),
 
                 datos_nuevos={
@@ -499,7 +492,7 @@ def registrar_cobro(request):
                         movimiento.observacion,
 
                     'concepto_facturacion':
-                        concepto.nombre,
+                        str(concepto.nomenclador),
 
                     'importe_bruto':
                         str(movimiento.importe_bruto),
@@ -517,10 +510,10 @@ def registrar_cobro(request):
                         str(movimiento.importe_medico),
 
                     'importe_consultorio':
-                        str(
-                            movimiento.importe_consultorio
-                        ),
+                        str(movimiento.importe_consultorio),
+
                 }
+
             )
 
             messages.success(
@@ -528,9 +521,7 @@ def registrar_cobro(request):
                 'Cobro asociado al turno correctamente.'
             )
 
-            return redirect(
-                'caja_home'
-            )
+            return redirect('caja_home')
 
     else:
 
@@ -859,8 +850,12 @@ def ajax_prestaciones(request):
 
     prestaciones = ConceptoFacturacion.objects.filter(
         activo=True,
-        tipos_conceptos=tipo
-    ).order_by('nombre')
+        tipo_concepto=tipo
+    ).select_related(
+        "nomenclador"
+    ).order_by(
+        "nomenclador__descripcion"
+    )
 
     data = []
 
@@ -868,7 +863,37 @@ def ajax_prestaciones(request):
 
         data.append({
             'id': p.id,
-            'nombre': f'{p.codigo} - {p.nombre}'
+            'nombre': (
+            f'{p.nomenclador.codigo} - '
+            f'{p.nomenclador.descripcion}'
+        )
         })
 
     return JsonResponse(data, safe=False)
+
+@login_required
+def ajax_importe_prestacion(request):
+
+    concepto_id = request.GET.get("concepto_id")
+
+    if not concepto_id:
+        return JsonResponse({"importe": 0})
+
+    try:
+
+        concepto = ConceptoFacturacion.objects.get(
+            pk=concepto_id,
+            activo=True
+        )
+
+        return JsonResponse({
+            "importe": float(concepto.importe_particular),
+            "codigo": concepto.nomenclador.codigo,
+            "descripcion": concepto.nomenclador.descripcion,
+        })
+
+    except ConceptoFacturacion.DoesNotExist:
+
+        return JsonResponse({
+            "importe": 0
+        })

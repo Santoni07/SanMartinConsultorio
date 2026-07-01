@@ -275,7 +275,9 @@ class HistorialMovimientoCajaAdmin(admin.ModelAdmin):
 class ConceptoFacturacionAdmin(admin.ModelAdmin):
 
     list_display = (
-        'nomenclador',
+        'codigo',
+        'descripcion',
+        'importe_particular',
         'tipo_concepto',
         'tipo_calculo',
         'porcentaje_medico',
@@ -306,3 +308,20 @@ class ConceptoFacturacionAdmin(admin.ModelAdmin):
     autocomplete_fields = (
         'nomenclador',
     )
+
+    list_select_related = (
+        'nomenclador',
+    )
+
+    list_editable = (
+        'importe_particular',
+        'activo',
+    )
+
+    @admin.display(ordering='nomenclador__codigo', description='Código')
+    def codigo(self, obj):
+        return obj.nomenclador.codigo
+
+    @admin.display(ordering='nomenclador__descripcion', description='Prestación')
+    def descripcion(self, obj):
+        return obj.nomenclador.descripcion

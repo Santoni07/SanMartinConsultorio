@@ -24,4 +24,10 @@ urlpatterns = [
     name='ajax_prestaciones'
 ),
     
+   path(
+    "ajax/importe-prestacion/",
+    views.ajax_importe_prestacion,
+    name="ajax_importe_prestacion",
+), 
+    
 ]

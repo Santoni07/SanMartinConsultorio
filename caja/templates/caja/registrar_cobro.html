@@ -4,136 +4,213 @@
 <div class="container mt-4">
 
     <div class="card shadow-sm">
+
         <div class="card-header bg-success text-white">
-            <h4 class="mb-0">Registrar Cobro - {{ centro_medico.nombre }}</h4>
+            <h4 class="mb-0">
+                Registrar Cobro - {{ centro_medico.nombre }}
+            </h4>
         </div>
 
         <div class="card-body">
+
             <form method="post">
-    {% csrf_token %}
 
-    <div class="mb-3">
-        <label class="form-label">Turno a cobrar</label>
-        {{ form.turno }}
-    </div>
+                {% csrf_token %}
 
-    <!-- ========================= -->
-<!-- COBERTURA -->
-<!-- ========================= -->
+                <!-- ========================= -->
+                <!-- TURNO -->
+                <!-- ========================= -->
 
-<div class="mb-3">
-    <label class="form-label">
-        Tipo de Cobertura
-    </label>
+                <div class="mb-3">
+                    <label class="form-label">
+                        Turno a cobrar
+                    </label>
 
-    <select
-        class="form-select"
-        id="tipo_cobertura">
+                    {{ form.turno }}
+                </div>
 
-        <option value="PARTICULAR" selected>
-            Particular
-        </option>
+                <!-- ========================= -->
+                <!-- COBERTURA -->
+                <!-- ========================= -->
 
-        <option value="OBRA_SOCIAL">
-            Obra Social
-        </option>
+                <div class="mb-3">
 
-    </select>
-</div>
+                    <label class="form-label">
+                        Tipo de Cobertura
+                    </label>
 
-<!-- ========================= -->
-<!-- TIPO DE CONCEPTO -->
-<!-- ========================= -->
+                    <select
+                        class="form-select"
+                        id="tipo_cobertura">
 
-<div class="mb-3">
+                        <option
+                            value="PARTICULAR"
+                            selected>
 
-    <label class="form-label">
-        Tipo de Concepto
-    </label>
+                            Particular
 
-    <select
-        class="form-select"
-        id="tipo_concepto">
+                        </option>
 
-        <option value="">
-            ---------
-        </option>
+                        <option
+                            value="OBRA_SOCIAL">
 
-        <option value="CONSULTA">
-            Consulta
-        </option>
+                            Obra Social
 
-        <option value="ESTUDIO">
-            Estudio
-        </option>
+                        </option>
 
-        <option value="PRACTICA">
-            Práctica
-        </option>
+                    </select>
 
-        <option value="CERTIFICADOS">
-            Certificados
-        </option>
+                </div>
 
-    </select>
+                <!-- ========================= -->
+                <!-- TIPO -->
+                <!-- ========================= -->
 
-</div>
+                <div class="mb-3">
 
-<!-- ========================= -->
-<!-- PRESTACIÓN -->
-<!-- ========================= -->
+                    <label class="form-label">
+                        Tipo de Concepto
+                    </label>
 
-<div class="mb-3">
+                    <select
+                        class="form-select"
+                        id="tipo_concepto">
 
-    <label class="form-label">
-        Prestación
-    </label>
+                        <option value="">
+                            ---------
+                        </option>
 
-    {{ form.concepto_facturacion }}
+                        <option value="CONSULTA">
+                            Consulta
+                        </option>
 
-</div>
+                        <option value="ESTUDIO">
+                            Estudio
+                        </option>
 
-    <div class="mb-3">
-        <label class="form-label">Medio de pago</label>
-        {{ form.medio_pago }}
-    </div>
+                        <option value="PRACTICA">
+                            Práctica
+                        </option>
 
-    <div class="mb-3">
-        <label class="form-label">Importe</label>
-        {{ form.importe }}
-    </div>
+                        <option value="CERTIFICADOS">
+                            Certificados
+                        </option>
 
-    <div class="mb-3">
-        <label class="form-label">Retención (opcional)</label>
-        {{ form.retencion_monto }}
-    </div>
+                    </select>
 
-    <div class="mb-3">
-        <label class="form-label">Motivo de retención</label>
-        {{ form.retencion_motivo }}
-    </div>
+                </div>
 
-    <div class="mb-3">
-        <label class="form-label">Observación</label>
-        {{ form.observacion }}
-    </div>
+                <!-- ========================= -->
+                <!-- PRESTACIÓN -->
+                <!-- ========================= -->
 
-    <div class="d-flex gap-2">
-        <button type="submit" class="btn btn-success">
-            Guardar Cobro
-        </button>
+                <div class="mb-3">
 
-        <a href="{% url 'caja_home' %}"
-           class="btn btn-secondary">
-            Cancelar
-        </a>
-    </div>
-</form>
+                    <label class="form-label">
+                        Prestación
+                    </label>
+
+                    {{ form.concepto_facturacion }}
+
+                </div>
+
+                <!-- ========================= -->
+                <!-- IMPORTE -->
+                <!-- ========================= -->
+
+                <div class="mb-3">
+
+                    <label class="form-label">
+                        Importe 
+                    </label>
+
+                    {{ form.importe_particular }}
+
+                </div>
+
+                <!-- ========================= -->
+                <!-- MEDIO DE PAGO -->
+                <!-- ========================= -->
+
+                <div class="mb-3">
+
+                    <label class="form-label">
+                        Medio de Pago
+                    </label>
+
+                    {{ form.medio_pago }}
+
+                </div>
+
+                <!-- ========================= -->
+                <!-- RETENCIÓN -->
+                <!-- ========================= -->
+
+                <div class="mb-3">
+
+                    <label class="form-label">
+                        Retención (Opcional)
+                    </label>
+
+                    {{ form.retencion_monto }}
+
+                </div>
+
+                <div class="mb-3">
+
+                    <label class="form-label">
+                        Motivo de la Retención
+                    </label>
+
+                    {{ form.retencion_motivo }}
+
+                </div>
+
+                <!-- ========================= -->
+                <!-- OBSERVACIÓN -->
+                <!-- ========================= -->
+
+                <div class="mb-3">
+
+                    <label class="form-label">
+                        Observación
+                    </label>
+
+                    {{ form.observacion }}
+
+                </div>
+
+                <div class="d-flex gap-2">
+
+                    <button
+                        type="submit"
+                        class="btn btn-success">
+
+                        Guardar Cobro
+
+                    </button>
+
+                    <a
+                        href="{% url 'caja_home' %}"
+                        class="btn btn-secondary">
+
+                        Cancelar
+
+                    </a>
+
+                </div>
+
+            </form>
+
         </div>
+
     </div>
 
 </div>
 
+<!-- ================================================= -->
+<!-- CARGAR PRESTACIONES SEGÚN TIPO -->
+<!-- ================================================= -->
 
 <script>
 
@@ -147,6 +224,10 @@ document.addEventListener('DOMContentLoaded', function () {
 
         prestacion.innerHTML =
             '<option value="">---------</option>';
+
+        document.getElementById(
+            'id_importe_particular'
+        ).value = "";
 
         if (!this.value)
             return;
@@ -178,4 +259,49 @@ document.addEventListener('DOMContentLoaded', function () {
 });
 
 </script>
+
+<!-- ================================================= -->
+<!-- TRAER IMPORTE AUTOMÁTICAMENTE -->
+<!-- ================================================= -->
+
+<script>
+
+document.addEventListener('DOMContentLoaded', function () {
+
+    const prestacion = document.getElementById(
+        'id_concepto_facturacion'
+    );
+
+    const importe = document.getElementById(
+        'id_importe_particular'
+    );
+
+    prestacion.addEventListener('change', function () {
+
+        if (!this.value){
+
+            importe.value = "";
+
+            return;
+
+        }
+
+        fetch(
+            "{% url 'ajax_importe_prestacion' %}?concepto_id=" + this.value
+        )
+
+        .then(response => response.json())
+
+        .then(data => {
+
+            importe.value = data.importe;
+
+        });
+
+    });
+
+});
+
+</script>
+
 {% endblock %}
