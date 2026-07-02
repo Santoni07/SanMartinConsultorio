@@ -211,8 +211,12 @@ class ConceptoFacturacion(models.Model):
         verbose_name_plural = "Conceptos de Facturación"
 
     def __str__(self):
-        return f"{self.nomenclador.codigo} - {self.nomenclador.descripcion}"
 
+        return (
+            f"{self.nomenclador.codigo} - {self.nomenclador.descripcion}"
+            if self.nomenclador
+            else f"Concepto #{self.id} (Sin nomenclador)"
+        )  
 
 class MovimientoCaja(models.Model):
     TIPOS = [
