@@ -62,7 +62,7 @@ INSTALLED_APPS = [
     'honorarios',
     'gerencia',
     'caja',
-    'nomenclador',
+    'nomenclador.apps.NomencladorConfig',
 
 ]
 
