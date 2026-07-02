@@ -318,10 +318,71 @@ class ConceptoFacturacionAdmin(admin.ModelAdmin):
         'activo',
     )
 
-    @admin.display(ordering='nomenclador__codigo', description='Código')
-    def codigo(self, obj):
-        return obj.nomenclador.codigo
+    fieldsets = (
 
-    @admin.display(ordering='nomenclador__descripcion', description='Prestación')
+        (
+            "Prestación",
+            {
+                "fields": (
+                    "nomenclador",
+                    "importe_particular",
+                    "tipo_concepto",
+                )
+            },
+        ),
+
+        (
+            "Distribución",
+            {
+                "fields": (
+                    "tipo_calculo",
+                    "honorario_fijo_medico",
+                    "porcentaje_medico",
+                    "porcentaje_consultorio",
+                    "porcentaje_iva",
+                )
+            },
+        ),
+
+        (
+            "Proveedor Externo",
+            {
+                "fields": (
+                    "tipo_proveedor",
+                    "importe_proveedor",
+                )
+            },
+        ),
+
+        (
+            "Estado",
+            {
+                "fields": (
+                    "activo",
+                )
+            },
+        ),
+
+    )
+
+    @admin.display(
+        ordering='nomenclador__codigo',
+        description='Código'
+    )
+    def codigo(self, obj):
+
+        if obj.nomenclador:
+            return obj.nomenclador.codigo
+
+        return "Sin código"
+
+    @admin.display(
+        ordering='nomenclador__descripcion',
+        description='Prestación'
+    )
     def descripcion(self, obj):
-        return obj.nomenclador.descripcion
+
+        if obj.nomenclador:
+            return obj.nomenclador.descripcion
+
+        return "Sin nomenclador"
