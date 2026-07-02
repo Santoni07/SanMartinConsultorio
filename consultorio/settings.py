@@ -12,6 +12,7 @@ https://docs.djangoproject.com/en/5.0/ref/settings/
 
 import os
 from pathlib import Path
+import socket
 
 from django.urls import reverse_lazy
 
@@ -102,37 +103,28 @@ WSGI_APPLICATION = 'consultorio.wsgi.application'
 
 # Database
 # https://docs.djangoproject.com/en/5.0/ref/settings/#databases
+# Detecta si está corriendo en PythonAnywhere
+if "pythonanywhere" in socket.gethostname():
 
-""" DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.postgresql',
+            'NAME': 'consultorio',
+            'USER': 'super',
+            'PASSWORD': 'Sm2026!Pg#A9K7xL2',
+            'HOST': 'consultorioSanMartin-5331.postgres.pythonanywhere-services.com',
+            'PORT': '15331',
+        }
     }
-}
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.postgresql',
-        'NAME': 'consultorio',
-        'USER': 'postgres',
-        'PASSWORD': 'ale123',
-        'HOST': 'localhost',
-        'PORT': '5432',
+
+else:
+
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.sqlite3',
+            'NAME': BASE_DIR / 'db.sqlite3',
+        }
     }
-}   """
-
-#Base de Datos del servido Postgresql
-
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.postgresql',
-        'NAME': 'consultorio',
-        'USER': 'super',
-        'PASSWORD': 'Sm2026!Pg#A9K7xL2',
-        'HOST': 'consultorioSanMartin-5331.postgres.pythonanywhere-services.com',
-        'PORT': '15331',
-    }
-}
-
 # Password validation
 # https://docs.djangoproject.com/en/5.0/ref/settings/#auth-password-validators
 
