@@ -100,11 +100,9 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'consultorio.wsgi.application'
 
+import os
 
-# Database
-# https://docs.djangoproject.com/en/5.0/ref/settings/#databases
-# Detecta si está corriendo en PythonAnywhere
-if "pythonanywhere" in socket.gethostname():
+if os.environ.get("PYTHONANYWHERE_SITE"):
 
     DATABASES = {
         'default': {
