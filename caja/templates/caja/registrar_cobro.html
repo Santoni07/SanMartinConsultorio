@@ -127,7 +127,104 @@
                     {{ form.importe_particular }}
 
                 </div>
+                <!-- ========================= -->
+<!-- AGREGAR PRESTACIÓN -->
+<!-- ========================= -->
 
+<div class="mb-4">
+
+    <button
+        type="button"
+        class="btn btn-primary"
+        id="btn_agregar_prestacion"
+        disabled>
+
+        Agregar Prestación
+
+    </button>
+
+</div>
+
+<!-- ========================= -->
+<!-- PRESTACIONES AGREGADAS -->
+<!-- ========================= -->
+
+<div class="card mb-4">
+
+    <div class="card-header">
+
+        <strong>
+            Prestaciones agregadas
+        </strong>
+
+    </div>
+
+    <div class="card-body p-0">
+
+        <table
+            class="table table-bordered table-hover mb-0"
+            id="tabla_prestaciones">
+
+            <thead class="table-light">
+
+                <tr>
+
+                    <th style="width:120px">
+                        Código
+                    </th>
+
+                    <th>
+                        Prestación
+                    </th>
+
+                    <th style="width:120px">
+                        Cantidad
+                    </th>
+
+                    <th style="width:140px">
+                        Importe
+                    </th>
+
+                    <th style="width:80px">
+
+                    </th>
+
+                </tr>
+
+            </thead>
+
+            <tbody>
+
+            </tbody>
+
+            <tfoot>
+
+                <tr>
+
+                    <th colspan="3"
+                        class="text-end">
+
+                        Total
+
+                    </th>
+
+                    <th id="total_general">
+
+                        $0.00
+
+                    </th>
+
+                    <th></th>
+
+                </tr>
+
+            </tfoot>
+
+        </table>
+
+    </div>
+
+</div>
                 <!-- ========================= -->
                 <!-- MEDIO DE PAGO -->
                 <!-- ========================= -->
@@ -299,6 +396,163 @@ document.addEventListener('DOMContentLoaded', function () {
         });
 
     });
+
+});
+
+</script>
+
+<script>
+
+document.addEventListener("DOMContentLoaded", function () {
+
+    const btnAgregar = document.getElementById("btn_agregar_prestacion");
+
+    const prestacion = document.getElementById("id_concepto_facturacion");
+
+    const importe = document.getElementById("id_importe_particular");
+
+    const tabla = document.querySelector(
+        "#tabla_prestaciones tbody"
+    );
+
+    const total = document.getElementById(
+        "total_general"
+    );
+
+    let prestaciones = [];
+
+    // ==========================================
+    // HABILITAR BOTÓN
+    // ==========================================
+
+    prestacion.addEventListener("change", function () {
+
+        btnAgregar.disabled = !this.value;
+
+    });
+
+    // ==========================================
+    // AGREGAR PRESTACIÓN
+    // ==========================================
+
+    btnAgregar.addEventListener("click", function () {
+
+        const id = prestacion.value;
+
+        if (!id)
+            return;
+
+        // evitar duplicados
+
+        const existe = prestaciones.find(p => p.id == id);
+
+        if (existe){
+
+            existe.cantidad++;
+
+            renderTabla();
+
+            return;
+
+        }
+
+        const texto =
+            prestacion.options[
+                prestacion.selectedIndex
+            ].text;
+
+        const partes = texto.split(" - ");
+
+        prestaciones.push({
+
+            id: id,
+
+            codigo: partes[0],
+
+            descripcion: partes.slice(1).join(" - "),
+
+            cantidad: 1,
+
+            importe: parseFloat(
+                importe.value || 0
+            )
+
+        });
+
+        renderTabla();
+
+    });
+
+    // ==========================================
+    // RENDER
+    // ==========================================
+
+    function renderTabla(){
+
+        tabla.innerHTML = "";
+
+        let totalGeneral = 0;
+
+        prestaciones.forEach(function(item,index){
+
+            totalGeneral +=
+                item.cantidad * item.importe;
+
+            tabla.innerHTML += `
+
+                <tr>
+
+                    <td>${item.codigo}</td>
+
+                    <td>${item.descripcion}</td>
+
+                    <td class="text-center">
+
+                        ${item.cantidad}
+
+                    </td>
+
+                    <td class="text-end">
+
+                        $ ${(item.cantidad * item.importe).toFixed(2)}
+
+                    </td>
+
+                    <td class="text-center">
+
+                        <button
+                            type="button"
+                            class="btn btn-danger btn-sm"
+                            onclick="eliminarPrestacion(${index})">
+
+                            ×
+
+                        </button>
+
+                    </td>
+
+                </tr>
+
+            `;
+
+        });
+
+        total.innerHTML =
+            "$ " + totalGeneral.toFixed(2);
+
+    }
+
+    // ==========================================
+    // ELIMINAR
+    // ==========================================
+
+    window.eliminarPrestacion = function(index){
+
+        prestaciones.splice(index,1);
+
+        renderTabla();
+
+    }
 
 });
 

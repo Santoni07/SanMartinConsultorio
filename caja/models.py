@@ -6,6 +6,7 @@ from nomenclador.models import NomencladorGeneral
 from core.models import CentroMedico
 from paciente.models import Paciente
 from turnos.models import Turnos
+from medicos.models import Medico
 
 class CajaDiaria(models.Model):
     ESTADOS = [
@@ -431,4 +432,114 @@ class HistorialMovimientoCaja(models.Model):
 
     def __str__(self):
         return f'{self.fecha_hora:%d/%m/%Y %H:%M} - {self.accion} - {self.usuario}'
+
+
+class DetalleMovimientoCaja(models.Model):
+
+    ESTADOS = [
+        ("PENDIENTE", "Pendiente"),
+        ("LIQUIDADO", "Liquidado"),
+        ("ANULADO", "Anulado"),
+    ]
+
+    movimiento = models.ForeignKey(
+        MovimientoCaja,
+        on_delete=models.CASCADE,
+        related_name="detalles",
+        verbose_name="Movimiento de Caja"
+    )
+
+    concepto_facturacion = models.ForeignKey(
+        ConceptoFacturacion,
+        on_delete=models.PROTECT,
+        verbose_name="Prestación"
+    )
+
     
+
+    fecha_prestacion = models.DateField(
+        verbose_name="Fecha de la prestación"
+    )
+
+    cantidad = models.PositiveIntegerField(
+        default=1,
+        verbose_name="Cantidad"
+    )
+
+    importe = models.DecimalField(
+        max_digits=12,
+        decimal_places=2,
+        verbose_name="Importe Bruto"
+    )
+
+    importe_iva = models.DecimalField(
+        max_digits=12,
+        decimal_places=2,
+        default=0,
+        verbose_name="IVA"
+    )
+
+    importe_neto = models.DecimalField(
+        max_digits=12,
+        decimal_places=2,
+        default=0,
+        verbose_name="Importe Neto"
+    )
+
+    importe_medico = models.DecimalField(
+        max_digits=12,
+        decimal_places=2,
+        default=0,
+        verbose_name="Honorario Médico"
+    )
+
+    importe_consultorio = models.DecimalField(
+        max_digits=12,
+        decimal_places=2,
+        default=0,
+        verbose_name="Importe Consultorio"
+    )
+
+    estado = models.CharField(
+        max_length=20,
+        choices=ESTADOS,
+        default="PENDIENTE",
+        verbose_name="Estado"
+    )
+
+    orden = models.PositiveIntegerField(
+        default=1,
+        verbose_name="Orden"
+    )
+
+    observacion = models.CharField(
+        max_length=250,
+        blank=True,
+        verbose_name="Observación"
+    )
+
+    fecha_creacion = models.DateTimeField(
+        auto_now_add=True
+    )
+
+    class Meta:
+
+        verbose_name = "Detalle de Movimiento"
+
+        verbose_name_plural = "Detalles de Movimiento"
+
+        ordering = [
+            "orden",
+            "id"
+        ]
+
+    def __str__(self):
+
+        if self.concepto_facturacion.nomenclador:
+
+            return (
+                f"{self.concepto_facturacion.nomenclador.codigo} - "
+                f"{self.concepto_facturacion.nomenclador.descripcion}"
+            )
+
+        return f"Detalle #{self.pk}"
