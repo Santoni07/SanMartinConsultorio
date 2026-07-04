@@ -865,6 +865,14 @@ def ajax_prestaciones(request):
 
     for p in prestaciones:
 
+        print(
+            p.id,
+            p.nomenclador
+        )
+
+        if not p.nomenclador:
+            continue
+
         data.append({
             "id": p.id,
             "nombre": f"{p.nomenclador.codigo} - {p.nomenclador.descripcion}"
