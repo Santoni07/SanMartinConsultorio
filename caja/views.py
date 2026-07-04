@@ -846,7 +846,9 @@ from django.http import JsonResponse
 @login_required
 def ajax_prestaciones(request):
 
-    tipo = request.GET.get('tipo')
+    tipo = request.GET.get("tipo")
+
+    print("TIPO RECIBIDO:", tipo)
 
     prestaciones = ConceptoFacturacion.objects.filter(
         activo=True,
@@ -857,20 +859,18 @@ def ajax_prestaciones(request):
         "nomenclador__descripcion"
     )
 
+    print("CANTIDAD:", prestaciones.count())
+
     data = []
 
     for p in prestaciones:
 
         data.append({
-            'id': p.id,
-            'nombre': (
-            f'{p.nomenclador.codigo} - '
-            f'{p.nomenclador.descripcion}'
-        )
+            "id": p.id,
+            "nombre": f"{p.nomenclador.codigo} - {p.nomenclador.descripcion}"
         })
 
     return JsonResponse(data, safe=False)
-
 @login_required
 def ajax_importe_prestacion(request):
 
