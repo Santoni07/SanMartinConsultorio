@@ -13,7 +13,11 @@ from .forms import (
     CerrarCajaForm,
 )
 from core.models import CentroMedico, PerfilUsuario
+import json
 
+from decimal import Decimal
+
+from .services import calcular_detalle
 
 def obtener_centro_activo(request):
     centro = getattr(request, 'centro_activo', None)
@@ -326,57 +330,69 @@ def registrar_cobro(request):
 
         if form.is_valid():
 
-            turno = form.cleaned_data['turno']
+            turno = form.cleaned_data["turno"]
 
-            movimiento = form.save(commit=False)
+            detalles_json = request.POST.get(
+                "detalles_json"
+            )
 
-            movimiento.caja = caja
-            movimiento.centro_medico = centro_medico
-            movimiento.turno = turno
-            movimiento.paciente = turno.paciente
-            movimiento.tipo = 'INGRESO'
-            movimiento.creado_por = request.user
-            movimiento.estado = 'ACTIVO'
-
-            # =====================================
-            # CONCEPTO DE FACTURACIÓN
-            # =====================================
-
-            concepto = movimiento.concepto_facturacion
-
-            if not concepto:
+            if not detalles_json:
 
                 messages.error(
                     request,
-                    'Debe seleccionar una prestación.'
+                    "Debe agregar al menos una prestación."
                 )
 
                 return render(
                     request,
-                    'caja/registrar_cobro.html',
+                    "caja/registrar_cobro.html",
                     {
-                        'form': form,
-                        'caja': caja,
-                        'centro_medico': centro_medico,
-                    }
+                        "form": form,
+                        "caja": caja,
+                        "centro_medico": centro_medico,
+                    },
                 )
 
-            if concepto.importe_particular <= 0:
+            try:
+
+                detalles = json.loads(
+                    detalles_json
+                )
+                print(detalles)
+
+            except Exception:
 
                 messages.error(
                     request,
-                    'La prestación seleccionada no tiene un importe configurado.'
+                    "Error al procesar las prestaciones."
                 )
 
                 return render(
                     request,
-                    'caja/registrar_cobro.html',
+                    "caja/registrar_cobro.html",
                     {
-                        'form': form,
-                        'caja': caja,
-                        'centro_medico': centro_medico,
-                    }
+                        "form": form,
+                        "caja": caja,
+                        "centro_medico": centro_medico,
+                    },
                 )
+
+            if len(detalles) == 0:
+
+                messages.error(
+                    request,
+                    "Debe agregar al menos una prestación."
+                )
+
+            return render(
+                request,
+                "caja/registrar_cobro.html",
+                {
+                    "form": form,
+                    "caja": caja,
+                    "centro_medico": centro_medico,
+                },
+            )
 
             # =====================================
             # DATOS DE LA PRESTACIÓN
@@ -905,3 +921,4 @@ def ajax_importe_prestacion(request):
         return JsonResponse({
             "importe": 0
         })
+        

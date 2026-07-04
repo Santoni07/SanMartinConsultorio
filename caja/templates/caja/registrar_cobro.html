@@ -277,6 +277,16 @@
 
                 </div>
 
+                <!-- =================================== -->
+                <!-- DETALLES DE LAS PRESTACIONES (JSON) -->
+                <!-- =================================== -->
+
+                <input
+                    type="hidden"
+                    name="detalles_json"
+                    id="detalles_json">
+
+
                 <div class="d-flex gap-2">
 
                     <button
@@ -539,6 +549,10 @@ document.addEventListener("DOMContentLoaded", function () {
 
         total.innerHTML =
             "$ " + totalGeneral.toFixed(2);
+
+        document.getElementById(
+    "detalles_json"
+        ).value = JSON.stringify(prestaciones);
 
     }
 
