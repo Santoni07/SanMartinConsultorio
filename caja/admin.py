@@ -275,6 +275,7 @@ class HistorialMovimientoCajaAdmin(admin.ModelAdmin):
 class ConceptoFacturacionAdmin(admin.ModelAdmin):
 
     list_display = (
+        'asociado',
         'codigo',
         'descripcion',
         'importe_particular',
@@ -325,6 +326,14 @@ class ConceptoFacturacionAdmin(admin.ModelAdmin):
             {
                 "fields": (
                     "nomenclador",
+                )
+            },
+        ),
+
+        (
+            "Configuración Particular",
+            {
+                "fields": (
                     "importe_particular",
                     "tipo_concepto",
                 )
@@ -332,7 +341,7 @@ class ConceptoFacturacionAdmin(admin.ModelAdmin):
         ),
 
         (
-            "Distribución",
+            "Distribución de Honorarios",
             {
                 "fields": (
                     "tipo_calculo",
@@ -364,6 +373,13 @@ class ConceptoFacturacionAdmin(admin.ModelAdmin):
         ),
 
     )
+
+    @admin.display(
+        boolean=True,
+        description="✓"
+    )
+    def asociado(self, obj):
+        return obj.nomenclador is not None
 
     @admin.display(
         ordering='nomenclador__codigo',
