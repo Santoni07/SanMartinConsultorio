@@ -27,6 +27,7 @@ function inicializar(){
 
     inicializarPrestacionesAjax();
     inicializarImporteAjax();
+    inicializarPrestaciones();
 
 }
 // ======================================================
@@ -131,5 +132,50 @@ function inicializarImporteAjax(){
         });
 
     });
+
+}
+
+// ======================================================
+// PRESTACIONES
+// ======================================================
+
+function inicializarPrestaciones(){
+
+    const btnAgregar = document.getElementById(
+        "btn_agregar_prestacion"
+    );
+
+    const prestacion = document.getElementById(
+        "id_concepto_facturacion"
+    );
+
+    const importe = document.getElementById(
+        "id_importe_particular"
+    );
+
+    const tabla = document.querySelector(
+        "#tabla_prestaciones tbody"
+    );
+
+    const total = document.getElementById(
+        "total_general"
+    );
+
+    if(
+        !btnAgregar ||
+        !prestacion ||
+        !importe ||
+        !tabla ||
+        !total
+    ){
+        return;
+    }
+
+     prestacion.addEventListener("change", function(){
+
+        btnAgregar.disabled = !this.value;
+
+    });
+
 
 }
