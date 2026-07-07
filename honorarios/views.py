@@ -230,45 +230,73 @@ def previsualizar_liquidacion(request, medico_id):
         pk=medico_id
     )
 
-    movimientos = MovimientoCaja.objects.filter(
-        turno__medico=medico,
-        centro_medico=centro_medico,
-        tipo='INGRESO',
-        estado='ACTIVO',
-        liquidado=False
+    detalles = DetalleMovimientoCaja.objects.filter(
+
+        movimiento__turno__medico=medico,
+
+        movimiento__centro_medico=centro_medico,
+
+        movimiento__tipo="INGRESO",
+
+        movimiento__estado="ACTIVO",
+
+        estado="PENDIENTE",
+
+        liquidacion__isnull=True,
+
     ).select_related(
-        'paciente',
-        'concepto_facturacion'
+
+        "movimiento",
+
+        "movimiento__paciente",
+
     )
 
-    if not movimientos.exists():
+    if not detalles.exists():
 
         messages.warning(
             request,
-            'No existen prestaciones pendientes.'
+            "No existen prestaciones pendientes."
         )
 
         return redirect(
-            'honorarios_medicos'
+            "honorarios_medicos"
         )
 
-    resumen = movimientos.aggregate(
-        total_bruto=Sum('importe_bruto'),
-        total_iva=Sum('importe_iva'),
-        total_retenciones=Sum('retencion_monto'),
-        total_consultorio=Sum('importe_consultorio'),
-        total_honorarios=Sum('importe_medico'),
+    resumen = detalles.aggregate(
+
+        total_bruto=Sum("importe"),
+
+        total_iva=Sum("importe_iva"),
+
+        total_consultorio=Sum("importe_consultorio"),
+
+        total_honorarios=Sum("importe_medico"),
+
     )
 
+    resumen["total_retenciones"] = 0
+
     return render(
+
         request,
-        'honorarios/previsualizar_liquidacion.html',
+
+        "honorarios/previsualizar_liquidacion.html",
+
         {
-            'medico': medico,
-            'movimientos': movimientos,
-            'resumen': resumen,
+
+            "medico": medico,
+
+            "detalles": detalles,
+
+            "resumen": resumen,
+
         }
+
     )
+
+
+
 
 @login_required
 @transaction.atomic
