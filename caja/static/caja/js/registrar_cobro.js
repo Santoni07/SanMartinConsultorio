@@ -20,6 +20,22 @@ let prestaciones = [];
 let mediosPago = [];
 
 // ======================================================
+// ELEMENTOS DEL DOM
+// ======================================================
+
+let btnAgregarPrestacion;
+
+let selectPrestacion;
+
+let inputImporte;
+
+let tablaPrestaciones;
+
+let totalPrestaciones;
+
+let detallesJson;
+
+// ======================================================
 // INICIALIZACIÓN
 // ======================================================
 
@@ -145,36 +161,36 @@ function inicializarImporteAjax(){
 
 function inicializarPrestaciones(){
 
-    const btnAgregar = document.getElementById(
+    btnAgregarPrestacion = document.getElementById(
         "btn_agregar_prestacion"
     );
 
-    const prestacion = document.getElementById(
+    selectPrestacion = document.getElementById(
         "id_concepto_facturacion"
     );
 
-    const importe = document.getElementById(
+    inputImporte = document.getElementById(
         "id_importe_particular"
     );
 
-    const tabla = document.querySelector(
+    tablaPrestaciones = document.querySelector(
         "#tabla_prestaciones tbody"
     );
 
-    const total = document.getElementById(
+    totalPrestaciones = document.getElementById(
         "total_general"
     );
 
-    const detallesJson = document.getElementById(
+    detallesJson = document.getElementById(
         "detalles_json"
     );
 
     if(
-        !btnAgregar ||
-        !prestacion ||
-        !importe ||
-        !tabla ||
-        !total ||
+        !btnAgregarPrestacion ||
+        !selectPrestacion ||
+        !inputImporte ||
+        !tablaPrestaciones ||
+        !totalPrestaciones ||
         !detallesJson
     ){
         return;
@@ -184,11 +200,12 @@ function inicializarPrestaciones(){
     // HABILITAR BOTÓN
     // =====================================
 
-    btnAgregar.disabled = true;
+    btnAgregarPrestacion.disabled = true;
 
-    prestacion.addEventListener("change", function(){
+    selectPrestacion.addEventListener("change", function(){
 
-        btnAgregar.disabled = (this.value === "");
+        btnAgregarPrestacion.disabled =
+            (this.value === "");
 
     });
 
@@ -196,36 +213,36 @@ function inicializarPrestaciones(){
     // AGREGAR PRESTACIÓN
     // =====================================
 
-    btnAgregar.addEventListener("click", function(){
+    btnAgregarPrestacion.addEventListener("click", function(){
 
-        if(!prestacion.value){
+        if(!selectPrestacion.value){
             return;
         }
 
         const existente = prestaciones.find(
-            p => p.id == prestacion.value
+            p => p.id == selectPrestacion.value
         );
 
         if(existente){
 
             existente.cantidad++;
 
-            renderTabla();
+            renderPrestaciones();
 
             return;
 
         }
 
         const texto =
-            prestacion.options[
-                prestacion.selectedIndex
+            selectPrestacion.options[
+                selectPrestacion.selectedIndex
             ].text;
 
         const partes = texto.split(" - ");
 
         prestaciones.push({
 
-            id: prestacion.value,
+            id: selectPrestacion.value,
 
             codigo: partes[0],
 
@@ -234,78 +251,14 @@ function inicializarPrestaciones(){
             cantidad: 1,
 
             importe: parseFloat(
-                importe.value || 0
+                inputImporte.value || 0
             )
 
         });
 
-        renderTabla();
+        renderPrestaciones();
 
     });
-
-    // =====================================
-    // RENDER TABLA
-    // =====================================
-
-    function renderTabla(){
-
-        tabla.innerHTML = "";
-
-        let totalGeneral = 0;
-
-        prestaciones.forEach(function(item,index){
-
-            totalGeneral +=
-                item.cantidad *
-                item.importe;
-
-            tabla.innerHTML += `
-
-                <tr>
-
-                    <td>${item.codigo}</td>
-
-                    <td>${item.descripcion}</td>
-
-                    <td class="text-center">
-
-                        ${item.cantidad}
-
-                    </td>
-
-                    <td class="text-end">
-
-                        $ ${(item.cantidad * item.importe).toFixed(2)}
-
-                    </td>
-
-                    <td class="text-center">
-
-                        <button
-                            type="button"
-                            class="btn btn-danger btn-sm"
-                            onclick="eliminarPrestacion(${index})">
-
-                            ×
-
-                        </button>
-
-                    </td>
-
-                </tr>
-
-            `;
-
-        });
-
-        total.innerHTML =
-            "$ " +
-            totalGeneral.toFixed(2);
-
-        detallesJson.value =
-            JSON.stringify(prestaciones);
-
-    }
 
     // =====================================
     // ELIMINAR
@@ -315,8 +268,72 @@ function inicializarPrestaciones(){
 
         prestaciones.splice(index,1);
 
-        renderTabla();
+        renderPrestaciones();
 
-    }
+    };
+
+}
+
+// ======================================================
+// RENDER PRESTACIONES
+// ======================================================
+
+function renderPrestaciones(){
+
+    tablaPrestaciones.innerHTML = "";
+
+    let totalGeneral = 0;
+
+    prestaciones.forEach(function(item,index){
+
+        totalGeneral +=
+            item.cantidad *
+            item.importe;
+
+        tablaPrestaciones.innerHTML += `
+
+            <tr>
+
+                <td>${item.codigo}</td>
+
+                <td>${item.descripcion}</td>
+
+                <td class="text-center">
+
+                    ${item.cantidad}
+
+                </td>
+
+                <td class="text-end">
+
+                    $ ${(item.cantidad * item.importe).toFixed(2)}
+
+                </td>
+
+                <td class="text-center">
+
+                    <button
+                        type="button"
+                        class="btn btn-danger btn-sm"
+                        onclick="eliminarPrestacion(${index})">
+
+                        ×
+
+                    </button>
+
+                </td>
+
+            </tr>
+
+        `;
+
+    });
+
+    totalPrestaciones.innerHTML =
+        "$ " +
+        totalGeneral.toFixed(2);
+
+    detallesJson.value =
+        JSON.stringify(prestaciones);
 
 }
