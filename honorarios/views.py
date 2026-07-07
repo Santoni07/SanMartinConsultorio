@@ -33,55 +33,81 @@ from core.utils import obtener_centro_activo
 # Create your views here.
 from django.db.models import Sum
 from medicos.models import Medico
-from caja.models import MovimientoCaja
+from caja.models import MovimientoCaja,  DetalleMovimientoCaja
 from django.contrib.auth.decorators import login_required
 
 @login_required
 def honorarios_medicos(request):
 
-    medico_id = request.GET.get('medico')
+    medico_id = request.GET.get("medico")
 
     medicos = Medico.objects.all().order_by(
-        'apellido',
-        'nombre'
+        "apellido",
+        "nombre"
     )
 
-    movimientos = MovimientoCaja.objects.none()
+    detalles = DetalleMovimientoCaja.objects.none()
 
     resumen = {}
 
     if medico_id:
 
-        movimientos = MovimientoCaja.objects.filter(
-            turno__medico_id=medico_id,
-            tipo='INGRESO',
-            estado='ACTIVO',
-            liquidado=False
+        detalles = DetalleMovimientoCaja.objects.filter(
+
+            movimiento__turno__medico_id=medico_id,
+
+            movimiento__tipo="INGRESO",
+
+            movimiento__estado="ACTIVO",
+
+            estado="PENDIENTE",
+
+            liquidacion__isnull=True,
+
         ).select_related(
-            'turno',
-            'paciente',
-            'concepto_facturacion'
+
+            "movimiento",
+
+            "movimiento__paciente",
+
+            "movimiento__turno",
+
         )
 
-        resumen = movimientos.aggregate(
-            total_bruto=Sum('importe_bruto'),
-            total_iva=Sum('importe_iva'),
-            total_retenciones=Sum('retencion_monto'),
-            total_consultorio=Sum('importe_consultorio'),
-            total_honorarios=Sum('importe_medico'),
+        resumen = detalles.aggregate(
+
+            total_bruto=Sum("importe"),
+
+            total_iva=Sum("importe_iva"),
+
+            total_consultorio=Sum("importe_consultorio"),
+
+            total_honorarios=Sum("importe_medico"),
+
         )
+
+        resumen["total_retenciones"] = 0
 
     return render(
+
         request,
-        'honorarios/honorarios_medicos.html',
+
+        "honorarios/honorarios_medicos.html",
+
         {
-            'medicos': medicos,
-            'movimientos': movimientos,
-            'resumen': resumen,
-            'medico_id': medico_id,
-        }
+
+            "medicos": medicos,
+
+            "detalles": detalles,
+
+            "resumen": resumen,
+
+            "medico_id": medico_id,
+
+        },
+
     )
-    
+
 @login_required
 @transaction.atomic
 def generar_liquidacion(request, medico_id):
@@ -93,46 +119,51 @@ def generar_liquidacion(request, medico_id):
         pk=medico_id
     )
 
-    movimientos = MovimientoCaja.objects.filter(
-        turno__medico=medico,
-        centro_medico=centro_medico,
-        tipo='INGRESO',
-        estado='ACTIVO',
-        liquidado=False
+    detalles = DetalleMovimientoCaja.objects.filter(
+
+        movimiento__turno__medico=medico,
+
+        movimiento__centro_medico=centro_medico,
+
+        movimiento__tipo="INGRESO",
+
+        movimiento__estado="ACTIVO",
+
+        estado="PENDIENTE",
+
+        liquidacion__isnull=True,
+
     )
 
-    if not movimientos.exists():
+    if not detalles.exists():
 
         messages.warning(
             request,
-            'No existen prestaciones pendientes para liquidar.'
+            "No existen prestaciones pendientes para liquidar."
         )
 
         return redirect(
-            'honorarios_medicos'
+            "honorarios_medicos"
         )
 
-    resumen = movimientos.aggregate(
+    resumen = detalles.aggregate(
 
         total_bruto=Sum(
-            'importe_bruto'
+            "importe"
         ),
 
         total_iva=Sum(
-            'importe_iva'
-        ),
-
-        total_retenciones=Sum(
-            'retencion_monto'
+            "importe_iva"
         ),
 
         total_consultorio=Sum(
-            'importe_consultorio'
+            "importe_consultorio"
         ),
 
         total_honorarios=Sum(
-            'importe_medico'
+            "importe_medico"
         ),
+
     )
 
     liquidacion = LiquidacionMedica.objects.create(
@@ -141,47 +172,52 @@ def generar_liquidacion(request, medico_id):
 
         centro_medico=centro_medico,
 
-        cantidad_prestaciones=movimientos.count(),
+        cantidad_prestaciones=detalles.count(),
 
         total_bruto=(
-            resumen['total_bruto'] or 0
+            resumen["total_bruto"] or 0
         ),
 
         total_iva=(
-            resumen['total_iva'] or 0
+            resumen["total_iva"] or 0
         ),
 
-        total_retenciones=(
-            resumen['total_retenciones'] or 0
-        ),
+        total_retenciones=0,
 
         total_consultorio=(
-            resumen['total_consultorio'] or 0
+            resumen["total_consultorio"] or 0
         ),
 
         total_honorarios=(
-            resumen['total_honorarios'] or 0
+            resumen["total_honorarios"] or 0
         ),
 
         generado_por=request.user,
+
     )
 
-    movimientos.update(
-        liquidado=True,
-        liquidacion=liquidacion
+    detalles.update(
+
+        estado="LIQUIDADO",
+
+        liquidacion=liquidacion,
+
     )
 
     messages.success(
+
         request,
+
         (
-            f'Liquidación generada correctamente. '
-            f'Total honorarios: '
-            f'${liquidacion.total_honorarios}'
-        )
+            f"Liquidación generada correctamente. "
+            f"Total honorarios: "
+            f"${liquidacion.total_honorarios}"
+        ),
+
     )
 
     return redirect(
-        'honorarios_medicos'
+        "honorarios_medicos"
     )
     
 @login_required

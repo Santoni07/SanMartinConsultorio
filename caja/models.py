@@ -808,6 +808,17 @@ class DetalleMovimientoCaja(models.Model):
         # Actualizar el movimiento
         if self.movimiento_id:
             self.movimiento.recalcular_totales()
+    
+    @property
+    def descripcion_prestaciones(self):
+
+        detalles = self.detalles.order_by("orden")
+
+        return "\n".join(
+            f"{d.codigo} - {d.descripcion}"
+            for d in detalles
+        )
+    
     def __str__(self):
 
         return f"{self.codigo} - {self.descripcion}"

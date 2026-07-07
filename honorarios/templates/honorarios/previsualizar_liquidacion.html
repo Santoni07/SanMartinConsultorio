@@ -4,7 +4,6 @@
 
 <div class="container mt-4">
 
-
 <div class="card shadow-sm">
 
     <div class="card-header bg-success text-white">
@@ -32,7 +31,7 @@
                 <h5>Prestaciones</h5>
 
                 <p>
-                    {{ movimientos.count }}
+                    {{ detalles.count }}
                 </p>
 
             </div>
@@ -56,44 +55,86 @@
             <table class="table table-striped">
 
                 <thead>
+
                     <tr>
-                        <th>Fecha</th>
-                        <th>Paciente</th>
-                        <th>Prestación</th>
-                        <th>Bruto</th>
-                        <th>Honorario</th>
-                    </tr>
+
+    <th>Fecha</th>
+
+    <th>Paciente</th>
+
+    <th>Prestación</th>
+
+    <th class="text-end">
+        Bruto
+    </th>
+
+    <th class="text-end">
+        IVA
+    </th>
+
+    <th class="text-end">
+        Honorario
+    </th>
+
+</tr>
+
                 </thead>
 
                 <tbody>
 
-                    {% for m in movimientos %}
+                    {% for detalle in detalles %}
 
-                    <tr>
+<tr>
 
-                        <td>
-                            {{ m.fecha_creacion|date:"d/m/Y" }}
-                        </td>
+    <td>
+        {{ detalle.fecha_prestacion|date:"d/m/Y" }}
+    </td>
 
-                        <td>
-                            {{ m.paciente }}
-                        </td>
+    <td>
+        {{ detalle.movimiento.paciente }}
+    </td>
 
-                        <td>
-                            {{ m.concepto_facturacion }}
-                        </td>
+    <td>
 
-                        <td>
-                            $ {{ m.importe_bruto }}
-                        </td>
+        <strong>
+            {{ detalle.codigo }}
+        </strong>
 
-                        <td>
-                            $ {{ m.importe_medico }}
-                        </td>
+        <br>
 
-                    </tr>
+        <small class="text-muted">
 
-                    {% endfor %}
+            {{ detalle.descripcion }}
+
+        </small>
+
+    </td>
+
+    <td class="text-end">
+
+        $ {{ detalle.importe }}
+
+    </td>
+
+    <td class="text-end">
+
+        $ {{ detalle.importe_iva }}
+
+    </td>
+
+    <td class="text-end">
+
+        <strong>
+
+            $ {{ detalle.importe_medico }}
+
+        </strong>
+
+    </td>
+
+</tr>
+
+{% endfor %}
 
                 </tbody>
 
@@ -116,23 +157,35 @@
         <div class="row">
 
             <div class="col-md-3">
+
                 <strong>Bruto</strong><br>
-                $ {{ resumen.total_bruto }}
+
+                $ {{ resumen.total_bruto|default:0 }}
+
             </div>
 
             <div class="col-md-3">
+
                 <strong>IVA</strong><br>
-                $ {{ resumen.total_iva }}
+
+                $ {{ resumen.total_iva|default:0 }}
+
             </div>
 
             <div class="col-md-3">
+
                 <strong>Consultorio</strong><br>
-                $ {{ resumen.total_consultorio }}
+
+                $ {{ resumen.total_consultorio|default:0 }}
+
             </div>
 
             <div class="col-md-3">
+
                 <strong>Honorarios</strong><br>
-                $ {{ resumen.total_honorarios }}
+
+                $ {{ resumen.total_honorarios|default:0 }}
+
             </div>
 
         </div>
@@ -165,7 +218,6 @@
     </div>
 
 </div>
-
 
 </div>
 
