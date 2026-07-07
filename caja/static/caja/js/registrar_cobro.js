@@ -106,7 +106,7 @@ function inicializarImporteAjax(){
     }
 
     prestacion.addEventListener("change", function(){
-
+        console.log("Prestación seleccionada:", this.value);
         if(!this.value){
 
             importe.value = "";
