@@ -93,6 +93,8 @@ function inicializarPrestacionesAjax(){
 
 function inicializarImporteAjax(){
 
+        console.log("Inicializando importe");
+
     const prestacion = document.getElementById(
         "id_concepto_facturacion"
     );
