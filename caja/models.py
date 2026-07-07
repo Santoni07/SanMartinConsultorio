@@ -7,6 +7,7 @@ from core.models import CentroMedico
 from paciente.models import Paciente
 from turnos.models import Turnos
 from medicos.models import Medico
+from decimal import Decimal
 
 class CajaDiaria(models.Model):
     ESTADOS = [
@@ -376,6 +377,54 @@ class MovimientoCaja(models.Model):
         self.fecha_anulacion = timezone.now()
         self.motivo_anulacion = motivo
         self.save()
+        
+    def recalcular_totales(self):
+        """
+        Recalcula todos los importes del movimiento a partir de sus detalles.
+        """
+
+        detalles = self.detalles.exclude(estado="ANULADO")
+
+        self.importe_bruto = sum(
+            (detalle.importe for detalle in detalles),
+            Decimal("0.00")
+        )
+
+        self.importe_iva = sum(
+            (detalle.importe_iva for detalle in detalles),
+            Decimal("0.00")
+        )
+
+        self.importe_neto = sum(
+            (detalle.importe_neto for detalle in detalles),
+            Decimal("0.00")
+        )
+
+        self.importe_medico = sum(
+            (detalle.importe_medico for detalle in detalles),
+            Decimal("0.00")
+        )
+
+        self.importe_consultorio = sum(
+            (detalle.importe_consultorio for detalle in detalles),
+            Decimal("0.00")
+        )
+
+        # El importe total del movimiento será el bruto
+        self.importe = self.importe_bruto
+
+        self.save(
+            update_fields=[
+                "importe",
+                "importe_bruto",
+                "importe_iva",
+                "importe_neto",
+                "importe_medico",
+                "importe_consultorio",
+            ]
+        )
+        
+    
 
 
 class HistorialMovimientoCaja(models.Model):
@@ -455,7 +504,29 @@ class DetalleMovimientoCaja(models.Model):
         verbose_name="Prestación"
     )
 
-    
+    # ==========================================
+    # FOTOGRAFÍA DEL NOMENCLADOR
+    # ==========================================
+
+    codigo = models.CharField(
+        max_length=20,
+        verbose_name="Código"
+    )
+
+    descripcion = models.CharField(
+        max_length=250,
+        verbose_name="Descripción"
+    )
+
+    tipo_concepto = models.CharField(
+        max_length=20,
+        choices=ConceptoFacturacion.TIPOS_CONCEPTOS,
+        verbose_name="Tipo de prestación"
+    )
+
+    # ==========================================
+    # DATOS DE LA PRESTACIÓN
+    # ==========================================
 
     fecha_prestacion = models.DateField(
         verbose_name="Fecha de la prestación"
@@ -465,6 +536,64 @@ class DetalleMovimientoCaja(models.Model):
         default=1,
         verbose_name="Cantidad"
     )
+
+    # ==========================================
+    # CONFIGURACIÓN UTILIZADA
+    # (Fotografía para auditoría)
+    # ==========================================
+
+    tipo_calculo = models.CharField(
+        max_length=20,
+        choices=ConceptoFacturacion.TIPOS_CALCULO,
+        verbose_name="Tipo de cálculo"
+    )
+
+    porcentaje_iva = models.DecimalField(
+        max_digits=5,
+        decimal_places=2,
+        default=0,
+        verbose_name="IVA (%)"
+    )
+
+    porcentaje_medico = models.DecimalField(
+        max_digits=5,
+        decimal_places=2,
+        default=0,
+        verbose_name="Honorario Médico (%)"
+    )
+
+    porcentaje_consultorio = models.DecimalField(
+        max_digits=5,
+        decimal_places=2,
+        default=0,
+        verbose_name="Consultorio (%)"
+    )
+
+    honorario_fijo_medico = models.DecimalField(
+        max_digits=12,
+        decimal_places=2,
+        default=0,
+        verbose_name="Honorario fijo"
+    )
+
+    tipo_proveedor = models.CharField(
+        max_length=20,
+        choices=ConceptoFacturacion.TIPOS_PROVEEDORES,
+        blank=True,
+        default="",
+        verbose_name="Proveedor"
+    )
+
+    importe_proveedor = models.DecimalField(
+        max_digits=12,
+        decimal_places=2,
+        default=0,
+        verbose_name="Importe proveedor"
+    )
+
+    # ==========================================
+    # IMPORTES CALCULADOS
+    # ==========================================
 
     importe = models.DecimalField(
         max_digits=12,
@@ -500,6 +629,10 @@ class DetalleMovimientoCaja(models.Model):
         verbose_name="Importe Consultorio"
     )
 
+    # ==========================================
+    # ESTADO
+    # ==========================================
+
     estado = models.CharField(
         max_length=20,
         choices=ESTADOS,
@@ -521,7 +654,14 @@ class DetalleMovimientoCaja(models.Model):
     fecha_creacion = models.DateTimeField(
         auto_now_add=True
     )
-
+    liquidacion = models.ForeignKey(
+        "honorarios.LiquidacionMedica",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="detalles",
+        verbose_name="Liquidación"
+    )
     class Meta:
 
         verbose_name = "Detalle de Movimiento"
@@ -532,14 +672,142 @@ class DetalleMovimientoCaja(models.Model):
             "orden",
             "id"
         ]
+        
+    def copiar_desde_concepto(self, concepto):
+        """
+        Copia la configuración completa del ConceptoFacturacion.
+        De esta forma el detalle conserva una fotografía histórica,
+        aunque el concepto cambie en el futuro.
+        """
 
-    def __str__(self):
+        self.concepto_facturacion = concepto
 
-        if self.concepto_facturacion.nomenclador:
+        # ===============================
+        # Datos del nomenclador
+        # ===============================
 
-            return (
-                f"{self.concepto_facturacion.nomenclador.codigo} - "
-                f"{self.concepto_facturacion.nomenclador.descripcion}"
+        self.codigo = concepto.nomenclador.codigo
+        self.descripcion = concepto.nomenclador.descripcion
+        self.tipo_concepto = concepto.tipo_concepto
+
+        # ===============================
+        # Configuración de cálculo
+        # ===============================
+
+        self.tipo_calculo = concepto.tipo_calculo
+
+        self.porcentaje_iva = concepto.porcentaje_iva
+
+        self.porcentaje_medico = concepto.porcentaje_medico
+
+        self.porcentaje_consultorio = concepto.porcentaje_consultorio
+
+        self.honorario_fijo_medico = concepto.honorario_fijo_medico
+
+        # ===============================
+        # Proveedor
+        # ===============================
+
+        self.tipo_proveedor = concepto.tipo_proveedor
+
+        self.importe_proveedor = concepto.importe_proveedor
+
+        # ===============================
+        # Importe Particular
+        # ===============================
+
+        self.importe = (
+            Decimal(self.cantidad) *
+            concepto.importe_particular
+        )
+            
+    
+    
+    def calcular_importes(self):
+        """
+        Calcula todos los importes del detalle de la prestación.
+        Este método trabaja únicamente con la fotografía almacenada
+        en el detalle, sin volver a consultar ConceptoFacturacion.
+        """
+
+        # ==========================================
+        # IMPORTE BRUTO
+        # ==========================================
+
+        self.importe = Decimal(self.importe)
+
+        # ==========================================
+        # IVA
+        # ==========================================
+
+        self.importe_iva = (
+            self.importe *
+            self.porcentaje_iva
+        ) / Decimal("100")
+
+        # ==========================================
+        # IMPORTE NETO
+        # ==========================================
+
+        self.importe_neto = (
+            self.importe -
+            self.importe_iva
+        )
+
+        # ==========================================
+        # HONORARIOS
+        # ==========================================
+
+        if self.tipo_calculo == "PORCENTAJE":
+
+            self.importe_medico = (
+                self.importe_neto *
+                self.porcentaje_medico
+            ) / Decimal("100")
+
+            self.importe_consultorio = (
+                self.importe_neto *
+                self.porcentaje_consultorio
+            ) / Decimal("100")
+
+        elif self.tipo_calculo == "FIJO_MEDICO":
+
+            self.importe_medico = self.honorario_fijo_medico
+
+            self.importe_consultorio = (
+                self.importe_neto -
+                self.importe_medico
             )
 
-        return f"Detalle #{self.pk}"
+        else:
+
+            self.importe_medico = Decimal("0.00")
+            self.importe_consultorio = self.importe_neto
+    
+    def save(self, *args, **kwargs):
+        """
+        Antes de guardar:
+        - Copia la configuración del ConceptoFacturacion (si aún no existe).
+        - Calcula todos los importes.
+
+        Después de guardar:
+        - Recalcula automáticamente los totales del MovimientoCaja.
+        """
+
+        # Copiar la fotografía sólo la primera vez
+        if self._state.adding:
+            self.copiar_desde_concepto(
+                self.concepto_facturacion
+            )
+
+        # Calcular importes
+        self.calcular_importes()
+
+        super().save(*args, **kwargs)
+
+        # Actualizar el movimiento
+        if self.movimiento_id:
+            self.movimiento.recalcular_totales()
+    def __str__(self):
+
+        return f"{self.codigo} - {self.descripcion}"

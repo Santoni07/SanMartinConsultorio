@@ -4,7 +4,7 @@ from django.contrib.auth.decorators import login_required
 from django.utils import timezone
 from django.db import transaction
 from django.db.models import Sum
-from .models import CajaDiaria, MovimientoCaja, HistorialMovimientoCaja, ConceptoFacturacion
+from .models import CajaDiaria, MovimientoCaja, HistorialMovimientoCaja, ConceptoFacturacion, DetalleMovimientoCaja
 from .forms import (
     AperturaCajaForm,
     MovimientoCajaForm,
@@ -17,7 +17,7 @@ import json
 
 from decimal import Decimal
 
-from .services import calcular_detalle
+from .calculos import calcular_detalle
 
 def obtener_centro_activo(request):
     centro = getattr(request, 'centro_activo', None)
@@ -332,9 +332,11 @@ def registrar_cobro(request):
 
             turno = form.cleaned_data["turno"]
 
-            detalles_json = request.POST.get(
-                "detalles_json"
-            )
+            # =====================================
+            # LEER DETALLES
+            # =====================================
+
+            detalles_json = request.POST.get("detalles_json")
 
             if not detalles_json:
 
@@ -355,12 +357,9 @@ def registrar_cobro(request):
 
             try:
 
-                detalles = json.loads(
-                    detalles_json
-                )
-                print(detalles)
+                detalles = json.loads(detalles_json)
 
-            except Exception:
+            except json.JSONDecodeError:
 
                 messages.error(
                     request,
@@ -377,168 +376,124 @@ def registrar_cobro(request):
                     },
                 )
 
-            if len(detalles) == 0:
+            if not detalles:
 
                 messages.error(
                     request,
                     "Debe agregar al menos una prestación."
                 )
 
-            return render(
-                request,
-                "caja/registrar_cobro.html",
-                {
-                    "form": form,
-                    "caja": caja,
-                    "centro_medico": centro_medico,
-                },
-            )
-
-            # =====================================
-            # DATOS DE LA PRESTACIÓN
-            # =====================================
-
-            movimiento.importe = concepto.importe_particular
-
-            movimiento.concepto = (
-                f"{concepto.nomenclador.codigo} - "
-                f"{concepto.nomenclador.descripcion}"
-            )
-
-            # =====================================
-            # IMPORTE BRUTO
-            # =====================================
-
-            movimiento.importe_bruto = movimiento.importe
-
-            # =====================================
-            # IVA
-            # =====================================
-
-            movimiento.importe_iva = (
-                movimiento.importe_bruto *
-                concepto.porcentaje_iva
-            ) / 100
-
-            # =====================================
-            # NETO
-            # =====================================
-
-            movimiento.importe_neto = (
-                movimiento.importe_bruto
-                - movimiento.importe_iva
-                - movimiento.retencion_monto
-            )
-
-            # =====================================
-            # DISTRIBUCIÓN
-            # =====================================
-
-            if concepto.tipo_calculo == 'PORCENTAJE':
-
-                movimiento.importe_medico = (
-                    movimiento.importe_neto *
-                    concepto.porcentaje_medico
-                ) / 100
-
-                movimiento.importe_consultorio = (
-                    movimiento.importe_neto *
-                    concepto.porcentaje_consultorio
-                ) / 100
-
-            elif concepto.tipo_calculo == 'FIJO_MEDICO':
-
-                movimiento.importe_medico = (
-                    concepto.honorario_fijo_medico
+                return render(
+                    request,
+                    "caja/registrar_cobro.html",
+                    {
+                        "form": form,
+                        "caja": caja,
+                        "centro_medico": centro_medico,
+                    },
                 )
 
-                movimiento.importe_consultorio = (
-                    movimiento.importe_neto
-                    - movimiento.importe_medico
-                )
+            # =====================================
+            # CREAR MOVIMIENTO
+            # =====================================
+
+            movimiento = form.save(commit=False)
+
+            movimiento.caja = caja
+            movimiento.centro_medico = centro_medico
+            movimiento.turno = turno
+            movimiento.paciente = turno.paciente
+            movimiento.tipo = "INGRESO"
+            movimiento.creado_por = request.user
+            movimiento.estado = "ACTIVO"
+
+            # Temporalmente dejamos estos valores.
+            # Después los reemplazaremos por los
+            # totales calculados.
+
+            movimiento.concepto = "Cobro de prestaciones"
+            movimiento.importe = 0
+            movimiento.importe_bruto = 0
+            movimiento.importe_iva = 0
+            movimiento.importe_neto = 0
+            movimiento.importe_medico = 0
+            movimiento.importe_consultorio = 0
 
             movimiento.save()
+            
+            # =====================================
+            # TOTALES DEL MOVIMIENTO
+            # =====================================
 
-            HistorialMovimientoCaja.objects.create(
+            total_importe = Decimal("0")
+            total_bruto = Decimal("0")
+            total_iva = Decimal("0")
+            total_neto = Decimal("0")
+            total_medico = Decimal("0")
+            total_consultorio = Decimal("0")
 
-                caja=caja,
+            orden = 1
 
-                movimiento=movimiento,
+            # =====================================
+            # RECORRER DETALLES
+            # =====================================
 
-                accion='CREADO',
+            for item in detalles:
 
-                usuario=request.user,
+                concepto = ConceptoFacturacion.objects.select_related(
+                    "nomenclador"
+                ).get(
+                    pk=item["id"]
+                )
 
-                centro_medico=centro_medico,
+                cantidad = int(item["cantidad"])
+                
+                detalle = DetalleMovimientoCaja(
 
-                descripcion=(
-                    f'Cobro asociado al turno #{turno.id}.'
-                ),
+                    movimiento=movimiento,
 
-                datos_nuevos={
+                    concepto_facturacion=concepto,
 
-                    'turno_id':
-                        turno.id,
+                    fecha_prestacion=turno.fecha,
 
-                    'paciente':
-                        str(turno.paciente),
+                    cantidad=cantidad,
 
-                    'medico':
-                        str(turno.medico),
+                    orden=orden,
 
-                    'fecha_turno':
-                        str(turno.fecha),
+                )
 
-                    'hora_turno':
-                        str(turno.hora),
+                detalle.save()
 
-                    'tipo':
-                        movimiento.tipo,
+                
 
-                    'medio_pago':
-                        movimiento.medio_pago.nombre,
+                
 
-                    'importe':
-                        str(movimiento.importe),
 
-                    'concepto':
-                        movimiento.concepto,
+            if len(detalles) == 1:
 
-                    'observacion':
-                        movimiento.observacion,
+                movimiento.concepto_facturacion = concepto
 
-                    'concepto_facturacion':
-                        str(concepto.nomenclador),
+                movimiento.concepto = (
+                    f"{concepto.nomenclador.codigo} - "
+                    f"{concepto.nomenclador.descripcion}"
+                )
 
-                    'importe_bruto':
-                        str(movimiento.importe_bruto),
+            else:
 
-                    'importe_iva':
-                        str(movimiento.importe_iva),
+                movimiento.concepto_facturacion = None
 
-                    'retencion':
-                        str(movimiento.retencion_monto),
+                movimiento.concepto = (
+                    f"{len(detalles)} prestaciones"
+                )
 
-                    'importe_neto':
-                        str(movimiento.importe_neto),
-
-                    'importe_medico':
-                        str(movimiento.importe_medico),
-
-                    'importe_consultorio':
-                        str(movimiento.importe_consultorio),
-
-                }
-
+            movimiento.save(
+                update_fields=[
+                    "concepto",
+                    "concepto_facturacion",
+                ]
             )
-
-            messages.success(
-                request,
-                'Cobro asociado al turno correctamente.'
-            )
-
-            return redirect('caja_home')
-
+                        
+            
     else:
 
         form = CobroConsultaForm(
