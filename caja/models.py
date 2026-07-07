@@ -822,3 +822,51 @@ class DetalleMovimientoCaja(models.Model):
     def __str__(self):
 
         return f"{self.codigo} - {self.descripcion}"
+    
+    
+class DetalleMedioPago(models.Model):
+
+    movimiento = models.ForeignKey(
+        MovimientoCaja,
+        on_delete=models.CASCADE,
+        related_name="detalles_medios_pago",
+        verbose_name="Movimiento"
+    )
+
+    medio_pago = models.ForeignKey(
+        MedioPago,
+        on_delete=models.PROTECT,
+        verbose_name="Medio de Pago"
+    )
+
+    importe = models.DecimalField(
+        max_digits=12,
+        decimal_places=2,
+        verbose_name="Importe"
+    )
+
+    observacion = models.CharField(
+        max_length=250,
+        blank=True
+    )
+
+    orden = models.PositiveIntegerField(
+        default=1
+    )
+
+    class Meta:
+
+        ordering = [
+            "orden",
+            "id"
+        ]
+
+        verbose_name = "Detalle Medio de Pago"
+
+        verbose_name_plural = "Detalles Medios de Pago"
+
+    def __str__(self):
+
+        return (
+            f"{self.medio_pago} - ${self.importe}"
+        )
