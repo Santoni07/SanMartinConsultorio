@@ -132,7 +132,7 @@
                                 <th>Tipo</th>
                                 <th>Paciente</th>
                                 <th>Turno Médico</th>
-                                <th>Concepto</th>
+                                <th>Prestaciones</th>
                                 <th>Medio</th>
                                 <th class="text-end">Importe</th>
                                 <th>Usuario</th>
@@ -168,7 +168,31 @@
                                     {% endif %}
                                 </td>
 
-                                <td>{{ mov.concepto }}</td>
+                                <<td>
+
+    {% for detalle in mov.detalles.all %}
+
+        <div class="mb-1">
+
+            <strong>{{ detalle.codigo }}</strong>
+
+            <br>
+
+            <small class="text-muted">
+
+                {{ detalle.descripcion }}
+
+            </small>
+
+        </div>
+
+    {% empty %}
+
+        -
+
+    {% endfor %}
+
+</td>
                                 <td>{{ mov.medio_pago.nombre }}</td>
                                 <td class="text-end">${{ mov.importe }}</td>
                                 <td>{{ mov.creado_por.username }}</td>
