@@ -139,6 +139,10 @@ function inicializarImporteAjax(){
 // PRESTACIONES
 // ======================================================
 
+// ======================================================
+// PRESTACIONES
+// ======================================================
+
 function inicializarPrestaciones(){
 
     const btnAgregar = document.getElementById(
@@ -161,21 +165,158 @@ function inicializarPrestaciones(){
         "total_general"
     );
 
+    const detallesJson = document.getElementById(
+        "detalles_json"
+    );
+
     if(
         !btnAgregar ||
         !prestacion ||
         !importe ||
         !tabla ||
-        !total
+        !total ||
+        !detallesJson
     ){
         return;
     }
 
-     prestacion.addEventListener("change", function(){
+    // =====================================
+    // HABILITAR BOTÓN
+    // =====================================
 
-        btnAgregar.disabled = !this.value;
+    btnAgregar.disabled = true;
+
+    prestacion.addEventListener("change", function(){
+
+        btnAgregar.disabled = (this.value === "");
 
     });
 
+    // =====================================
+    // AGREGAR PRESTACIÓN
+    // =====================================
+
+    btnAgregar.addEventListener("click", function(){
+
+        if(!prestacion.value){
+            return;
+        }
+
+        const existente = prestaciones.find(
+            p => p.id == prestacion.value
+        );
+
+        if(existente){
+
+            existente.cantidad++;
+
+            renderTabla();
+
+            return;
+
+        }
+
+        const texto =
+            prestacion.options[
+                prestacion.selectedIndex
+            ].text;
+
+        const partes = texto.split(" - ");
+
+        prestaciones.push({
+
+            id: prestacion.value,
+
+            codigo: partes[0],
+
+            descripcion: partes.slice(1).join(" - "),
+
+            cantidad: 1,
+
+            importe: parseFloat(
+                importe.value || 0
+            )
+
+        });
+
+        renderTabla();
+
+    });
+
+    // =====================================
+    // RENDER TABLA
+    // =====================================
+
+    function renderTabla(){
+
+        tabla.innerHTML = "";
+
+        let totalGeneral = 0;
+
+        prestaciones.forEach(function(item,index){
+
+            totalGeneral +=
+                item.cantidad *
+                item.importe;
+
+            tabla.innerHTML += `
+
+                <tr>
+
+                    <td>${item.codigo}</td>
+
+                    <td>${item.descripcion}</td>
+
+                    <td class="text-center">
+
+                        ${item.cantidad}
+
+                    </td>
+
+                    <td class="text-end">
+
+                        $ ${(item.cantidad * item.importe).toFixed(2)}
+
+                    </td>
+
+                    <td class="text-center">
+
+                        <button
+                            type="button"
+                            class="btn btn-danger btn-sm"
+                            onclick="eliminarPrestacion(${index})">
+
+                            ×
+
+                        </button>
+
+                    </td>
+
+                </tr>
+
+            `;
+
+        });
+
+        total.innerHTML =
+            "$ " +
+            totalGeneral.toFixed(2);
+
+        detallesJson.value =
+            JSON.stringify(prestaciones);
+
+    }
+
+    // =====================================
+    // ELIMINAR
+    // =====================================
+
+    window.eliminarPrestacion = function(index){
+
+        prestaciones.splice(index,1);
+
+        renderTabla();
+
+    }
 
 }
