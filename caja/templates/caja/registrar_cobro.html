@@ -229,15 +229,92 @@
                 <!-- MEDIO DE PAGO -->
                 <!-- ========================= -->
 
-                <div class="mb-3">
+               <div class="card mb-4">
 
-                    <label class="form-label">
-                        Medio de Pago
-                    </label>
+    <div class="card-header">
 
-                    {{ form.medio_pago }}
+        <strong>
 
-                </div>
+            Medios de Pago
+
+        </strong>
+
+    </div>
+
+    <div class="card-body p-0">
+
+        <table
+            class="table table-bordered table-hover mb-0"
+            id="tabla_medios_pago">
+
+            <thead>
+
+                <tr>
+
+                    <th>
+                        Medio
+                    </th>
+
+                    <th style="width:180px">
+                        Importe
+                    </th>
+
+                    <th style="width:80px"></th>
+
+                </tr>
+
+            </thead>
+
+            <tbody>
+
+            </tbody>
+
+            <tfoot>
+
+                <tr>
+
+                    <th class="text-end">
+
+                        Total
+
+                    </th>
+
+                    <th id="total_medios">
+
+                        $0.00
+
+                    </th>
+
+                    <th></th>
+
+                </tr>
+
+            </tfoot>
+
+        </table>
+
+    </div>
+
+</div>
+
+<div class="mb-4">
+
+    <button
+    type="button"
+    class="btn btn-primary"
+    data-bs-toggle="modal"
+    data-bs-target="#modalMedioPago">
+
+    Agregar Medio de Pago
+
+</button>
+
+</div>
+
+<input
+    type="hidden"
+    id="medios_pago_json"
+    name="medios_pago_json">
 
                 <!-- ========================= -->
                 <!-- RETENCIÓN -->
@@ -314,262 +391,116 @@
     </div>
 
 </div>
+<!-- ========================================= -->
+<!-- MODAL MEDIO DE PAGO -->
+<!-- ========================================= -->
 
-<!-- ================================================= -->
-<!-- CARGAR PRESTACIONES SEGÚN TIPO -->
-<!-- ================================================= -->
+<div
+    class="modal fade"
+    id="modalMedioPago"
+    tabindex="-1"
+>
 
-<script>
+    <div class="modal-dialog">
 
-document.addEventListener('DOMContentLoaded', function () {
+        <div class="modal-content">
 
-    const tipo = document.getElementById('tipo_concepto');
+            <div class="modal-header bg-primary text-white">
 
-    const prestacion = document.getElementById('id_concepto_facturacion');
+                <h5 class="modal-title">
 
-    tipo.addEventListener('change', function () {
+                    Agregar Medio de Pago
 
-        prestacion.innerHTML =
-            '<option value="">---------</option>';
+                </h5>
 
-        document.getElementById(
-            'id_importe_particular'
-        ).value = "";
+                <button
+                    type="button"
+                    class="btn-close btn-close-white"
+                    data-bs-dismiss="modal"
+                ></button>
 
-        if (!this.value)
-            return;
+            </div>
 
-        fetch(
-            "{% url 'ajax_prestaciones' %}?tipo=" + this.value
-        )
+            <div class="modal-body">
 
-        .then(response => response.json())
+                <div class="mb-3">
 
-        .then(data => {
+                    <label class="form-label">
 
-            data.forEach(function(item){
+                        Medio de Pago
 
-                let option = document.createElement('option');
+                    </label>
 
-                option.value = item.id;
+                    <select
+                        class="form-select"
+                        id="medio_pago_modal"
+                    >
 
-                option.textContent = item.nombre;
+                        <option value="">
+                            ---------
+                        </option>
 
-                prestacion.appendChild(option);
+                        {% for medio in form.fields.medio_pago.queryset %}
 
-            });
+                            <option value="{{ medio.id }}">
+                                {{ medio.nombre }}
+                            </option>
 
-        });
+                        {% endfor %}
 
-    });
+                    </select>
 
-});
+                </div>
 
-</script>
+                <div class="mb-3">
 
-<!-- ================================================= -->
-<!-- TRAER IMPORTE AUTOMÁTICAMENTE -->
-<!-- ================================================= -->
+                    <label class="form-label">
 
-<script>
+                        Importe
 
-document.addEventListener('DOMContentLoaded', function () {
+                    </label>
 
-    const prestacion = document.getElementById(
-        'id_concepto_facturacion'
-    );
+                    <input
+                        type="number"
+                        step="0.01"
+                        class="form-control"
+                        id="importe_medio_modal"
+                    >
 
-    const importe = document.getElementById(
-        'id_importe_particular'
-    );
+                </div>
 
-    prestacion.addEventListener('change', function () {
+            </div>
 
-        if (!this.value){
+            <div class="modal-footer">
 
-            importe.value = "";
+                <button
+                    type="button"
+                    class="btn btn-secondary"
+                    data-bs-dismiss="modal"
+                >
+                    Cancelar
+                </button>
 
-            return;
+                <button
+                    type="button"
+                    class="btn btn-primary"
+                    id="guardar_medio_pago"
+                >
+                    Agregar
+                </button>
 
-        }
+            </div>
 
-        fetch(
-            "{% url 'ajax_importe_prestacion' %}?concepto_id=" + this.value
-        )
+        </div>
 
-        .then(response => response.json())
+    </div>
 
-        .then(data => {
+</div>
 
-            importe.value = data.importe;
 
-        });
+{% load static %}
 
-    });
+<script src="{% static 'caja/js/registrar_cobro.js' %}"></script>
 
-});
-
-</script>
-
-<script>
-
-document.addEventListener("DOMContentLoaded", function () {
-
-    const btnAgregar = document.getElementById("btn_agregar_prestacion");
-
-    const prestacion = document.getElementById("id_concepto_facturacion");
-
-    const importe = document.getElementById("id_importe_particular");
-
-    const tabla = document.querySelector(
-        "#tabla_prestaciones tbody"
-    );
-
-    const total = document.getElementById(
-        "total_general"
-    );
-
-    let prestaciones = [];
-
-    // ==========================================
-    // HABILITAR BOTÓN
-    // ==========================================
-
-    prestacion.addEventListener("change", function () {
-
-        btnAgregar.disabled = !this.value;
-
-    });
-
-    // ==========================================
-    // AGREGAR PRESTACIÓN
-    // ==========================================
-
-    btnAgregar.addEventListener("click", function () {
-
-        const id = prestacion.value;
-
-        if (!id)
-            return;
-
-        // evitar duplicados
-
-        const existe = prestaciones.find(p => p.id == id);
-
-        if (existe){
-
-            existe.cantidad++;
-
-            renderTabla();
-
-            return;
-
-        }
-
-        const texto =
-            prestacion.options[
-                prestacion.selectedIndex
-            ].text;
-
-        const partes = texto.split(" - ");
-
-        prestaciones.push({
-
-            id: id,
-
-            codigo: partes[0],
-
-            descripcion: partes.slice(1).join(" - "),
-
-            cantidad: 1,
-
-            importe: parseFloat(
-                importe.value || 0
-            )
-
-        });
-
-        renderTabla();
-
-    });
-
-    // ==========================================
-    // RENDER
-    // ==========================================
-
-    function renderTabla(){
-
-        tabla.innerHTML = "";
-
-        let totalGeneral = 0;
-
-        prestaciones.forEach(function(item,index){
-
-            totalGeneral +=
-                item.cantidad * item.importe;
-
-            tabla.innerHTML += `
-
-                <tr>
-
-                    <td>${item.codigo}</td>
-
-                    <td>${item.descripcion}</td>
-
-                    <td class="text-center">
-
-                        ${item.cantidad}
-
-                    </td>
-
-                    <td class="text-end">
-
-                        $ ${(item.cantidad * item.importe).toFixed(2)}
-
-                    </td>
-
-                    <td class="text-center">
-
-                        <button
-                            type="button"
-                            class="btn btn-danger btn-sm"
-                            onclick="eliminarPrestacion(${index})">
-
-                            ×
-
-                        </button>
-
-                    </td>
-
-                </tr>
-
-            `;
-
-        });
-
-        total.innerHTML =
-            "$ " + totalGeneral.toFixed(2);
-
-        document.getElementById(
-    "detalles_json"
-        ).value = JSON.stringify(prestaciones);
-
-    }
-
-    // ==========================================
-    // ELIMINAR
-    // ==========================================
-
-    window.eliminarPrestacion = function(index){
-
-        prestaciones.splice(index,1);
-
-        renderTabla();
-
-    }
-
-});
-
-</script>
 
 {% endblock %}
