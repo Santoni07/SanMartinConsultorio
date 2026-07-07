@@ -26,6 +26,7 @@ let mediosPago = [];
 function inicializar(){
 
     inicializarPrestacionesAjax();
+    inicializarImporteAjax();
 
 }
 // ======================================================
@@ -79,6 +80,51 @@ function inicializarPrestacionesAjax(){
                 prestacion.appendChild(option);
 
             });
+
+        });
+
+    });
+
+}
+
+// ======================================================
+// AJAX IMPORTE PRESTACIÓN
+// ======================================================
+
+function inicializarImporteAjax(){
+
+    const prestacion = document.getElementById(
+        "id_concepto_facturacion"
+    );
+
+    const importe = document.getElementById(
+        "id_importe_particular"
+    );
+
+    if(!prestacion || !importe){
+        return;
+    }
+
+    prestacion.addEventListener("change", function(){
+
+        if(!this.value){
+
+            importe.value = "";
+
+            return;
+
+        }
+
+        fetch(
+            "/caja/ajax/importe-prestacion/?concepto_id=" +
+            this.value
+        )
+
+        .then(response => response.json())
+
+        .then(data => {
+
+            importe.value = data.importe;
 
         });
 
