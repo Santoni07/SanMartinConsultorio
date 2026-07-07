@@ -93,41 +93,41 @@ function inicializarPrestacionesAjax(){
 
 function inicializarImporteAjax(){
 
-        console.log("Inicializando importe");
+    console.log("Inicializando importe");
 
     const prestacion = document.getElementById(
         "id_concepto_facturacion"
     );
 
+    console.log("Select prestación:", prestacion);
+
     const importe = document.getElementById(
         "id_importe_particular"
     );
 
+    console.log("Input importe:", importe);
+
     if(!prestacion || !importe){
+        console.log("No encontré los controles");
         return;
     }
 
     prestacion.addEventListener("change", function(){
-        console.log("Prestación seleccionada:", this.value);
+
+        console.log("CHANGE", this.value);
+
         if(!this.value){
-
             importe.value = "";
-
             return;
-
         }
 
         fetch(
-            "/caja/ajax/importe-prestacion/?concepto_id=" +
-            this.value
+            "/caja/ajax/importe-prestacion/?concepto_id=" + this.value
         )
-
         .then(response => response.json())
-
         .then(data => {
-
+            console.log(data);
             importe.value = data.importe;
-
         });
 
     });
