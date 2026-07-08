@@ -442,26 +442,27 @@
 
                     </label>
 
-                    <select
-                        class="form-select"
-                        id="id_medio_pago"
-                    >
+                    
+                        <select
+    class="form-select"
+    id="id_medio_pago"
+>
 
-                        <option value="">
-                            ---------
-                        </option>
+    <option value="">
+        ---------
+    </option>
 
-                        {% for medio in form.fields.medio_pago.queryset %}
+    {% for medio in medios_pago %}
 
-                            <option value="{{ medio.id }}">
+        <option value="{{ medio.id }}">
 
-                                {{ medio.nombre }}
+            {{ medio.nombre }}
 
-                            </option>
+        </option>
 
-                        {% endfor %}
+    {% endfor %}
 
-                    </select>
+</select>
 
                 </div>
 
