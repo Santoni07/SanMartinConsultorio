@@ -4,7 +4,7 @@ from django.contrib.auth.decorators import login_required
 from django.utils import timezone
 from django.db import transaction
 from django.db.models import Sum
-from .models import CajaDiaria, MovimientoCaja, HistorialMovimientoCaja, ConceptoFacturacion, DetalleMovimientoCaja,DetalleMedioPago
+from .models import CajaDiaria, MovimientoCaja, HistorialMovimientoCaja,    MedioPago, ConceptoFacturacion, DetalleMovimientoCaja,DetalleMedioPago
 from .forms import (
     AperturaCajaForm,
     MovimientoCajaForm,
@@ -313,6 +313,13 @@ def registrar_cobro(request):
         return redirect('caja_home')
 
     caja = obtener_caja_abierta(centro_medico)
+        # =====================================
+    # MEDIOS DE PAGO
+    # =====================================
+
+    medios_pago = MedioPago.objects.filter(
+        activo=True
+    ).order_by("nombre")
 
     if not caja:
         messages.error(
@@ -383,6 +390,7 @@ def registrar_cobro(request):
                         "form": form,
                         "caja": caja,
                         "centro_medico": centro_medico,
+                        "medios_pago": medios_pago,
                     },
                 )
 
@@ -400,6 +408,7 @@ def registrar_cobro(request):
                         "form": form,
                         "caja": caja,
                         "centro_medico": centro_medico,
+                        "medios_pago": medios_pago,
                     },
                 )
             medios_pago_json = request.POST.get("medios_pago_json")
@@ -418,6 +427,7 @@ def registrar_cobro(request):
                         "form": form,
                         "caja": caja,
                         "centro_medico": centro_medico,
+                        "medios_pago": medios_pago,
                     },
                 )
 
@@ -439,6 +449,7 @@ def registrar_cobro(request):
                         "form": form,
                         "caja": caja,
                         "centro_medico": centro_medico,
+                        "medios_pago": medios_pago,
                     },
                 )
             # =====================================
@@ -548,6 +559,7 @@ def registrar_cobro(request):
             centro_medico=centro_medico
         )
 
+ 
     return render(
         request,
         'caja/registrar_cobro.html',
@@ -555,6 +567,7 @@ def registrar_cobro(request):
             'form': form,
             'caja': caja,
             'centro_medico': centro_medico,
+            "medios_pago": medios_pago,
         }
     )
 
