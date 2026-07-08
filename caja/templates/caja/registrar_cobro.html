@@ -16,7 +16,9 @@
 
         <div class="card-body">
 
-            <form method="post">
+            <form
+                method="post"
+                id="form_registrar_cobro">
 
                 {% csrf_token %}
 
@@ -282,7 +284,7 @@
 
                     </th>
 
-                    <th id="total_medios">
+                    <th id="total_medios_pago">
 
                         $0.00
 
@@ -521,7 +523,20 @@
 
 {% load static %}
 
-<script src="{% static 'caja/js/registrar_cobro.js' %}"></script>
+{% load static %}
 
+<script src="{% static 'caja/js/registrar_cobro/ajax.js' %}"></script>
+
+<script src="{% static 'caja/js/registrar_cobro/prestaciones.js' %}"></script>
+
+<script src="{% static 'caja/js/registrar_cobro/medios_pago.js' %}"></script>
+
+<script src="{% static 'caja/js/registrar_cobro/resumen.js' %}"></script>
+
+<script src="{% static 'caja/js/registrar_cobro/mensajes.js' %}"></script>
+
+<script src="{% static 'caja/js/registrar_cobro/validaciones.js' %}"></script>
+
+<script src="{% static 'caja/js/registrar_cobro/registrar_cobro.js' %}"></script>
 
 {% endblock %}
