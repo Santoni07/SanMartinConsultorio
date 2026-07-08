@@ -329,6 +329,15 @@ def registrar_cobro(request):
         )
 
         if form.is_valid():
+            
+            
+            print("=" * 80)
+            print("FORM ES VÁLIDO:", form.is_valid())
+
+            if not form.is_valid():
+                print(form.errors)
+
+            print("=" * 80)
 
             turno = form.cleaned_data["turno"]
 
