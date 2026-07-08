@@ -35,6 +35,18 @@ let totalPrestaciones;
 
 let detallesJson;
 
+let btnAgregarMedioPago;
+
+let selectMedioPago;
+
+let inputImporteMedioPago;
+
+let tablaMediosPago;
+
+let mediosPagoJson;
+
+let totalMediosPago;
+
 // ======================================================
 // INICIALIZACIÓN
 // ======================================================
@@ -44,6 +56,7 @@ function inicializar(){
     inicializarPrestacionesAjax();
     inicializarImporteAjax();
     inicializarPrestaciones();
+    inicializarMediosPago();
 
 }
 // ======================================================
@@ -282,13 +295,11 @@ function renderPrestaciones(){
 
     tablaPrestaciones.innerHTML = "";
 
-    let totalGeneral = 0;
+    
 
     prestaciones.forEach(function(item,index){
 
-        totalGeneral +=
-            item.cantidad *
-            item.importe;
+      
 
         tablaPrestaciones.innerHTML += `
 
@@ -329,11 +340,204 @@ function renderPrestaciones(){
 
     });
 
-    totalPrestaciones.innerHTML =
-        "$ " +
-        totalGeneral.toFixed(2);
+    
 
     detallesJson.value =
         JSON.stringify(prestaciones);
+
+    actualizarResumen();
+
+}
+// ======================================================
+// MEDIOS DE PAGO
+// ======================================================
+
+function inicializarMediosPago(){
+
+    btnAgregarMedioPago = document.getElementById(
+        "btn_agregar_medio_pago"
+    );
+
+    selectMedioPago = document.getElementById(
+        "id_medio_pago"
+    );
+
+    inputImporteMedioPago = document.getElementById(
+        "importe_medio_pago"
+    );
+
+    tablaMediosPago = document.querySelector(
+        "#tabla_medios_pago tbody"
+    );
+
+    mediosPagoJson = document.getElementById(
+        "medios_pago_json"
+    );
+
+    totalMediosPago = document.getElementById(
+        "total_medios_pago"
+    );
+
+    if(
+        !btnAgregarMedioPago ||
+        !selectMedioPago ||
+        !inputImporteMedioPago ||
+        !tablaMediosPago ||
+        !mediosPagoJson ||
+        !totalMediosPago
+    ){
+        return;
+    }
+
+    btnAgregarMedioPago.disabled = true;
+
+    selectMedioPago.addEventListener("change", function(){
+
+        btnAgregarMedioPago.disabled =
+            this.value === "";
+
+    });
+
+    btnAgregarMedioPago.addEventListener("click", function(){
+
+        if(!selectMedioPago.value){
+            return;
+        }
+
+        mediosPago.push({
+
+            medio: selectMedioPago.value,
+
+            descripcion:
+                selectMedioPago.options[
+                    selectMedioPago.selectedIndex
+                ].text,
+
+            importe: parseFloat(
+                inputImporteMedioPago.value || 0
+            )
+
+        });
+
+        renderMediosPago();
+
+    });
+
+    window.eliminarMedioPago = function(index){
+
+        mediosPago.splice(index,1);
+
+        renderMediosPago();
+
+    };
+
+}
+// ======================================================
+// RENDER MEDIOS DE PAGO
+// ======================================================
+
+function renderMediosPago(){
+
+    tablaMediosPago.innerHTML = "";
+
+    
+
+    mediosPago.forEach(function(item,index){
+
+        
+
+        tablaMediosPago.innerHTML += `
+
+            <tr>
+
+                <td>${item.descripcion}</td>
+
+                <td class="text-end">
+
+                    $ ${item.importe.toFixed(2)}
+
+                </td>
+
+                <td class="text-center">
+
+                    <button
+                        type="button"
+                        class="btn btn-danger btn-sm"
+                        onclick="eliminarMedioPago(${index})">
+
+                        ×
+
+                    </button>
+
+                </td>
+
+            </tr>
+
+        `;
+
+    });
+
+    
+
+    mediosPagoJson.value =
+        JSON.stringify(mediosPago);
+
+    actualizarResumen();
+
+}
+// ======================================================
+// RESUMEN
+// ======================================================
+
+function actualizarResumen(){
+
+    const totalPrestacionesCalculado =
+        prestaciones.reduce(function(total,item){
+
+            return total +
+                (item.cantidad * item.importe);
+
+        },0);
+
+    const totalMediosCalculado =
+        mediosPago.reduce(function(total,item){
+
+            return total +
+                item.importe;
+
+        },0);
+
+    const diferencia =
+        totalPrestacionesCalculado -
+        totalMediosCalculado;
+
+    if(totalPrestaciones){
+
+        totalPrestaciones.innerHTML =
+            "$ " +
+            totalPrestacionesCalculado.toFixed(2);
+
+    }
+
+    if(totalMediosPago){
+
+        totalMediosPago.innerHTML =
+            "$ " +
+            totalMediosCalculado.toFixed(2);
+
+    }
+
+    const saldo =
+        document.getElementById(
+            "saldo_pendiente"
+        );
+
+    if(saldo){
+
+        saldo.innerHTML =
+            "$ " +
+            diferencia.toFixed(2);
+
+    }
 
 }
