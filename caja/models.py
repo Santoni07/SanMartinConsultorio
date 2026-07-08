@@ -270,11 +270,7 @@ class MovimientoCaja(models.Model):
         default='INGRESO'
     )
 
-    medio_pago = models.ForeignKey(
-        MedioPago,
-        on_delete=models.PROTECT,
-        related_name='movimientos'
-    )
+  
 
     importe = models.DecimalField(
         max_digits=12,

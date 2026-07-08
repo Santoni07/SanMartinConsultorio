@@ -96,7 +96,7 @@ class MovimientoCajaAdmin(admin.ModelAdmin):
         'importe_medico',
         'importe_consultorio',
         'liquidado',
-        'medio_pago',
+        
         'paciente',
         'estado',
         'importe_iva',
@@ -108,7 +108,7 @@ class MovimientoCajaAdmin(admin.ModelAdmin):
         'tipo',
         'estado',
         'liquidado',
-        'medio_pago',
+       
         'centro_medico',
         'fecha_creacion',
     )
@@ -139,7 +139,7 @@ class MovimientoCajaAdmin(admin.ModelAdmin):
     autocomplete_fields = (
         'paciente',
         'turno',
-        'medio_pago',
+      
         'centro_medico',
     )
 
@@ -162,7 +162,7 @@ class MovimientoCajaAdmin(admin.ModelAdmin):
             {
                 'fields': (
                     'tipo',
-                    'medio_pago',
+                    
                     'importe',
                     'concepto',
                     'observacion',
