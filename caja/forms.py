@@ -38,7 +38,7 @@ class MovimientoCajaForm(forms.ModelForm):
         fields = [
             'tipo',
             'concepto_facturacion',
-            'medio_pago',
+          
             'importe',
             'retencion_monto',
             'retencion_motivo',
@@ -55,9 +55,7 @@ class MovimientoCajaForm(forms.ModelForm):
                 'class': 'form-select'
             }),
 
-            'medio_pago': forms.Select(attrs={
-                'class': 'form-select'
-            }),
+           
 
             'importe': forms.NumberInput(attrs={
                 'class': 'form-control',
@@ -91,11 +89,7 @@ class MovimientoCajaForm(forms.ModelForm):
         self.fields['retencion_monto'].required = False
         self.fields['retencion_motivo'].required = False
 
-        self.fields[
-            'medio_pago'
-        ].queryset = MedioPago.objects.filter(
-            activo=True
-        ).order_by('nombre')
+       
 
         self.fields[
             'concepto_facturacion'
