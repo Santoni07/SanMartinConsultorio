@@ -327,15 +327,16 @@ def registrar_cobro(request):
             request.POST,
             centro_medico=centro_medico
         )
+        print("=" * 80)
+        print("FORM ES VÁLIDO:", form.is_valid())
+        if not form.is_valid():
+                print(form.errors)
 
         if form.is_valid():
             
             
-            print("=" * 80)
-            print("FORM ES VÁLIDO:", form.is_valid())
-
-            if not form.is_valid():
-                print(form.errors)
+            
+            
 
             print("=" * 80)
 
