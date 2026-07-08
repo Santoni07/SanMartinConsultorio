@@ -369,6 +369,7 @@ def registrar_cobro(request):
                         "form": form,
                         "caja": caja,
                         "centro_medico": centro_medico,
+                         "medios_pago": medios_pago,
                     },
                 )
 
