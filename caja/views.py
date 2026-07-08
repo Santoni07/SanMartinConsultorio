@@ -4,7 +4,7 @@ from django.contrib.auth.decorators import login_required
 from django.utils import timezone
 from django.db import transaction
 from django.db.models import Sum
-from .models import CajaDiaria, MovimientoCaja, HistorialMovimientoCaja, ConceptoFacturacion, DetalleMovimientoCaja
+from .models import CajaDiaria, MovimientoCaja, HistorialMovimientoCaja, ConceptoFacturacion, DetalleMovimientoCaja,DetalleMedioPago
 from .forms import (
     AperturaCajaForm,
     MovimientoCajaForm,
@@ -402,7 +402,45 @@ def registrar_cobro(request):
                         "centro_medico": centro_medico,
                     },
                 )
+            medios_pago_json = request.POST.get("medios_pago_json")
 
+            if not medios_pago_json:
+
+                messages.error(
+                    request,
+                    "Debe agregar al menos un medio de pago."
+                )
+
+                return render(
+                    request,
+                    "caja/registrar_cobro.html",
+                    {
+                        "form": form,
+                        "caja": caja,
+                        "centro_medico": centro_medico,
+                    },
+                )
+
+            try:
+
+                medios_pago = json.loads(medios_pago_json)
+                print(medios_pago)
+            except json.JSONDecodeError:
+
+                messages.error(
+                    request,
+                    "Error al procesar los medios de pago."
+                )
+
+                return render(
+                    request,
+                    "caja/registrar_cobro.html",
+                    {
+                        "form": form,
+                        "caja": caja,
+                        "centro_medico": centro_medico,
+                    },
+                )
             # =====================================
             # CREAR MOVIMIENTO
             # =====================================
