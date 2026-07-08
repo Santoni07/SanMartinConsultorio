@@ -402,15 +402,18 @@
     class="modal fade"
     id="modalMedioPago"
     tabindex="-1"
+    aria-hidden="true"
 >
 
-    <div class="modal-dialog">
+    <div class="modal-dialog modal-dialog-centered mt-5">
 
-        <div class="modal-content">
+        <div class="modal-content shadow-lg">
 
             <div class="modal-header bg-primary text-white">
 
                 <h5 class="modal-title">
+
+                    <i class="bi bi-credit-card me-2"></i>
 
                     Agregar Medio de Pago
 
@@ -419,8 +422,8 @@
                 <button
                     type="button"
                     class="btn-close btn-close-white"
-                    data-bs-dismiss="modal"
-                ></button>
+                    data-bs-dismiss="modal">
+                </button>
 
             </div>
 
@@ -428,7 +431,10 @@
 
                 <div class="mb-3">
 
-                    <label class="form-label">
+                    <label
+                        for="id_medio_pago"
+                        class="form-label fw-bold"
+                    >
 
                         Medio de Pago
 
@@ -436,7 +442,7 @@
 
                     <select
                         class="form-select"
-                        id="medio_pago_modal"
+                        id="id_medio_pago"
                     >
 
                         <option value="">
@@ -446,7 +452,9 @@
                         {% for medio in form.fields.medio_pago.queryset %}
 
                             <option value="{{ medio.id }}">
+
                                 {{ medio.nombre }}
+
                             </option>
 
                         {% endfor %}
@@ -455,9 +463,12 @@
 
                 </div>
 
-                <div class="mb-3">
+                <div class="mb-2">
 
-                    <label class="form-label">
+                    <label
+                        for="importe_medio_pago"
+                        class="form-label fw-bold"
+                    >
 
                         Importe
 
@@ -466,8 +477,10 @@
                     <input
                         type="number"
                         step="0.01"
+                        min="0"
                         class="form-control"
-                        id="importe_medio_modal"
+                        id="importe_medio_pago"
+                        placeholder="Ingrese el importe"
                     >
 
                 </div>
@@ -481,15 +494,21 @@
                     class="btn btn-secondary"
                     data-bs-dismiss="modal"
                 >
+
                     Cancelar
+
                 </button>
 
                 <button
                     type="button"
                     class="btn btn-primary"
-                    id="guardar_medio_pago"
+                    id="btn_agregar_medio_pago"
                 >
+
+                    <i class="bi bi-plus-circle me-1"></i>
+
                     Agregar
+
                 </button>
 
             </div>
@@ -499,7 +518,6 @@
     </div>
 
 </div>
-
 
 {% load static %}
 
