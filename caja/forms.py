@@ -135,7 +135,7 @@ class CobroConsultaForm(forms.ModelForm):
         fields = [
             'turno',
             'concepto_facturacion',
-            'medio_pago',
+          
             'retencion_monto',
             'retencion_motivo',
             'observacion',
@@ -147,9 +147,7 @@ class CobroConsultaForm(forms.ModelForm):
                 'class': 'form-select'
             }),
 
-            'medio_pago': forms.Select(attrs={
-                'class': 'form-select'
-            }),
+          
 
             'retencion_monto': forms.NumberInput(attrs={
                 'class': 'form-control',
@@ -180,15 +178,7 @@ class CobroConsultaForm(forms.ModelForm):
 
         super().__init__(*args, **kwargs)
 
-        # ===========================
-        # MEDIOS DE PAGO
-        # ===========================
-
-        self.fields['medio_pago'].queryset = (
-            MedioPago.objects.filter(
-                activo=True
-            ).order_by('nombre')
-        )
+        
 
         # ===========================
         # PRESTACIONES
