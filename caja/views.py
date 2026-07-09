@@ -260,6 +260,7 @@ def registrar_movimiento(request):
                         "form": form,
                         "caja": caja,
                         "centro_medico": centro_medico,
+                        "medios_pago": medios_pago,
                     },
                 )
 
@@ -357,6 +358,7 @@ def registrar_movimiento(request):
         'form': form,
         'caja': caja,
         'centro_medico': centro_medico,
+        "medios_pago": medios_pago,
     })
 
 @login_required
