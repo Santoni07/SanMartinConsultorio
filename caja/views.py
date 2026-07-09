@@ -209,7 +209,9 @@ def abrir_caja(request):
 @login_required
 @transaction.atomic
 def registrar_movimiento(request):
+
     centro_medico = obtener_centro_activo(request)
+
     if not validar_permiso_caja(request):
 
         messages.error(
@@ -220,14 +222,32 @@ def registrar_movimiento(request):
         return redirect('turnos:ver_disponibilidad')
 
     if not centro_medico:
-        messages.error(request, 'No hay una sede activa seleccionada.')
+
+        messages.error(
+            request,
+            'No hay una sede activa seleccionada.'
+        )
+
         return redirect('core:index')
 
     caja = obtener_caja_abierta(centro_medico)
 
     if not caja:
-        messages.error(request, 'Primero debe abrir la caja de esta sede.')
+
+        messages.error(
+            request,
+            'Primero debe abrir la caja de esta sede.'
+        )
+
         return redirect('abrir_caja')
+
+    # =====================================
+    # MEDIOS DE PAGO DISPONIBLES
+    # =====================================
+
+    medios_pago_disponibles = MedioPago.objects.filter(
+        activo=True
+    ).order_by("nombre")
 
     if request.method == 'POST':
 
@@ -238,6 +258,7 @@ def registrar_movimiento(request):
         if form.is_valid():
 
             print("FORM VALIDO")
+
             # =====================================
             # MEDIOS DE PAGO
             # =====================================
@@ -260,13 +281,13 @@ def registrar_movimiento(request):
                         "form": form,
                         "caja": caja,
                         "centro_medico": centro_medico,
-                        "medios_pago": medios_pago,
+                        "medios_pago": medios_pago_disponibles,
                     },
                 )
 
             try:
 
-                medios_pago = json.loads(
+                medios_pago_data = json.loads(
                     medios_pago_json
                 )
 
@@ -284,8 +305,10 @@ def registrar_movimiento(request):
                         "form": form,
                         "caja": caja,
                         "centro_medico": centro_medico,
+                        "medios_pago": medios_pago_disponibles,
                     },
                 )
+
             movimiento = form.save(commit=False)
 
             print("ANTES SAVE")
@@ -293,17 +316,17 @@ def registrar_movimiento(request):
             movimiento.caja = caja
             movimiento.centro_medico = centro_medico
             movimiento.creado_por = request.user
-            movimiento.estado = 'ACTIVO'
+            movimiento.estado = "ACTIVO"
 
             movimiento.save()
 
             print("MOVIMIENTO GUARDADO")
-            
+
             # =====================================
             # GUARDAR DETALLE MEDIOS DE PAGO
             # =====================================
 
-            for item in medios_pago:
+            for item in medios_pago_data:
 
                 medio = MedioPago.objects.get(
                     pk=item["medio"]
@@ -322,44 +345,63 @@ def registrar_movimiento(request):
                 )
 
             HistorialMovimientoCaja.objects.create(
+
                 caja=caja,
+
                 movimiento=movimiento,
-                accion='CREADO',
+
+                accion="CREADO",
+
                 usuario=request.user,
+
                 centro_medico=centro_medico,
-                descripcion=f'{movimiento.tipo} registrado por {request.user}.',
+
+                descripcion=f"{movimiento.tipo} registrado por {request.user}.",
+
                 datos_nuevos={
-                    'tipo': movimiento.tipo,
-                    'importe': str(movimiento.importe),
-                    'concepto': movimiento.concepto,
-                    'observacion': movimiento.observacion,
+
+                    "tipo": movimiento.tipo,
+
+                    "importe": str(movimiento.importe),
+
+                    "concepto": movimiento.concepto,
+
+                    "observacion": movimiento.observacion,
+
                 }
+
             )
 
             print("HISTORIAL GUARDADO")
 
             messages.success(
                 request,
-                'Movimiento registrado correctamente.'
+                "Movimiento registrado correctamente."
             )
 
             print("VOY AL REDIRECT")
 
-            return redirect('caja_home')
+            return redirect("caja_home")
 
         else:
 
             print("FORM INVALIDO")
             print(form.errors)
+
     else:
+
         form = MovimientoCajaForm()
 
-    return render(request, 'caja/registrar_movimiento.html', {
-        'form': form,
-        'caja': caja,
-        'centro_medico': centro_medico,
-        "medios_pago": medios_pago,
-    })
+    return render(
+        request,
+        "caja/registrar_movimiento.html",
+        {
+            "form": form,
+            "caja": caja,
+            "centro_medico": centro_medico,
+            "medios_pago": medios_pago_disponibles,
+        },
+    )
 
 @login_required
 @transaction.atomic
