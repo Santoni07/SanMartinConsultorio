@@ -92,8 +92,9 @@ def caja_home(request):
         caja=caja,
         centro_medico=centro_medico
     ).prefetch_related(
-        "detalles",
-        "detallemediopago_set__medio_pago"
+    "detalles",
+    "detalles_medios_pago__medio_pago"
+
     ).order_by("-fecha_creacion")
     else:
         movimientos = MovimientoCaja.objects.none()

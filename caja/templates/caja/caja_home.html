@@ -161,15 +161,23 @@
     {% endfor %}
 
 </td>
-                        <td>
+      <td>
 
-    {% for detalle in mov.detallemediopago_set.all %}
+    {% for detalle in mov.detalles_medios_pago.all %}
 
-        {{ detalle.medio_pago.nombre }}
+        <div>
 
-        {% if not forloop.last %}
+            <strong>{{ detalle.medio_pago.nombre }}</strong>
+
             <br>
-        {% endif %}
+
+            <small class="text-muted">
+
+                ${{ detalle.importe }}
+
+            </small>
+
+        </div>
 
     {% empty %}
 
