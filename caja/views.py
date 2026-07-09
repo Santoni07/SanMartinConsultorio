@@ -238,7 +238,53 @@ def registrar_movimiento(request):
         if form.is_valid():
 
             print("FORM VALIDO")
+            # =====================================
+            # MEDIOS DE PAGO
+            # =====================================
 
+            medios_pago_json = request.POST.get(
+                "medios_pago_json"
+            )
+
+            if not medios_pago_json:
+
+                messages.error(
+                    request,
+                    "Debe agregar al menos un medio de pago."
+                )
+
+                return render(
+                    request,
+                    "caja/registrar_movimiento.html",
+                    {
+                        "form": form,
+                        "caja": caja,
+                        "centro_medico": centro_medico,
+                    },
+                )
+
+            try:
+
+                medios_pago = json.loads(
+                    medios_pago_json
+                )
+
+            except json.JSONDecodeError:
+
+                messages.error(
+                    request,
+                    "Error al procesar los medios de pago."
+                )
+
+                return render(
+                    request,
+                    "caja/registrar_movimiento.html",
+                    {
+                        "form": form,
+                        "caja": caja,
+                        "centro_medico": centro_medico,
+                    },
+                )
             movimiento = form.save(commit=False)
 
             print("ANTES SAVE")
@@ -251,6 +297,28 @@ def registrar_movimiento(request):
             movimiento.save()
 
             print("MOVIMIENTO GUARDADO")
+            
+            # =====================================
+            # GUARDAR DETALLE MEDIOS DE PAGO
+            # =====================================
+
+            for item in medios_pago:
+
+                medio = MedioPago.objects.get(
+                    pk=item["medio"]
+                )
+
+                DetalleMedioPago.objects.create(
+
+                    movimiento=movimiento,
+
+                    medio_pago=medio,
+
+                    importe=Decimal(
+                        str(item["importe"])
+                    )
+
+                )
 
             HistorialMovimientoCaja.objects.create(
                 caja=caja,
@@ -261,7 +329,6 @@ def registrar_movimiento(request):
                 descripcion=f'{movimiento.tipo} registrado por {request.user}.',
                 datos_nuevos={
                     'tipo': movimiento.tipo,
-                    'medio_pago': movimiento.medio_pago.nombre,
                     'importe': str(movimiento.importe),
                     'concepto': movimiento.concepto,
                     'observacion': movimiento.observacion,
