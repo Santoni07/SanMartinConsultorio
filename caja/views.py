@@ -89,9 +89,12 @@ def caja_home(request):
 
     if caja:
         movimientos = MovimientoCaja.objects.filter(
-            caja=caja,
-            centro_medico=centro_medico
-        ).order_by('-fecha_creacion')
+        caja=caja,
+        centro_medico=centro_medico
+    ).prefetch_related(
+        "detalles",
+        "detallemediopago_set__medio_pago"
+    ).order_by("-fecha_creacion")
     else:
         movimientos = MovimientoCaja.objects.none()
 

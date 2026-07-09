@@ -161,7 +161,23 @@
     {% endfor %}
 
 </td>
-                        <td>{{ mov.medio_pago.nombre }}</td>
+                        <td>
+
+    {% for detalle in mov.detallemediopago_set.all %}
+
+        {{ detalle.medio_pago.nombre }}
+
+        {% if not forloop.last %}
+            <br>
+        {% endif %}
+
+    {% empty %}
+
+        -
+
+    {% endfor %}
+
+</td>
                         <td>${{ mov.importe }}</td>
                         <td>{{ mov.creado_por.username }}</td>
 
