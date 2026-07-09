@@ -90,13 +90,16 @@ class MovimientoCajaForm(forms.ModelForm):
         self.fields['retencion_motivo'].required = False
 
        
-
         self.fields[
-            'concepto_facturacion'
-        ].queryset = ConceptoFacturacion.objects.filter(
-            activo=True
-        ).order_by('nombre')
-
+    'concepto_facturacion'
+].queryset = (
+    ConceptoFacturacion.objects.filter(
+        activo=True
+    )
+    .select_related("nomenclador")
+    .order_by("nomenclador__descripcion")
+)
+        
 
 
 
