@@ -4,99 +4,224 @@
 
 <div class="container mt-4">
 
+    <div class="card shadow-sm">
 
-<div class="card shadow-sm">
-    <div class="card-header bg-primary text-white">
-        <h4 class="mb-0">
-            Registrar Movimiento - {{ centro_medico.nombre }}
-        </h4>
+        <div class="card-header bg-primary text-white">
+
+            <h4 class="mb-0">
+
+                Registrar Movimiento - {{ centro_medico.nombre }}
+
+            </h4>
+
+        </div>
+
+        <div class="card-body">
+
+            <form
+                method="post"
+                id="form_registrar_movimiento"
+            >
+
+                {% csrf_token %}
+
+                <div class="mb-3">
+
+                    <label class="form-label">
+
+                        Tipo de movimiento
+
+                    </label>
+
+                    {{ form.tipo }}
+
+                </div>
+
+                <div class="mb-3">
+
+                    <label class="form-label">
+
+                        Prestación
+
+                    </label>
+
+                    {{ form.concepto_facturacion }}
+
+                    <small class="text-muted">
+
+                        Opcional para egresos o movimientos administrativos.
+
+                    </small>
+
+                </div>
+
+                <div class="mb-3">
+
+                    <label class="form-label">
+
+                        Importe
+
+                    </label>
+
+                    {{ form.importe }}
+
+                </div>
+
+                <!-- ====================================== -->
+                <!-- MEDIOS DE PAGO -->
+                <!-- ====================================== -->
+
+                <div class="card mt-4">
+
+                    <div class="card-header">
+
+                        <strong>
+
+                            Medios de Pago
+
+                        </strong>
+
+                    </div>
+
+                    <div class="card-body">
+
+                        <table
+                            class="table table-bordered"
+                            id="tabla_medios_pago"
+                        >
+
+                            <thead>
+
+                                <tr>
+
+                                    <th>
+
+                                        Medio
+
+                                    </th>
+
+                                    <th class="text-end">
+
+                                        Importe
+
+                                    </th>
+
+                                    <th width="60">
+
+                                    </th>
+
+                                </tr>
+
+                            </thead>
+
+                            <tbody>
+
+                            </tbody>
+
+                            <tfoot>
+
+                                <tr>
+
+                                    <th>
+
+                                        Total
+
+                                    </th>
+
+                                    <th
+                                        class="text-end"
+                                        id="total_medios_pago"
+                                    >
+
+                                        $ 0.00
+
+                                    </th>
+
+                                    <th>
+
+                                    </th>
+
+                                </tr>
+
+                            </tfoot>
+
+                        </table>
+
+                        <button
+                            type="button"
+                            class="btn btn-primary"
+                            data-bs-toggle="modal"
+                            data-bs-target="#modalMedioPago"
+                        >
+
+                            Agregar Medio de Pago
+
+                        </button>
+
+                    </div>
+
+                </div>
+
+                <input
+                    type="hidden"
+                    id="medios_pago_json"
+                    name="medios_pago_json"
+                >
+
+                <div class="mb-3 mt-4">
+
+                    <label class="form-label">
+
+                        Concepto
+
+                    </label>
+
+                    {{ form.concepto }}
+
+                </div>
+
+                <div class="mb-3">
+
+                    <label class="form-label">
+
+                        Observación
+
+                    </label>
+
+                    {{ form.observacion }}
+
+                </div>
+
+                <div class="d-flex gap-2">
+
+                    <button
+                        type="submit"
+                        class="btn btn-primary"
+                    >
+
+                        Guardar Movimiento
+
+                    </button>
+
+                    <a
+                        href="{% url 'caja_home' %}"
+                        class="btn btn-secondary"
+                    >
+
+                        Cancelar
+
+                    </a>
+
+                </div>
+
+            </form>
+
+        </div>
+
     </div>
 
-    <div class="card-body">
-
-        <form method="post">
-            {% csrf_token %}
-
-            <div class="mb-3">
-                <label class="form-label">
-                    Tipo de movimiento
-                </label>
-                {{ form.tipo }}
-            </div>
-
-            <div class="mb-3">
-                <label class="form-label">
-                    Prestación
-                </label>
-                {{ form.concepto_facturacion }}
-                <small class="text-muted">
-                    Opcional para egresos o movimientos administrativos.
-                </small>
-            </div>
-
-            <div class="mb-3">
-                <label class="form-label">
-                    Medio de pago
-                </label>
-                {{ form.medio_pago }}
-            </div>
-
-            <div class="mb-3">
-                <label class="form-label">
-                    Importe
-                </label>
-                {{ form.importe }}
-            </div>
-
-           {% comment %}  <div class="mb-3">
-                <label class="form-label">
-                    Retención
-                </label>
-                {{ form.retencion_monto }}
-            </div>
-
-            <div class="mb-3">
-                <label class="form-label">
-                    Motivo de retención
-                </label>
-                {{ form.retencion_motivo }}
-            </div> {% endcomment %}
-
-            <div class="mb-3">
-                <label class="form-label">
-                    Concepto
-                </label>
-                {{ form.concepto }}
-            </div>
-
-            <div class="mb-3">
-                <label class="form-label">
-                    Observación
-                </label>
-                {{ form.observacion }}
-            </div>
-
-            <div class="d-flex gap-2">
-                <button
-                    type="submit"
-                    class="btn btn-primary"
-                >
-                    Guardar Movimiento
-                </button>
-
-                <a
-                    href="{% url 'caja_home' %}"
-                    class="btn btn-secondary"
-                >
-                    Cancelar
-                </a>
-            </div>
-
-        </form>
-
-    </div>
 </div>
 
+{% include "caja/includes/modal_medio_pago.html" %}
 
-</div>
 {% endblock %}
