@@ -549,7 +549,7 @@ def registrar_cobro(request):
 
             try:
 
-                medios_pago = json.loads(medios_pago_json)
+                medios_pago_data = json.loads(medios_pago_json)
                 print(medios_pago)
             except json.JSONDecodeError:
 
@@ -667,6 +667,17 @@ def registrar_cobro(request):
                     "concepto_facturacion",
                 ]
             )
+            for item in medios_pago_data:
+
+                medio = MedioPago.objects.get(
+                    pk=item["medio"]
+                )
+
+                DetalleMedioPago.objects.create(
+                    movimiento=movimiento,
+                    medio_pago=medio,
+                    importe=Decimal(str(item["importe"]))
+                )
                         
             
     else:
