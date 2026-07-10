@@ -861,18 +861,29 @@ def cerrar_caja(request):
         centro_medico=centro_medico,
         estado='ACTIVO'
     ).select_related(
-        'medio_pago',
         'paciente',
         'turno',
         'creado_por'
+    ).prefetch_related(
+        'detalles',
+        'detalles_medios_pago__medio_pago'
     ).order_by('fecha_creacion')
+    from collections import defaultdict
 
-    resumen_medios = movimientos.values(
-        'medio_pago__nombre',
-        'tipo'
-    ).annotate(
-        total=Sum('importe')
-    ).order_by('medio_pago__nombre', 'tipo')
+    resumen_medios = defaultdict(Decimal)
+
+    for movimiento in movimientos:
+
+        signo = Decimal("1")
+
+        if movimiento.tipo == "EGRESO":
+            signo = Decimal("-1")
+
+        for detalle in movimiento.detalles_medios_pago.all():
+
+            resumen_medios[
+                detalle.medio_pago.nombre
+            ] += signo * detalle.importe
 
     total_ingresos = movimientos.filter(
         tipo='INGRESO'
@@ -927,31 +938,19 @@ def cerrar_caja(request):
     else:
         form = CerrarCajaForm(instance=caja)
 
-    efectivo_rendir = movimientos.filter(
-        tipo='INGRESO',
-        medio_pago__nombre='Efectivo'
-    ).aggregate(
-        total=Sum('importe')
-    )['total'] or 0
-
-    efectivo_egresos = movimientos.filter(
-        tipo='EGRESO',
-        medio_pago__nombre='Efectivo'
-    ).aggregate(
-        total=Sum('importe')
-    )['total'] or 0
-
     efectivo_rendir = (
         caja.saldo_inicial +
-        efectivo_rendir -
-        efectivo_egresos
+        resumen_medios.get(
+            "Efectivo",
+            Decimal("0")
+        )
     )
     return render(request, 'caja/cerrar_caja.html', {
         'form': form,
         'caja': caja,
         'centro_medico': centro_medico,
         'movimientos': movimientos,
-        'resumen_medios': resumen_medios,
+        'resumen_medios': resumen_medios.items(),
         'total_ingresos': total_ingresos,
         'total_egresos': total_egresos,
         'efectivo_rendir': efectivo_rendir,
