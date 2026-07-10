@@ -68,31 +68,45 @@
                         <thead>
                             <tr>
                                 <th>Medio de pago</th>
-                                <th>Tipo</th>
+                          
                                 <th class="text-end">Total</th>
                             </tr>
                         </thead>
                         <tbody>
-                            {% for item in resumen_medios %}
-                            <tr>
-                                <td>{{ item.medio_pago__nombre }}</td>
-                                <td>
-                                    {% if item.tipo == 'INGRESO' %}
-                                        <span class="badge bg-success">Ingreso</span>
-                                    {% else %}
-                                        <span class="badge bg-danger">Egreso</span>
-                                    {% endif %}
-                                </td>
-                                <td class="text-end">${{ item.total }}</td>
-                            </tr>
-                            {% empty %}
-                            <tr>
-                                <td colspan="3" class="text-center text-muted">
-                                    No hay movimientos para resumir.
-                                </td>
-                            </tr>
-                            {% endfor %}
-                        </tbody>
+
+    {% for medio, total in resumen_medios %}
+
+    <tr>
+
+        <td>
+
+            <strong>{{ medio }}</strong>
+
+        </td>
+
+        <td class="text-end">
+
+            ${{ total }}
+
+        </td>
+
+    </tr>
+
+    {% empty %}
+
+    <tr>
+
+        <td colspan="2" class="text-center text-muted">
+
+            No hay movimientos para resumir.
+
+        </td>
+
+    </tr>
+
+    {% endfor %}
+
+</tbody>
                     </table>
                 </div>
             </div>
@@ -168,7 +182,7 @@
                                     {% endif %}
                                 </td>
 
-                                <<td>
+                                <td>
 
     {% for detalle in mov.detalles.all %}
 
@@ -193,7 +207,31 @@
     {% endfor %}
 
 </td>
-                                <td>{{ mov.medio_pago.nombre }}</td>
+                                <td>
+
+                                    {% for detalle in mov.detalles_medios_pago.all %}
+
+                                        <div class="mb-1">
+
+                                            <strong>{{ detalle.medio_pago.nombre }}</strong>
+
+                                            <br>
+
+                                            <small class="text-muted">
+
+                                                ${{ detalle.importe }}
+
+                                            </small>
+
+                                        </div>
+
+                                    {% empty %}
+
+                                        -
+
+                                    {% endfor %}
+
+                                </td>
                                 <td class="text-end">${{ mov.importe }}</td>
                                 <td>{{ mov.creado_por.username }}</td>
                             </tr>
