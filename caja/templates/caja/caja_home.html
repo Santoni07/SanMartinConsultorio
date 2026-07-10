@@ -3,6 +3,17 @@
 {% load tz %}
 
 {% block content %}
+<style>
+
+    .fila-anulada{
+
+        background-color:#f3f4f6 !important;
+
+        color:#6c757d;
+
+    }
+
+</style>
 <div class="container mt-4">
 
     <div class="d-flex justify-content-between align-items-center mb-4">
@@ -93,7 +104,11 @@
         <div class="card-body table-responsive">
             <table class="table table-striped align-middle">
                 <thead>
-                    <tr>
+                    <tr
+                        {% if mov.estado == 'ANULADO' %}
+                            class="fila-anulada"
+                        {% endif %}
+                    >
                         <th>Hora</th>
                         <th>Tipo</th>
                         <th>Paciente</th>
@@ -161,7 +176,7 @@
     {% endfor %}
 
 </td>
-      <td>
+        <td>
 
     {% for detalle in mov.detalles_medios_pago.all %}
 
@@ -186,7 +201,19 @@
     {% endfor %}
 
 </td>
-                        <td>${{ mov.importe }}</td>
+                        <td>
+
+    {% if mov.estado == 'ANULADO' %}
+
+        <del>${{ mov.importe }}</del>
+
+    {% else %}
+
+        ${{ mov.importe }}
+
+    {% endif %}
+
+</td>
                         <td>{{ mov.creado_por.username }}</td>
 
                         <td>
