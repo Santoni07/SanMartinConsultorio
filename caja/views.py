@@ -698,11 +698,12 @@ def registrar_cobro(request):
         }
     )
 
-
 @login_required
 @transaction.atomic
 def anular_movimiento(request, movimiento_id):
+
     centro_medico = obtener_centro_activo(request)
+
     if not validar_permiso_caja(request):
 
         messages.error(
@@ -720,28 +721,61 @@ def anular_movimiento(request, movimiento_id):
     )
 
     if movimiento.caja.estado == 'CERRADA':
-        messages.error(request, 'No se puede anular un movimiento de una caja cerrada.')
+
+        messages.error(
+            request,
+            'No se puede anular un movimiento de una caja cerrada.'
+        )
+
         return redirect('caja_home')
 
     if request.method == 'POST':
+
         form = AnularMovimientoCajaForm(request.POST)
 
         if form.is_valid():
+
             motivo = form.cleaned_data['motivo_anulacion']
 
             datos_anteriores = {
-            "estado": movimiento.estado,
-            "importe": str(movimiento.importe),
-            "tipo": movimiento.tipo,
-            "concepto": movimiento.concepto,
-            "medios_pago": [
-                {
-                    "medio": detalle.medio_pago.nombre,
-                    "importe": str(detalle.importe),
-                }
-                for detalle in movimiento.detalles_medios_pago.all()
-            ],
-        }
+
+                "estado": movimiento.estado,
+
+                "importe": str(movimiento.importe),
+
+                "tipo": movimiento.tipo,
+
+                "concepto": movimiento.concepto,
+
+                "medios_pago": [
+
+                    {
+
+                        "medio": detalle.medio_pago.nombre,
+
+                        "importe": str(detalle.importe),
+
+                    }
+
+                    for detalle in movimiento.detalles_medios_pago.all()
+
+                ],
+
+            }
+
+            # =====================================
+            # ANULAR MOVIMIENTO
+            # =====================================
+
+            movimiento.anular(
+                usuario=request.user,
+                motivo=motivo
+            )
+
+            # =====================================
+            # SI ES UN COBRO, EL TURNO VUELVE A
+            # PENDIENTE
+            # =====================================
 
             if movimiento.turno:
 
@@ -752,32 +786,53 @@ def anular_movimiento(request, movimiento_id):
                 )
 
             HistorialMovimientoCaja.objects.create(
+
                 caja=movimiento.caja,
+
                 movimiento=movimiento,
+
                 accion='ANULADO',
+
                 usuario=request.user,
+
                 centro_medico=centro_medico,
+
                 descripcion=f'Movimiento anulado. Motivo: {motivo}',
+
                 datos_anteriores=datos_anteriores,
+
                 datos_nuevos={
+
                     'estado': movimiento.estado,
+
                     'anulado_por': request.user.username,
+
                     'motivo_anulacion': motivo,
+
                 }
+
             )
 
-            messages.success(request, 'Movimiento anulado correctamente.')
+            messages.success(
+                request,
+                'Movimiento anulado correctamente.'
+            )
+
             return redirect('caja_home')
+
     else:
+
         form = AnularMovimientoCajaForm()
 
-    return render(request, 'caja/anular_movimiento.html', {
-        'form': form,
-        'movimiento': movimiento,
-        'centro_medico': centro_medico,
-    })
-
-
+    return render(
+        request,
+        'caja/anular_movimiento.html',
+        {
+            'form': form,
+            'movimiento': movimiento,
+            'centro_medico': centro_medico,
+        }
+    )
 @login_required
 @transaction.atomic
 def cerrar_caja(request):
