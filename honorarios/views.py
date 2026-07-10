@@ -4,6 +4,9 @@ from django.shortcuts import (
     redirect,
     get_object_or_404
 )
+import json
+
+from decimal import Decimal
 from caja.views import obtener_caja_abierta
 
 from honorarios.models import (
@@ -16,7 +19,9 @@ from honorarios.forms import (
 )
 
 from caja.models import (
-    MovimientoCaja
+    MovimientoCaja,
+    DetalleMedioPago,
+    MedioPago
 )
 
 from core.utils import (
@@ -430,6 +435,58 @@ def registrar_pago_liquidacion(
         )
 
         if form.is_valid():
+            
+            # =====================================
+            # MEDIOS DE PAGO
+            # =====================================
+
+            medios_pago_json = request.POST.get(
+                "medios_pago_json"
+            )
+
+            if not medios_pago_json:
+
+                messages.error(
+                    request,
+                    "Debe agregar al menos un medio de pago."
+                )
+
+                return render(
+                    request,
+                    "honorarios/registrar_pago_liquidacion.html",
+                    {
+                        "form": form,
+                        "liquidacion": liquidacion,
+                        "medios_pago": MedioPago.objects.filter(
+                            activo=True
+                        ).order_by("nombre"),
+                    },
+                )
+
+            try:
+
+                medios_pago = json.loads(
+                    medios_pago_json
+                )
+
+            except json.JSONDecodeError:
+
+                messages.error(
+                    request,
+                    "Error al procesar los medios de pago."
+                )
+
+                return render(
+                    request,
+                    "honorarios/registrar_pago_liquidacion.html",
+                    {
+                        "form": form,
+                        "liquidacion": liquidacion,
+                        "medios_pago": MedioPago.objects.filter(
+                            activo=True
+                        ).order_by("nombre"),
+                    },
+                )
 
             importe = form.cleaned_data[
                 'importe'
@@ -467,10 +524,6 @@ def registrar_pago_liquidacion(
 
                 tipo='EGRESO',
 
-                medio_pago=form.cleaned_data[
-                    'medio_pago'
-                ],
-
                 importe=importe,
 
                 concepto=(
@@ -487,6 +540,27 @@ def registrar_pago_liquidacion(
                 creado_por=request.user,
             )
 
+            # =====================================
+            # GUARDAR MEDIOS DE PAGO
+            # =====================================
+
+            for item in medios_pago:
+
+                medio = MedioPago.objects.get(
+                    pk=item["medio"]
+                )
+
+                DetalleMedioPago.objects.create(
+
+                    movimiento=movimiento,
+
+                    medio_pago=medio,
+
+                    importe=Decimal(
+                        str(item["importe"])
+                    )
+
+                )
             PagoLiquidacionMedica.objects.create(
 
                 liquidacion=liquidacion,

@@ -217,9 +217,7 @@ window.eliminarMedio = function(index){
 function inicializarFormulario(){
 
     const form =
-        document.getElementById(
-            "form_registrar_movimiento"
-        );
+    document.querySelector("form");
 
     if(!form){
         return;

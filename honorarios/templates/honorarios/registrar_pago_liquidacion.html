@@ -114,59 +114,240 @@
 
         </div>
 
-        <form method="post">
+       <form method="post">
 
-            {% csrf_token %}
+    {% csrf_token %}
 
-            <div class="mb-3">
+    <div class="mb-3">
 
-                <label class="form-label">
-                    Medio de Pago
-                </label>
+        <label class="form-label">
+            Importe a Pagar
+        </label>
 
-                {{ form.medio_pago }}
+        {{ form.importe }}
 
-            </div>
+    </div>
 
-            <div class="mb-3">
+    <div class="card shadow-sm mb-3">
 
-                <label class="form-label">
-                    Importe a Pagar
-                </label>
+        <div class="card-header bg-primary text-white">
 
-                {{ form.importe }}
+            <strong>
+                Medios de Pago
+            </strong>
 
-            </div>
+        </div>
 
-            <div class="mb-3">
+        <div class="card-body">
 
-                <label class="form-label">
-                    Observación
-                </label>
+            <table
+                class="table table-sm align-middle"
+                id="tabla_medios_pago"
+            >
 
-                {{ form.observacion }}
+                <thead>
 
-            </div>
+                    <tr>
 
-            <div class="d-flex gap-2">
+                        <th>
+                            Medio
+                        </th>
+
+                        <th class="text-end">
+                            Importe
+                        </th>
+
+                        <th width="70">
+                        </th>
+
+                    </tr>
+
+                </thead>
+
+                <tbody>
+
+                </tbody>
+
+            </table>
+
+            <div class="d-flex justify-content-between">
 
                 <button
-                    type="submit"
-                    class="btn btn-success"
+                    type="button"
+                    class="btn btn-outline-primary"
+                    data-bs-toggle="modal"
+                    data-bs-target="#modalMedioPago"
                 >
-                    Registrar Pago
+
+                    Agregar Medio
+
                 </button>
 
-                <a
-                    href="{% url 'liquidaciones_pendientes' %}"
-                    class="btn btn-secondary"
-                >
-                    Cancelar
-                </a>
+                <h5 class="mb-0">
+
+                    Total:
+                    <span id="total_medios_pago">
+                        $0.00
+                    </span>
+
+                </h5>
 
             </div>
 
-        </form>
+        </div>
+
+    </div>
+
+    <input
+        type="hidden"
+        id="medios_pago_json"
+        name="medios_pago_json"
+    >
+
+    <div class="mb-3">
+
+        <label class="form-label">
+
+            Observación
+
+        </label>
+
+        {{ form.observacion }}
+
+    </div>
+
+    <div class="d-flex gap-2">
+
+        <button
+            type="submit"
+            class="btn btn-success"
+        >
+
+            Registrar Pago
+
+        </button>
+
+        <a
+            href="{% url 'liquidaciones_pendientes' %}"
+            class="btn btn-secondary"
+        >
+
+            Cancelar
+
+        </a>
+
+    </div>
+
+</form>
+
+<div
+    class="modal fade"
+    id="modalMedioPago"
+    tabindex="-1"
+    aria-hidden="true"
+>
+
+    <div class="modal-dialog modal-dialog-centered">
+
+        <div class="modal-content">
+
+            <div class="modal-header bg-primary text-white">
+
+                <h5 class="modal-title">
+
+                    Agregar Medio de Pago
+
+                </h5>
+
+                <button
+                    type="button"
+                    class="btn-close btn-close-white"
+                    data-bs-dismiss="modal"
+                ></button>
+
+            </div>
+
+            <div class="modal-body">
+
+                <div class="mb-3">
+
+                    <label class="form-label">
+
+                        Medio de Pago
+
+                    </label>
+
+                    <select
+                        id="id_medio_pago"
+                        class="form-select"
+                    >
+
+                        <option value="">
+                            ---------
+                        </option>
+
+                        {% for medio in medios_pago %}
+
+                            <option value="{{ medio.id }}">
+
+                                {{ medio.nombre }}
+
+                            </option>
+
+                        {% endfor %}
+
+                    </select>
+
+                </div>
+
+                <div class="mb-3">
+
+                    <label class="form-label">
+
+                        Importe
+
+                    </label>
+
+                    <input
+                        type="number"
+                        id="importe_medio_pago"
+                        class="form-control"
+                        min="0"
+                        step="0.01"
+                    >
+
+                </div>
+
+            </div>
+
+            <div class="modal-footer">
+
+                <button
+                    class="btn btn-secondary"
+                    data-bs-dismiss="modal"
+                >
+
+                    Cancelar
+
+                </button>
+
+                <button
+                    type="button"
+                    id="btn_agregar_medio_pago"
+                    class="btn btn-primary"
+                >
+
+                    Agregar
+
+                </button>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
 
     </div>
 
@@ -174,5 +355,7 @@
 
 
 </div>
+{% load static %}
 
+<script src="{% static 'caja/js/registrar_movimiento.js' %}"></script>
 {% endblock %}

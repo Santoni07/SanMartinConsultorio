@@ -1,17 +1,7 @@
 from django import forms
 from caja.models import MedioPago
 
-
 class PagoLiquidacionForm(forms.Form):
-
-    medio_pago = forms.ModelChoiceField(
-        queryset=MedioPago.objects.filter(
-            activo=True
-        ),
-        widget=forms.Select(attrs={
-            'class': 'form-select'
-        })
-    )
 
     importe = forms.DecimalField(
         max_digits=12,
