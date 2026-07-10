@@ -416,6 +416,9 @@ def registrar_pago_liquidacion(
     caja = obtener_caja_abierta(
         centro_medico
     )
+    medios_pago = MedioPago.objects.filter(
+        activo=True
+    ).order_by("nombre")
 
     if not caja:
 
@@ -457,9 +460,7 @@ def registrar_pago_liquidacion(
                     {
                         "form": form,
                         "liquidacion": liquidacion,
-                        "medios_pago": MedioPago.objects.filter(
-                            activo=True
-                        ).order_by("nombre"),
+                       "medios_pago": medios_pago,
                     },
                 )
 
@@ -617,6 +618,7 @@ def registrar_pago_liquidacion(
         {
             'form': form,
             'liquidacion': liquidacion,
+            "medios_pago": medios_pago,
         }
     )
 
