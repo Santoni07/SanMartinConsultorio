@@ -367,12 +367,29 @@ class MovimientoCaja(models.Model):
     def __str__(self):
         return f'{self.fecha_creacion:%d/%m/%Y %H:%M} - {self.tipo} - ${self.importe}'
 
-    def anular(self, usuario, motivo=''):
-        self.estado = 'ANULADO'
+    def anular(self, usuario, motivo=""):
+
+        self.estado = "ANULADO"
+
         self.anulado_por = usuario
+
         self.fecha_anulacion = timezone.now()
+
         self.motivo_anulacion = motivo
+
         self.save()
+
+        self.detalles.update(
+            estado="ANULADO"
+        )
+
+        if self.turno:
+
+            self.turno.estado = "PENDIENTE"
+
+            self.turno.save(
+                update_fields=["estado"]
+            )
         
     def recalcular_totales(self):
         """

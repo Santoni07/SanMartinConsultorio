@@ -730,17 +730,26 @@ def anular_movimiento(request, movimiento_id):
             motivo = form.cleaned_data['motivo_anulacion']
 
             datos_anteriores = {
-                'estado': movimiento.estado,
-                'importe': str(movimiento.importe),
-                'tipo': movimiento.tipo,
-                'medio_pago': movimiento.medio_pago.nombre,
-                'concepto': movimiento.concepto,
-            }
+            "estado": movimiento.estado,
+            "importe": str(movimiento.importe),
+            "tipo": movimiento.tipo,
+            "concepto": movimiento.concepto,
+            "medios_pago": [
+                {
+                    "medio": detalle.medio_pago.nombre,
+                    "importe": str(detalle.importe),
+                }
+                for detalle in movimiento.detalles_medios_pago.all()
+            ],
+        }
 
-            movimiento.anular(
-                usuario=request.user,
-                motivo=motivo
-            )
+            if movimiento.turno:
+
+                movimiento.turno.estado = "PENDIENTE"
+
+                movimiento.turno.save(
+                    update_fields=["estado"]
+                )
 
             HistorialMovimientoCaja.objects.create(
                 caja=movimiento.caja,
