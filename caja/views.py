@@ -977,34 +977,51 @@ def detalle_caja(request, caja_id):
         centro_medico=centro_medico
     )
 
-    movimientos = MovimientoCaja.objects.filter(
-        caja=caja,
-        estado='ACTIVO'
-    ).select_related(
-        'paciente',
-        'medio_pago',
-        'creado_por'
-    ).order_by(
-        'fecha_creacion'
+    movimientos = (
+        MovimientoCaja.objects.filter(
+            caja=caja,
+            estado="ACTIVO"
+        )
+        .select_related(
+            "paciente",
+            "creado_por",
+        )
+        .prefetch_related(
+            "detalles",
+            "detalles_medios_pago__medio_pago",
+        )
+        .order_by("fecha_creacion")
     )
 
-    total_ingresos = movimientos.filter(
-        tipo='INGRESO'
-    ).aggregate(
-        total=Sum('importe')
-    )['total'] or 0
+    total_ingresos = (
+        movimientos.filter(
+            tipo='INGRESO'
+        ).aggregate(
+            total=Sum('importe')
+        )['total'] or 0
+    )
 
-    total_egresos = movimientos.filter(
-        tipo='EGRESO'
-    ).aggregate(
-        total=Sum('importe')
-    )['total'] or 0
+    total_egresos = (
+        movimientos.filter(
+            tipo='EGRESO'
+        ).aggregate(
+            total=Sum('importe')
+        )['total'] or 0
+    )
 
-    medios_pago = movimientos.values(
-        'medio_pago__nombre'
-    ).annotate(
-        total=Sum('importe')
-    ).order_by()
+    resultado = total_ingresos - total_egresos
+
+    medios_pago = (
+        DetalleMedioPago.objects.filter(
+            movimiento__caja=caja,
+            movimiento__estado="ACTIVO",
+        )
+        .values("medio_pago__nombre")
+        .annotate(
+            total=Sum("importe")
+        )
+        .order_by("medio_pago__nombre")
+    )
 
     return render(
         request,
@@ -1014,9 +1031,12 @@ def detalle_caja(request, caja_id):
             'movimientos': movimientos,
             'total_ingresos': total_ingresos,
             'total_egresos': total_egresos,
+            'resultado': resultado,
             'medios_pago': medios_pago,
         }
     )
+
+
 @login_required
 def cajas_cerradas(request):
 
