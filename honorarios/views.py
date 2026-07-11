@@ -1,5 +1,5 @@
 from django.utils import timezone
-from core.utils.notificaciones import mostrar_exito
+from core.utils import *
 from django.shortcuts import (
     render,
     redirect,
