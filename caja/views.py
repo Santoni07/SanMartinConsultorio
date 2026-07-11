@@ -689,7 +689,7 @@ def registrar_cobro(request):
  
     return render(
         request,
-        'caja/registrar_cobro.html',
+        'caja/caja_home.html',
         {
             'form': form,
             'caja': caja,
