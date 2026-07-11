@@ -151,81 +151,47 @@
                             {% endif %}
                         </td>
 
-             <td>
+                        <td>
 
-    {# ===========================
-       PAGO DE LIQUIDACIÓN
-       =========================== #}
+    {% for detalle in mov.detalles.all %}
+
+        <div class="mb-1">
+
+            <strong>{{ detalle.codigo }}</strong>
+
+            <br>
+
+            <small class="text-muted">
+
+                {{ detalle.descripcion }}
+
+            </small>
+
+        </div>
+
+    {% empty %}
 
     {% if mov.pagoliquidacionmedica %}
 
-        <span class="badge bg-danger mb-1">
-
-            💸 Pago Liquidación
-
-        </span>
+        <strong>Pago Liquidación Médica</strong>
 
         <br>
 
-        <small>
+        <small class="text-muted">
 
             {{ mov.pagoliquidacionmedica.liquidacion.medico }}
 
         </small>
 
-    {# ===========================
-       COBRO DE PACIENTE
-       =========================== #}
-
-    {% elif mov.detalles.exists %}
-
-        <span class="badge bg-success mb-1">
-
-            💰 Cobro
-
-        </span>
-
-        {% for detalle in mov.detalles.all %}
-
-            <div class="mt-1">
-
-                <strong>{{ detalle.codigo }}</strong>
-
-                <br>
-
-                <small class="text-muted">
-
-                    {{ detalle.descripcion }}
-
-                </small>
-
-            </div>
-
-        {% endfor %}
-
-    {# ===========================
-       MOVIMIENTO MANUAL
-       =========================== #}
-
     {% else %}
 
-        <span class="badge bg-primary mb-1">
-
-            📦 Movimiento Manual
-
-        </span>
-
-        <br>
-
-        <small>
-
-            {{ mov.concepto }}
-
-        </small>
+        {{ mov.concepto|default:"-" }}
 
     {% endif %}
 
-</td>        
+{% endfor %}
+
+</td>
         <td>
 
     {% for detalle in mov.detalles_medios_pago.all %}
