@@ -18,7 +18,7 @@ import json
 from decimal import Decimal
 
 from .calculos import calcular_detalle
-from core.utils import *
+from core.utils import mostrar_exito
 def obtener_centro_activo(request):
     centro = getattr(request, 'centro_activo', None)
 
