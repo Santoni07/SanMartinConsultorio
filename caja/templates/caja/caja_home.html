@@ -113,7 +113,7 @@
                         <th>Tipo</th>
                         <th>Paciente</th>
                         <th>Turno Médico</th>
-                        <th>Prestaciones</th>
+                        <th>Conceptos</th>
                         <th>Medio</th>
                         <th>Importe</th>
                         <th>Usuario</th>
@@ -151,31 +151,81 @@
                             {% endif %}
                         </td>
 
-                        <td>
+             <td>
 
-    {% for detalle in mov.detalles.all %}
+    {# ===========================
+       PAGO DE LIQUIDACIÓN
+       =========================== #}
 
-        <div class="mb-1">
+    {% if mov.pagoliquidacionmedica %}
 
-            <strong>{{ detalle.codigo }}</strong>
+        <span class="badge bg-danger mb-1">
 
-            <br>
+            💸 Pago Liquidación
 
-            <small class="text-muted">
+        </span>
 
-                {{ detalle.descripcion }}
+        <br>
 
-            </small>
+        <small>
 
-        </div>
+            {{ mov.pagoliquidacionmedica.liquidacion.medico }}
 
-    {% empty %}
+        </small>
 
-        -
+    {# ===========================
+       COBRO DE PACIENTE
+       =========================== #}
 
-    {% endfor %}
+    {% elif mov.detalles.exists %}
 
-</td>
+        <span class="badge bg-success mb-1">
+
+            💰 Cobro
+
+        </span>
+
+        {% for detalle in mov.detalles.all %}
+
+            <div class="mt-1">
+
+                <strong>{{ detalle.codigo }}</strong>
+
+                <br>
+
+                <small class="text-muted">
+
+                    {{ detalle.descripcion }}
+
+                </small>
+
+            </div>
+
+        {% endfor %}
+
+    {# ===========================
+       MOVIMIENTO MANUAL
+       =========================== #}
+
+    {% else %}
+
+        <span class="badge bg-primary mb-1">
+
+            📦 Movimiento Manual
+
+        </span>
+
+        <br>
+
+        <small>
+
+            {{ mov.concepto }}
+
+        </small>
+
+    {% endif %}
+
+</td>        
         <td>
 
     {% for detalle in mov.detalles_medios_pago.all %}
