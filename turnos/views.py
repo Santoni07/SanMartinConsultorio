@@ -17,6 +17,7 @@ from turnos.utils.agenda   import obtener_agenda_dia
 from turnos.utils.utils_historial import registrar_historial_turno
 from collections import defaultdict   
 from core.models import CentroMedico
+from core.utils import mostrar_exito, mostrar_error
 def obtener_consultorio_disponible(fecha, hora_inicio, hora_fin, medico=None):
 
     consultorios = Consultorio.objects.all()
@@ -2349,8 +2350,20 @@ def agenda_rapida(request):
 
             if not form.is_valid():
                 print("ERRORES CONFIRMAR:", form.errors)
-                messages.error(request, "Error en los datos.")
-                return redirect('turnos:agenda_rapida')
+                mostrar_error(
+
+                    request,
+
+                    titulo="No fue posible crear la agenda",
+
+                    mensaje="Hay errores en los datos ingresados.",
+
+                )
+
+                return redirect(
+                    "turnos:agenda_rapida"
+                )
+                
 
             data = form.cleaned_data
             medico = data['medico']
@@ -2360,8 +2373,17 @@ def agenda_rapida(request):
             consultorio_id = request.POST.get('consultorio')
 
             if not consultorio_id:
-                messages.error(request, "Debes seleccionar un consultorio.")
-                return redirect('turnos:agenda_rapida')
+                mostrar_error(
+
+                    request,
+
+                    titulo="Consultorio requerido",
+
+                    mensaje="Debe seleccionar un consultorio para generar la agenda.",
+
+                )
+                
+                
 
             consultorio = Consultorio.objects.get(id=consultorio_id)
 
@@ -2389,8 +2411,33 @@ def agenda_rapida(request):
                     }
                 )
 
-            messages.success(request, "Agenda creada correctamente.")
-            return redirect('turnos:agenda_rapida')
+            mostrar_exito(
+
+                request,
+
+                titulo="Agenda creada",
+
+                mensaje="La agenda se creó correctamente.",
+
+                icono="bi-calendar2-check",
+
+                detalles=[
+
+                    f"Médico: {medico}",
+
+                    f"Consultorio: {consultorio}",
+
+                    f"Días generados: {len(preview)}",
+
+                    f"Duración: {data['duracion_turno']} minutos",
+
+                ],
+
+            )
+
+            return redirect(
+                "turnos:agenda_rapida"
+)
 
         # ===============================
         # 🔵 PREVIEW
@@ -2493,6 +2540,8 @@ def agenda_rapida(request):
         'conflictos_fechas': conflictos_fechas,
         'consultorios_disponibles': consultorios_disponibles
     })
+
+
 
 @login_required
 def lista_excepciones(request):
