@@ -18,7 +18,12 @@ import json
 from decimal import Decimal
 
 from .calculos import calcular_detalle
-
+from core.utils.notificaciones import (
+    mostrar_exito,
+    mostrar_error,
+    mostrar_info,
+    mostrar_advertencia,
+)
 def obtener_centro_activo(request):
     centro = getattr(request, 'centro_activo', None)
 
@@ -187,14 +192,31 @@ def abrir_caja(request):
                 }
             )
 
-            messages.success(
+            mostrar_exito(
+
                 request,
-                f'Caja del turno '
-                f'{caja.get_turno_display()} '
-                f'abierta correctamente.'
+
+                titulo="Caja abierta",
+
+                mensaje="La caja se abrió correctamente.",
+
+                icono="bi-safe",
+
+                detalles=[
+
+                    f"Sede: {centro_medico.nombre}",
+
+                    f"Turno: {caja.get_turno_display()}",
+
+                    f"Saldo inicial: ${caja.saldo_inicial}",
+
+                ],
+
             )
 
-            return redirect('caja_home')
+            return redirect("caja_home")
+
+            
 
     else:
 
@@ -378,12 +400,27 @@ def registrar_movimiento(request):
 
             print("HISTORIAL GUARDADO")
 
-            messages.success(
-                request,
-                "Movimiento registrado correctamente."
-            )
+            
 
-            print("VOY AL REDIRECT")
+            mostrar_exito(
+
+                request,
+
+                titulo="Movimiento registrado",
+
+                mensaje="El movimiento fue registrado correctamente.",
+
+                icono="bi-arrow-left-right",
+
+                detalles=[
+
+                    f"Concepto: {movimiento.concepto}",
+
+                    f"Importe: ${movimiento.importe}",
+
+                ],
+
+            )
 
             return redirect("caja_home")
 
@@ -678,12 +715,33 @@ def registrar_cobro(request):
                     medio_pago=medio,
                     importe=Decimal(str(item["importe"]))
                 )
-            messages.success(
-                request,
-                "Cobro registrado correctamente."
-            )
+           
+            
+            mostrar_exito(
 
-            return redirect("caja_home")
+            request,
+
+            titulo="Cobro registrado",
+
+            mensaje="El cobro fue registrado correctamente.",
+
+            icono="bi-cash-coin",
+
+            detalles=[
+
+                f"Paciente: {movimiento.paciente}",
+
+                f"Prestaciones: {len(detalles)}",
+
+                f"Importe: ${movimiento.importe}",
+
+            ],
+
+        )
+
+        return redirect("caja_home")
+
+            
                         
             
     else:
@@ -819,12 +877,29 @@ def anular_movimiento(request, movimiento_id):
 
             )
 
-            messages.success(
-                request,
-                'Movimiento anulado correctamente.'
-            )
+           
 
-            return redirect('caja_home')
+            mostrar_exito(
+
+            request,
+
+            titulo="Movimiento anulado",
+
+            mensaje="El movimiento fue anulado correctamente.",
+
+            icono="bi-trash",
+
+            detalles=[
+
+                f"Concepto: {movimiento.concepto}",
+
+                f"Importe: ${movimiento.importe}",
+
+            ],
+
+        )
+
+        return redirect("caja_home")
 
     else:
 
@@ -936,11 +1011,33 @@ def cerrar_caja(request):
                 }
             )
 
-            messages.success(
-                request,
-                f'Caja del turno {caja.get_turno_display()} cerrada correctamente.'
-            )
-            return redirect('caja_home')
+            mostrar_exito(
+
+            request,
+
+            titulo="Caja cerrada",
+
+            mensaje="La caja se cerró correctamente.",
+
+            icono="bi-safe2-fill",
+
+            detalles=[
+
+                f"Sede: {centro_medico.nombre}",
+
+                f"Turno: {caja.get_turno_display()}",
+
+                f"Ingresos: ${total_ingresos}",
+
+                f"Egresos: ${total_egresos}",
+
+                f"Saldo Final: ${saldo_final}",
+
+            ],
+
+        )
+
+        return redirect("caja_home")
     else:
         form = CerrarCajaForm(instance=caja)
 

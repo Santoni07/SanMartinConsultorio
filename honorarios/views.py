@@ -1,4 +1,5 @@
 from django.utils import timezone
+from core.utils.notificaciones import mostrar_exito
 from django.shortcuts import (
     render,
     redirect,
@@ -595,18 +596,33 @@ def registrar_pago_liquidacion(
 
             liquidacion.save()
 
-            messages.success(
-                request,
-                (
-                    f'Pago registrado correctamente. '
-                    f'Saldo pendiente: '
-                    f'${liquidacion.saldo_pendiente}'
-                )
-            )
+            mostrar_exito(
 
-            return redirect(
-                'liquidaciones_pendientes'
-            )
+            request,
+
+            titulo="Pago registrado",
+
+            mensaje="El pago de la liquidación fue registrado correctamente.",
+
+            icono="bi-wallet2",
+
+            detalles=[
+
+                f"Médico: {liquidacion.medico}",
+
+                f"Importe pagado: ${importe}",
+
+                f"Saldo pendiente: ${liquidacion.saldo_pendiente}",
+
+                f"Estado: {liquidacion.get_estado_display()}",
+
+            ],
+
+        )
+
+        return redirect(
+            "liquidaciones_pendientes"
+        )
 
     else:
 
@@ -621,6 +637,10 @@ def registrar_pago_liquidacion(
             "medios_pago": medios_pago,
         }
     )
+
+
+
+
 
 @login_required
 def liquidaciones_pendientes(request):
