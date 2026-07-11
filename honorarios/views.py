@@ -35,12 +35,13 @@ from django.db import transaction
 
 from .models import LiquidacionMedica
 
-from core.utils import obtener_centro_activo
+from core.utils import obtener_centro_activo,mostrar_error
 # Create your views here.
 from django.db.models import Sum
 from medicos.models import Medico
 from caja.models import MovimientoCaja,  DetalleMovimientoCaja
 from django.contrib.auth.decorators import login_required
+
 
 @login_required
 def honorarios_medicos(request):
@@ -422,15 +423,25 @@ def registrar_pago_liquidacion(
     ).order_by("nombre")
 
     if not caja:
+        mostrar_error(
 
-        messages.error(
             request,
-            'Debe existir una caja abierta.'
+
+            titulo="Caja cerrada",
+
+            mensaje="No existe una caja abierta.",
+
+            detalles=[
+                "Debe abrir una caja antes de registrar un pago."
+            ],
+
         )
 
         return redirect(
-            'liquidaciones_pendientes'
+            "liquidaciones_pendientes"
         )
+
+        
 
     if request.method == 'POST':
 
@@ -496,9 +507,14 @@ def registrar_pago_liquidacion(
 
             if importe <= 0:
 
-                messages.error(
+                mostrar_error(
+
                     request,
-                    'El importe debe ser mayor a cero.'
+
+                    titulo="Importe inválido",
+
+                    mensaje="El importe debe ser mayor a cero.",
+
                 )
 
                 return redirect(
@@ -507,11 +523,21 @@ def registrar_pago_liquidacion(
                 )
 
             if importe > liquidacion.saldo_pendiente:
+                mostrar_error(
 
-                messages.error(
                     request,
-                    'El importe supera el saldo pendiente.'
+
+                    titulo="Importe inválido",
+
+                    mensaje="El importe supera el saldo pendiente.",
+
+                    detalles=[
+                        f"Saldo pendiente: ${liquidacion.saldo_pendiente}"
+                    ],
+
                 )
+
+               
 
                 return redirect(
                     'registrar_pago_liquidacion',
