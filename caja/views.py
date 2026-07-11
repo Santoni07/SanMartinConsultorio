@@ -678,6 +678,12 @@ def registrar_cobro(request):
                     medio_pago=medio,
                     importe=Decimal(str(item["importe"]))
                 )
+            messages.success(
+                request,
+                "Cobro registrado correctamente."
+            )
+
+            return redirect("caja_home")
                         
             
     else:
@@ -689,7 +695,7 @@ def registrar_cobro(request):
  
     return render(
         request,
-        'caja/caja_home.html',
+        'caja/registrar_cobro.html',
         {
             'form': form,
             'caja': caja,

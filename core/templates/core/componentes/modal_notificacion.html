@@ -1,0 +1,236 @@
+{% if modal_notificacion %}
+
+<style>
+
+#notificacion-overlay{
+
+    position:fixed;
+
+    inset:0;
+
+    background:rgba(0,0,0,.25);
+
+    backdrop-filter:blur(3px);
+
+    z-index:9998;
+
+    animation:fadeIn .25s ease;
+
+}
+
+#notificacion-card{
+
+    position:fixed;
+
+    top:50%;
+
+    left:50%;
+
+    transform:translate(-50%,-50%) scale(.92);
+
+    width:440px;
+
+    max-width:92%;
+
+    background:#fff;
+
+    border-radius:22px;
+
+    overflow:hidden;
+
+    box-shadow:0 25px 70px rgba(0,0,0,.28);
+
+    z-index:9999;
+
+    opacity:0;
+
+    animation:showCard .30s forwards;
+
+}
+
+#notificacion-header{
+
+    padding:18px;
+
+    color:#fff;
+
+    text-align:center;
+
+}
+
+#notificacion-body{
+
+    padding:35px;
+
+    text-align:center;
+
+}
+
+#notificacion-icono{
+
+    font-size:72px;
+
+    margin-bottom:20px;
+
+}
+
+#notificacion-body h3{
+
+    font-weight:700;
+
+    margin-bottom:10px;
+
+}
+
+#notificacion-body p{
+
+    color:#6c757d;
+
+    margin-bottom:25px;
+
+}
+
+.notificacion-detalle{
+
+    background:#f8f9fa;
+
+    border-radius:12px;
+
+    padding:10px;
+
+    margin-bottom:8px;
+
+    text-align:left;
+
+}
+
+#barra{
+
+    height:6px;
+
+    width:100%;
+
+    background:#e9ecef;
+
+}
+
+#barra div{
+
+    height:100%;
+
+    width:100%;
+
+    transition:width linear;
+
+}
+
+@keyframes fadeIn{
+
+    from{opacity:0;}
+
+    to{opacity:1;}
+
+}
+
+@keyframes showCard{
+
+    to{
+
+        opacity:1;
+
+        transform:translate(-50%,-50%) scale(1);
+
+    }
+
+}
+
+</style>
+
+<div id="notificacion-overlay"></div>
+
+<div id="notificacion-card">
+
+    <div
+        id="notificacion-header"
+        class="bg-{{ modal_notificacion.color }}">
+
+        <h5 class="mb-0">
+
+            {{ modal_notificacion.titulo }}
+
+        </h5>
+
+    </div>
+
+    <div id="notificacion-body">
+
+        <div
+            id="notificacion-icono"
+            class="text-{{ modal_notificacion.color }}">
+
+            <i class="bi {{ modal_notificacion.icono }}"></i>
+
+        </div>
+
+        <h3>
+
+            {{ modal_notificacion.mensaje }}
+
+        </h3>
+
+        {% for detalle in modal_notificacion.detalles %}
+
+            <div class="notificacion-detalle">
+
+                {{ detalle }}
+
+            </div>
+
+        {% endfor %}
+
+        <small class="text-muted">
+
+            Cerrando automáticamente...
+
+        </small>
+
+    </div>
+
+    <div id="barra">
+
+        <div
+            id="barraAnimada"
+            class="bg-{{ modal_notificacion.color }}">
+        </div>
+
+    </div>
+
+</div>
+
+<script>
+
+document.addEventListener("DOMContentLoaded",function(){
+
+    const barra=document.getElementById("barraAnimada");
+
+    barra.style.transition="width 2.8s linear";
+
+    setTimeout(()=>{
+
+        barra.style.width="0%";
+
+    },50);
+
+    setTimeout(()=>{
+
+        document.getElementById("notificacion-card").remove();
+
+        document.getElementById("notificacion-overlay").remove();
+
+    },2900);
+
+});
+
+</script>
+
+{% endif %}
