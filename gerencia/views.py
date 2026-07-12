@@ -1271,10 +1271,22 @@ def facturacion_sede(request, centro_id):
     mes = request.GET.get('mes')
     anio = request.GET.get('anio')
 
-    movimientos = MovimientoCaja.objects.filter(
-        estado='ACTIVO',
-        caja__estado='CERRADA',
-        centro_medico=centro
+    movimientos = (
+        MovimientoCaja.objects.filter(
+            estado="ACTIVO",
+            caja__estado="CERRADA",
+            centro_medico=centro,
+        )
+        .select_related(
+            "creado_por",
+            "caja",
+            "centro_medico",
+            "paciente",
+        )
+        .prefetch_related(
+            "detalles",
+            "detalles_medios_pago__medio_pago",
+        )
     )
 
     cajas = CajaDiaria.objects.filter(
@@ -1329,16 +1341,58 @@ def facturacion_sede(request, centro_id):
     total_ingresos = movimientos.filter(
         tipo='INGRESO'
     ).aggregate(
-        total=Sum('importe')
+        total=Sum('importe_bruto')
     )['total'] or 0
 
     total_egresos = movimientos.filter(
         tipo='EGRESO'
     ).aggregate(
-        total=Sum('importe')
+        total=Sum('importe_bruto')
     )['total'] or 0
 
     saldo_neto = total_ingresos - total_egresos
+    
+    total_bruto = total_ingresos
+
+    total_iva = (
+        movimientos.filter(
+            tipo="INGRESO"
+        ).aggregate(
+            total=Sum("importe_iva")
+        )["total"] or 0
+    )
+
+    total_neto = (
+        movimientos.filter(
+            tipo="INGRESO"
+        ).aggregate(
+            total=Sum("importe_neto")
+        )["total"] or 0
+    )
+
+    total_honorarios = (
+        movimientos.filter(
+            tipo="INGRESO"
+        ).aggregate(
+            total=Sum("importe_medico")
+        )["total"] or 0
+    )
+
+    total_consultorio = (
+        movimientos.filter(
+            tipo="INGRESO"
+        ).aggregate(
+            total=Sum("importe_consultorio")
+        )["total"] or 0
+    )
+
+    total_retenciones = (
+        movimientos.filter(
+            tipo="INGRESO"
+        ).aggregate(
+            total=Sum("retencion_monto")
+        )["total"] or 0
+    )
 
     cantidad_movimientos = movimientos.count()
 
@@ -1347,22 +1401,33 @@ def facturacion_sede(request, centro_id):
     # ==========================
     # EFECTIVO / BANCARIZADO
     # ==========================
+    
+    efectivo = (
+        DetalleMedioPago.objects.filter(
+            movimiento__estado="ACTIVO",
+            movimiento__tipo="INGRESO",
+            movimiento__caja__estado="CERRADA",
+            movimiento__centro_medico=centro,
+            medio_pago__nombre__iexact="Efectivo",
+        ).aggregate(
+            total=Sum("importe")
+        )["total"] or 0
+    )
 
-    efectivo = movimientos.filter(
-        tipo='INGRESO',
-        medio_pago__nombre__iexact='Efectivo'
-    ).aggregate(
-        total=Sum('importe')
-    )['total'] or 0
+    bancarizado = (
+        DetalleMedioPago.objects.filter(
+            movimiento__estado="ACTIVO",
+            movimiento__tipo="INGRESO",
+            movimiento__caja__estado="CERRADA",
+            movimiento__centro_medico=centro,
+        ).exclude(
+            medio_pago__nombre__iexact="Efectivo"
+        ).aggregate(
+            total=Sum("importe")
+        )["total"] or 0
+    )
 
-    bancarizado = movimientos.filter(
-        tipo='INGRESO'
-    ).exclude(
-        medio_pago__nombre__iexact='Efectivo'
-    ).aggregate(
-        total=Sum('importe')
-    )['total'] or 0
-
+    
     # ==========================
     # PROMEDIOS
     # ==========================
@@ -1398,7 +1463,7 @@ def facturacion_sede(request, centro_id):
     ).values(
         'fecha_creacion__date'
     ).annotate(
-        total=Sum('importe')
+        total=Sum('importe_bruto')
     ).order_by('-total').first()
 
     peor_dia = movimientos.filter(
@@ -1406,7 +1471,7 @@ def facturacion_sede(request, centro_id):
     ).values(
         'fecha_creacion__date'
     ).annotate(
-        total=Sum('importe')
+        total=Sum('importe_bruto')
     ).order_by('total').first()
 
     # ==========================
@@ -1418,21 +1483,28 @@ def facturacion_sede(request, centro_id):
     ).values(
         'caja__turno'
     ).annotate(
-        total=Sum('importe')
+        total=Sum('importe_bruto')
     ).order_by('-total').first()
 
     # ==========================
     # SECRETARIA TOP
     # ==========================
 
-    resumen_secretarias = movimientos.filter(
-        tipo='INGRESO'
-    ).values(
-        'creado_por__username'
-    ).annotate(
-        total=Sum('importe'),
-        cantidad=Count('id')
-    ).order_by('-total')
+    resumen_secretarias = (
+        movimientos.filter(
+            tipo="INGRESO"
+        )
+        .values(
+            "creado_por__username"
+        )
+        .annotate(
+            cantidad=Count("id"),
+            bruto=Sum("importe_bruto"),
+            iva=Sum("importe_iva"),
+            neto=Sum("importe_neto"),
+        )
+        .order_by("-bruto")
+    )
 
     secretaria_top = resumen_secretarias.first()
 
@@ -1440,14 +1512,22 @@ def facturacion_sede(request, centro_id):
     # MEDIOS DE PAGO
     # ==========================
 
-    resumen_medios = movimientos.filter(
-        tipo='INGRESO'
-    ).values(
-        'medio_pago__nombre'
-    ).annotate(
-        total=Sum('importe'),
-        cantidad=Count('id')
-    ).order_by('-total')
+    resumen_medios = (
+        DetalleMedioPago.objects.filter(
+            movimiento__estado="ACTIVO",
+            movimiento__tipo="INGRESO",
+            movimiento__caja__estado="CERRADA",
+            movimiento__centro_medico=centro,
+        )
+        .values(
+            "medio_pago__nombre"
+        )
+        .annotate(
+            total=Sum("importe"),
+            cantidad=Count("id"),
+        )
+        .order_by("-total")
+    )
 
     # ==========================
     # MAÑANA VS TARDE
@@ -1458,7 +1538,7 @@ def facturacion_sede(request, centro_id):
     ).values(
         'caja__turno'
     ).annotate(
-        total=Sum('importe')
+        total=Sum('importe_bruto')
     )
 
     # ==========================
@@ -1470,7 +1550,7 @@ def facturacion_sede(request, centro_id):
     ).values(
         'fecha_creacion__date'
     ).annotate(
-        total=Sum('importe')
+        total=Sum('importe_bruto')
     ).order_by(
         'fecha_creacion__date'
     )
@@ -1522,7 +1602,12 @@ def facturacion_sede(request, centro_id):
         'saldo_neto': saldo_neto,
         'labels_medios': labels_medios,
         'data_medios': data_medios,
-
+        'total_bruto': total_bruto,
+        'total_iva': total_iva,
+        'total_neto': total_neto,
+        'total_honorarios': total_honorarios,
+        'total_consultorio': total_consultorio,
+        'total_retenciones': total_retenciones,
         'labels_evolucion': labels_evolucion,
         'data_evolucion': data_evolucion,
         'cantidad_cajas': cantidad_cajas,

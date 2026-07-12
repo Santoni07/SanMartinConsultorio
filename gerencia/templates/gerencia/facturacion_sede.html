@@ -312,231 +312,497 @@
 
         </div>
 
-        <!-- MEDIOS DE PAGO -->
+        <div class="row mb-4">
 
-        <div class="card shadow mb-4">
-
-            <div class="card-header bg-white">
-
-                <h5 class="mb-0 fw-bold">
-                    💳 Medios de Pago
-                </h5>
-
-            </div>
-
-            <div class="card-body">
-
-                <div class="table-responsive">
-
-                    <table class="table table-hover align-middle">
-
-                        <thead class="table-light">
-
-                            <tr>
-                                <th>Medio</th>
-                                <th>Movimientos</th>
-                                <th>Total</th>
-                            </tr>
-
-                        </thead>
-
-                        <tbody>
-
-                            {% for item in resumen_medios %}
-
-                            <tr>
-
-                                <td>
-                                    <strong>{{ item.medio_pago__nombre }}</strong>
-                                </td>
-
-                                <td>
-                                    {{ item.cantidad }}
-                                </td>
-
-                                <td>
-                                    ${{ item.total|floatformat:0 }}
-                                </td>
-
-                            </tr>
-
-                            {% empty %}
-
-                            <tr>
-
-                                <td colspan="3" class="text-center text-muted">
-                                    No hay datos.
-                                </td>
-
-                            </tr>
-
-                            {% endfor %}
-
-                        </tbody>
-
-                    </table>
-
-                </div>
-
-            </div>
-
-        </div>
-
-        <!-- SECRETARIAS -->
-
-        <div class="card shadow mb-4">
-
-            <div class="card-header bg-white">
-
-                <h5 class="mb-0 fw-bold">
-                    👩‍💼 Rendimiento por Secretaria
-                </h5>
-
-            </div>
-
-            <div class="card-body">
-
-                <div class="table-responsive">
-
-                    <table class="table table-hover">
-
-                        <thead class="table-light">
-
-                            <tr>
-                                <th>Usuario</th>
-                                <th>Movimientos</th>
-                                <th>Total</th>
-                            </tr>
-
-                        </thead>
-
-                        <tbody>
-
-                            {% for item in resumen_secretarias %}
-
-                            <tr>
-
-                                <td>
-                                    <strong>{{ item.creado_por__username }}</strong>
-                                </td>
-
-                                <td>{{ item.cantidad }}</td>
-
-                                <td>
-                                    ${{ item.total|floatformat:0 }}
-                                </td>
-
-                            </tr>
-
-                            {% empty %}
-
-                            <tr>
-
-                                <td colspan="3" class="text-center text-muted">
-                                    Sin movimientos.
-                                </td>
-
-                            </tr>
-
-                            {% endfor %}
-
-                        </tbody>
-
-                    </table>
-
-                </div>
-
-            </div>
-
-        </div>
-
-        <!-- CAJAS -->
+    <div class="col-lg-2 mb-3">
 
         <div class="card shadow">
 
-            <div class="card-header bg-white">
+            <div class="card-body text-center">
 
-                <h5 class="mb-0 fw-bold">
-                    📦 Últimas Cajas Cerradas
-                </h5>
+                <small class="text-muted">
 
-            </div>
+                    Bruto
 
-            <div class="card-body">
+                </small>
 
-                <div class="table-responsive">
+                <h4>
 
-                    <table class="table table-hover align-middle">
+                    ${{ total_bruto|floatformat:0 }}
 
-                        <thead class="table-light">
-
-                          <tr>
-
-                            <th>Fecha</th>
-                            <th>Turno</th>
-                            <th>Estado</th>
-                            <th class="text-center">Detalle</th>
-
-                        </tr>
-
-                        </thead>
-
-                        <tbody>
-
-                            {% for caja in cajas %}
-
-                         <tr>
-
-                            <td>
-                                {{ caja.fecha|date:"d/m/Y" }}
-                            </td>
-
-                            <td>
-                                {{ caja.get_turno_display }}
-                            </td>
-
-                            <td>
-
-                                <span class="badge bg-success">
-                                    {{ caja.estado }}
-                                </span>
-
-                            </td>
-
-                            <td class="text-center">
-
-                                <a href="{% url 'gerencia:detalle_caja' caja.id %}"
-                                class="btn btn-sm btn-outline-primary">
-
-                                    <i class="bi bi-search"></i>
-                                    Ver
-
-                                </a>
-
-                            </td>
-
-                        </tr>
-                            {% empty %}
-
-                            <tr>
-
-                                <td colspan="3" class="text-center text-muted">
-                                    No hay cajas cerradas.
-                                </td>
-
-                            </tr>
-
-                            {% endfor %}
-
-                        </tbody>
-
-                    </table>
-
-                </div>
+                </h4>
 
             </div>
 
         </div>
+
+    </div>
+
+    <div class="col-lg-2 mb-3">
+
+        <div class="card shadow">
+
+            <div class="card-body text-center">
+
+                <small class="text-muted">
+
+                    IVA
+
+                </small>
+
+                <h4>
+
+                    ${{ total_iva|floatformat:0 }}
+
+                </h4>
+
+            </div>
+
+        </div>
+
+    </div>
+
+    <div class="col-lg-2 mb-3">
+
+        <div class="card shadow">
+
+            <div class="card-body text-center">
+
+                <small class="text-muted">
+
+                    Neto
+
+                </small>
+
+                <h4>
+
+                    ${{ total_neto|floatformat:0 }}
+
+                </h4>
+
+            </div>
+
+        </div>
+
+    </div>
+
+    <div class="col-lg-2 mb-3">
+
+        <div class="card shadow">
+
+            <div class="card-body text-center">
+
+                <small class="text-muted">
+
+                    Honorarios
+
+                </small>
+
+                <h4>
+
+                    ${{ total_honorarios|floatformat:0 }}
+
+                </h4>
+
+            </div>
+
+        </div>
+
+    </div>
+
+    <div class="col-lg-2 mb-3">
+
+        <div class="card shadow">
+
+            <div class="card-body text-center">
+
+                <small class="text-muted">
+
+                    Consultorio
+
+                </small>
+
+                <h4>
+
+                    ${{ total_consultorio|floatformat:0 }}
+
+                </h4>
+
+            </div>
+
+        </div>
+
+    </div>
+
+    <div class="col-lg-2 mb-3">
+
+        <div class="card shadow">
+
+            <div class="card-body text-center">
+
+                <small class="text-muted">
+
+                    Retenciones
+
+                </small>
+
+                <h4>
+
+                    ${{ total_retenciones|floatformat:0 }}
+
+                </h4>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+        <!-- MEDIOS DE PAGO -->
+
+        <!-- ================= MEDIOS DE PAGO ================= -->
+
+<div class="card shadow mb-4">
+
+    <div class="card-header bg-white">
+
+        <h5 class="mb-0 fw-bold">
+            💳 Medios de Pago
+        </h5>
+
+    </div>
+
+    <div class="card-body">
+
+        <div class="table-responsive">
+
+            <table class="table table-hover align-middle">
+
+                <thead class="table-light">
+
+                    <tr>
+
+                        <th>Medio de Pago</th>
+
+                        <th class="text-center">
+                            Operaciones
+                        </th>
+
+                        <th class="text-end">
+                            Total Cobrado
+                        </th>
+
+                    </tr>
+
+                </thead>
+
+                <tbody>
+
+                    {% for item in resumen_medios %}
+
+                    <tr>
+
+                        <td>
+
+                            <strong>
+
+                                {{ item.medio_pago__nombre }}
+
+                            </strong>
+
+                        </td>
+
+                        <td class="text-center">
+
+                            <span class="badge bg-primary">
+
+                                {{ item.cantidad }}
+
+                            </span>
+
+                        </td>
+
+                        <td class="text-end">
+
+                            <strong>
+
+                                ${{ item.total|floatformat:0 }}
+
+                            </strong>
+
+                        </td>
+
+                    </tr>
+
+                    {% empty %}
+
+                    <tr>
+
+                        <td colspan="3" class="text-center text-muted">
+
+                            No hay datos de medios de pago.
+
+                        </td>
+
+                    </tr>
+
+                    {% endfor %}
+
+                </tbody>
+
+            </table>
+
+        </div>
+
+    </div>
+
+</div>
+
+        <!-- SECRETARIAS -->
+
+        
+
+<div class="card shadow mb-4">
+
+    <div class="card-header bg-white">
+
+        <h5 class="mb-0 fw-bold">
+            👩‍💼 Rendimiento por Secretaria
+        </h5>
+
+    </div>
+
+    <div class="card-body">
+
+        <div class="table-responsive">
+
+            <table class="table table-hover align-middle">
+
+                <thead class="table-light">
+
+                    <tr>
+
+                        <th>Usuario</th>
+
+                        <th class="text-center">
+                            Movimientos
+                        </th>
+
+                        <th class="text-end">
+                            Bruto
+                        </th>
+
+                        <th class="text-end">
+                            IVA
+                        </th>
+
+                        <th class="text-end">
+                            Neto
+                        </th>
+
+                    </tr>
+
+                </thead>
+
+                <tbody>
+
+                    {% for item in resumen_secretarias %}
+
+                    <tr>
+
+                        <td>
+
+                            <strong>
+
+                                {{ item.creado_por__username }}
+
+                            </strong>
+
+                        </td>
+
+                        <td class="text-center">
+
+                            <span class="badge bg-secondary">
+
+                                {{ item.cantidad }}
+
+                            </span>
+
+                        </td>
+
+                        <td class="text-end">
+
+                            <strong>
+
+                                ${{ item.bruto|default:0|floatformat:0 }}
+
+                            </strong>
+
+                        </td>
+
+                        <td class="text-end text-primary">
+
+                            ${{ item.iva|default:0|floatformat:0 }}
+
+                        </td>
+
+                        <td class="text-end text-success">
+
+                            ${{ item.neto|default:0|floatformat:0 }}
+
+                        </td>
+
+                    </tr>
+
+                    {% empty %}
+
+                    <tr>
+
+                        <td colspan="5" class="text-center text-muted">
+
+                            Sin movimientos.
+
+                        </td>
+
+                    </tr>
+
+                    {% endfor %}
+
+                </tbody>
+
+            </table>
+
+        </div>
+
+    </div>
+
+</div>
+
+        <!-- ================= ÚLTIMAS CAJAS CERRADAS ================= -->
+
+<div class="card shadow mb-4">
+
+    <div class="card-header bg-white">
+
+        <h5 class="mb-0 fw-bold">
+
+            📦 Últimas Cajas Cerradas
+
+        </h5>
+
+    </div>
+
+    <div class="card-body">
+
+        <div class="table-responsive">
+
+            <table class="table table-hover align-middle">
+
+                <thead class="table-light">
+
+                    <tr>
+
+                        <th>Fecha</th>
+
+                        <th>Sucursal</th>
+
+                        <th>Turno</th>
+
+                        <th>Estado</th>
+
+                        <th class="text-center">
+
+                            Detalle
+
+                        </th>
+
+                    </tr>
+
+                </thead>
+
+                <tbody>
+
+                    {% for caja in cajas %}
+
+                    <tr>
+
+                        <td>
+
+                            {{ caja.fecha|date:"d/m/Y" }}
+
+                        </td>
+
+                        <td>
+
+                            <strong>
+
+                                {{ caja.centro_medico.nombre }}
+
+                            </strong>
+
+                        </td>
+
+                        <td>
+
+                            <span class="badge bg-primary">
+
+                                {{ caja.get_turno_display }}
+
+                            </span>
+
+                        </td>
+
+                        <td>
+
+                            <span class="badge bg-success">
+
+                                {{ caja.estado }}
+
+                            </span>
+
+                        </td>
+
+                        <td class="text-center">
+
+                            <a
+                                href="{% url 'gerencia:detalle_caja' caja.id %}"
+                                class="btn btn-sm btn-outline-primary">
+
+                                <i class="bi bi-search"></i>
+
+                                Ver detalle
+
+                            </a>
+
+                        </td>
+
+                    </tr>
+
+                    {% empty %}
+
+                    <tr>
+
+                        <td colspan="5" class="text-center text-muted">
+
+                            No hay cajas cerradas.
+
+                        </td>
+
+                    </tr>
+
+                    {% endfor %}
+
+                </tbody>
+
+            </table>
+
+        </div>
+
+    </div>
+
+</div>
 
     </div>
 
