@@ -29,5 +29,9 @@ urlpatterns = [
     views.ajax_importe_prestacion,
     name="ajax_importe_prestacion",
 ), 
-    
+  path(
+    "pdf/<int:caja_id>/",
+    views.pdf_cierre_caja,
+    name="pdf_cierre_caja",
+),
 ]

@@ -1,4 +1,7 @@
 from django.shortcuts import render, redirect, get_object_or_404
+from .services import CierreCajaService
+
+from .pdf.cierre_caja import generar_pdf_cierre
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.utils import timezone
@@ -14,6 +17,7 @@ from .forms import (
 )
 from core.models import CentroMedico, PerfilUsuario
 import json
+from django.http import HttpResponse
 
 from decimal import Decimal
 
@@ -1246,3 +1250,34 @@ def ajax_importe_prestacion(request):
             "importe": 0
         })
         
+@login_required
+def pdf_cierre_caja(request, caja_id):
+
+    caja = get_object_or_404(
+        CajaDiaria,
+        pk=caja_id,
+    )
+
+    service = CierreCajaService(
+        caja
+    )
+
+    datos = service.obtener_datos()
+
+    pdf = generar_pdf_cierre(
+        datos
+    )
+
+    response = HttpResponse(
+        pdf,
+        content_type="application/pdf",
+    )
+
+    response[
+        "Content-Disposition"
+    ] = (
+        f'attachment; '
+        f'filename="CierreCaja_{caja.id}.pdf"'
+    )
+
+    return response
