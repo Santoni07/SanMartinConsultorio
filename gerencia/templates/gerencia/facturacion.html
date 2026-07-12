@@ -251,9 +251,12 @@
                             <tr>
                                 <th>Sucursal</th>
                                 <th>Movimientos</th>
-                                <th>Efectivo</th>
-                                <th>Bancarizado</th>
-                                <th>Total</th>
+                                <th>Bruto</th>
+                                <th>IVA</th>
+                                <th>Neto</th>
+                                <th>Honorarios</th>
+                                <th>Consultorio</th>
+                               
                             </tr>
                         </thead>
 
@@ -272,18 +275,34 @@
                                 </td>
 
                                 <td>
-                                    ${{ item.efectivo|default:0|floatformat:0 }}
-                                </td>
 
-                                <td>
-                                    ${{ item.bancarizado|default:0|floatformat:0 }}
-                                </td>
+                                            ${{ item.bruto|default:0|floatformat:0 }}
 
-                                <td>
-                                    <strong>
-                                        ${{ item.total|floatformat:0 }}
-                                    </strong>
-                                </td>
+                                        </td>
+
+                                        <td>
+
+                                            ${{ item.iva|default:0|floatformat:0 }}
+
+                                        </td>
+
+                                        <td>
+
+                                            ${{ item.neto|default:0|floatformat:0 }}
+
+                                        </td>
+
+                                        <td>
+
+                                            ${{ item.honorarios|default:0|floatformat:0 }}
+
+                                        </td>
+
+                                        <td>
+
+                                            ${{ item.consultorio|default:0|floatformat:0 }}
+
+                                        </td>
                             </tr>
                             {% empty %}
                             <tr>
@@ -370,9 +389,13 @@
         <div class="card shadow mb-4">
 
             <div class="card-header bg-white">
+
                 <h5 class="mb-0 fw-bold">
+
                     👩‍💼 Rendimiento por Secretaria
+
                 </h5>
+
             </div>
 
             <div class="card-body">
@@ -382,39 +405,101 @@
                     <table class="table table-hover align-middle">
 
                         <thead class="table-light">
+
                             <tr>
+
                                 <th>Usuario</th>
-                                <th>Movimientos</th>
-                                <th>Total Cobrado</th>
+
+                                <th class="text-center">
+
+                                    Movimientos
+
+                                </th>
+
+                                <th class="text-end">
+
+                                    Bruto
+
+                                </th>
+
+                                <th class="text-end">
+
+                                    IVA
+
+                                </th>
+
+                                <th class="text-end">
+
+                                    Neto
+
+                                </th>
+
                             </tr>
+
                         </thead>
 
                         <tbody>
 
                             {% for item in resumen_por_secretaria %}
+
                             <tr>
-                                <td>
-                                    <strong>{{ item.creado_por__username }}</strong>
-                                </td>
 
                                 <td>
-                                    <span class="badge bg-secondary">
-                                        {{ item.cantidad }}
-                                    </span>
-                                </td>
 
-                                <td>
                                     <strong>
-                                        ${{ item.total|floatformat:0 }}
+
+                                        {{ item.creado_por__username }}
+
                                     </strong>
+
                                 </td>
+
+                                <td class="text-center">
+
+                                    <span class="badge bg-secondary">
+
+                                        {{ item.cantidad }}
+
+                                    </span>
+
+                                </td>
+
+                                <td class="text-end">
+
+                                    <strong>
+
+                                        ${{ item.bruto|default:0|floatformat:0 }}
+
+                                    </strong>
+
+                                </td>
+
+                                <td class="text-end text-primary">
+
+                                    ${{ item.iva|default:0|floatformat:0 }}
+
+                                </td>
+
+                                <td class="text-end text-success">
+
+                                    ${{ item.neto|default:0|floatformat:0 }}
+
+                                </td>
+
                             </tr>
+
                             {% empty %}
+
                             <tr>
-                                <td colspan="3" class="text-center text-muted">
+
+                                <td colspan="5" class="text-center text-muted">
+
                                     No hay datos de secretarias.
+
                                 </td>
+
                             </tr>
+
                             {% endfor %}
 
                         </tbody>
