@@ -4,15 +4,25 @@
 
 <div class="row">
 
+    <!-- ========================================= -->
     <!-- SIDEBAR -->
+    <!-- ========================================= -->
+
     <div class="col-lg-2 mb-4">
+
         {% include 'gerencia/sidebar_gerencia.html' %}
+
     </div>
 
+    <!-- ========================================= -->
     <!-- CONTENIDO -->
+    <!-- ========================================= -->
+
     <div class="col-lg-10">
 
+        <!-- ========================================= -->
         <!-- HEADER -->
+        <!-- ========================================= -->
 
         <div class="d-flex justify-content-between align-items-center mb-4">
 
@@ -20,33 +30,41 @@
 
                 <h2 class="fw-bold mb-0">
 
-                    📦 Detalle de Caja
+                    📦 Detalle Ejecutivo de Caja
 
                 </h2>
 
                 <p class="text-muted mb-0">
 
                     {{ caja.centro_medico.nombre }}
+
                     -
+
                     {{ caja.fecha|date:"d/m/Y" }}
+
                     -
+
                     {{ caja.get_turno_display }}
 
                 </p>
 
             </div>
 
-            <a href="javascript:history.back()"
-               class="btn btn-secondary">
+            <a
+                href="javascript:history.back()"
+                class="btn btn-secondary">
 
                 <i class="bi bi-arrow-left"></i>
+
                 Volver
 
             </a>
 
         </div>
 
+        <!-- ========================================= -->
         <!-- INFORMACIÓN GENERAL -->
+        <!-- ========================================= -->
 
         <div class="card shadow mb-4">
 
@@ -91,13 +109,21 @@
                         <br>
 
                         {% if caja.estado == 'CERRADA' %}
+
                             <span class="badge bg-success">
-                                Cerrada
+
+                                Caja Cerrada
+
                             </span>
+
                         {% else %}
+
                             <span class="badge bg-warning text-dark">
-                                Abierta
+
+                                Caja Abierta
+
                             </span>
+
                         {% endif %}
 
                     </div>
@@ -108,27 +134,29 @@
 
         </div>
 
+        <!-- ========================================= -->
         <!-- KPI -->
+        <!-- ========================================= -->
 
         <div class="row mb-4">
 
-            <div class="col-lg-4 col-md-6 mb-4">
+            <div class="col-lg-2 col-md-4 mb-3">
 
-                <div class="card border-start border-success border-4 shadow h-100">
+                <div class="card shadow border-start border-success border-4 h-100">
 
                     <div class="card-body text-center">
 
-                        <div class="text-uppercase fw-bold text-success mb-2">
+                        <div class="small text-success fw-bold">
 
-                            Total Ingresos
+                            BRUTO
 
                         </div>
 
-                        <div class="display-6 fw-bold">
+                        <h4>
 
                             ${{ ingresos|floatformat:0 }}
 
-                        </div>
+                        </h4>
 
                     </div>
 
@@ -136,23 +164,23 @@
 
             </div>
 
-            <div class="col-lg-4 col-md-6 mb-4">
+            <div class="col-lg-2 col-md-4 mb-3">
 
-                <div class="card border-start border-danger border-4 shadow h-100">
+                <div class="card shadow border-start border-primary border-4 h-100">
 
                     <div class="card-body text-center">
 
-                        <div class="text-uppercase fw-bold text-danger mb-2">
+                        <div class="small text-primary fw-bold">
 
-                            Total Egresos
-
-                        </div>
-
-                        <div class="display-6 fw-bold">
-
-                            ${{ egresos|floatformat:0 }}
+                            IVA
 
                         </div>
+
+                        <h4>
+
+                            ${{ total_iva|floatformat:0 }}
+
+                        </h4>
 
                     </div>
 
@@ -160,23 +188,95 @@
 
             </div>
 
-            <div class="col-lg-4 col-md-12 mb-4">
+            <div class="col-lg-2 col-md-4 mb-3">
 
-                <div class="card border-start border-primary border-4 shadow h-100">
+                <div class="card shadow border-start border-info border-4 h-100">
 
                     <div class="card-body text-center">
 
-                        <div class="text-uppercase fw-bold text-primary mb-2">
+                        <div class="small text-info fw-bold">
 
-                            Saldo Neto
+                            NETO
 
                         </div>
 
-                        <div class="display-6 fw-bold">
+                        <h4>
+
+                            ${{ total_neto|floatformat:0 }}
+
+                        </h4>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+            <div class="col-lg-2 col-md-4 mb-3">
+
+                <div class="card shadow border-start border-warning border-4 h-100">
+
+                    <div class="card-body text-center">
+
+                        <div class="small text-warning fw-bold">
+
+                            MÉDICOS
+
+                        </div>
+
+                        <h4>
+
+                            ${{ total_honorarios|floatformat:0 }}
+
+                        </h4>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+            <div class="col-lg-2 col-md-4 mb-3">
+
+                <div class="card shadow border-start border-dark border-4 h-100">
+
+                    <div class="card-body text-center">
+
+                        <div class="small fw-bold">
+
+                            CONSULTORIO
+
+                        </div>
+
+                        <h4>
+
+                            ${{ total_consultorio|floatformat:0 }}
+
+                        </h4>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+            <div class="col-lg-2 col-md-4 mb-3">
+
+                <div class="card shadow border-start border-danger border-4 h-100">
+
+                    <div class="card-body text-center">
+
+                        <div class="small text-danger fw-bold">
+
+                            SALDO
+
+                        </div>
+
+                        <h4>
 
                             ${{ saldo|floatformat:0 }}
 
-                        </div>
+                        </h4>
 
                     </div>
 
@@ -186,45 +286,169 @@
 
         </div>
 
+        <!-- ========================================= -->
         <!-- MOVIMIENTOS -->
+        <!-- ========================================= -->
 
-        <div class="card shadow">
+        {% for movimiento in movimientos %}
 
-            <div class="card-header bg-white">
+        <div class="card shadow mb-4">
 
-                <h5 class="mb-0 fw-bold">
+            <div class="card-header d-flex justify-content-between align-items-center">
 
-                    📋 Movimientos de Caja
+                <div>
 
-                </h5>
+                    {% if movimiento.tipo == 'INGRESO' %}
+
+                        <span class="badge bg-success">
+
+                            INGRESO
+
+                        </span>
+
+                    {% else %}
+
+                        <span class="badge bg-danger">
+
+                            EGRESO
+
+                        </span>
+
+                    {% endif %}
+
+                    Movimiento #{{ movimiento.id }}
+
+                </div>
+
+                <div>
+
+                    {{ movimiento.fecha_creacion|date:"d/m/Y H:i" }}
+
+                </div>
 
             </div>
 
             <div class="card-body">
 
-                <div class="table-responsive">
+                <div class="row mb-4">
 
-                    <table class="table table-hover align-middle">
+                    <div class="col-md-3">
+
+                        <strong>Paciente</strong>
+
+                        <br>
+
+                        {{ movimiento.paciente|default:"-" }}
+
+                    </div>
+
+                    <div class="col-md-3">
+
+                        <strong>Usuario</strong>
+
+                        <br>
+
+                        {{ movimiento.creado_por.username }}
+
+                    </div>
+
+                    <div class="col-md-3">
+
+                        <strong>Turno</strong>
+
+                        <br>
+
+                        {{ movimiento.turno|default:"-" }}
+
+                    </div>
+
+                    <div class="col-md-3">
+
+                        <strong>Estado</strong>
+
+                        <br>
+
+                        {% if movimiento.estado == "ACTIVO" %}
+
+                            <span class="badge bg-success">
+
+                                Activo
+
+                            </span>
+
+                        {% else %}
+
+                            <span class="badge bg-danger">
+
+                                Anulado
+
+                            </span>
+
+                        {% endif %}
+
+                    </div>
+
+                </div>
+
+                                <!-- ========================================= -->
+                <!-- PRESTACIONES -->
+                <!-- ========================================= -->
+
+                <h5 class="fw-bold text-primary mb-3">
+
+                    <i class="bi bi-clipboard2-pulse"></i>
+
+                    Prestaciones Registradas
+
+                </h5>
+
+                <div class="table-responsive mb-4">
+
+                    <table class="table table-hover table-bordered align-middle">
 
                         <thead class="table-light">
 
                             <tr>
 
-                                <th>Fecha</th>
+                                <th>Código</th>
 
-                                <th>Tipo</th>
+                                <th>Prestación</th>
 
-                                <th>Concepto</th>
+                                <th class="text-center">
 
-                                <th>Paciente</th>
+                                    Cant.
 
-                                <th>Medio Pago</th>
+                                </th>
 
-                                <th>Importe</th>
+                                <th class="text-end">
 
-                                <th>Estado</th>
+                                    Bruto
 
-                                <th>Usuario</th>
+                                </th>
+
+                                <th class="text-end">
+
+                                    IVA
+
+                                </th>
+
+                                <th class="text-end">
+
+                                    Neto
+
+                                </th>
+
+                                <th class="text-end">
+
+                                    Médico
+
+                                </th>
+
+                                <th class="text-end">
+
+                                    Consultorio
+
+                                </th>
 
                             </tr>
 
@@ -232,69 +456,15 @@
 
                         <tbody>
 
-                            {% for movimiento in movimientos %}
+                            {% for detalle in movimiento.detalles.all %}
 
                             <tr>
 
                                 <td>
 
-                                    {{ movimiento.fecha_creacion|date:"d/m/Y H:i" }}
-
-                                </td>
-
-                                <td>
-
-                                    {% if movimiento.tipo == 'INGRESO' %}
-
-                                        <span class="badge bg-success">
-
-                                            Ingreso
-
-                                        </span>
-
-                                    {% else %}
-
-                                        <span class="badge bg-danger">
-
-                                            Egreso
-
-                                        </span>
-
-                                    {% endif %}
-
-                                </td>
-
-                                <td>
-
-                                    {{ movimiento.concepto }}
-
-                                </td>
-
-                                <td>
-
-                                    {% if movimiento.paciente %}
-
-                                        {{ movimiento.paciente }}
-
-                                    {% else %}
-
-                                        -
-
-                                    {% endif %}
-
-                                </td>
-
-                                <td>
-
-                                    {{ movimiento.medio_pago.nombre }}
-
-                                </td>
-
-                                <td>
-
                                     <strong>
 
-                                        ${{ movimiento.importe|floatformat:0 }}
+                                        {{ detalle.codigo }}
 
                                     </strong>
 
@@ -302,29 +472,43 @@
 
                                 <td>
 
-                                    {% if movimiento.estado == 'ACTIVO' %}
-
-                                        <span class="badge bg-success">
-
-                                            Activo
-
-                                        </span>
-
-                                    {% else %}
-
-                                        <span class="badge bg-danger">
-
-                                            Anulado
-
-                                        </span>
-
-                                    {% endif %}
+                                    {{ detalle.descripcion }}
 
                                 </td>
 
-                                <td>
+                                <td class="text-center">
 
-                                    {{ movimiento.creado_por.username }}
+                                    {{ detalle.cantidad }}
+
+                                </td>
+
+                                <td class="text-end">
+
+                                    ${{ detalle.importe|floatformat:0 }}
+
+                                </td>
+
+                                <td class="text-end text-primary">
+
+                                    ${{ detalle.importe_iva|floatformat:0 }}
+
+                                </td>
+
+                                <td class="text-end text-success">
+
+                                    ${{ detalle.importe_neto|floatformat:0 }}
+
+                                </td>
+
+                                <td class="text-end text-warning">
+
+                                    ${{ detalle.importe_medico|floatformat:0 }}
+
+                                </td>
+
+                                <td class="text-end">
+
+                                    ${{ detalle.importe_consultorio|floatformat:0 }}
 
                                 </td>
 
@@ -334,10 +518,11 @@
 
                             <tr>
 
-                                <td colspan="8"
+                                <td
+                                    colspan="8"
                                     class="text-center text-muted">
 
-                                    No hay movimientos registrados.
+                                    No existen prestaciones registradas.
 
                                 </td>
 
@@ -348,6 +533,407 @@
                         </tbody>
 
                     </table>
+
+                </div>
+
+                <!-- ========================================= -->
+                <!-- MEDIOS DE PAGO -->
+                <!-- ========================================= -->
+
+                <h5 class="fw-bold text-success mb-3">
+
+                    <i class="bi bi-credit-card-2-front"></i>
+
+                    Medios de Pago
+
+                </h5>
+
+                <div class="table-responsive mb-4">
+
+                    <table class="table table-bordered table-hover">
+
+                        <thead class="table-light">
+
+                            <tr>
+
+                                <th>
+
+                                    Medio
+
+                                </th>
+
+                                <th class="text-end">
+
+                                    Importe
+
+                                </th>
+
+                            </tr>
+
+                        </thead>
+
+                        <tbody>
+
+                            {% for medio in movimiento.detalles_medios_pago.all %}
+
+                            <tr>
+
+                                <td>
+
+                                    {{ medio.medio_pago.nombre }}
+
+                                </td>
+
+                                <td class="text-end">
+
+                                    <strong>
+
+                                        ${{ medio.importe|floatformat:0 }}
+
+                                    </strong>
+
+                                </td>
+
+                            </tr>
+
+                            {% empty %}
+
+                            <tr>
+
+                                <td
+                                    colspan="2"
+                                    class="text-center text-muted">
+
+                                    Sin medios de pago.
+
+                                </td>
+
+                            </tr>
+
+                            {% endfor %}
+
+                        </tbody>
+
+                    </table>
+
+                </div>
+
+                                <!-- ========================================= -->
+                <!-- RESUMEN FINANCIERO DEL MOVIMIENTO -->
+                <!-- ========================================= -->
+
+                <h5 class="fw-bold text-danger mb-3">
+
+                    <i class="bi bi-cash-stack"></i>
+
+                    Resumen Financiero
+
+                </h5>
+
+                <div class="row mb-4">
+
+                    <div class="col-lg-2 col-md-4 mb-3">
+
+                        <div class="card border-start border-success border-4 h-100">
+
+                            <div class="card-body text-center">
+
+                                <div class="small text-success fw-bold">
+
+                                    BRUTO
+
+                                </div>
+
+                                <h5>
+
+                                    ${{ movimiento.importe_bruto|floatformat:0 }}
+
+                                </h5>
+
+                            </div>
+
+                        </div>
+
+                    </div>
+
+                    <div class="col-lg-2 col-md-4 mb-3">
+
+                        <div class="card border-start border-primary border-4 h-100">
+
+                            <div class="card-body text-center">
+
+                                <div class="small text-primary fw-bold">
+
+                                    IVA
+
+                                </div>
+
+                                <h5>
+
+                                    ${{ movimiento.importe_iva|floatformat:0 }}
+
+                                </h5>
+
+                            </div>
+
+                        </div>
+
+                    </div>
+
+                    <div class="col-lg-2 col-md-4 mb-3">
+
+                        <div class="card border-start border-info border-4 h-100">
+
+                            <div class="card-body text-center">
+
+                                <div class="small text-info fw-bold">
+
+                                    NETO
+
+                                </div>
+
+                                <h5>
+
+                                    ${{ movimiento.importe_neto|floatformat:0 }}
+
+                                </h5>
+
+                            </div>
+
+                        </div>
+
+                    </div>
+
+                    <div class="col-lg-2 col-md-4 mb-3">
+
+                        <div class="card border-start border-warning border-4 h-100">
+
+                            <div class="card-body text-center">
+
+                                <div class="small text-warning fw-bold">
+
+                                    MÉDICO
+
+                                </div>
+
+                                <h5>
+
+                                    ${{ movimiento.importe_medico|floatformat:0 }}
+
+                                </h5>
+
+                            </div>
+
+                        </div>
+
+                    </div>
+
+                    <div class="col-lg-2 col-md-4 mb-3">
+
+                        <div class="card border-start border-dark border-4 h-100">
+
+                            <div class="card-body text-center">
+
+                                <div class="small fw-bold">
+
+                                    CONSULTORIO
+
+                                </div>
+
+                                <h5>
+
+                                    ${{ movimiento.importe_consultorio|floatformat:0 }}
+
+                                </h5>
+
+                            </div>
+
+                        </div>
+
+                    </div>
+
+                    <div class="col-lg-2 col-md-4 mb-3">
+
+                        <div class="card border-start border-danger border-4 h-100">
+
+                            <div class="card-body text-center">
+
+                                <div class="small text-danger fw-bold">
+
+                                    RETENCIÓN
+
+                                </div>
+
+                                <h5>
+
+                                    ${{ movimiento.retencion_monto|floatformat:0 }}
+
+                                </h5>
+
+                            </div>
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+                <!-- ========================================= -->
+                <!-- OBSERVACIONES -->
+                <!-- ========================================= -->
+
+                {% if movimiento.observacion %}
+
+                <div class="alert alert-secondary">
+
+                    <strong>
+
+                        Observaciones
+
+                    </strong>
+
+                    <hr>
+
+                    {{ movimiento.observacion }}
+
+                </div>
+
+                {% endif %}
+
+            </div>
+
+        </div>
+
+        {% empty %}
+
+        <div class="alert alert-info shadow">
+
+            <i class="bi bi-info-circle"></i>
+
+            No existen movimientos registrados para esta caja.
+
+        </div>
+
+        {% endfor %}
+
+
+                <!-- ========================================= -->
+        <!-- RESUMEN GENERAL DE LA CAJA -->
+        <!-- ========================================= -->
+
+        <div class="card shadow mt-4">
+
+            <div class="card-header bg-dark text-white">
+
+                <h5 class="mb-0">
+
+                    <i class="bi bi-bar-chart-line-fill"></i>
+
+                    Resumen Ejecutivo de la Caja
+
+                </h5>
+
+            </div>
+
+            <div class="card-body">
+
+                <div class="row text-center">
+
+                    <div class="col-md-2">
+
+                        <h6 class="text-muted">
+
+                            Facturación Bruta
+
+                        </h6>
+
+                        <h4 class="text-success">
+
+                            ${{ ingresos|floatformat:0 }}
+
+                        </h4>
+
+                    </div>
+
+                    <div class="col-md-2">
+
+                        <h6 class="text-muted">
+
+                            IVA
+
+                        </h6>
+
+                        <h4 class="text-primary">
+
+                            ${{ total_iva|floatformat:0 }}
+
+                        </h4>
+
+                    </div>
+
+                    <div class="col-md-2">
+
+                        <h6 class="text-muted">
+
+                            Neto
+
+                        </h6>
+
+                        <h4 class="text-info">
+
+                            ${{ total_neto|floatformat:0 }}
+
+                        </h4>
+
+                    </div>
+
+                    <div class="col-md-2">
+
+                        <h6 class="text-muted">
+
+                            Honorarios
+
+                        </h6>
+
+                        <h4 class="text-warning">
+
+                            ${{ total_honorarios|floatformat:0 }}
+
+                        </h4>
+
+                    </div>
+
+                    <div class="col-md-2">
+
+                        <h6 class="text-muted">
+
+                            Consultorio
+
+                        </h6>
+
+                        <h4>
+
+                            ${{ total_consultorio|floatformat:0 }}
+
+                        </h4>
+
+                    </div>
+
+                    <div class="col-md-2">
+
+                        <h6 class="text-muted">
+
+                            Saldo Final
+
+                        </h6>
+
+                        <h4 class="text-danger">
+
+                            ${{ saldo|floatformat:0 }}
+
+                        </h4>
+
+                    </div>
 
                 </div>
 

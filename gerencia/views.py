@@ -1363,29 +1363,75 @@ def detalle_caja(request, caja_id):
         id=caja_id
     )
 
-    movimientos = MovimientoCaja.objects.filter(
-        caja=caja
-    ).select_related(
-        'medio_pago',
-        'paciente',
-        'creado_por'
-    ).order_by(
-        '-fecha_creacion'
+    movimientos = (
+        MovimientoCaja.objects
+        .filter(caja=caja)
+        .select_related(
+            "paciente",
+            "creado_por",
+            "turno",
+            "concepto_facturacion",
+        )
+        .prefetch_related(
+            "detalles",
+            "detalles_medios_pago",
+        )
+        .order_by("-fecha_creacion")
     )
 
-    ingresos = movimientos.filter(
-        tipo='INGRESO',
-        estado='ACTIVO'
-    ).aggregate(
-        total=Sum('importe')
-    )['total'] or 0
+    
 
-    egresos = movimientos.filter(
-        tipo='EGRESO',
-        estado='ACTIVO'
+    ingresos = (
+    movimientos.filter(
+        tipo="INGRESO",
+        estado="ACTIVO"
     ).aggregate(
-        total=Sum('importe')
-    )['total'] or 0
+        total=Sum("importe_bruto")
+    )["total"] or 0
+)
+
+    egresos = (
+        movimientos.filter(
+            tipo="EGRESO",
+            estado="ACTIVO"
+        ).aggregate(
+            total=Sum("importe_bruto")
+        )["total"] or 0
+    )
+
+    saldo = ingresos - egresos
+
+    total_iva = (
+        movimientos.filter(
+            estado="ACTIVO"
+        ).aggregate(
+            total=Sum("importe_iva")
+        )["total"] or 0
+    )
+
+    total_honorarios = (
+        movimientos.filter(
+            estado="ACTIVO"
+        ).aggregate(
+            total=Sum("importe_medico")
+        )["total"] or 0
+    )
+
+    total_consultorio = (
+        movimientos.filter(
+            estado="ACTIVO"
+        ).aggregate(
+            total=Sum("importe_consultorio")
+        )["total"] or 0
+    )
+
+    total_neto = (
+        movimientos.filter(
+            estado="ACTIVO"
+        ).aggregate(
+            total=Sum("importe_neto")
+        )["total"] or 0
+    )
 
     saldo = ingresos - egresos
 
@@ -1403,5 +1449,21 @@ def detalle_caja(request, caja_id):
     return render(
         request,
         'gerencia/detalle_caja.html',
-        context
+        context = {
+
+            "caja": caja,
+
+            "movimientos": movimientos,
+
+            "ingresos": ingresos,
+            "egresos": egresos,
+            "saldo": saldo,
+
+            "total_bruto": ingresos,
+            "total_neto": total_neto,
+            "total_iva": total_iva,
+            "total_honorarios": total_honorarios,
+            "total_consultorio": total_consultorio,
+
+        }
     )
