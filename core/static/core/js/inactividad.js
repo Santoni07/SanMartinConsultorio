@@ -14,20 +14,13 @@ document.addEventListener("DOMContentLoaded", () => {
 // =========================================================
 // CONFIGURACIÓN
 // =========================================================
-// Cierra a los 2 minutos
-const TIEMPO_INACTIVIDAD = 2 * 60 * 1000;
 
-// Muestra el aviso 20 segundos antes
-const TIEMPO_AVISO = 100 * 1000; // 1 minuto 40 segundos
 
-// Cuenta regresiva de 20 segundos
-const CUENTA_REGRESIVA = 20;
 
-/*
 const TIEMPO_INACTIVIDAD = 20 * 60 * 1000;     // 20 minutos
 const TIEMPO_AVISO = 19 * 60 * 1000;           // Mostrar aviso al minuto 19
 const CUENTA_REGRESIVA = 60;                   // 60 segundos
-*/
+
 // =========================================================
 // VARIABLES
 // =========================================================
@@ -232,6 +225,6 @@ function continuarSesion(){
 
 function cerrarSesion(){
 
-    window.location.href = "/logout/";
+    window.location.href = "/accounts/logout/";
 
 }
