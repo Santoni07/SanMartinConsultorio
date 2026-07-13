@@ -266,3 +266,12 @@ Fecha de solicitud: {datetime.now()}
         'especialidades': especialidades,
         'obras_sociales': obras_sociales,
     })
+    
+from django.http import JsonResponse   
+@login_required
+def renovar_sesion(request):
+    """
+    Mantiene viva la sesión del usuario.
+    """
+    request.session.modified = True
+    return JsonResponse({"ok": True})

@@ -2,7 +2,7 @@
 from django.urls import path
 
 
-from .views import HomePageView,AdminPageView, ValidarUsuario,MedicoPageView,solicitar_turno,politica_privacidad,terminos_condiciones,cambiar_centro
+from .views import HomePageView,AdminPageView, ValidarUsuario,MedicoPageView,solicitar_turno,politica_privacidad,terminos_condiciones,cambiar_centro,renovar_sesion
 
 app_name="core"
 
@@ -13,6 +13,11 @@ urlpatterns = [
     path('validar-usuario/', ValidarUsuario, name='validar_usuario'),
     path('medico/', MedicoPageView.as_view(), name='medico'),
     path('solicitar-turno/', solicitar_turno, name='solicitar_turno'),
+    path(
+    "renovar-sesion/",
+    renovar_sesion,
+    name="renovar_sesion"
+),
     path(
     'cambiar-centro/<int:centro_id>/',
     cambiar_centro,

@@ -36,7 +36,18 @@ SECRET_KEY = 'django-insecure-if##f6q2py9_6fih+1^xe*a^7=47bcubuhs=&*vky4m(=dccuv
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = False
 
+# ==========================================================
+# SEGURIDAD DE SESIONES
+# ==========================================================
 
+# 20 minutos
+SESSION_COOKIE_AGE = 20 * 60
+
+# Cada request reinicia el contador
+SESSION_SAVE_EVERY_REQUEST = True
+
+# Al cerrar el navegador la sesión termina
+SESSION_EXPIRE_AT_BROWSER_CLOSE = True
 
 # Application definition
 
