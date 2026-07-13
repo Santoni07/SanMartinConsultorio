@@ -33,8 +33,24 @@ ALLOWED_HOSTS = [
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = 'django-insecure-if##f6q2py9_6fih+1^xe*a^7=47bcubuhs=&*vky4m(=dccuv'
 
-# SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = False
+
+if os.environ.get("PYTHONANYWHERE_SITE"):
+
+    DEBUG = False
+
+    ALLOWED_HOSTS = [
+        "app.centromedicosanmartin.ar",
+        "consultorioSanMartin.pythonanywhere.com",
+    ]
+
+else:
+
+    DEBUG = True
+
+    ALLOWED_HOSTS = [
+        "127.0.0.1",
+        "localhost",
+    ]
 
 # ==========================================================
 # SEGURIDAD DE SESIONES

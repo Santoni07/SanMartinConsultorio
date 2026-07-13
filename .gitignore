@@ -21,3 +21,5 @@ staticfiles/
 
 # Videos pesados
 *.mp4
+
+fixtures/
