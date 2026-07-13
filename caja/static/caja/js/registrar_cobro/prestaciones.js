@@ -199,7 +199,7 @@ function renderPrestaciones(){
 
                 <td class="text-end">
 
-                    $ ${(item.cantidad * item.importe).toFixed(2)}
+                   $ ${formatoMoneda(item.cantidad * item.importe)}
 
                 </td>
 

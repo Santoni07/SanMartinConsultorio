@@ -21,7 +21,7 @@ function actualizarResumen(){
 
         totalPrestaciones.innerHTML =
             "$ " +
-            totalPrestacionesCalculado.toFixed(2);
+            formatoMoneda(totalPrestacionesCalculado);
 
     }
 
@@ -34,7 +34,7 @@ function actualizarResumen(){
 
         resumenPrestaciones.innerHTML =
             "$ " +
-            totalPrestacionesCalculado.toFixed(2);
+            formatoMoneda(totalPrestacionesCalculado);
 
     }
 
@@ -46,7 +46,7 @@ function actualizarResumen(){
 
         totalMediosPago.innerHTML =
             "$ " +
-            totalMediosCalculado.toFixed(2);
+            formatoMoneda(totalMediosCalculado);
 
     }
 
@@ -59,7 +59,7 @@ function actualizarResumen(){
 
         resumenMedios.innerHTML =
             "$ " +
-            totalMediosCalculado.toFixed(2);
+            formatoMoneda(totalMediosCalculado);
 
     }
 
@@ -76,7 +76,7 @@ function actualizarResumen(){
 
         saldo.innerHTML =
             "$ " +
-            saldoPendiente.toFixed(2);
+            formatoMoneda(saldoPendiente);
 
         if(saldoPendiente === 0){
 
@@ -139,7 +139,7 @@ function actualizarResumen(){
 
             estado.innerHTML =
                 "⚠ Faltan cobrar $ " +
-                saldoPendiente.toFixed(2);
+                formatoMoneda(saldoPendiente);
 
         }
 
@@ -150,9 +150,9 @@ function actualizarResumen(){
 
             estado.innerHTML =
                 "✖ Exceso de $ " +
-                Math.abs(
-                    saldoPendiente
-                ).toFixed(2);
+                formatoMoneda(
+                    Math.abs(saldoPendiente)
+                );
 
         }
 
