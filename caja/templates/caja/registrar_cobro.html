@@ -320,6 +320,89 @@
     type="hidden"
     id="medios_pago_json"
     name="medios_pago_json">
+    <!-- ========================= -->
+<!-- RESUMEN DEL COBRO -->
+<!-- ========================= -->
+
+<div class="card border-primary mb-4">
+
+    <div class="card-header bg-light">
+
+        <strong>
+
+            Resumen del Cobro
+
+        </strong>
+
+    </div>
+
+    <div class="card-body">
+
+        <div class="row text-center">
+
+            <div class="col-md-4">
+
+                <h6>Total Prestaciones</h6>
+
+                <h4
+                    id="resumen_total_prestaciones"
+                    class="text-primary">
+
+                    $ 0.00
+
+                </h4>
+
+            </div>
+
+            <div class="col-md-4">
+
+                <h6>Total Medios de Pago</h6>
+
+                <h4
+                    id="resumen_total_medios"
+                    class="text-success">
+
+                    $ 0.00
+
+                </h4>
+
+            </div>
+
+            <div class="col-md-4">
+
+                <h6>Saldo Pendiente</h6>
+
+                <h4
+                    id="saldo_pendiente"
+                    class="text-danger">
+
+                    $ 0.00
+
+                </h4>
+
+            </div>
+
+        </div>
+
+        <hr>
+
+        <div
+            id="estado_pago"
+            class="text-center fw-bold text-warning">
+
+            Aún no hay prestaciones cargadas.
+
+        </div>
+
+    </div>
+
+</div>
+
+
+
+
+
+
 
                 <!-- ========================= -->
                 <!-- RETENCIÓN -->
@@ -373,7 +456,9 @@
 
                     <button
                         type="submit"
-                        class="btn btn-success">
+                        class="btn btn-success"
+                        id="btn_guardar_cobro"
+                        disabled>
 
                         Guardar Cobro
 

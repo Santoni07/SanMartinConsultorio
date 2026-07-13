@@ -604,6 +604,79 @@ def registrar_cobro(request):
                         "medios_pago": medios_pago,
                     },
                 )
+                
+            # =====================================
+            # VALIDAR TOTALES DE COBRO
+            # =====================================
+
+            total_prestaciones = Decimal("0")
+
+            for detalle in detalles:
+
+                cantidad = Decimal(
+                    str(detalle.get("cantidad", 1))
+                )
+
+                importe = Decimal(
+                    str(detalle.get("importe", 0))
+                )
+
+                total_prestaciones += (
+                    cantidad * importe
+                )
+
+            total_medios = Decimal("0")
+
+            for medio in medios_pago_data:
+
+                total_medios += Decimal(
+                    str(medio.get("importe", 0))
+                )
+
+            if abs(total_prestaciones - total_medios) > Decimal("0.01"):
+
+                diferencia = (
+                    total_prestaciones -
+                    total_medios
+                )
+
+                if diferencia > 0:
+
+                    messages.error(
+
+                        request,
+
+                        f"El cobro no puede registrarse. "
+                        f"Faltan cobrar ${diferencia:.2f}."
+
+                    )
+
+                else:
+
+                    messages.error(
+
+                        request,
+
+                        f"El cobro no puede registrarse. "
+                        f"Existe un excedente de ${abs(diferencia):.2f}."
+
+                    )
+
+                return render(
+
+                    request,
+
+                    "caja/registrar_cobro.html",
+
+                    {
+                        "form": form,
+                        "caja": caja,
+                        "centro_medico": centro_medico,
+                        "medios_pago": medios_pago,
+                    },
+
+                )
+            
             # =====================================
             # CREAR MOVIMIENTO
             # =====================================

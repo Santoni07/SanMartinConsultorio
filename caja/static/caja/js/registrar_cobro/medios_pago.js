@@ -39,6 +39,42 @@ function inicializarMediosPago(){
         return;
     }
 
+    // =====================================
+    // CUANDO SE ABRE EL MODAL
+    // =====================================
+
+    const modal = document.getElementById(
+        "modalMedioPago"
+    );
+
+    if(modal){
+
+        modal.addEventListener(
+            "shown.bs.modal",
+            function(){
+
+                const saldo =
+                    obtenerSaldoPendiente();
+
+                if(saldo > 0){
+
+                    inputImporteMedioPago.value =
+                        saldo.toFixed(2);
+
+                }
+                else{
+
+                    inputImporteMedioPago.value = "";
+
+                }
+
+                selectMedioPago.focus();
+
+            }
+        );
+
+    }
+
     btnAgregarMedioPago.disabled = true;
 
     selectMedioPago.addEventListener("change", function(){
@@ -54,6 +90,16 @@ function inicializarMediosPago(){
 
             mostrarError(
                 "Debe seleccionar un medio de pago."
+            );
+
+            return;
+
+        }
+
+        if(obtenerTotalPrestaciones() <= 0){
+
+            mostrarError(
+                "Debe agregar al menos una prestación antes de registrar medios de pago."
             );
 
             return;
@@ -76,11 +122,37 @@ function inicializarMediosPago(){
 
         }
 
+        const saldoPendiente =
+            obtenerSaldoPendiente();
+
+        if(importe > saldoPendiente){
+
+            mostrarError(
+
+                "El importe supera el saldo pendiente.\n\n" +
+
+                "Saldo pendiente: $" +
+                saldoPendiente.toFixed(2) +
+
+                "\n\nExceso: $" +
+
+                (importe - saldoPendiente)
+                .toFixed(2)
+
+            );
+
+            inputImporteMedioPago.focus();
+
+            return;
+
+        }
+
         mediosPago.push({
 
             medio: selectMedioPago.value,
 
             descripcion:
+
                 selectMedioPago.options[
                     selectMedioPago.selectedIndex
                 ].text,
@@ -88,9 +160,11 @@ function inicializarMediosPago(){
             importe: importe
 
         });
+
         mostrarExito(
             "Medio de pago agregado correctamente."
         );
+
         renderMediosPago();
 
         // =====================================
@@ -99,7 +173,20 @@ function inicializarMediosPago(){
 
         selectMedioPago.selectedIndex = 0;
 
-        inputImporteMedioPago.value = "";
+        const nuevoSaldo =
+            obtenerSaldoPendiente();
+
+        if(nuevoSaldo > 0){
+
+            inputImporteMedioPago.value =
+                nuevoSaldo.toFixed(2);
+
+        }
+        else{
+
+            inputImporteMedioPago.value = "";
+
+        }
 
         btnAgregarMedioPago.disabled = true;
 
@@ -110,11 +197,22 @@ function inicializarMediosPago(){
     window.eliminarMedioPago = function(index){
 
         mediosPago.splice(index,1);
-                mostrarAdvertencia(
+
+        mostrarAdvertencia(
             "Medio de pago eliminado."
         );
 
         renderMediosPago();
+
+        const saldo =
+            obtenerSaldoPendiente();
+
+        if(saldo > 0){
+
+            inputImporteMedioPago.value =
+                saldo.toFixed(2);
+
+        }
 
     };
 
@@ -197,8 +295,11 @@ function obtenerTotalMediosPago(){
 function obtenerSaldoPendiente(){
 
     return (
+
         obtenerTotalPrestaciones() -
+
         obtenerTotalMediosPago()
+
     );
 
 }

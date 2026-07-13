@@ -1,4 +1,3 @@
-
 // ======================================================
 // VALIDACIONES
 // ======================================================
@@ -6,13 +5,18 @@
 function validarFormulario(){
 
     const mensajes =
-    document.getElementById("mensajes");
+        document.getElementById("mensajes");
 
     if(mensajes){
 
         mensajes.innerHTML = "";
 
     }
+
+    // =====================================
+    // PRESTACIONES
+    // =====================================
+
     if(prestaciones.length === 0){
 
         mostrarError(
@@ -22,6 +26,10 @@ function validarFormulario(){
         return false;
 
     }
+
+    // =====================================
+    // MEDIOS DE PAGO
+    // =====================================
 
     if(mediosPago.length === 0){
 
@@ -33,10 +41,63 @@ function validarFormulario(){
 
     }
 
-    if(Math.abs(obtenerSaldoPendiente()) > 0.01){
+    // =====================================
+    // CONTROL DE IMPORTES
+    // =====================================
+
+    const totalPrestaciones =
+        obtenerTotalPrestaciones();
+
+    const totalMedios =
+        obtenerTotalMediosPago();
+
+    const saldoPendiente =
+        obtenerSaldoPendiente();
+
+    if(saldoPendiente > 0.01){
 
         mostrarError(
-            "La suma de los medios de pago debe coincidir con el total del cobro."
+
+            "El cobro no puede registrarse.<br><br>" +
+
+            "<strong>Total Prestaciones:</strong> $" +
+            totalPrestaciones.toFixed(2) +
+
+            "<br>" +
+
+            "<strong>Total Medios de Pago:</strong> $" +
+            totalMedios.toFixed(2) +
+
+            "<br><br>" +
+
+            "<strong>Faltan cobrar:</strong> $" +
+            saldoPendiente.toFixed(2)
+
+        );
+
+        return false;
+
+    }
+
+    if(saldoPendiente < -0.01){
+
+        mostrarError(
+
+            "El cobro no puede registrarse.<br><br>" +
+
+            "<strong>Total Prestaciones:</strong> $" +
+            totalPrestaciones.toFixed(2) +
+
+            "<br>" +
+
+            "<strong>Total Medios de Pago:</strong> $" +
+            totalMedios.toFixed(2) +
+
+            "<br><br>" +
+
+            "<strong>Existe un excedente de:</strong> $" +
+            Math.abs(saldoPendiente).toFixed(2)
+
         );
 
         return false;
