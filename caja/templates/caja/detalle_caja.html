@@ -79,11 +79,30 @@
 
                 <div class="col-md-4">
 
-                    <strong>Saldo Inicial</strong><br>
+    <div class="d-flex justify-content-between align-items-start">
 
-                    $ {{ caja.saldo_inicial }}
+        <div>
 
-                </div>
+            <strong>Saldo Inicial</strong><br>
+
+            $ {{ caja.saldo_inicial }}
+
+        </div>
+
+        <a
+            href="{% url 'pdf_cierre_caja' caja.id %}"
+            class="btn btn-outline-secondary btn-sm"
+            title="Descargar PDF">
+
+            <i class="bi bi-file-earmark-pdf"></i>
+
+            PDF
+
+        </a>
+
+    </div>
+
+</div>
 
             </div>
 
@@ -434,15 +453,7 @@
             </div>
 
         </div>
-        <a
-    href="{% url 'pdf_cierre_caja' caja.id %}"
-    class="btn btn-danger">
 
-    <i class="bi bi-file-earmark-pdf"></i>
-
-    Descargar PDF
-
-</a>
     </div>
 
 </div>
