@@ -236,7 +236,7 @@ function renderMediosPago(){
 
                 <td class="text-end">
 
-                    $ ${item.importe.toFixed(2)}
+                    $ ${formatoMoneda(item.importe)}
 
                 </td>
 
