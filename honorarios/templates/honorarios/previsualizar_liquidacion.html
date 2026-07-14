@@ -192,28 +192,28 @@
 
         <hr>
 
-        <form
-            method="post"
-            action="{% url 'confirmar_liquidacion' medico.id %}"
-        >
+    <form
+    method="post"
+    action="{% url 'generar_liquidacion' medico.id %}"
+>
 
-            {% csrf_token %}
+    {% csrf_token %}
 
-            <button
-                type="submit"
-                class="btn btn-success"
-            >
-                Confirmar Liquidación
-            </button>
+    <button
+        type="submit"
+        class="btn btn-success"
+    >
+        Generar Liquidación
+    </button>
 
-            <a
-                href="{% url 'honorarios_medicos' %}"
-                class="btn btn-secondary"
-            >
-                Cancelar
-            </a>
+    <a
+        href="{% url 'honorarios_medicos' %}"
+        class="btn btn-secondary"
+    >
+        Cancelar
+    </a>
 
-        </form>
+</form>
 
     </div>
 

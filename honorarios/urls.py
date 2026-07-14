@@ -19,11 +19,7 @@ path(
     name='previsualizar_liquidacion'
 ),
 
-path(
-    'confirmar/<int:medico_id>/',
-    views.confirmar_liquidacion,
-    name='confirmar_liquidacion'
-    ),
+
  path(
     'pendientes/',
     views.liquidaciones_pendientes,
