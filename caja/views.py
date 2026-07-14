@@ -563,47 +563,66 @@ def registrar_cobro(request):
                         "medios_pago": medios_pago,
                     },
                 )
+                
+            
+            total_prestaciones = Decimal("0")
+
+            for detalle in detalles:
+
+                cantidad = Decimal(str(detalle.get("cantidad", 1)))
+                importe = Decimal(str(detalle.get("importe", 0)))
+
+                total_prestaciones += cantidad * importe
+            
+            #=====================================
+            # LEER MEDIOS DE PAGO
+            #=====================================
+
             medios_pago_json = request.POST.get("medios_pago_json")
 
-            if not medios_pago_json:
+            if total_prestaciones > Decimal("0"):
 
-                messages.error(
-                    request,
-                    "Debe agregar al menos un medio de pago."
-                )
+                if not medios_pago_json:
 
-                return render(
-                    request,
-                    "caja/registrar_cobro.html",
-                    {
-                        "form": form,
-                        "caja": caja,
-                        "centro_medico": centro_medico,
-                        "medios_pago": medios_pago,
-                    },
-                )
+                    messages.error(
+                        request,
+                        "Debe agregar al menos un medio de pago."
+                    )
 
-            try:
+                    return render(
+                        request,
+                        "caja/registrar_cobro.html",
+                        {
+                            "form": form,
+                            "caja": caja,
+                            "centro_medico": centro_medico,
+                            "medios_pago": medios_pago,
+                        },
+                    )
 
-                medios_pago_data = json.loads(medios_pago_json)
-                print(medios_pago)
-            except json.JSONDecodeError:
+                try:
+                    medios_pago_data = json.loads(medios_pago_json)
 
-                messages.error(
-                    request,
-                    "Error al procesar los medios de pago."
-                )
+                except json.JSONDecodeError:
 
-                return render(
-                    request,
-                    "caja/registrar_cobro.html",
-                    {
-                        "form": form,
-                        "caja": caja,
-                        "centro_medico": centro_medico,
-                        "medios_pago": medios_pago,
-                    },
-                )
+                    messages.error(
+                        request,
+                        "Error al procesar los medios de pago."
+                    )
+
+                    return render(
+                        request,
+                        "caja/registrar_cobro.html",
+                        {
+                            "form": form,
+                            "caja": caja,
+                            "centro_medico": centro_medico,
+                            "medios_pago": medios_pago,
+                        },
+                    )
+
+            else:
+                medios_pago_data = []
                 
             # =====================================
             # VALIDAR TOTALES DE COBRO

@@ -419,23 +419,77 @@
                                         ⚡ Sobreturno
                                     </span><br>
 
-                                    <a href="{% url 'turnos:eliminar_sobreturno' turno.sobreturno_id %}"
-                                       class="btn btn-danger btn-sm mt-1"
-                                       onclick="return confirm('¿Eliminar sobreturno?');">
+                                    <button
 
-                                        X
+    type="button"
 
-                                    </a>
+    class="btn btn-danger btn-sm mt-1"
+
+    onclick="abrirModalConfirmacion(
+
+        'Eliminar Sobreturno',
+
+        '¿Desea eliminar este sobreturno?',
+
+        '{% url "turnos:eliminar_sobreturno" turno.sobreturno_id %}',
+
+        'danger',
+
+        'bi-calendar-x-fill',
+
+        'Sí, eliminar sobreturno',
+
+        [
+
+            ['Paciente', '{{ turno.paciente|escapejs }}'],
+
+            ['Hora', '{{ turno.hora|time:"H:i" }}']
+
+        ]
+
+    )">
+
+    X
+
+</button>
 
                                 {% else %}
 
-                                    <a href="{% url 'turnos:eliminar_turno' turno.turno_id %}"
-                                       class="btn btn-danger btn-sm mt-1"
-                                       onclick="return confirm('¿Eliminar turno?');">
+                                    <button
 
-                                        X
+    type="button"
 
-                                    </a>
+    class="btn btn-danger btn-sm mt-1"
+
+    onclick="abrirModalConfirmacion(
+
+        'Cancelar turno',
+
+        '¿Desea cancelar este turno?',
+
+        '{% url "turnos:eliminar_turno" turno.turno_id %}',
+
+        'danger',
+
+        'bi-calendar-x-fill',
+
+        'Sí, cancelar turno',
+
+        [
+
+            ['Paciente', '{{ turno.paciente|escapejs }}'],
+
+            ['Hora', '{{ turno.hora|time:"H:i" }}'],
+
+            ['Duración', '{{ turno.tiempo_reservado }} min']
+
+        ]
+
+    )">
+
+    X
+
+</button>
 
                                 {% endif %}
 

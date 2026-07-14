@@ -167,11 +167,14 @@ function actualizarResumen(){
             "btn_guardar_cobro"
         );
 
-    if(btnGuardar){
+    if (btnGuardar) {
+
+        const hayPrestaciones =
+            prestaciones.length > 0;
 
         btnGuardar.disabled =
             (
-                totalPrestacionesCalculado === 0 ||
+                !hayPrestaciones ||
                 saldoPendiente !== 0
             );
 

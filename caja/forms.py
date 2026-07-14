@@ -103,10 +103,27 @@ class MovimientoCajaForm(forms.ModelForm):
 
 
 
+class TurnoChoiceField(forms.ModelChoiceField):
 
+    def label_from_instance(self, obj):
+
+        if obj.es_sobreturno:
+            return (
+                f"🟡 SOBRETURNO | "
+                f"{obj.fecha.strftime('%d/%m/%Y')} "
+                f"{obj.hora.strftime('%H:%M')} - "
+                f"{obj.medico} ({obj.paciente})"
+            )
+
+        return (
+            f"{obj.fecha.strftime('%d/%m/%Y')} "
+            f"{obj.hora.strftime('%H:%M')} - "
+            f"{obj.medico} ({obj.paciente})"
+        )
+        
 class CobroConsultaForm(forms.ModelForm):
 
-    turno = forms.ModelChoiceField(
+    turno = TurnoChoiceField(
         queryset=Turnos.objects.none(),
         required=True,
         label='Turno a cobrar',
@@ -132,7 +149,6 @@ class CobroConsultaForm(forms.ModelForm):
         fields = [
             'turno',
             'concepto_facturacion',
-          
             'retencion_monto',
             'retencion_motivo',
             'observacion',
@@ -143,8 +159,6 @@ class CobroConsultaForm(forms.ModelForm):
             'concepto_facturacion': forms.Select(attrs={
                 'class': 'form-select'
             }),
-
-          
 
             'retencion_monto': forms.NumberInput(attrs={
                 'class': 'form-control',
@@ -175,11 +189,9 @@ class CobroConsultaForm(forms.ModelForm):
 
         super().__init__(*args, **kwargs)
 
-        
-
-        # ===========================
+        # ======================================
         # PRESTACIONES
-        # ===========================
+        # ======================================
 
         self.fields['concepto_facturacion'].queryset = (
             ConceptoFacturacion.objects.filter(
@@ -193,12 +205,11 @@ class CobroConsultaForm(forms.ModelForm):
             "Seleccione una prestación"
         )
 
-        # El importe se mostrará por AJAX
         self.fields['importe_particular'].initial = 0
 
-        # ===========================
+        # ======================================
         # TURNOS
-        # ===========================
+        # ======================================
 
         if centro_medico:
 
@@ -225,13 +236,17 @@ class CobroConsultaForm(forms.ModelForm):
                 )
                 .select_related(
                     'paciente',
-                    'medico',
-                    'especialidad'
+                    'medico'
                 )
-                .order_by('hora')
+                .order_by(
+                    'hora',
+                    'es_sobreturno'
+                )
             )
-            
-            
+
+
+
+           
 class AnularMovimientoCajaForm(forms.Form):
     motivo_anulacion = forms.CharField(
         label='Motivo de anulación',

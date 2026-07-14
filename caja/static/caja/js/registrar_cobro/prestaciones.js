@@ -73,10 +73,10 @@ btnAgregarPrestacion.addEventListener("click", function(){
         inputImporte.value || 0
     );
 
-    if(importe <= 0){
+    if (importe < 0) {
 
         mostrarError(
-            "El importe de la prestación debe ser mayor a cero."
+            "El importe de la prestación no puede ser negativo."
         );
 
         return;

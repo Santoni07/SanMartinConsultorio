@@ -31,10 +31,15 @@ function validarFormulario(){
     // MEDIOS DE PAGO
     // =====================================
 
-    if(mediosPago.length === 0){
+    const totalPrestaciones = obtenerTotalPrestaciones();
+
+    if (
+        totalPrestaciones > 0 &&
+        obtenerSaldoPendiente() !== 0
+    ) {
 
         mostrarError(
-            "Debe agregar al menos un medio de pago."
+            "Debe completar los medios de pago."
         );
 
         return false;
