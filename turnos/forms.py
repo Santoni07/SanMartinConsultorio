@@ -8,9 +8,11 @@ class SeleccionMedicoForm(forms.Form):
 
     especialidad = forms.ModelChoiceField(
         queryset=Especialidades.objects.all(),
-        required=False,
-        empty_label="Todas las especialidades",
-        widget=forms.Select(attrs={'class': 'form-select form-select-lg'})
+        required=True,
+        empty_label="Seleccione una especialidad",
+        widget=forms.Select(attrs={
+            'class': 'form-select form-select-lg'
+        })
     )
 
     medico = forms.ModelChoiceField(
@@ -20,26 +22,30 @@ class SeleccionMedicoForm(forms.Form):
     )
 
     def __init__(self, *args, **kwargs):
+
         super().__init__(*args, **kwargs)
 
-        # Si viene especialidad en el form enviado
-        if 'especialidad' in self.data:
-            try:
-                especialidad_id = int(self.data.get('especialidad'))
+        self.fields["medico"].queryset = Medico.objects.none()
 
-                if especialidad_id:
-                    self.fields['medico'].queryset = Medico.objects.filter(
+        if "especialidad" in self.data:
+
+            try:
+
+                especialidad_id = int(
+                    self.data.get("especialidad")
+                )
+
+                self.fields["medico"].queryset = (
+                    Medico.objects.filter(
                         especialidad__id=especialidad_id
                     ).distinct()
-                else:
-                    self.fields['medico'].queryset = Medico.objects.all()
+                )
 
             except (ValueError, TypeError):
-                self.fields['medico'].queryset = Medico.objects.all()
 
-        else:
-            # Primera carga
-            self.fields['medico'].queryset = Medico.objects.all()
+                pass
+        
+        
 class TurnoForm(forms.ModelForm):
     class Meta:
         model = Turnos

@@ -450,7 +450,13 @@ class Sobreturno(models.Model):
         'medicos.Medico',
         on_delete=models.CASCADE
     )
-
+    turno = models.OneToOneField(
+        Turnos,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="sobreturno"
+    )
     centro_medico = models.ForeignKey(
         CentroMedico,
         on_delete=models.SET_NULL,
@@ -526,6 +532,8 @@ class Sobreturno(models.Model):
 
         return f"Sobreturno - {self.medico} - {self.fecha} {self.hora}" 
     
+
+
 class HistorialTurno(models.Model):
 
     ACCIONES = [

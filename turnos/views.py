@@ -82,9 +82,10 @@ def seleccionar_medico(request):
 
             # Solo guardar si médico fue seleccionado
             if medico:
-                request.session['especialidad_id'] = especialidad.id if especialidad else None
-                request.session['medico_id'] = medico.id
-                return redirect('turnos:ver_disponibilidad')
+                request.session["especialidad_id"] = especialidad.id
+                request.session["medico_id"] = medico.id
+
+                return redirect("turnos:ver_disponibilidad")
 
     else:
         form = SeleccionMedicoForm()
@@ -171,7 +172,8 @@ def ver_disponibilidad(request):
         turnos_dia = Turnos.objects.filter(
             medico=medico,
             fecha=dia,
-            centro_medico=centro_activo
+            centro_medico=centro_activo,
+            es_sobreturno=False
         ).exclude(
             estado='CANCELADO'
         )
@@ -429,20 +431,6 @@ def crear_sobreturno(request):
             return redirect('turnos:ver_disponibilidad')
 
         consultorio = agenda.consultorio
-
-        # =====================================================
-        # 🔥 VALIDAR TURNO EXISTENTE
-        # =====================================================
-
-        existe_turno = Turnos.objects.filter(
-            medico_id=medico_id,
-            fecha=fecha,
-            hora=hora,
-            centro_medico=centro_activo
-        ).exclude(
-            estado='CANCELADO'
-        ).exists()
-
         # =====================================================
         # 🔥 VALIDAR SOBRETURNO EXISTENTE
         # =====================================================
@@ -456,15 +444,25 @@ def crear_sobreturno(request):
             estado='CANCELADO'
         ).exists()
 
-        if existe_turno or existe_sobreturno:
+        if existe_sobreturno:
 
             messages.warning(
                 request,
-                "Ya existe un turno o sobreturno en ese horario."
+                "Ya existe un sobreturno en ese horario."
             )
 
             return redirect('turnos:ver_disponibilidad')
 
+        if  existe_sobreturno:
+
+            messages.warning(
+                request,
+                "Ya existe un sobreturno en ese horario."
+            )
+
+            return redirect('turnos:ver_disponibilidad')
+
+        
         # =====================================================
         # 🔥 CREAR SOBRETURNO
         # =====================================================
@@ -490,6 +488,41 @@ def crear_sobreturno(request):
             estado='PENDIENTE'
         )
 
+        especialidad_id = request.session.get('especialidad_id')
+        # =====================================================
+        # 🔥 CREAR TURNO PARA CAJA / HONORARIOS
+        # =====================================================
+
+        print("Especialidad:", especialidad_id)
+        print("Médico:", medico_id)
+        print("Paciente:", paciente_id)
+        print("Centro:", centro_activo.id)
+        
+        try:
+
+            turno = Turnos.objects.create(
+                centro_medico=centro_activo,
+                sede_operacion=centro_activo,
+                creado_por=request.user,
+                especialidad_id=especialidad_id,
+                medico_id=medico_id,
+                paciente_id=paciente_id,
+                fecha=fecha,
+                hora=hora,
+                observaciones=observaciones,
+                estado='PENDIENTE',
+                es_sobreturno=True,
+                tiempo_reservado=agenda.duracion_turno,
+            )
+
+            print("TURNO CREADO:", turno.id)
+
+        except Exception as e:
+
+            print("ERROR CREANDO TURNO:", e)
+            raise
+        sobreturno.turno = turno
+        sobreturno.save(update_fields=["turno"])
         # =====================================================
         # 🔥 HISTORIAL
         # =====================================================
@@ -895,6 +928,7 @@ def reservar_turno(request):
         )
 
     return redirect('turnos:ver_disponibilidad')
+
 
 @login_required
 def eliminar_turno(request, turno_id):
@@ -2624,7 +2658,8 @@ def ver_disponibilidad_consulta(request):
         turnos_dia = Turnos.objects.filter(
             medico=medico,
             fecha=dia,
-            centro_medico=centro_activo
+            centro_medico=centro_activo,
+            es_sobreturno=False
         ).exclude(
             estado='CANCELADO'
         )
