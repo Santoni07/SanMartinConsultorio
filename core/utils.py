@@ -172,3 +172,47 @@ def mostrar_advertencia(
         detalles=detalles,
 
     )
+    
+def mostrar_confirmacion(
+
+    request,
+
+    *,
+
+    titulo="Confirmar acción",
+
+    mensaje="¿Desea continuar?",
+
+    icono="bi-question-circle-fill",
+
+    color="warning",
+
+    boton="Confirmar",
+
+    url="#",
+
+    metodo="GET",
+
+    detalles=None,
+
+):
+
+    request.session["modal_confirmacion"] = {
+
+        "titulo": titulo,
+
+        "mensaje": mensaje,
+
+        "icono": icono,
+
+        "color": color,
+
+        "boton": boton,
+
+        "url": url,
+
+        "metodo": metodo,
+
+        "detalles": detalles or [],
+
+    }

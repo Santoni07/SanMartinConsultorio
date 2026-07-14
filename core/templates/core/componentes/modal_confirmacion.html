@@ -1,0 +1,111 @@
+<!-- ===================================================== -->
+<!-- MODAL CONFIRMACIÓN GLOBAL -->
+<!-- ===================================================== -->
+
+<div
+    class="modal fade"
+    id="modalConfirmacion"
+    tabindex="-1"
+    aria-hidden="true">
+
+    <div class="modal-dialog modal-dialog-centered">
+
+        <div class="modal-content shadow">
+
+            <div
+                class="modal-header bg-{{ modal_confirmacion.color|default:'warning' }} text-white">
+
+                <h5 class="modal-title">
+
+                    <i class="bi {{ modal_confirmacion.icono }}"></i>
+
+                    {{ modal_confirmacion.titulo }}
+
+                </h5>
+
+                <button
+                    type="button"
+                    class="btn-close btn-close-white"
+                    data-bs-dismiss="modal">
+                </button>
+
+            </div>
+
+            <div class="modal-body">
+
+                <p class="mb-3">
+
+                    {{ modal_confirmacion.mensaje }}
+
+                </p>
+
+                {% if modal_confirmacion.detalles %}
+
+                <table class="table table-sm">
+
+                    <tbody>
+
+                    {% for titulo, valor in modal_confirmacion.detalles %}
+
+                        <tr>
+
+                            <th style="width:35%;">
+
+                                {{ titulo }}
+
+                            </th>
+
+                            <td>
+
+                                {{ valor }}
+
+                            </td>
+
+                        </tr>
+
+                    {% endfor %}
+
+                    </tbody>
+
+                </table>
+
+                {% endif %}
+
+            </div>
+
+            <div class="modal-footer">
+
+                <button
+                    type="button"
+                    class="btn btn-secondary"
+                    data-bs-dismiss="modal">
+
+                    Cancelar
+
+                </button>
+
+                <button
+
+                    type="button"
+
+                    id="btnConfirmarAccion"
+
+                    class="btn btn-{{ modal_confirmacion.color|default:'warning' }}"
+
+                    data-url="{{ modal_confirmacion.url }}"
+
+                    data-metodo="{{ modal_confirmacion.metodo|default:'GET' }}">
+
+                    <i class="bi {{ modal_confirmacion.icono }}"></i>
+
+                    {{ modal_confirmacion.boton }}
+
+                </button>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</div>

@@ -3,7 +3,6 @@ from core.utils import (
     modo_colaboracion
 )
 
-
 def centro_activo(request):
 
     return {
@@ -11,13 +10,16 @@ def centro_activo(request):
         'centro_activo': obtener_centro_activo(request),
 
         'modo_colaboracion': modo_colaboracion(request),
-        
-         'modal_notificacion': request.session.pop(
+
+        'modal_notificacion': request.session.pop(
             'modal_notificacion',
             None
         ),
-        
-        
+
+        'modal_confirmacion': request.session.pop(
+            'modal_confirmacion',
+            None
+        ),
 
     }
     
