@@ -7,7 +7,7 @@
     .tabla-turnos {
         min-width: 1100px;
     }
-
+  
     .contenedor-tabla {
         overflow-x: auto;
         overflow-y: auto;
@@ -44,7 +44,27 @@
     .acciones-superiores .btn {
         width: 100%;
     }
+    /* ==========================================
+    TOOLTIP BLOQUEOS DE AGENDA
+    ========================================== */
 
+    .tooltip-inner{
+
+        max-width:320px;
+
+        text-align:left;
+
+        white-space:pre-line;
+
+        padding:12px 14px;
+
+        font-size:.90rem;
+
+        line-height:1.45;
+
+        border-radius:10px;
+
+    }
     /* 🔵 MOBILE */
     @media (max-width: 768px) {
 
@@ -277,7 +297,33 @@
                                        name="observaciones"
                                        placeholder="Obs."
                                        class="form-control form-control-sm mb-1">
+                                <label class="form-label mb-0 small">
 
+                                    Tiempo
+
+                                </label>
+
+                                <select
+                                    name="tiempo_reservado"
+                                    class="form-select form-select-sm mb-1">
+
+                                    <option value="20" selected>
+                                        20 min
+                                    </option>
+
+                                    <option value="40">
+                                        40 min
+                                    </option>
+
+                                    <option value="60">
+                                        60 min
+                                    </option>
+
+                                    <option value="80">
+                                        80 min
+                                    </option>
+
+                                </select>
                                 <button type="button"
                                         class="btn btn-success btn-sm w-100 btn-confirmar"
                                         data-tipo="turno"
@@ -288,14 +334,84 @@
                                 </button>
 
                             </form>
+                            {% elif turno.estado == 'BLOQUEADO' %}
 
-                            {% elif turno.estado == 'PENDIENTE' %}
+                                <div
+                                    class="card border-0 shadow-sm h-100 bg-light"
+                                    data-bs-toggle="tooltip"
+                                    data-bs-placement="top"
+                                   title="👤 Paciente
+                                    {{ turno.paciente }}
 
-                                <strong>{{ turno.paciente }}</strong><br>
+                                    🕒 Inicio
+                                    {{ turno.hora_inicio|time:'H:i' }}
 
-                                <span class="text-danger">
+                                    ⏱ Tiempo reservado
+                                    {{ turno.tiempo_reservado }} minutos
+
+                                    {% if turno.observaciones %}
+                                    📋 Observación
                                     {{ turno.observaciones }}
-                                </span><br>
+                                    {% endif %}">
+
+                                    <div class="card-body p-2 text-center">
+
+                                        <div class="fs-2 text-primary">
+
+                                            <i class="bi bi-clock-history"></i>
+
+                                        </div>
+
+                                        <div class="fw-bold text-dark">
+
+                                            Continúa turno
+
+                                        </div>
+
+                                        <small class="text-muted">
+
+                                            Horario reservado
+
+                                        </small>
+
+                                    </div>
+
+                                </div>
+
+
+                               {% elif turno.estado == 'PENDIENTE' %}
+
+                                    <strong>
+
+                                        <i class="bi bi-person-fill text-primary"></i>
+
+                                        {{ turno.paciente }}
+
+                                    </strong>
+
+                                    <br>
+
+                                    {% if turno.observaciones %}
+
+                                        <span class="text-danger">
+
+                                            {{ turno.observaciones }}
+
+                                        </span>
+
+                                        <br>
+
+                                    {% endif %}
+
+                                    <span class="badge bg-info text-dark mt-1">
+
+                                        <i class="bi bi-clock-history"></i>
+
+                                        {{ turno.tiempo_reservado }} min
+
+                                    </span>
+
+                                <br>
 
                                 {% if turno.tipo == 'sobreturno' %}
 

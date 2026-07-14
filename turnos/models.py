@@ -28,6 +28,8 @@ class Turnos(models.Model):
         ('AUSENTE', 'Ausente'),
         ('CANCELADO', 'Cancelado'),
     ]
+    
+ 
 
     # 🔵 SEDE A LA QUE PERTENECE EL TURNO
     centro_medico = models.ForeignKey(
@@ -73,6 +75,11 @@ class Turnos(models.Model):
     es_sobreturno = models.BooleanField(
         default=False
     )
+    tiempo_reservado = models.PositiveSmallIntegerField(
+        default=20,
+        verbose_name="Tiempo reservado (minutos)"
+    )
+
 
     estado = models.CharField(
         max_length=15,
@@ -127,6 +134,117 @@ class Turnos(models.Model):
 
         return f"{self.fecha} {self.hora} - {self.medico} ({self.paciente})"    
 
+# =====================================================
+# BLOQUEOS DE AGENDA
+# =====================================================
+
+class BloqueoAgenda(models.Model):
+
+    TIPOS = [
+
+        ("TURNO", "Bloqueo por Turno"),
+
+        ("MANUAL", "Bloqueo Manual"),
+
+    ]
+
+    centro_medico = models.ForeignKey(
+
+        CentroMedico,
+
+        on_delete=models.CASCADE,
+
+        related_name="bloqueos_agenda"
+
+    )
+
+    medico = models.ForeignKey(
+
+        Medico,
+
+        on_delete=models.CASCADE,
+
+        related_name="bloqueos_agenda"
+
+    )
+
+    fecha = models.DateField()
+
+    hora = models.TimeField()
+
+    tipo = models.CharField(
+
+        max_length=20,
+
+        choices=TIPOS,
+
+        default="TURNO"
+
+    )
+
+    turno = models.ForeignKey(
+
+        Turnos,
+
+        on_delete=models.CASCADE,
+
+        null=True,
+
+        blank=True,
+
+        related_name="bloqueos"
+
+    )
+
+    motivo = models.CharField(
+
+        max_length=250,
+
+        blank=True
+
+    )
+
+    fecha_creacion = models.DateTimeField(
+
+        auto_now_add=True
+
+    )
+
+    class Meta:
+
+        verbose_name = "Bloqueo de Agenda"
+
+        verbose_name_plural = "Bloqueos de Agenda"
+
+        ordering = [
+
+            "fecha",
+
+            "hora"
+
+        ]
+
+        unique_together = (
+
+            "medico",
+
+            "fecha",
+
+            "hora"
+
+        )
+
+    def __str__(self):
+
+        return (
+
+            f"{self.medico} - "
+
+            f"{self.fecha} "
+
+            f"{self.hora}"
+
+        )
 class DisponibilidadMedico(models.Model):
 
     DIAS = [

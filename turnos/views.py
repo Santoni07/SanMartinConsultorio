@@ -1,4 +1,5 @@
 from django.contrib.auth.decorators import login_required
+from .models import BloqueoAgenda
 from django.shortcuts import render, redirect, get_object_or_404
 from collections import OrderedDict
 from .forms import  SeleccionMedicoForm
@@ -174,6 +175,11 @@ def ver_disponibilidad(request):
         ).exclude(
             estado='CANCELADO'
         )
+        bloqueos_dia = BloqueoAgenda.objects.filter(
+            medico=medico,
+            fecha=dia,
+            centro_medico=centro_activo
+        )
 
         # 🟡 SOBRETURNOS DE LA SEDE ACTIVA
         sobreturnos = Sobreturno.objects.filter(
@@ -186,6 +192,7 @@ def ver_disponibilidad(request):
 
         dia_data = []
 
+        
         # 🔵 TURNOS NORMALES
         for hora in horarios:
 
@@ -194,22 +201,60 @@ def ver_disponibilidad(request):
             if turno:
 
                 dia_data.append({
+
                     'hora': hora,
+
                     'estado': turno.estado,
+
                     'paciente': turno.paciente,
+
                     'observaciones': turno.observaciones,
+
                     'turno_id': turno.id,
+
                     'tipo': 'normal'
+
                 })
 
-            else:
+                continue
+
+            bloqueo = bloqueos_dia.filter(
+                hora=hora
+            ).first()
+
+            if bloqueo:
 
                 dia_data.append({
-                    'hora': hora,
-                    'estado': 'libre',
-                    'tipo': 'normal'
-                })
 
+                        'hora': hora,
+
+                        'estado': 'BLOQUEADO',
+
+                        'tipo': 'bloqueado',
+
+                        'turno_id': bloqueo.turno.id,
+
+                        'paciente': bloqueo.turno.paciente,
+
+                        'hora_inicio': bloqueo.turno.hora,
+
+                        'tiempo_reservado': bloqueo.turno.tiempo_reservado,
+
+                        'observaciones': bloqueo.turno.observaciones,
+
+                    })
+
+                continue
+
+            dia_data.append({
+
+                'hora': hora,
+
+                'estado': 'libre',
+
+                'tipo': 'normal'
+
+            })
         # 🟡 SOBRETURNOS
         for s in sobreturnos:
 
@@ -222,6 +267,7 @@ def ver_disponibilidad(request):
                 'estado': s.estado,
                 'paciente': s.paciente,
                 'observaciones': s.observaciones,
+                'tiempo_reservado': turno.tiempo_reservado,
                 'sobreturno_id': s.id,
                 'tipo': 'sobreturno'
             })
@@ -491,6 +537,13 @@ def reservar_turno(request):
             ''
         )
 
+        tiempo_reservado = int(
+            request.POST.get(
+                'tiempo_reservado',
+                20
+            )
+        )
+
         es_sobreturno = (
             request.POST.get('es_sobreturno') == 'true'
         )
@@ -529,6 +582,10 @@ def reservar_turno(request):
         # =====================================================
 
         medico_id = request.session.get('medico_id')
+        medico = get_object_or_404(
+            Medico,
+            id=medico_id
+        )
 
         paciente_id = request.session.get('paciente_id')
 
@@ -641,11 +698,13 @@ def reservar_turno(request):
 
                 observaciones=observaciones,
 
+                tiempo_reservado=tiempo_reservado,
+
                 estado='PENDIENTE',
 
-                es_sobreturno=True
+                es_sobreturno=False
             )
-
+           
             # =================================================
             # 🔥 HISTORIAL
             # =================================================
@@ -729,6 +788,7 @@ def reservar_turno(request):
         turno = Turnos.objects.create(
 
             centro_medico=centro_activo,
+            tiempo_reservado=tiempo_reservado,
 
             sede_operacion=centro_activo,
 
@@ -750,6 +810,64 @@ def reservar_turno(request):
 
             es_sobreturno=False
         )
+        
+         # =====================================================
+            # BLOQUEAR HORARIOS SIGUIENTES
+            # =====================================================
+
+        agenda = obtener_agenda_dia(
+                medico,
+                fecha,
+                centro_activo
+            )
+
+        if agenda:
+
+                duracion_turno = agenda.duracion_turno
+
+                bloques = max(
+                    1,
+                    tiempo_reservado // duracion_turno
+                )
+
+                hora_actual = datetime.combine(
+                    fecha,
+                    hora
+                )
+
+                # El turno principal NO se bloquea,
+                # solamente los siguientes horarios.
+                print("Duración agenda:", duracion_turno)
+                print("Tiempo reservado:", tiempo_reservado)
+                print("Bloques:", bloques)
+                for i in range(1, bloques):
+
+                    hora_bloqueada = (
+                        hora_actual +
+                        timedelta(
+                            minutes=i * duracion_turno
+                        )
+                    ).time()
+
+                    BloqueoAgenda.objects.create(
+
+                        centro_medico=centro_activo,
+
+                        medico=medico,
+
+                        fecha=fecha,
+
+                        hora=hora_bloqueada,
+
+                        tipo="TURNO",
+
+                        turno=turno,
+
+                        motivo=f"Continuación del turno {turno.id}"
+
+                    )
+                    
+                    print("BLOQUEO CREADO:", hora_bloqueada)
 
         # =====================================================
         # 🔥 HISTORIAL
