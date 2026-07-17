@@ -31,4 +31,14 @@ path(
     views.registrar_pago_liquidacion,
     name='registrar_pago_liquidacion'
 ),
+path(
+    "historial/",
+    views.historial_liquidaciones_medicas,
+    name="historial_liquidaciones_medicas",
+),
+path(
+    "detalle/<int:liquidacion_id>/",
+    views.detalle_liquidacion_medica,
+    name="detalle_liquidacion_medica",
+),
 ]

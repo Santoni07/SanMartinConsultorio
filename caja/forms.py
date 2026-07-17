@@ -289,7 +289,8 @@ class ConceptoFacturacionForm(forms.ModelForm):
             "porcentaje_consultorio",
             "honorario_fijo_medico",
             "tipo_concepto",
-            "tipo_proveedor",
+            "proveedor",
+            
             "importe_proveedor",
             "activo",
         ]
@@ -328,7 +329,7 @@ class ConceptoFacturacionForm(forms.ModelForm):
                 "class": "form-select"
             }),
 
-            "tipo_proveedor": forms.Select(attrs={
+            "proveedor": forms.Select(attrs={
                 "class": "form-select"
             }),
 
@@ -351,6 +352,6 @@ class ConceptoFacturacionForm(forms.ModelForm):
             "porcentaje_consultorio": "Porcentaje Consultorio",
             "honorario_fijo_medico": "Honorario fijo",
             "tipo_concepto": "Tipo de prestación",
-            "tipo_proveedor": "Proveedor",
+            "proveedor": "Proveedor",
             "importe_proveedor": "Importe proveedor",
         }

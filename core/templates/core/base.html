@@ -542,48 +542,87 @@
                     </li>
                       <li class="dropdown">
 
+ <a href="#">
+    <span>Caja</span>
+    <i class="bi bi-chevron-down"></i>
+</a>
+
+<ul>
+
+    <li>
+        <a href="{% url 'caja_home' %}">
+            Dashboard Caja
+        </a>
+    </li>
+
+    <li>
+        <a href="{% url 'cajas_cerradas' %}">
+            Cajas Cerradas
+        </a>
+    </li>
+
+        <li class="dropdown">
+
     <a href="#">
-        <span>Caja</span>
+         <span>Medicos</span>
         <i class="bi bi-chevron-down"></i>
     </a>
 
     <ul>
 
         <li>
-            <a href="{% url 'caja_home' %}">
-                Dashboard Caja
-            </a>
-        </li>
-
-      {% comment %}   <li>
-            <a href="{% url 'registrar_cobro' %}">
-                Cobros
+            <a href="{% url 'honorarios_medicos' %}">
+                Honorarios
             </a>
         </li>
 
         <li>
-            <a href="{% url 'registrar_movimiento' %}">
-                Movimientos
+            <a href="{% url 'liquidaciones_pendientes' %}">
+                Liquidaciones Médicas
             </a>
-        </li> {% endcomment %}
-
- <a href="{% url 'cajas_cerradas' %}">
-    Cajas Cerradas
-</a>
-         <li>
-                                <a href="{% url 'honorarios_medicos' %}">
-                                    Honorarios
-                                </a>
-                                
-                            </li>
-
-                            <a href="{% url 'liquidaciones_pendientes' %}">
-    Liquidaciones Médicas
-</a>
+        </li>
+        <li>
+            <a href="{% url 'historial_liquidaciones_medicas' %}">
+                Historial de Liquidaciones
+            </a>
+        </li>
 
     </ul>
 
 </li>
+
+    <li class="dropdown">
+
+    <a href="#">
+        <span>Proveedores</span>
+        <i class="bi bi-chevron-down"></i>
+    </a>
+
+    <ul>
+
+        <li>
+            <a href="{% url 'proveedores:proveedores_pendientes' %}">
+                 Generar Liquidación
+            </a>
+        </li>
+
+        <li>
+            <a href="{% url 'proveedores:liquidaciones_pendientes_proveedor' %}">
+                Liquidaciones Pendiente de Pago
+            </a>
+        </li>
+        <li>
+    <a
+        href="{% url 'proveedores:historial_liquidaciones_proveedor' %}">
+        Historial de Liquidaciones
+    </a>
+</li>
+
+    </ul>
+
+</li>
+
+</ul>
                 {% endif %}
 
             <!-- 🔵 MÉDICO -->

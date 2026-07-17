@@ -5,6 +5,7 @@ from .models import (
     MovimientoCaja,
     HistorialMovimientoCaja,
      ConceptoFacturacion,
+     DetalleMovimientoCaja,
 )
 
 
@@ -285,7 +286,7 @@ class ConceptoFacturacionAdmin(admin.ModelAdmin):
         'porcentaje_consultorio',
         'porcentaje_iva',
         'honorario_fijo_medico',
-        'tipo_proveedor',
+        'proveedor',
         'importe_proveedor',
         'activo',
     )
@@ -299,7 +300,7 @@ class ConceptoFacturacionAdmin(admin.ModelAdmin):
         'activo',
         'tipo_concepto',
         'tipo_calculo',
-        'tipo_proveedor',
+        'proveedor',
     )
 
     ordering = (
@@ -357,7 +358,7 @@ class ConceptoFacturacionAdmin(admin.ModelAdmin):
             "Proveedor Externo",
             {
                 "fields": (
-                    "tipo_proveedor",
+                    "proveedor",
                     "importe_proveedor",
                 )
             },
@@ -402,3 +403,157 @@ class ConceptoFacturacionAdmin(admin.ModelAdmin):
             return obj.nomenclador.descripcion
 
         return "Sin nomenclador"
+
+@admin.register(DetalleMovimientoCaja)
+class DetalleMovimientoCajaAdmin(admin.ModelAdmin):
+
+    list_display = (
+        "id",
+        "movimiento",
+        "fecha_prestacion",
+        "codigo",
+        "descripcion",
+        "cantidad",
+        "proveedor",
+        "importe_proveedor",
+        "importe",
+        "importe_medico",
+        "importe_consultorio",
+        "estado",
+        "liquidacion",
+    )
+
+    list_filter = (
+        "estado",
+        "tipo_concepto",
+        "tipo_calculo",
+        "proveedor",
+        "fecha_prestacion",
+    )
+
+    search_fields = (
+        "codigo",
+        "descripcion",
+        "nombre_proveedor",
+        "movimiento__paciente__apellido",
+        "movimiento__paciente__nombre",
+    )
+
+    autocomplete_fields = (
+        "movimiento",
+        "concepto_facturacion",
+       
+        "liquidacion",
+    )
+
+    readonly_fields = (
+        "codigo",
+        "descripcion",
+        "tipo_concepto",
+        "tipo_calculo",
+        "porcentaje_iva",
+        "porcentaje_medico",
+        "porcentaje_consultorio",
+        "honorario_fijo_medico",
+        "proveedor_historico",
+        "nombre_proveedor",
+        "fecha_creacion",
+
+    )
+
+    fieldsets = (
+
+        (
+            "Información General",
+            {
+                "fields": (
+                    "movimiento",
+                    "concepto_facturacion",
+                    "fecha_prestacion",
+                    "estado",
+                    "orden",
+                )
+            }
+        ),
+
+        (
+            "Prestación",
+            {
+                "fields": (
+                    "codigo",
+                    "descripcion",
+                    "tipo_concepto",
+                    "cantidad",
+                )
+            }
+        ),
+
+        (
+            "Configuración utilizada",
+            {
+                "fields": (
+                    "tipo_calculo",
+                    "porcentaje_iva",
+                    "porcentaje_medico",
+                    "porcentaje_consultorio",
+                    "honorario_fijo_medico",
+                )
+            }
+        ),
+
+        (
+            "Proveedor",
+            {
+                "fields": (
+                    "proveedor_historico",
+                    "nombre_proveedor",
+                    "importe_proveedor",
+                    
+                )
+            }
+        ),
+
+        (
+            "Importes",
+            {
+                "fields": (
+                    "importe",
+                    "importe_iva",
+                    "importe_neto",
+                    "importe_medico",
+                    "importe_consultorio",
+                )
+            }
+        ),
+
+        (
+            "Liquidación",
+            {
+                "fields": (
+                    "liquidacion",
+                )
+            }
+        ),
+
+        (
+            "Observaciones",
+            {
+                "fields": (
+                    "observacion",
+                    "fecha_creacion",
+                )
+            }
+        ),
+
+    )
+
+    ordering = (
+        "-fecha_prestacion",
+        "-id",
+    )
+    @admin.display(description="Proveedor")
+    def proveedor_historico(self, obj):
+        if obj.proveedor:
+            return obj.proveedor.nombre
+        return obj.nombre_proveedor or "-"
+    list_per_page = 50

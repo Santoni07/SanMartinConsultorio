@@ -66,6 +66,11 @@ path('caja/', include('caja.urls')),
 path('honorarios/', include('honorarios.urls')),
 # path nomenclador
 path('nomenclador/', include('nomenclador.urls')),
+
+path(
+    "proveedores/",
+    include("proveedores.urls")
+),
 ]
 
 

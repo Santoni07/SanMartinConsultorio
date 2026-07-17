@@ -1,0 +1,459 @@
+{% extends 'core/base.html' %}
+
+{% block content %}
+
+<div class="container mt-4">
+
+    <!-- CABECERA -->
+
+    <div class="card shadow-sm">
+
+        <div class="card-header bg-primary text-white">
+
+            <h4 class="mb-0">
+                Detalle de Liquidación Médica
+            </h4>
+
+        </div>
+
+        <div class="card-body">
+
+            <div class="row">
+
+                <div class="col-md-4">
+
+                    <h6>Médico</h6>
+
+                    <p class="mb-0">
+                        {{ liquidacion.medico }}
+                    </p>
+
+                </div>
+
+                <div class="col-md-3">
+
+                    <h6>Sede</h6>
+
+                    <p class="mb-0">
+                        {{ liquidacion.centro_medico }}
+                    </p>
+
+                </div>
+
+                <div class="col-md-3">
+
+                    <h6>Fecha</h6>
+
+                    <p class="mb-0">
+                        {{ liquidacion.fecha|date:"d/m/Y H:i" }}
+                    </p>
+
+                </div>
+
+                <div class="col-md-2">
+
+                    <h6>Estado</h6>
+
+                    {% if liquidacion.estado == "PAGADA" %}
+
+                        <span class="badge bg-success">
+                            Pagada
+                        </span>
+
+                    {% elif liquidacion.estado == "PARCIAL" %}
+
+                        <span class="badge bg-warning text-dark">
+                            Parcial
+                        </span>
+
+                    {% else %}
+
+                        <span class="badge bg-danger">
+                            Pendiente
+                        </span>
+
+                    {% endif %}
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+
+
+    <!-- RESUMEN -->
+
+    <div class="row mt-3">
+
+        <div class="col-md-3">
+
+            <div class="card border-primary">
+
+                <div class="card-body text-center">
+
+                    <h6>Total Honorarios</h6>
+
+                    <h3 class="text-primary">
+
+                        $ {{ liquidacion.total_honorarios }}
+
+                    </h3>
+
+                </div>
+
+            </div>
+
+        </div>
+
+        <div class="col-md-3">
+
+            <div class="card border-success">
+
+                <div class="card-body text-center">
+
+                    <h6>Total Pagado</h6>
+
+                    <h3 class="text-success">
+
+                        $ {{ liquidacion.total_pagado }}
+
+                    </h3>
+
+                </div>
+
+            </div>
+
+        </div>
+
+        <div class="col-md-3">
+
+            <div class="card border-danger">
+
+                <div class="card-body text-center">
+
+                    <h6>Saldo Pendiente</h6>
+
+                    <h3 class="text-danger">
+
+                        $ {{ liquidacion.saldo_pendiente }}
+
+                    </h3>
+
+                </div>
+
+            </div>
+
+        </div>
+
+        <div class="col-md-3">
+
+            <div class="card border-info">
+
+                <div class="card-body text-center">
+
+                    <h6>Prestaciones</h6>
+
+                    <h3 class="text-info">
+
+                        {{ detalles.count }}
+
+                    </h3>
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+
+
+    <!-- PRESTACIONES -->
+
+    <div class="card mt-3 shadow-sm">
+
+        <div class="card-header">
+
+            Prestaciones Incluidas
+
+        </div>
+
+        <div class="card-body">
+
+            <div class="table-responsive">
+
+                <table class="table table-striped table-hover">
+
+                    <thead>
+
+                        <tr>
+
+                            <th>Fecha</th>
+
+                            <th>Paciente</th>
+
+                            <th>Código</th>
+
+                            <th>Prestación</th>
+
+                            <th class="text-end">Bruto</th>
+
+                            <th class="text-end">IVA</th>
+
+                            <th class="text-end">Neto</th>
+
+                            <th class="text-end">
+
+                                Honorario
+
+                            </th>
+
+                        </tr>
+
+                    </thead>
+
+                    <tbody>
+
+                        {% for detalle in detalles %}
+
+                        <tr>
+
+                            <td>
+
+                                {{ detalle.fecha_prestacion|date:"d/m/Y" }}
+
+                            </td>
+
+                            <td>
+
+                                {{ detalle.movimiento.paciente }}
+
+                            </td>
+
+                            <td>
+
+                                {{ detalle.codigo }}
+
+                            </td>
+
+                            <td>
+
+                                {{ detalle.descripcion }}
+
+                            </td>
+
+                            <td class="text-end">
+
+                                $ {{ detalle.importe }}
+
+                            </td>
+
+                            <td class="text-end">
+
+                                $ {{ detalle.importe_iva }}
+
+                            </td>
+
+                            <td class="text-end">
+
+                                $ {{ detalle.importe_neto }}
+
+                            </td>
+
+                            <td class="text-end">
+
+                                <strong>
+
+                                    $ {{ detalle.importe_medico }}
+
+                                </strong>
+
+                            </td>
+
+                        </tr>
+
+                        {% endfor %}
+
+                    </tbody>
+
+                </table>
+
+            </div>
+
+        </div>
+
+    </div>
+
+
+
+    <!-- PAGOS -->
+
+    <div class="card mt-3 shadow-sm">
+
+        <div class="card-header">
+
+            Pagos Registrados
+
+        </div>
+
+        <div class="card-body">
+
+            {% if pagos %}
+
+                {% for pago in pagos %}
+
+                <div class="card mb-3 border-success">
+
+                    <div class="card-body">
+
+                        <div class="row">
+
+                            <div class="col-md-3">
+
+                                <strong>Fecha</strong><br>
+
+                                {{ pago.fecha|date:"d/m/Y H:i" }}
+
+                            </div>
+
+                            <div class="col-md-3">
+
+                                <strong>Importe</strong><br>
+
+                                $ {{ pago.importe }}
+
+                            </div>
+
+                            <div class="col-md-3">
+
+                                <strong>Usuario</strong><br>
+
+                                {{ pago.registrado_por }}
+
+                            </div>
+
+                            <div class="col-md-3">
+
+                                <strong>Movimiento Caja</strong><br>
+
+                                #{{ pago.movimiento_caja.id }}
+
+                            </div>
+
+                        </div>
+
+                        <hr>
+
+                        <h6>
+
+                            Medios de Pago
+
+                        </h6>
+
+                        <table class="table table-sm">
+
+                            <thead>
+
+                                <tr>
+
+                                    <th>
+
+                                        Medio
+
+                                    </th>
+
+                                    <th class="text-end">
+
+                                        Importe
+
+                                    </th>
+
+                                </tr>
+
+                            </thead>
+
+                            <tbody>
+
+                                {% for medio in pago.movimiento_caja.detalles_medios_pago.all %}
+
+                                <tr>
+
+                                    <td>
+
+                                        {{ medio.medio_pago.nombre }}
+
+                                    </td>
+
+                                    <td class="text-end">
+
+                                        $ {{ medio.importe }}
+
+                                    </td>
+
+                                </tr>
+
+                                {% endfor %}
+
+                            </tbody>
+
+                        </table>
+
+                    </div>
+
+                </div>
+
+                {% endfor %}
+
+            {% else %}
+
+                <div class="alert alert-warning mb-0">
+
+                    Esta liquidación aún no posee pagos registrados.
+
+                </div>
+
+            {% endif %}
+
+        </div>
+
+    </div>
+
+
+
+    <!-- BOTONES -->
+
+    <div class="mt-4 d-flex justify-content-between">
+
+        <a
+            href="{% url 'historial_liquidaciones_medicas' %}"
+            class="btn btn-secondary">
+
+            <i class="bi bi-arrow-left"></i>
+
+            Volver
+
+        </a>
+
+        {% if liquidacion.estado != "PAGADA" %}
+
+            <a
+                href="{% url 'registrar_pago_liquidacion' liquidacion.id %}"
+                class="btn btn-success">
+
+                <i class="bi bi-cash-coin"></i>
+
+                Registrar Pago
+
+            </a>
+
+        {% endif %}
+
+    </div>
+
+</div>
+
+{% endblock %}

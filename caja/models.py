@@ -8,6 +8,7 @@ from paciente.models import Paciente
 from turnos.models import Turnos
 from medicos.models import Medico
 from decimal import Decimal
+from proveedores.models import Proveedor
 
 class CajaDiaria(models.Model):
     ESTADOS = [
@@ -188,23 +189,19 @@ class ConceptoFacturacion(models.Model):
         default='CONSULTA'
     )
 
-    TIPOS_PROVEEDORES = [
-        ('', '---------'),
-        ('PATOLOGO', 'Patólogo'),
-        ('BIOQUIMICO', 'Bioquímico'),
-    ]
-
-    tipo_proveedor = models.CharField(
-        max_length=20,
-        choices=TIPOS_PROVEEDORES,
+    proveedor = models.ForeignKey(
+        Proveedor,
+        on_delete=models.SET_NULL,
+        null=True,
         blank=True,
-        default=''
+        related_name="conceptos"
     )
 
     importe_proveedor = models.DecimalField(
-        max_digits=12,
+         max_digits=12,
         decimal_places=2,
-        default=0
+        default=0,
+        verbose_name="Importe Proveedor"
     )
 
     class Meta:
@@ -589,19 +586,24 @@ class DetalleMovimientoCaja(models.Model):
         verbose_name="Honorario fijo"
     )
 
-    tipo_proveedor = models.CharField(
-        max_length=20,
-        choices=ConceptoFacturacion.TIPOS_PROVEEDORES,
-        blank=True,
-        default="",
-        verbose_name="Proveedor"
+    proveedor = models.ForeignKey(
+        Proveedor,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True
+    )
+
+    nombre_proveedor = models.CharField(
+        max_length=150,
+        blank=True
     )
 
     importe_proveedor = models.DecimalField(
         max_digits=12,
         decimal_places=2,
         default=0,
-        verbose_name="Importe proveedor"
+        verbose_name="Importe Proveedor"
+        
     )
 
     # ==========================================
@@ -675,6 +677,14 @@ class DetalleMovimientoCaja(models.Model):
         related_name="detalles",
         verbose_name="Liquidación"
     )
+    liquidacion_proveedor = models.ForeignKey(
+        "proveedores.LiquidacionProveedor",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="detalles",
+        verbose_name="Liquidación Proveedor"
+    )
     class Meta:
 
         verbose_name = "Detalle de Movimiento"
@@ -692,7 +702,7 @@ class DetalleMovimientoCaja(models.Model):
         De esta forma el detalle conserva una fotografía histórica,
         aunque el concepto cambie en el futuro.
         """
-
+        
         self.concepto_facturacion = concepto
 
         # ===============================
@@ -721,7 +731,12 @@ class DetalleMovimientoCaja(models.Model):
         # Proveedor
         # ===============================
 
-        self.tipo_proveedor = concepto.tipo_proveedor
+        self.proveedor = concepto.proveedor
+
+        if concepto.proveedor:
+            self.nombre_proveedor = concepto.proveedor.nombre
+        else:
+            self.nombre_proveedor = ""
 
         self.importe_proveedor = concepto.importe_proveedor
 
@@ -739,8 +754,7 @@ class DetalleMovimientoCaja(models.Model):
     def calcular_importes(self):
         """
         Calcula todos los importes del detalle de la prestación.
-        Este método trabaja únicamente con la fotografía almacenada
-        en el detalle, sin volver a consultar ConceptoFacturacion.
+        Trabaja únicamente con la fotografía almacenada en el detalle.
         """
 
         # ==========================================
@@ -768,18 +782,32 @@ class DetalleMovimientoCaja(models.Model):
         )
 
         # ==========================================
+        # BASE PARA DISTRIBUCIÓN
+        # (Neto menos proveedor)
+        # ==========================================
+
+        base_distribucion = (
+            self.importe_neto -
+            self.importe_proveedor
+        )
+
+        # Evita valores negativos si un concepto está mal configurado
+        if base_distribucion < Decimal("0.00"):
+            base_distribucion = Decimal("0.00")
+
+        # ==========================================
         # HONORARIOS
         # ==========================================
 
         if self.tipo_calculo == "PORCENTAJE":
 
             self.importe_medico = (
-                self.importe_neto *
+                base_distribucion *
                 self.porcentaje_medico
             ) / Decimal("100")
 
             self.importe_consultorio = (
-                self.importe_neto *
+                base_distribucion *
                 self.porcentaje_consultorio
             ) / Decimal("100")
 
@@ -788,14 +816,17 @@ class DetalleMovimientoCaja(models.Model):
             self.importe_medico = self.honorario_fijo_medico
 
             self.importe_consultorio = (
-                self.importe_neto -
+                base_distribucion -
                 self.importe_medico
             )
+
+            if self.importe_consultorio < Decimal("0.00"):
+                self.importe_consultorio = Decimal("0.00")
 
         else:
 
             self.importe_medico = Decimal("0.00")
-            self.importe_consultorio = self.importe_neto
+            self.importe_consultorio = base_distribucion
     
     def save(self, *args, **kwargs):
         """
@@ -812,6 +843,12 @@ class DetalleMovimientoCaja(models.Model):
             self.copiar_desde_concepto(
                 self.concepto_facturacion
             )
+            
+        print("=" * 80)
+        print("ANTES DEL SAVE")
+        print("Proveedor:", self.proveedor)
+        print("Nombre:", self.nombre_proveedor)
+        print("Importe:", self.importe_proveedor)
 
         # Calcular importes
         self.calcular_importes()
@@ -882,4 +919,7 @@ class DetalleMedioPago(models.Model):
 
         return (
             f"{self.medio_pago} - ${self.importe}"
+            
+            
         )
+        

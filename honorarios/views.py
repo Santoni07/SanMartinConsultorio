@@ -16,7 +16,8 @@ from honorarios.models import (
 )
 
 from honorarios.forms import (
-    PagoLiquidacionForm
+    PagoLiquidacionForm,
+    FiltroHistorialLiquidacionesForm
 )
 
 from caja.models import (
@@ -1175,22 +1176,135 @@ def registrar_pago_liquidacion(
 
 
 @login_required
-def liquidaciones_pendientes(request):
+def historial_liquidaciones_medicas(request):
 
-    centro_medico = obtener_centro_activo(request)
+    liquidaciones = (
+        LiquidacionMedica.objects
+        .select_related(
+            "medico",
+            "centro_medico",
+            "generado_por",
+            "pagado_por",
+        )
+        .order_by("-fecha")
+    )
 
-    liquidaciones = LiquidacionMedica.objects.filter(
-        centro_medico=centro_medico
-    ).exclude(
-        estado='PAGADA'
-    ).select_related(
-        'medico'
+    form = FiltroHistorialLiquidacionesForm(
+        request.GET or None
+    )
+
+    if form.is_valid():
+
+        desde = form.cleaned_data.get(
+            "desde"
+        )
+
+        hasta = form.cleaned_data.get(
+            "hasta"
+        )
+
+        medico = form.cleaned_data.get(
+            "medico"
+        )
+
+        centro = form.cleaned_data.get(
+            "centro_medico"
+        )
+
+        estado = form.cleaned_data.get(
+            "estado"
+        )
+
+        if desde:
+
+            liquidaciones = liquidaciones.filter(
+                fecha__date__gte=desde
+            )
+
+        if hasta:
+
+            liquidaciones = liquidaciones.filter(
+                fecha__date__lte=hasta
+            )
+
+        if medico:
+
+            liquidaciones = liquidaciones.filter(
+                medico=medico
+            )
+
+        if centro:
+
+            liquidaciones = liquidaciones.filter(
+                centro_medico=centro
+            )
+
+        if estado:
+
+            liquidaciones = liquidaciones.filter(
+                estado=estado
+            )
+
+    return render(
+
+        request,
+
+        "honorarios/historial_liquidaciones.html",
+
+        {
+
+            "form": form,
+
+            "liquidaciones": liquidaciones,
+
+        },
+
+    )
+    
+@login_required
+def detalle_liquidacion_medica(
+    request,
+    liquidacion_id
+):
+
+    liquidacion = get_object_or_404(
+        LiquidacionMedica,
+        pk=liquidacion_id
+    )
+
+    detalles = (
+        liquidacion.detalles
+        .select_related(
+            "movimiento",
+            "movimiento__paciente"
+        )
+        .order_by(
+            "fecha_prestacion"
+        )
+    )
+
+    pagos = (
+        PagoLiquidacionMedica.objects
+        .filter(
+            liquidacion=liquidacion
+        )
+        .select_related(
+            "movimiento_caja",
+            "registrado_por"
+        )
+        .prefetch_related(
+            "movimiento_caja__detalles_medios_pago",
+            "movimiento_caja__detalles_medios_pago__medio_pago",
+        )
+        .order_by("-fecha")
     )
 
     return render(
         request,
-        'honorarios/liquidaciones_pendientes.html',
+        "honorarios/detalle_liquidacion_medica.html",
         {
-            'liquidaciones': liquidaciones
-        }
+            "liquidacion": liquidacion,
+            "detalles": detalles,
+            "pagos": pagos,
+        },
     )

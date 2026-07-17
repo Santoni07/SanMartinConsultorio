@@ -1,0 +1,366 @@
+{% extends 'core/base.html' %}
+
+{% block content %}
+
+<div class="container mt-4">
+
+    <div class="card shadow-sm">
+
+        <div class="card-header bg-primary text-white">
+
+            <h4 class="mb-0">
+
+                Historial de Liquidaciones Médicas
+
+            </h4>
+
+        </div>
+
+        <div class="card-body">
+
+            <form method="get">
+
+                <div class="row g-3 mb-4">
+
+                    <div class="col-md-2">
+
+                        <label class="form-label">
+
+                            Desde
+
+                        </label>
+
+                        {{ form.desde }}
+
+                    </div>
+
+                    <div class="col-md-2">
+
+                        <label class="form-label">
+
+                            Hasta
+
+                        </label>
+
+                        {{ form.hasta }}
+
+                    </div>
+
+                    <div class="col-md-3">
+
+                        <label class="form-label">
+
+                            Médico
+
+                        </label>
+
+                        {{ form.medico }}
+
+                    </div>
+
+                    <div class="col-md-3">
+
+                        <label class="form-label">
+
+                            Sede
+
+                        </label>
+
+                        {{ form.centro_medico }}
+
+                    </div>
+
+                    <div class="col-md-2">
+
+                        <label class="form-label">
+
+                            Estado
+
+                        </label>
+
+                        {{ form.estado }}
+
+                    </div>
+
+                </div>
+
+                <div class="row mb-4">
+
+                    <div class="col-md-2">
+
+                        <button
+                            class="btn btn-primary w-100">
+
+                            <i class="bi bi-search"></i>
+
+                            Buscar
+
+                        </button>
+
+                    </div>
+
+                    <div class="col-md-2">
+
+                        <a
+                            href="{% url 'historial_liquidaciones_medicas' %}"
+                            class="btn btn-secondary w-100">
+
+                            <i class="bi bi-x-circle"></i>
+
+                            Limpiar
+
+                        </a>
+
+                    </div>
+
+                </div>
+
+            </form>
+
+            <div class="table-responsive">
+
+                <table class="table table-hover table-striped align-middle">
+
+                    <thead class="table-light">
+
+                        <tr>
+
+                            <th>Fecha</th>
+
+                            <th>Médico</th>
+
+                            <th>Sede</th>
+
+                            <th class="text-center">
+
+                                Prestaciones
+
+                            </th>
+
+                            <th class="text-end">
+
+                                Honorarios
+
+                            </th>
+
+                            <th class="text-end">
+
+                                Pagado
+
+                            </th>
+
+                            <th class="text-end">
+
+                                Saldo
+
+                            </th>
+
+                            <th class="text-center">
+
+                                Pagos
+
+                            </th>
+
+                            <th>
+
+                                Estado
+
+                            </th>
+
+                            <th class="text-center">
+
+                                Acciones
+
+                            </th>
+
+                        </tr>
+
+                    </thead>
+
+                    <tbody>
+
+                    {% for liquidacion in liquidaciones %}
+
+                        <tr>
+
+                            <td>
+
+                                {{ liquidacion.fecha|date:"d/m/Y H:i" }}
+
+                            </td>
+
+                            <td>
+
+                                {{ liquidacion.medico }}
+
+                            </td>
+
+                            <td>
+
+                                {{ liquidacion.centro_medico }}
+
+                            </td>
+
+                            <td class="text-center">
+
+                                {{ liquidacion.cantidad_prestaciones }}
+
+                            </td>
+
+                            <td class="text-end">
+
+                                <strong>
+
+                                    $ {{ liquidacion.total_honorarios }}
+
+                                </strong>
+
+                            </td>
+
+                            <td class="text-end text-success">
+
+                                $ {{ liquidacion.total_pagado }}
+
+                            </td>
+
+                            <td class="text-end">
+
+                                {% if liquidacion.saldo_pendiente > 0 %}
+
+                                    <span class="text-danger fw-bold">
+
+                                        $ {{ liquidacion.saldo_pendiente }}
+
+                                    </span>
+
+                                {% else %}
+
+                                    <span class="text-success fw-bold">
+
+                                        $ {{ liquidacion.saldo_pendiente }}
+
+                                    </span>
+
+                                {% endif %}
+
+                            </td>
+
+                            <td class="text-center">
+
+                                {{ liquidacion.cantidad_pagos }}
+
+                            </td>
+
+                            <td>
+
+                                {% if liquidacion.estado == "PENDIENTE" %}
+
+                                    <span class="badge bg-danger">
+
+                                        Pendiente
+
+                                    </span>
+
+                                {% elif liquidacion.estado == "PARCIAL" %}
+
+                                    <span class="badge bg-warning text-dark">
+
+                                        Parcial
+
+                                    </span>
+
+                                {% else %}
+
+                                    <span class="badge bg-success">
+
+                                        Pagada
+
+                                    </span>
+
+                                {% endif %}
+
+                            </td>
+
+                            <td class="text-center">
+
+                                {% if liquidacion.estado == "PENDIENTE" %}
+
+                                    <a
+                                        href="{% url 'registrar_pago_liquidacion' liquidacion.id %}"
+                                        class="btn btn-success btn-sm">
+
+                                        <i class="bi bi-cash-coin"></i>
+
+                                        Registrar Pago
+
+                                    </a>
+
+                                {% elif liquidacion.estado == "PARCIAL" %}
+
+                                    <div class="btn-group">
+
+                                        <a
+                                            href="{% url 'registrar_pago_liquidacion' liquidacion.id %}"
+                                            class="btn btn-success btn-sm">
+
+                                            <i class="bi bi-cash-coin"></i>
+
+                                        </a>
+
+                                        <a
+                                            href="{% url 'detalle_liquidacion_medica' liquidacion.id %}"
+                                            class="btn btn-outline-primary btn-sm">
+
+                                            <i class="bi bi-eye"></i>
+
+                                        </a>
+
+                                    </div>
+
+                                {% else %}
+
+                                    <a
+                                        href="{% url 'detalle_liquidacion_medica' liquidacion.id %}"
+                                        class="btn btn-outline-primary btn-sm">
+
+                                        <i class="bi bi-eye"></i>
+
+                                        Ver
+
+                                    </a>
+
+                                {% endif %}
+
+                            </td>
+
+                        </tr>
+
+                    {% empty %}
+
+                        <tr>
+
+                            <td
+                                colspan="10"
+                                class="text-center text-muted py-4">
+
+                                No existen liquidaciones médicas.
+
+                            </td>
+
+                        </tr>
+
+                    {% endfor %}
+
+                    </tbody>
+
+                </table>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+{% endblock %}

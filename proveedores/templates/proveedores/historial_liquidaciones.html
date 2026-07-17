@@ -1,0 +1,278 @@
+{% extends 'core/base.html' %}
+
+{% block content %}
+
+<div class="container mt-4">
+
+<div class="card shadow-sm">
+
+<div class="card-header bg-primary text-white">
+
+<h4 class="mb-0">
+
+Historial de Liquidaciones de Proveedores
+
+</h4>
+
+</div>
+
+<div class="card-body">
+
+<form method="get" class="row mb-4">
+
+<div class="col-md-5">
+
+<select
+name="proveedor"
+class="form-select">
+
+<option value="">
+
+Todos los proveedores
+
+</option>
+
+{% for p in proveedores %}
+
+<option
+value="{{ p.id }}"
+{% if proveedor_id == p.id|stringformat:"s" %}
+selected
+{% endif %}
+>
+
+{{ p.nombre }}
+
+</option>
+
+{% endfor %}
+
+</select>
+
+</div>
+
+<div class="col-md-3">
+
+<select
+name="estado"
+class="form-select">
+
+<option value="">
+
+Todos los estados
+
+</option>
+
+<option value="PENDIENTE">
+
+Pendiente
+
+</option>
+
+<option value="PARCIAL">
+
+Parcial
+
+</option>
+
+<option value="PAGADA">
+
+Pagada
+
+</option>
+
+</select>
+
+</div>
+
+<div class="col-md-2">
+
+<button class="btn btn-primary w-100">
+
+Buscar
+
+</button>
+
+</div>
+
+</form>
+
+<div class="table-responsive">
+
+<table class="table table-striped align-middle">
+
+<thead>
+
+<tr>
+
+<th>Fecha</th>
+
+<th>Proveedor</th>
+
+<th class="text-center">
+
+Prestaciones
+
+</th>
+
+<th class="text-end">
+
+Total
+
+</th>
+
+<th class="text-end">
+
+Pagado
+
+</th>
+
+<th class="text-end">
+
+Saldo
+
+</th>
+
+<th>
+
+Estado
+
+</th>
+
+<th>
+
+Acción
+
+</th>
+
+</tr>
+
+</thead>
+
+<tbody>
+
+{% for liquidacion in liquidaciones %}
+
+<tr>
+
+<td>
+
+{{ liquidacion.fecha_generacion|date:"d/m/Y H:i" }}
+
+</td>
+
+<td>
+
+{{ liquidacion.proveedor }}
+
+</td>
+
+<td class="text-center">
+
+{{ liquidacion.cantidad_prestaciones }}
+
+</td>
+
+<td class="text-end">
+
+${{ liquidacion.total }}
+
+</td>
+
+<td class="text-end text-success">
+
+${{ liquidacion.total_pagado }}
+
+</td>
+
+<td class="text-end text-danger">
+
+${{ liquidacion.saldo_pendiente }}
+
+</td>
+
+<td>
+
+{% if liquidacion.estado == "PAGADA" %}
+
+<span class="badge bg-success">
+
+Pagada
+
+</span>
+
+{% elif liquidacion.estado == "PARCIAL" %}
+
+<span class="badge bg-warning">
+
+Parcial
+
+</span>
+
+{% else %}
+
+<span class="badge bg-danger">
+
+Pendiente
+
+</span>
+
+{% endif %}
+
+</td>
+
+<td>
+
+{% if liquidacion.estado != "PAGADA" %}
+
+<a
+href="{% url 'proveedores:registrar_pago_liquidacion_proveedor' liquidacion.id %}"
+class="btn btn-success btn-sm">
+
+Registrar Pago
+
+</a>
+
+{% else %}
+
+<a
+    href="{% url 'proveedores:detalle_liquidacion_proveedor' liquidacion.id %}"
+    class="btn btn-outline-primary btn-sm">
+
+    Ver
+
+</a>
+
+{% endif %}
+
+</td>
+
+</tr>
+
+{% empty %}
+
+<tr>
+
+<td colspan="8" class="text-center">
+
+No existen liquidaciones.
+
+</td>
+
+</tr>
+
+{% endfor %}
+
+</tbody>
+
+</table>
+
+</div>
+
+</div>
+
+</div>
+
+</div>
+
+{% endblock %}
