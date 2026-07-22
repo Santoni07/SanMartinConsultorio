@@ -1,83 +1,277 @@
 {% extends 'core/base.html' %}
 {% load static %}
-{% block title %}Obras Sociales{% endblock %}
+
+{% block title %}
+Obras Sociales
+{% endblock %}
 
 {% block content %}
-<div class="container mt-5">
 
-    <!-- TÍTULO -->
-    <div class="text-center mb-5">
-        <h2 class="fw-bold text-primary">
-            <i class="bi bi-hospital"></i> Obras Sociales
-        </h2>
-        <p class="text-muted">Lista de Obras Sociales registradas en el sistema</p>
+<div class="container mt-4">
+
+    <!-- ========================================== -->
+    <!-- CABECERA -->
+    <!-- ========================================== -->
+
+    <div class="card shadow-sm mb-4">
+
+        <div class="card-body">
+
+            <div class="row align-items-center">
+
+                <div class="col-md-6">
+
+                    <h3 class="mb-0">
+
+                        <i class="bi bi-hospital text-success"></i>
+
+                        Obras Sociales
+
+                    </h3>
+
+                    <small class="text-muted">
+
+                        Administración de Obras Sociales
+
+                    </small>
+
+                </div>
+
+                <div class="col-md-6 text-end">
+
+                    <a
+                        href="{% url 'obrasocial:create' %}"
+                        class="btn btn-success"
+                    >
+
+                        <i class="bi bi-plus-circle"></i>
+
+                        Nueva Obra Social
+
+                    </a>
+
+                </div>
+
+            </div>
+
+        </div>
+
     </div>
 
-    {% if obras_sociales %}
-    <div class="row">
 
-        {% for obras in obras_sociales %}
-        <div class="col-md-6 col-lg-4 mb-4">
-            <div class="card shadow-sm border-0 obra-card h-100">
-                <div class="card-body d-flex flex-column justify-content-between">
+    <!-- ========================================== -->
+    <!-- BUSCADOR -->
+    <!-- ========================================== -->
 
-                    <div>
-                        <h5 class="fw-bold text-dark mb-3">
-                            <i class="bi bi-building"></i> {{ obras.nombre }}
-                        </h5>
+    <div class="card shadow-sm mb-3">
+
+        <div class="card-body">
+
+            <form method="get">
+
+                <div class="row">
+
+                    <div class="col-md-10">
+
+                        <input
+                            type="text"
+                            name="buscar"
+                            value="{{ buscar }}"
+                            class="form-control"
+                            placeholder="Buscar por nombre..."
+                        >
+
                     </div>
 
-                    <div class="d-flex justify-content-between mt-3">
-                        <a href="{% url 'obrasocial:update' pk=obras.pk %}"
-                           class="btn btn-outline-primary btn-sm">
-                            <i class="bi bi-pencil-square"></i> Editar
-                        </a>
+                    <div class="col-md-2 d-grid">
 
-                        <a href="{% url 'obrasocial:delete' pk=obras.pk %}"
-                           class="btn btn-outline-danger btn-sm">
-                            <i class="bi bi-trash"></i> Borrar
-                        </a>
+                        <button
+                            class="btn btn-primary"
+                        >
+
+                            <i class="bi bi-search"></i>
+
+                            Buscar
+
+                        </button>
+
                     </div>
 
                 </div>
-            </div>
+
+            </form>
+
         </div>
-        {% endfor %}
 
     </div>
-    {% else %}
-        <div class="alert alert-warning text-center">
-            No hay obras sociales registradas.
+
+
+    <!-- ========================================== -->
+    <!-- TABLA -->
+    <!-- ========================================== -->
+
+    <div class="card shadow-sm">
+
+        <div class="card-body">
+
+            <div class="table-responsive">
+
+                <table class="table table-hover align-middle">
+
+                    <thead class="table-success">
+
+                        <tr>
+
+                            <th style="width:80px;">
+                                Código
+                            </th>
+
+                            <th>
+                                Nombre
+                            </th>
+
+                            <th style="width:120px;">
+                                Sigla
+                            </th>
+
+                            <th style="width:120px;">
+                                Estado
+                            </th>
+
+                            <th
+                                class="text-center"
+                                style="width:180px;"
+                            >
+                                Acciones
+                            </th>
+
+                        </tr>
+
+                    </thead>
+
+                    <tbody>
+
+                        {% for obra in obras_sociales %}
+
+                        <tr>
+
+                            <td>
+
+                                {{ obra.codigo }}
+
+                            </td>
+
+                            <td>
+
+                                <strong>
+
+                                    {{ obra.nombre }}
+
+                                </strong>
+
+                            </td>
+
+                            <td>
+
+                                {{ obra.sigla }}
+
+                            </td>
+
+                            <td>
+
+                                {% if obra.activa %}
+
+                                    <span class="badge bg-success">
+
+                                        Activa
+
+                                    </span>
+
+                                {% else %}
+
+                                    <span class="badge bg-danger">
+
+                                        Inactiva
+
+                                    </span>
+
+                                {% endif %}
+
+                            </td>
+
+                            <td class="text-center">
+
+                                <a
+                                    href="{% url 'obrasocial:detail' obra.id %}"
+                                    class="btn btn-primary btn-sm">
+
+                                    <i class="bi bi-folder2-open"></i>
+
+                                    Administrar
+
+                                    </a>
+
+                                <a
+                                    href="{% url 'obrasocial:delete' obra.id %}"
+                                    class="btn btn-danger btn-sm"
+                                    onclick="return confirm('¿Desea desactivar esta Obra Social?')"
+                                >
+
+                                    <i class="bi bi-x-circle"></i>
+
+                                </a>
+
+                            </td>
+
+                        </tr>
+
+                        {% empty %}
+
+                        <tr>
+
+                            <td
+                                colspan="5"
+                                class="text-center text-muted"
+                            >
+
+                                No existen Obras Sociales registradas.
+
+                            </td>
+
+                        </tr>
+
+                        {% endfor %}
+
+                    </tbody>
+
+                </table>
+
+            </div>
+
         </div>
-    {% endif %}
 
-    <!-- BOTONES INFERIORES -->
-    <div class="d-flex justify-content-center gap-3 mt-5">
+    </div>
 
-      
-        <a href="{% url 'core:IndexAdmin' %}"
-           class="btn btn-primary btn-lg">
-            <i class="bi bi-arrow-left"></i> Volver 
-        </a>
-        <a href="{% url 'obrasocial:create' %}"
-           class="btn btn-success btn-lg">
-            <i class="bi bi-plus-circle"></i> Nueva Obra Social
+
+    <!-- ========================================== -->
+    <!-- BOTONES -->
+    <!-- ========================================== -->
+
+    <div class="mt-4 text-end">
+
+        <a
+            href="{% url 'core:IndexAdmin' %}"
+            class="btn btn-secondary"
+        >
+
+            <i class="bi bi-arrow-left"></i>
+
+            Volver
+
         </a>
 
     </div>
 
 </div>
-
-<style>
-.obra-card {
-    border-left: 6px solid #198754;
-    transition: all 0.25s ease;
-}
-
-.obra-card:hover {
-    transform: translateY(-5px);
-    box-shadow: 0 12px 25px rgba(0,0,0,0.15);
-}
-</style>
 
 {% endblock %}

@@ -1,102 +1,261 @@
 {% extends 'core/base.html' %}
 {% load static %}
-{% block title %}Cargar Obra Social{% endblock %}
+
+{% block title %}
+Nueva Obra Social
+{% endblock %}
 
 {% block content %}
-<div class="container mt-5">
 
-    <!-- TÍTULO -->
-    <div class="text-center mb-4">
-        <h2 class="fw-bold text-success">
-            <i class="bi bi-building-add"></i> Nueva Obra Social
-        </h2>
-        <p class="text-muted">Complete los datos de la obra social</p>
-    </div>
+<div class="container mt-4">
 
     <div class="row justify-content-center">
-        <div class="col-md-6">
-            <div class="card shadow border-0 obra-card">
-                <div class="card-body p-4">
 
-                    <form method="post">
-                        {% csrf_token %}
+        <div class="col-xl-10 col-lg-11">
 
-                        <!-- Nombre -->
-                        <div class="mb-4">
-                            <label class="form-label fw-bold">Nombre</label>
-                            {{ form.nombre }}
-                        </div>
+            <form method="post">
 
-                        <!-- BOTONES -->
-                        <div class="d-flex justify-content-between">
-                            <a href="{% url 'core:IndexAdmin' %}"
-                               class="btn btn-primary btn-lg">
-                                <i class="bi bi-arrow-left"></i> Volver
-                            </a>
+                {% csrf_token %}
 
-                            <button type="button"
-                                    class="btn btn-success btn-lg"
-                                    data-bs-toggle="modal"
-                                    data-bs-target="#confirmarModal">
-                                <i class="bi bi-save"></i> Guardar
-                            </button>
-                        </div>
+                <!-- ============================================== -->
+                <!-- CABECERA -->
+                <!-- ============================================== -->
 
-                        <!-- MODAL CONFIRMACION -->
-                        <div class="modal fade" id="confirmarModal" tabindex="-1">
-                            <div class="modal-dialog modal-dialog-centered">
-                                <div class="modal-content shadow-lg border-0">
+                <div class="card shadow-sm mb-4">
 
-                                    <div class="modal-header bg-success text-white">
-                                        <h5 class="modal-title">
-                                            Confirmar Registro
-                                        </h5>
-                                        <button type="button"
-                                                class="btn-close btn-close-white"
-                                                data-bs-dismiss="modal">
-                                        </button>
-                                    </div>
+                    <div class="card-header bg-success text-white">
 
-                                    <div class="modal-body text-center">
-                                        ¿Está seguro que desea guardar esta obra social?
-                                    </div>
+                        <h4 class="mb-0">
 
-                                    <div class="modal-footer justify-content-center">
-                                        <button type="button"
-                                                class="btn btn-outline-secondary btn-lg"
-                                                data-bs-dismiss="modal">
-                                            Cancelar
-                                        </button>
+                            <i class="bi bi-hospital"></i>
 
-                                        <button type="submit"
-                                                class="btn btn-success btn-lg">
-                                            Confirmar
-                                        </button>
-                                    </div>
+                            Nueva Obra Social
 
-                                </div>
-                            </div>
-                        </div>
+                        </h4>
 
-                    </form>
+                    </div>
+
+                    <div class="card-body">
+
+                        Complete los datos principales de la Obra Social.
+                        Luego podrá administrar planes, convenios,
+                        documentación y demás información desde la ficha.
+
+                    </div>
 
                 </div>
-            </div>
+
+
+                <!-- ============================================== -->
+                <!-- INFORMACIÓN GENERAL -->
+                <!-- ============================================== -->
+
+                <div class="card shadow-sm mb-4">
+
+                    <div class="card-header">
+
+                        <i class="bi bi-building"></i>
+
+                        Información General
+
+                    </div>
+
+                    <div class="card-body">
+
+                        <div class="row">
+
+                            <div class="col-md-6 mb-3">
+
+                                <label class="form-label">
+
+                                    Nombre
+
+                                </label>
+
+                                {{ form.nombre }}
+
+                            </div>
+
+                            <div class="col-md-3 mb-3">
+
+                                <label class="form-label">
+
+                                    Sigla
+
+                                </label>
+
+                                {{ form.sigla }}
+
+                            </div>
+
+                            <div class="col-md-3 mb-3">
+
+                                <label class="form-label">
+
+                                    Código
+
+                                </label>
+
+                                {{ form.codigo }}
+
+                            </div>
+
+                        </div>
+
+                        <div class="row">
+
+                            <div class="col-md-4 mb-3">
+
+                                <label class="form-label">
+
+                                    CUIT
+
+                                </label>
+
+                                {{ form.cuit }}
+
+                            </div>
+
+                            <div class="col-md-4 mb-3">
+
+                                <label class="form-label">
+
+                                    Teléfono
+
+                                </label>
+
+                                {{ form.telefono }}
+
+                            </div>
+
+                            <div class="col-md-4 mb-3">
+
+                                <label class="form-label">
+
+                                    Email
+
+                                </label>
+
+                                {{ form.email }}
+
+                            </div>
+
+                        </div>
+
+                        <div class="row">
+
+                            <div class="col-md-6 mb-3">
+
+                                <label class="form-label">
+
+                                    Domicilio
+
+                                </label>
+
+                                {{ form.domicilio }}
+
+                            </div>
+
+                            <div class="col-md-3 mb-3">
+
+                                <label class="form-label">
+
+                                    Ciudad
+
+                                </label>
+
+                                {{ form.ciudad }}
+
+                            </div>
+
+                            <div class="col-md-3 mb-3">
+
+                                <label class="form-label">
+
+                                    Provincia
+
+                                </label>
+
+                                {{ form.provincia }}
+
+                            </div>
+
+                        </div>
+
+                        <div class="row">
+
+                            <div class="col-12 mb-3">
+
+                                <label class="form-label">
+
+                                    Observaciones
+
+                                </label>
+
+                                {{ form.observaciones }}
+
+                            </div>
+
+                        </div>
+
+                        <div class="row">
+
+                            <div class="col-md-4">
+
+                                <div class="form-check form-switch">
+
+                                    {{ form.activa }}
+
+                                    <label class="form-check-label">
+
+                                        Obra Social Activa
+
+                                    </label>
+
+                                </div>
+
+                            </div>
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+
+                <!-- ============================================== -->
+                <!-- BOTONES -->
+                <!-- ============================================== -->
+
+                <div class="d-flex justify-content-end gap-2">
+
+                    <a href="{% url 'obrasocial:list' %}"
+                       class="btn btn-secondary">
+
+                        <i class="bi bi-arrow-left"></i>
+
+                        Cancelar
+
+                    </a>
+
+                    <button
+                        type="submit"
+                        class="btn btn-success">
+
+                        <i class="bi bi-check-circle"></i>
+
+                        Guardar Obra Social
+
+                    </button>
+
+                </div>
+
+            </form>
+
         </div>
+
     </div>
 
 </div>
-
-<style>
-.obra-card {
-    border-left: 6px solid #198754;
-    transition: all 0.25s ease;
-}
-
-.obra-card:hover {
-    transform: translateY(-4px);
-    box-shadow: 0 12px 25px rgba(0,0,0,0.12);
-}
-</style>
 
 {% endblock %}

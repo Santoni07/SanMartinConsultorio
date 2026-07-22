@@ -1,14 +1,32 @@
 from django.urls import path
 
-from .views import ObraSocialDeleteView,ObraSocialUpdateView,ObraSocialListView,ObraSocialCreateView
-
+from . import views
 
 
 ObraSocial_patterns = ([
-    path('',ObraSocialListView.as_view(), name='list'),
-    path('create/', ObraSocialCreateView.as_view(), name='create'),
-    path('update/<int:pk>/', ObraSocialUpdateView.as_view(), name='update'),
-    path('delete/<int:pk>/', ObraSocialDeleteView.as_view(), name='delete'),
-  
-    
+
+    path(
+        '',
+        views.obras_sociales,
+        name='list'
+    ),
+
+    path(
+        'crear/',
+        views.crear_obra_social,
+        name='create'
+    ),
+
+    path(
+    "<int:pk>/",
+    views.ver_obra_social,
+    name="detail",
+),
+
+    path(
+        'desactivar/<int:pk>/',
+        views.desactivar_obra_social,
+        name='delete'
+    ),
+
 ], 'obrasocial')

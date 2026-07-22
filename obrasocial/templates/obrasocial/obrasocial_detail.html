@@ -1,0 +1,852 @@
+{% extends 'core/base.html' %}
+{% load static %}
+
+{% block title %}
+{{ obra_social.nombre }}
+{% endblock %}
+
+{% block content %}
+<style>
+
+
+.list-group-item{
+
+    border:0;
+    border-bottom:1px solid #e9ecef;
+
+    padding:15px 20px;
+
+    font-weight:500;
+
+    transition:.20s;
+
+}
+
+.list-group-item i{
+
+    color:#5DADE2;
+
+    margin-right:8px;
+
+}
+
+.list-group-item:hover{
+
+    background:#EEF7FD;
+
+    color:#2C6FA3;
+
+    padding-left:24px;
+
+}
+
+.list-group-item.active{
+
+    background:#5DADE2 !important;
+
+    border-color:#5DADE2 !important;
+
+    color:white !important;
+
+    font-weight:600;
+
+}
+
+.list-group-item.active i{
+
+    color:white;
+
+}
+
+.card-header{
+
+    font-weight:600;
+
+    letter-spacing:.3px;
+
+}
+
+</style>
+
+<div class="container mt-4">
+
+    <!-- ===================================================== -->
+<!-- CABECERA -->
+<!-- ===================================================== -->
+
+<div class="card shadow border-0 mb-4">
+
+    <div class="card-header text-white py-4" style="background: #5DADE2; ;">
+
+        <div class="d-flex justify-content-between align-items-center flex-wrap">
+
+            <div class="d-flex align-items-center">
+
+                <div class="bg-white rounded-circle d-flex justify-content-center align-items-center me-4"
+                     style="width:80px;height:80px;">
+
+                    <i class="bi bi-hospital text-success fs-1"></i>
+
+                </div>
+
+                <div>
+
+                    <h2 class="fw-bold mb-1">
+
+                        {{ obra_social.nombre }}
+
+                    </h2>
+
+                    <p class="mb-0 opacity-75">
+
+                        Administración de Obra Social
+
+                    </p>
+
+                </div>
+
+            </div>
+
+            <div class="text-end mt-3 mt-lg-0">
+
+                {% if obra_social.activa %}
+
+                    <span class="badge bg-light text-success fs-6 px-4 py-3 shadow-sm">
+
+                        <i class="bi bi-check-circle-fill"></i>
+
+                        Activa
+
+                    </span>
+
+                {% else %}
+
+                    <span class="badge bg-danger fs-6 px-4 py-3 shadow-sm">
+
+                        <i class="bi bi-x-circle-fill"></i>
+
+                        Inactiva
+
+                    </span>
+
+                {% endif %}
+
+            </div>
+
+        </div>
+
+    </div>
+
+    <div class="card-body bg-light">
+
+        <div class="row text-center gy-3">
+
+    <div class="col-md-3">
+
+        <small class="text-muted d-block text-uppercase mb-1">
+            Código
+        </small>
+
+        <div style="
+            font-size:1.20rem;
+            font-weight:500;
+            color:#2C3E50;
+            letter-spacing:.3px;
+        ">
+            {{ obra_social.codigo }}
+        </div>
+
+    </div>
+
+    <div class="col-md-3">
+
+        <small class="text-muted d-block text-uppercase mb-1">
+            Sigla
+        </small>
+
+        <div style="
+            font-size:1.20rem;
+            font-weight:500;
+            color:#2C3E50;
+            letter-spacing:.3px;
+        ">
+            {{ obra_social.sigla|default:"-" }}
+        </div>
+
+    </div>
+
+    <div class="col-md-3">
+
+        <small class="text-muted d-block text-uppercase mb-1">
+            CUIT
+        </small>
+
+        <div style="
+            font-size:1.20rem;
+            font-weight:500;
+            color:#2C3E50;
+            letter-spacing:.3px;
+        ">
+            {{ obra_social.cuit|default:"-" }}
+        </div>
+
+    </div>
+
+    <div class="col-md-3">
+
+        <small class="text-muted d-block text-uppercase mb-1">
+            Estado
+        </small>
+
+        <div style="
+            font-size:1.20rem;
+            font-weight:500;
+            color:{% if obra_social.activa %}#198754{% else %}#DC3545{% endif %};
+            letter-spacing:.3px;
+        ">
+
+            {% if obra_social.activa %}
+                Activa
+            {% else %}
+                Inactiva
+            {% endif %}
+
+        </div>
+
+    </div>
+
+</div>
+
+    </div>
+
+</div>
+
+
+
+    <div class="row">
+
+        <!-- ========================================================= -->
+        <!-- MENÚ -->
+        <!-- ========================================================= -->
+
+        <div class="col-lg-3">
+
+            <div class="list-group shadow-sm">
+
+                <a href="#datos"
+                   class="list-group-item list-group-item-action active"
+                   data-bs-toggle="tab">
+
+                    <i class="bi bi-building"></i>
+
+                    Datos Generales
+
+                </a>
+
+                <a href="#planes"
+                   class="list-group-item list-group-item-action"
+                   data-bs-toggle="tab">
+
+                    <i class="bi bi-card-list"></i>
+
+                    Planes
+
+                </a>
+
+                <a href="#convenios"
+                   class="list-group-item list-group-item-action"
+                   data-bs-toggle="tab">
+
+                    <i class="bi bi-file-earmark-text"></i>
+
+                    Convenios
+
+                </a>
+
+                <a href="#contactos"
+                   class="list-group-item list-group-item-action"
+                   data-bs-toggle="tab">
+
+                    <i class="bi bi-people"></i>
+
+                    Contactos
+
+                </a>
+
+                <a href="#portal"
+                   class="list-group-item list-group-item-action"
+                   data-bs-toggle="tab">
+
+                    <i class="bi bi-globe"></i>
+
+                    Portal Web
+
+                </a>
+
+                <a href="#documentacion"
+                   class="list-group-item list-group-item-action"
+                   data-bs-toggle="tab">
+
+                    <i class="bi bi-folder"></i>
+
+                    Documentación
+
+                </a>
+
+                <a href="#liquidaciones"
+                   class="list-group-item list-group-item-action"
+                   data-bs-toggle="tab">
+
+                    <i class="bi bi-cash-stack"></i>
+
+                    Liquidaciones
+
+                </a>
+
+            </div>
+
+        </div>
+
+
+
+        <!-- ========================================================= -->
+        <!-- CONTENIDO -->
+        <!-- ========================================================= -->
+
+        <div class="col-lg-9">
+
+            <div class="tab-content">
+
+                <!-- DATOS -->
+
+                <div class="tab-pane fade show active" id="datos">
+
+                    <div class="card shadow-sm">
+
+                      
+
+                        <div class="card-header text-black py-3"
+                            style="background:#E2E3E5;">
+
+                            <div class="d-flex justify-content-between align-items-center">
+
+                                <div>
+
+                                    <h5 class="mb-0">
+                                        <i class="bi bi-building me-2"></i>
+                                        Datos Generales
+                                    </h5>
+
+                                    <small class="opacity-75">
+                                        Información principal de la obra social
+                                    </small>
+
+                                </div>
+
+                                <i class="bi bi-pencil-square fs-3"></i>
+
+                            </div>
+
+                        </div>
+
+                        <div class="card-body">
+                            <div class="alert alert-light border mb-4 ">
+
+                                <div class="d-flex justify-content-evenly align-items-center text-center py-2">
+
+    <div>
+
+        <i class="bi bi-calendar-check fs-3 text-success"></i>
+
+        <div class="mt-2">
+            <small class="text-muted d-block">
+                Fecha de Alta
+            </small>
+
+            <strong>
+                {{ obra_social.fecha_alta|default:"-" }}
+            </strong>
+        </div>
+
+    </div>
+
+    <div>
+
+        <i class="bi bi-check-circle-fill fs-3 text-success"></i>
+
+        <div class="mt-2">
+            <small class="text-muted d-block">
+                Estado
+            </small>
+
+            <strong>
+                {% if obra_social.activa %}
+                    Activa
+                {% else %}
+                    Inactiva
+                {% endif %}
+            </strong>
+        </div>
+
+    </div>
+
+</div>
+
+                            </div>
+
+                            <form method="post">
+
+                                {% csrf_token %}
+
+                                {{ form.as_p }}
+
+                                <div class="text-end mt-3">
+                                        <button class="btn btn-lg px-5 shadow-sm btn-guardar">
+
+                                        <i class="bi bi-check-circle me-2"></i>
+
+                                        Guardar Cambios
+
+                                    </button>
+
+                                </div>
+
+                            </form>
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+
+
+                <!-- PLANES -->
+
+                <div class="tab-pane fade" id="planes">
+
+                    <div class="card shadow-sm">
+
+                        <div class="card-header d-flex justify-content-between align-items-center" >
+
+                            <span>
+
+                                Planes
+
+                            </span>
+
+                            <button class="btn btn-primary btn-sm">
+
+                                <i class="bi bi-plus-circle"></i>
+
+                                Nuevo Plan
+
+                            </button>
+
+                        </div>
+
+                        <div class="card-body">
+
+                            {% if planes %}
+
+                                <table class="table table-hover">
+
+                                    <thead>
+
+                                        <tr>
+
+                                            <th>Código</th>
+
+                                            <th>Nombre</th>
+
+                                            <th>Estado</th>
+
+                                        </tr>
+
+                                    </thead>
+
+                                    <tbody>
+
+                                    {% for plan in planes %}
+
+                                        <tr>
+
+                                            <td>{{ plan.codigo }}</td>
+
+                                            <td>{{ plan.nombre }}</td>
+
+                                            <td>
+
+                                                {% if plan.activo %}
+
+                                                    <span class="badge bg-success">
+
+                                                        Activo
+
+                                                    </span>
+
+                                                {% else %}
+
+                                                    <span class="badge bg-danger">
+
+                                                        Inactivo
+
+                                                    </span>
+
+                                                {% endif %}
+
+                                            </td>
+
+                                        </tr>
+
+                                    {% endfor %}
+
+                                    </tbody>
+
+                                </table>
+
+                            {% else %}
+
+                                <div class="alert alert-info">
+
+                                    Esta Obra Social todavía no posee planes registrados.
+
+                                </div>
+
+                            {% endif %}
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+
+
+                <!-- RESTO -->
+
+           
+
+                <div class="tab-pane fade" id="convenios">
+                    <div class="alert alert-secondary">
+                        Próximamente.
+                    </div>
+                </div>
+
+                <div class="tab-pane fade" id="contactos">
+                    <div class="alert alert-secondary">
+                        Próximamente.
+                    </div>
+                </div>
+
+                <div class="tab-pane fade" id="portal">
+
+                <div class="card shadow-sm">
+
+                    <div class="card-header text-white py-3"
+                        style="background:#5DADE2;">
+
+                        <div class="d-flex justify-content-between align-items-center">
+
+                            <div>
+
+                                <h5 class="mb-0">
+                                    <i class="bi bi-globe me-2"></i>
+                                    Portal Web
+                                </h5>
+
+                                <small class="opacity-75">
+                                    Accesos rápidos a los servicios online de la Obra Social
+                                </small>
+
+                            </div>
+
+                            <i class="bi bi-box-arrow-up-right fs-3"></i>
+
+                        </div>
+
+                    </div>
+
+                    <div class="card-body">
+
+                        <div class="row g-4">
+
+                            <!-- Sitio Oficial -->
+                            <div class="col-md-6">
+
+                                <div class="card h-100 border">
+
+                                    <div class="card-body">
+
+                                        <h6>
+                                            <i class="bi bi-globe2 text-primary me-2"></i>
+                                            Sitio Oficial
+                                        </h6>
+
+                                        {{ form.sitio_web }}
+
+                                        {% if obra_social.sitio_web %}
+
+                                            <div class="mt-3">
+
+                                                <a href="{{ obra_social.sitio_web }}"
+                                                target="_blank"
+                                                class="btn btn-outline-primary btn-sm">
+
+                                                    <i class="bi bi-box-arrow-up-right me-1"></i>
+
+                                                    Abrir Sitio
+
+                                                </a>
+
+                                            </div>
+
+                                        {% endif %}
+
+                                    </div>
+
+                                </div>
+
+                            </div>
+
+                            <!-- Prestadores -->
+                            <div class="col-md-6">
+
+                                <div class="card h-100 border">
+
+                                    <div class="card-body">
+
+                                        <h6>
+                                            <i class="bi bi-hospital text-success me-2"></i>
+                                            Portal de Prestadores
+                                        </h6>
+
+                                        {{ form.portal_prestadores }}
+
+                                        {% if obra_social.portal_prestadores %}
+
+                                            <div class="mt-3">
+
+                                                <a href="{{ obra_social.portal_prestadores }}"
+                                                target="_blank"
+                                                class="btn btn-outline-success btn-sm">
+
+                                                    <i class="bi bi-box-arrow-up-right me-1"></i>
+
+                                                    Abrir Portal
+
+                                                </a>
+
+                                            </div>
+
+                                        {% endif %}
+
+                                    </div>
+
+                                </div>
+
+                            </div>
+
+                            <!-- Autorizaciones -->
+                            <div class="col-md-6">
+
+                                <div class="card h-100 border">
+
+                                    <div class="card-body">
+
+                                        <h6>
+                                            <i class="bi bi-file-earmark-check text-warning me-2"></i>
+                                            Portal de Autorizaciones
+                                        </h6>
+
+                                        {{ form.portal_autorizaciones }}
+
+                                        {% if obra_social.portal_autorizaciones %}
+
+                                            <div class="mt-3">
+
+                                                <a href="{{ obra_social.portal_autorizaciones }}"
+                                                target="_blank"
+                                                class="btn btn-outline-warning btn-sm">
+
+                                                    <i class="bi bi-box-arrow-up-right me-1"></i>
+
+                                                    Abrir Portal
+
+                                                </a>
+
+                                            </div>
+
+                                        {% endif %}
+
+                                    </div>
+
+                                </div>
+
+                            </div>
+
+                            <!-- Afiliados -->
+                            <div class="col-md-6">
+
+                                <div class="card h-100 border">
+
+                                    <div class="card-body">
+
+                                        <h6>
+                                            <i class="bi bi-person-badge text-info me-2"></i>
+                                            Portal de Afiliados
+                                        </h6>
+
+                                        {{ form.portal_afiliados }}
+
+                                        {% if obra_social.portal_afiliados %}
+
+                                            <div class="mt-3">
+
+                                                <a href="{{ obra_social.portal_afiliados }}"
+                                                target="_blank"
+                                                class="btn btn-outline-info btn-sm">
+
+                                                    <i class="bi bi-box-arrow-up-right me-1"></i>
+
+                                                    Abrir Portal
+
+                                                </a>
+
+                                            </div>
+
+                                        {% endif %}
+
+                                    </div>
+
+                                </div>
+
+                            </div>
+
+                            <!-- Cartilla -->
+                            <div class="col-md-6">
+
+                                <div class="card h-100 border">
+
+                                    <div class="card-body">
+
+                                        <h6>
+                                            <i class="bi bi-journal-medical text-danger me-2"></i>
+                                            Cartilla Médica
+                                        </h6>
+
+                                        {{ form.cartilla_online }}
+
+                                        {% if obra_social.cartilla_online %}
+
+                                            <div class="mt-3">
+
+                                                <a href="{{ obra_social.cartilla_online }}"
+                                                target="_blank"
+                                                class="btn btn-outline-danger btn-sm">
+
+                                                    <i class="bi bi-box-arrow-up-right me-1"></i>
+
+                                                    Ver Cartilla
+
+                                                </a>
+
+                                            </div>
+
+                                        {% endif %}
+
+                                    </div>
+
+                                </div>
+
+                            </div>
+
+                            <!-- Credenciales -->
+                            <div class="col-md-6">
+
+                                <div class="card h-100 border">
+
+                                    <div class="card-body">
+
+                                        <h6>
+                                            <i class="bi bi-credit-card text-secondary me-2"></i>
+                                            Credenciales
+                                        </h6>
+
+                                        {{ form.credenciales_online }}
+
+                                        {% if obra_social.credenciales_online %}
+
+                                            <div class="mt-3">
+
+                                                <a href="{{ obra_social.credenciales_online }}"
+                                                target="_blank"
+                                                class="btn btn-outline-secondary btn-sm">
+
+                                                    <i class="bi bi-box-arrow-up-right me-1"></i>
+
+                                                    Abrir
+
+                                                </a>
+
+                                            </div>
+
+                                        {% endif %}
+
+                                    </div>
+
+                                </div>
+
+                            </div>
+
+                        </div>
+
+                        <div class="mt-4">
+
+                            <label class="form-label fw-semibold">
+                                Observaciones
+                            </label>
+
+                            {{ form.observaciones_portal }}
+
+                        </div>
+
+                        <div class="text-end mt-4">
+
+                            <button class="btn btn-guardar btn-lg px-5">
+
+                                <i class="bi bi-check-circle me-2"></i>
+
+                                Guardar Cambios
+
+                            </button>
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+</div>
+
+                <div class="tab-pane fade" id="documentacion">
+                    <div class="alert alert-secondary">
+                        Próximamente.
+                    </div>
+                </div>
+
+                <div class="tab-pane fade" id="liquidaciones">
+                    <div class="alert alert-secondary">
+                        Próximamente.
+                    </div>
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+{% endblock %}
