@@ -181,6 +181,7 @@ class ConceptoFacturacion(models.Model):
         ('ESTUDIO', 'Estudio'),
         ('PRACTICA', 'Práctica'),
         ('CERTIFICADOS', 'Certificados'),
+        ('DEPILACION', 'Depilacion'),
     ]
 
     tipo_concepto = models.CharField(
