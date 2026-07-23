@@ -1,4 +1,5 @@
 from django.db import models
+from nomenclador.models import NomencladorGeneral
 
 # Create your models here.
 
@@ -125,90 +126,178 @@ class ObraSocial(models.Model):
         return self.nombre
     
 
+
+# ==========================================================
+# PLANES DE OBRAS SOCIALES
+# ==========================================================
+
 class PlanObraSocial(models.Model):
 
     obra_social = models.ForeignKey(
-
         ObraSocial,
-
-        on_delete=models.PROTECT,
-
+        on_delete=models.CASCADE,
         related_name="planes",
-
         verbose_name="Obra Social"
-
-    )
-
-    nombre = models.CharField(
-
-        "Nombre",
-
-        max_length=150
-
     )
 
     codigo = models.CharField(
-
         "Código",
-
-        max_length=30,
-
-        blank=True
-
+        max_length=30
     )
 
-    descripcion = models.TextField(
+    nombre = models.CharField(
+        "Nombre",
+        max_length=150
+    )
 
-        "Descripción",
-
+    observaciones = models.TextField(
+        "Observaciones",
         blank=True
+    )
 
+    orden = models.PositiveIntegerField(
+        "Orden",
+        default=0
     )
 
     activo = models.BooleanField(
-
+        "Activo",
         default=True
-
     )
 
     fecha_alta = models.DateTimeField(
-
+        "Fecha de alta",
         auto_now_add=True
+    )
 
+    fecha_modificacion = models.DateTimeField(
+        "Última modificación",
+        auto_now=True
     )
 
     class Meta:
-
-        ordering = [
-
-            "obra_social",
-
-            "nombre"
-
-        ]
 
         verbose_name = "Plan"
 
         verbose_name_plural = "Planes"
 
+        ordering = [
+            "orden",
+            "codigo",
+            "nombre"
+        ]
+
         constraints = [
 
             models.UniqueConstraint(
-
                 fields=[
-
                     "obra_social",
-
-                    "nombre"
-
+                    "codigo"
                 ],
-
-                name="plan_unico_por_obra_social"
-
+                name="plan_codigo_unico_por_obra_social"
             )
 
         ]
 
     def __str__(self):
 
-        return f"{self.obra_social} - {self.nombre}"
+        if self.codigo:
+            return f"{self.obra_social.sigla} - {self.codigo} - {self.nombre}"
+
+        return f"{self.obra_social.sigla} - {self.nombre}"
+    
+# ==========================================================
+# PRESTACIONES DEL PLAN
+# ==========================================================
+
+class PrestacionPlan(models.Model):
+
+    ESTADOS = [
+        ("ACTIVA", "Activa"),
+        ("INACTIVA", "Inactiva"),
+    ]
+
+    plan = models.ForeignKey(
+        PlanObraSocial,
+        on_delete=models.CASCADE,
+        related_name="prestaciones"
+    )
+
+    nomenclador = models.ForeignKey(
+        NomencladorGeneral,
+        on_delete=models.PROTECT,
+        related_name="planes"
+    )
+
+    valor = models.DecimalField(
+        "Valor Convenio",
+        max_digits=12,
+        decimal_places=2
+    )
+
+    fecha_vigencia_desde = models.DateField()
+
+    fecha_vigencia_hasta = models.DateField(
+        blank=True,
+        null=True
+    )
+
+    estado = models.CharField(
+        max_length=10,
+        choices=ESTADOS,
+        default="ACTIVA"
+    )
+
+    observaciones = models.TextField(
+        blank=True
+    )
+
+    fecha_alta = models.DateTimeField(
+        auto_now_add=True
+    )
+
+    fecha_modificacion = models.DateTimeField(
+        auto_now=True
+    )
+
+    class Meta:
+
+        verbose_name = "Prestación del Plan"
+
+        verbose_name_plural = "Prestaciones del Plan"
+
+        ordering = [
+            "nomenclador__codigo"
+        ]
+
+    def __str__(self):
+
+        return f"{self.plan} - {self.nomenclador}"
+
+class PrestacionPlanValor(models.Model):
+
+    prestacion = models.ForeignKey(
+        PrestacionPlan,
+        on_delete=models.CASCADE,
+        related_name="valores"
+    )
+
+    valor = models.DecimalField(
+        max_digits=12,
+        decimal_places=2
+    )
+
+    vigente_desde = models.DateField()
+
+    vigente_hasta = models.DateField(
+        blank=True,
+        null=True
+    )
+
+    activo = models.BooleanField(
+        default=True
+    )
+
+    fecha_alta = models.DateTimeField(
+        auto_now_add=True
+    )

@@ -1,6 +1,32 @@
 from .models import ObraSocial,PlanObraSocial
 
 from django.contrib import admin
+
+# ==========================================================
+# INLINE PLANES
+# ==========================================================
+
+class PlanObraSocialInline(admin.TabularInline):
+
+    model = PlanObraSocial
+
+    extra = 0
+
+    fields = (
+        "codigo",
+        "nombre",
+        "orden",
+        "activo",
+    )
+
+    ordering = (
+        "orden",
+        "codigo",
+    )
+
+    show_change_link = True
+
+
 # ==========================================================
 # OBRAS SOCIALES
 # ==========================================================
@@ -37,6 +63,10 @@ class ObraSocialAdmin(admin.ModelAdmin):
 
     list_per_page = 25
 
+    inlines = [
+        PlanObraSocialInline,
+    ]
+
     fieldsets = (
 
         (
@@ -72,49 +102,75 @@ class ObraSocialAdmin(admin.ModelAdmin):
         ),
 
     )
+# ==========================================================
+# PLANES
+# ==========================================================
+
 @admin.register(PlanObraSocial)
 class PlanObraSocialAdmin(admin.ModelAdmin):
 
     list_display = (
-
-        "obra_social",
-
-        "nombre",
-
         "codigo",
-
+        "nombre",
+        "obra_social",
         "activo",
-
+        "fecha_alta",
     )
 
     list_filter = (
-
         "obra_social",
-
         "activo",
-
     )
 
     search_fields = (
-
-        "nombre",
-
         "codigo",
-
+        "nombre",
         "obra_social__nombre",
-
-    )
-
-    autocomplete_fields = (
-
-        "obra_social",
-
+        "obra_social__sigla",
     )
 
     ordering = (
-
         "obra_social",
+        "orden",
+        "codigo",
+    )
 
-        "nombre",
+    list_per_page = 30
+
+    autocomplete_fields = (
+        "obra_social",
+    )
+
+    readonly_fields = (
+        "fecha_alta",
+        "fecha_modificacion",
+    )
+
+    fieldsets = (
+
+        (
+            "Datos del Plan",
+            {
+                "fields": (
+                    ("obra_social",),
+                    ("codigo", "nombre"),
+                    ("orden", "activo"),
+                    "observaciones",
+                )
+            },
+        ),
+
+        (
+            "Auditoría",
+            {
+                "classes": ("collapse",),
+
+                "fields": (
+                    "fecha_alta",
+                    "fecha_modificacion",
+                )
+            },
+        ),
 
     )
+    
