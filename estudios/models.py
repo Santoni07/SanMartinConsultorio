@@ -10,6 +10,7 @@ TIPOS_ESTUDIO = [
     ('tomografia', 'Tomografía'),
     ('telemetria', 'Telemetría'),
     ('ecocardiograma', 'Ecocardiograma'),
+    ('ergometria', 'Ergometria'),
     ('otros', 'Otros'),
 ]
 
