@@ -15,11 +15,6 @@
     </button>
   </form>
 
-  {% if messages %}
-    {% for message in messages %}
-      <div class="alert alert-warning"><i class="bi bi-exclamation-circle"></i> {{ message }}</div>
-    {% endfor %}
-  {% endif %}
 
   {% if paciente %}
     <div class="card mb-4 border-success shadow-sm">
