@@ -2421,15 +2421,16 @@ def agenda_rapida(request):
 
             for d in preview:
                 agendas_existentes = AgendaMedico.objects.filter(
-                    medico=medico,
-                    fecha=d['fecha']
+                        medico=medico,
+                        fecha=d['fecha'],
+                        centro_medico=centro_activo
                 )
 
                 if agendas_existentes.exists():
-                    conflictos.append({
-                        'fecha': d['fecha'],
-                        'existente': agendas_existentes.first()
-                    })
+                        conflictos.append({
+                            'fecha': d['fecha'],
+                            'existente': agendas_existentes.first()
+                })
 
             pisando_agenda = len(conflictos) > 0
 
@@ -2454,11 +2455,12 @@ def agenda_rapida(request):
                     hora_fin = datetime.strptime(d['fin'], '%H:%M').time()
 
                     conflicto = AgendaMedico.objects.filter(
-                        fecha=d['fecha'],
-                        consultorio=c,
-                        hora_inicio__lt=hora_fin,
-                        hora_fin__gt=hora_inicio
-                    ).exists()
+                    fecha=d['fecha'],
+                    consultorio=c,
+                    centro_medico=centro_activo,
+                    hora_inicio__lt=hora_fin,
+                    hora_fin__gt=hora_inicio
+                ).exists()
 
                     if conflicto:
                         ocupado = True
@@ -3123,12 +3125,15 @@ def consultar_consultorios_disponibles(request):
 
 
 def validar_agenda(request):
-    fecha = request.GET.get('fecha')
-    medico_id = request.GET.get('medico_id')
+    centro_activo = request.centro_activo
+
+    fecha = request.GET.get("fecha")
+    medico_id = request.GET.get("medico_id")
 
     existe = AgendaMedico.objects.filter(
         medico_id=medico_id,
-        fecha=fecha
+        fecha=fecha,
+        centro_medico=centro_activo
     ).exists()
 
     return JsonResponse({
