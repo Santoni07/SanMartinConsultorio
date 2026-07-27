@@ -7,5 +7,9 @@ urlpatterns = [
     path('historia/<int:paciente_id>/', views.ver_historia_clinica, name='ver_historia_clinica'),
     path('buscar-por-dni/', views.buscar_historia_por_dni, name='buscar_historia_por_dni'),
      path('consulta/<int:consulta_id>/', views.detalle_consulta, name='detalle_consulta'),
-
+     path(
+    "antecedentes/",
+    views.buscar_antecedentes_por_dni,
+    name="buscar_antecedentes_por_dni",
+),
 ]

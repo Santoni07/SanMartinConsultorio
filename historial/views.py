@@ -333,3 +333,96 @@ def detalle_consulta(request, consulta_id):
         "consulta": consulta,
         "estudios": estudios,
     })
+
+from django.http import HttpResponse   
+
+def buscar_antecedentes_por_dni(request):
+
+    paciente = None
+    historia = None
+    mensaje = None
+
+    # ==========================================
+    # GUARDAR
+    # ==========================================
+
+    if request.method == "POST":
+
+        dni = request.POST.get("dni")
+
+        try:
+
+            paciente = Paciente.objects.get(dni=dni)
+
+            historia = paciente.historiaclinica
+
+            historia.antecedentes_patologicos = request.POST.get(
+                "antecedentes_patologicos"
+            )
+
+            historia.antecedentes_alergicos = request.POST.get(
+                "antecedentes_alergicos"
+            )
+
+            historia.antecedentes_toxicos = request.POST.get(
+                "antecedentes_toxicos"
+            )
+
+            historia.antecedentes_quirurgicos = request.POST.get(
+                "antecedentes_quirurgicos"
+            )
+
+            historia.medicacion_base = request.POST.get(
+                "medicacion_base"
+            )
+
+            historia.save()
+
+            messages.success(
+                request,
+                "Antecedentes actualizados correctamente."
+            )
+
+        except Paciente.DoesNotExist:
+
+            mensaje = "Paciente inexistente."
+
+        except HistoriaClinica.DoesNotExist:
+
+            mensaje = "El paciente no posee Historia Clínica."
+
+    # ==========================================
+    # BUSCAR
+    # ==========================================
+
+    dni = request.GET.get("dni")
+
+    if request.method == "POST":
+        dni = request.POST.get("dni")
+
+    if dni:
+
+        try:
+
+            paciente = Paciente.objects.get(dni=dni)
+
+            historia = paciente.historiaclinica
+
+        except Paciente.DoesNotExist:
+
+            mensaje = "No existe un paciente con ese DNI."
+
+        except HistoriaClinica.DoesNotExist:
+
+            mensaje = "El paciente no posee Historia Clínica."
+
+    return render(
+        request,
+        "historial/buscar_antecedentes_por_dni.html",
+        {
+            "paciente": paciente,
+            "historia": historia,
+            "mensaje": mensaje,
+            "dni": dni,
+        },
+    )

@@ -1,0 +1,217 @@
+{% extends "core/base.html" %}
+
+{% block content %}
+
+<div class="container mt-4">
+
+    <div class="card shadow">
+
+        <div class="card-header bg-primary text-white">
+
+            <h4 class="mb-0">
+                Actualizar Antecedentes Médicos
+            </h4>
+
+        </div>
+
+        <div class="card-body">
+            {% if messages %}
+
+    {% for message in messages %}
+
+        <div class="alert alert-success mt-3">
+
+            {{ message }}
+
+        </div>
+
+    {% endfor %}
+
+{% endif %}
+
+            <form method="get">
+
+                <div class="row">
+
+                    <div class="col-md-8">
+
+                        <label class="form-label">
+                            DNI del paciente
+                        </label>
+
+                        <input
+                            type="text"
+                            name="dni"
+                            class="form-control"
+                            value="{{ dni|default:'' }}"
+                            autofocus>
+
+                    </div>
+
+                    <div class="col-md-4 d-flex align-items-end">
+
+                        <button
+                            type="submit"
+                            class="btn btn-primary w-100">
+
+                            Buscar
+
+                        </button>
+
+                    </div>
+
+                </div>
+
+            </form>
+
+            {% if mensaje %}
+
+                <div class="alert alert-warning mt-4">
+                    {{ mensaje }}
+                </div>
+
+            {% endif %}
+
+        </div>
+
+    </div>
+
+    {% if paciente and historia %}
+
+    <div class="card shadow mt-4">
+
+        <div class="card-header bg-success text-white">
+
+            <h5 class="mb-0">
+                Paciente Encontrado
+            </h5>
+
+        </div>
+
+        <div class="card-body">
+
+            <div class="row">
+
+                <div class="col-md-4">
+                    <strong>Apellido y Nombre</strong><br>
+                    {{ paciente.apellido }}, {{ paciente.nombre }}
+                </div>
+
+                <div class="col-md-2">
+                    <strong>DNI</strong><br>
+                    {{ paciente.dni }}
+                </div>
+
+                <div class="col-md-3">
+                    <strong>Fecha Historia</strong><br>
+                    {{ historia.fecha }}
+                </div>
+
+                <div class="col-md-3">
+                    <strong>Estado</strong><br>
+                    {{ historia.estado }}
+                </div>
+
+            </div>
+
+            <hr>
+
+           <form method="post">
+
+    {% csrf_token %}
+
+    <input
+        type="hidden"
+        name="dni"
+        value="{{ paciente.dni }}">
+
+    <div class="mb-3">
+
+        <label class="fw-bold">
+            Antecedentes Patológicos
+        </label>
+
+        <textarea
+            name="antecedentes_patologicos"
+            class="form-control"
+            rows="3">{{ historia.antecedentes_patologicos }}</textarea>
+
+    </div>
+
+    <div class="mb-3">
+
+        <label class="fw-bold">
+            Antecedentes Alérgicos
+        </label>
+
+        <textarea
+            name="antecedentes_alergicos"
+            class="form-control"
+            rows="3">{{ historia.antecedentes_alergicos }}</textarea>
+
+    </div>
+
+    <div class="mb-3">
+
+        <label class="fw-bold">
+            Antecedentes Tóxicos
+        </label>
+
+        <textarea
+            name="antecedentes_toxicos"
+            class="form-control"
+            rows="3">{{ historia.antecedentes_toxicos }}</textarea>
+
+    </div>
+
+    <div class="mb-3">
+
+        <label class="fw-bold">
+            Antecedentes Quirúrgicos
+        </label>
+
+        <textarea
+            name="antecedentes_quirurgicos"
+            class="form-control"
+            rows="3">{{ historia.antecedentes_quirurgicos }}</textarea>
+
+    </div>
+
+    <div class="mb-3">
+
+        <label class="fw-bold">
+            Medicación Base
+        </label>
+
+        <textarea
+            name="medicacion_base"
+            class="form-control"
+            rows="3">{{ historia.medicacion_base }}</textarea>
+
+    </div>
+
+    <div class="text-end">
+
+        <button
+            type="submit"
+            class="btn btn-success">
+
+            <i class="bi bi-floppy"></i>
+
+            Guardar Cambios
+
+        </button>
+
+    </div>
+
+</form>
+
+        </div>
+
+    </div>
+
+    {% endif %}
+
+</div>
+
+{% endblock %}
