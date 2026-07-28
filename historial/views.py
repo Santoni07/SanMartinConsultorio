@@ -164,12 +164,22 @@ def cargar_consulta_paciente(request, turno_id):
             request.POST,
             instance=consulta_existente
         )
+        
+        if "guardar_parcial" in request.POST:
+            form.fields["diagnostico"].required = False
+            form.fields["tratamiento"].required = False
+            
+        if not form.is_valid():
+            print(form.errors)
 
         if form.is_valid():
+            
+            
 
             consulta = form.save(commit=False)
+
             historia.antecedentes_patologicos = request.POST.get(
-            'antecedentes_patologicos'
+                'antecedentes_patologicos'
             )
 
             historia.antecedentes_alergicos = request.POST.get(
@@ -192,7 +202,7 @@ def cargar_consulta_paciente(request, turno_id):
 
             consulta.historia_clinica = historia
             consulta.medico = request.user.medico
-            consulta.fecha = hoy
+            consulta.fecha = turno.fecha
 
             if es_sobreturno:
                 consulta.sobreturno = turno
@@ -205,9 +215,9 @@ def cargar_consulta_paciente(request, turno_id):
                 consulta.save()
 
                 messages.success(
-                request,
-                "CONSULTA_GUARDADA"
-)
+                    request,
+                    "CONSULTA_GUARDADA"
+                )
 
             elif "finalizar_consulta" in request.POST:
 
@@ -217,7 +227,10 @@ def cargar_consulta_paciente(request, turno_id):
                 turno.estado = 'ATENDIDO'
                 turno.save()
 
-                request.session['mostrar_modal'] = 'CONSULTA_FINALIZADA'
+                messages.success(
+                    request,
+                    "CONSULTA_FINALIZADA"
+                )
 
                 return redirect(
                     'cargar_consulta_paciente',
@@ -231,10 +244,23 @@ def cargar_consulta_paciente(request, turno_id):
 
     else:
 
-        form = ConsultaMedicaForm(
-            instance=consulta_existente
-        )
+        if consulta_existente:
 
+            form = ConsultaMedicaForm(
+                instance=consulta_existente
+            )
+
+        else:
+
+            consulta_nueva = ConsultaMedica(
+                fecha=turno.fecha
+            )
+
+            form = ConsultaMedicaForm(
+                instance=consulta_nueva
+            )
+    
+    
     if consulta_existente and consulta_existente.estado == 'FINALIZADA':
 
         for field in form.fields.values():

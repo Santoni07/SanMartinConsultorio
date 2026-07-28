@@ -145,6 +145,19 @@
                     Nueva Consulta
                 </h5>
 
+                <div class="mb-3">
+
+    <label class="form-label fw-bold">
+        Fecha
+    </label>
+
+    <input
+        type="date"
+        class="form-control"
+        value="{{ turno.fecha|date:'Y-m-d' }}"
+        readonly>
+
+</div>
                 {{ form.as_p }}
 
                 <hr>
@@ -189,7 +202,8 @@
 
                         <button type="submit"
                                 name="guardar_parcial"
-                                class="btn btn-warning">
+                                class="btn btn-warning"
+                                formnovalidate>
 
                             <i class="bi bi-save"></i>
                             Guardar Parcial
@@ -524,13 +538,14 @@
 
         <div class="modal-footer">
 
-            <button type="button"
-                    class="btn btn-success"
-                    data-bs-dismiss="modal">
+           <button
+    type="button"
+    id="btnAceptarConsulta"
+    class="btn btn-success">
 
-                Aceptar
+    Aceptar
 
-            </button>
+</button>
 
         </div>
 
@@ -654,7 +669,7 @@
 
 <script>
 
-window.onload = function() {
+document.addEventListener("DOMContentLoaded", function () {
 
     const mensajes = document.querySelectorAll('.mensaje');
 
@@ -696,8 +711,20 @@ window.onload = function() {
 
     });
 
-};
+    const botonAceptar =
+        document.getElementById("btnAceptarConsulta");
 
+    if (botonAceptar) {
+
+        botonAceptar.addEventListener("click", function () {
+
+            window.location.href = "/medico/";
+
+        });
+
+    }
+
+});
 </script>
 
 {% endblock %}

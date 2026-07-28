@@ -127,7 +127,7 @@
 
             {% elif turno.estado == 'ATENDIDO' and turno.consulta %}
                 
-                <a href="{% url 'detalle_consulta' turno.consulta.id %}" 
+                <a href="{% url 'buscar_historia_por_dni' %}?dni={{ turno.paciente.dni }}" 
                 class="btn btn-primary btn-sm">
                     <i class="bi bi-eye"></i> Ver Consulta
                 </a>

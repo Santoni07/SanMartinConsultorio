@@ -1,11 +1,12 @@
 from django import forms
 from .models import ConsultaMedica
+from django.utils import timezone
 
 class ConsultaMedicaForm(forms.ModelForm):
     class Meta:
         model = ConsultaMedica
         fields = [
-            'fecha',
+         
             'motivo',
             'examen_fisico',  # 👈 NUEVO CAMPO
             'diagnostico',
@@ -14,10 +15,13 @@ class ConsultaMedicaForm(forms.ModelForm):
         ]
 
         widgets = {
-            'fecha': forms.DateInput(attrs={
-                'class': 'form-control',
-                'type': 'date',
-                'placeholder': 'Seleccionar fecha'
+            'fecha': forms.DateInput(
+                format='%Y-%m-%d',
+                attrs={
+                    'class': 'form-control',
+                    'type': 'date'
+                
+                
             }),
 
             'motivo': forms.TextInput(attrs={
@@ -48,4 +52,7 @@ class ConsultaMedicaForm(forms.ModelForm):
                 'rows': 2,
                 'placeholder': 'Observaciones adicionales'
             }),
+            
+    
         }
+   
