@@ -2,215 +2,346 @@
 
 {% block content %}
 
-<div class="container mt-4">
+<div class="container py-4">
 
-    <div class="card shadow">
+    <div class="row justify-content-center">
 
-        <div class="card-header bg-primary text-white">
+        <div class="col-xl-10">
 
-            <h4 class="mb-0">
-                Actualizar Antecedentes Médicos
-            </h4>
+            <!-- BUSCADOR -->
 
-        </div>
+            <div class="card shadow-sm border-0">
 
-        <div class="card-body">
-            {% if messages %}
+                <div class="card-header bg-primary text-white">
 
-    {% for message in messages %}
+                    <h4 class="mb-0">
 
-        <div class="alert alert-success mt-3">
+                        <i class="bi bi-person-vcard-fill"></i>
 
-            {{ message }}
+                        Actualizar Antecedentes Médicos
 
-        </div>
+                    </h4>
 
-    {% endfor %}
+                </div>
 
-{% endif %}
+                <div class="card-body">
 
-            <form method="get">
+                    {% if messages %}
 
-                <div class="row">
+                        {% for message in messages %}
 
-                    <div class="col-md-8">
+                            <div class="alert alert-success alert-dismissible fade show">
 
-                        <label class="form-label">
-                            DNI del paciente
-                        </label>
+                                <i class="bi bi-check-circle-fill"></i>
+
+                                {{ message }}
+
+                                <button
+                                    class="btn-close"
+                                    data-bs-dismiss="alert">
+                                </button>
+
+                            </div>
+
+                        {% endfor %}
+
+                    {% endif %}
+
+                    <form method="get">
+
+                        <div class="row g-3 align-items-end">
+
+                            <div class="col-md-9">
+
+                                <label class="form-label fw-semibold">
+
+                                    DNI del Paciente
+
+                                </label>
+
+                                <input
+                                    type="text"
+                                    class="form-control form-control-lg"
+                                    name="dni"
+                                    placeholder="Ingrese DNI..."
+                                    value="{{ dni|default:'' }}"
+                                    autofocus>
+
+                            </div>
+
+                            <div class="col-md-3">
+
+                                <button
+                                    class="btn btn-primary btn-lg w-100">
+
+                                    <i class="bi bi-search"></i>
+
+                                    Buscar
+
+                                </button>
+
+                            </div>
+
+                        </div>
+
+                    </form>
+
+                    {% if mensaje %}
+
+                        <div class="alert alert-warning mt-4">
+
+                            <i class="bi bi-exclamation-triangle-fill"></i>
+
+                            {{ mensaje }}
+
+                        </div>
+
+                    {% endif %}
+
+                </div>
+
+            </div>
+
+            {% if paciente and historia %}
+
+            <!-- DATOS DEL PACIENTE -->
+
+            <div class="card shadow-sm border-0 mt-4">
+
+                <div class="card-header bg-success text-white">
+
+                    <h5 class="mb-0">
+
+                        <i class="bi bi-person-check-fill"></i>
+
+                        Información del Paciente
+
+                    </h5>
+
+                </div>
+
+                <div class="card-body">
+
+                    <div class="row text-center">
+
+                        <div class="col-md-3">
+
+                            <div class="border rounded p-3 bg-light h-100">
+
+                                <small class="text-muted">
+
+                                    Paciente
+
+                                </small>
+
+                                <h6 class="mt-2 mb-0">
+
+                                    {{ paciente.apellido }}, {{ paciente.nombre }}
+
+                                </h6>
+
+                            </div>
+
+                        </div>
+
+                        <div class="col-md-3">
+
+                            <div class="border rounded p-3 bg-light h-100">
+
+                                <small class="text-muted">
+
+                                    DNI
+
+                                </small>
+
+                                <h5 class="mt-2">
+
+                                    {{ paciente.dni }}
+
+                                </h5>
+
+                            </div>
+
+                        </div>
+
+                        <div class="col-md-3">
+
+                            <div class="border rounded p-3 bg-light h-100">
+
+                                <small class="text-muted">
+
+                                    Fecha Historia
+
+                                </small>
+
+                                <h6 class="mt-2">
+
+                                    {{ historia.fecha }}
+
+                                </h6>
+
+                            </div>
+
+                        </div>
+
+                        <div class="col-md-3">
+
+                            <div class="border rounded p-3 bg-light h-100">
+
+                                <small class="text-muted">
+
+                                    Estado
+
+                                </small>
+
+                                <h6 class="mt-2">
+
+                                    <span class="badge bg-success">
+
+                                        {{ historia.estado }}
+
+                                    </span>
+
+                                </h6>
+
+                            </div>
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+            <!-- FORMULARIO -->
+
+            <div class="card shadow-sm border-0 mt-4">
+
+                <div class="card-header bg-secondary text-white">
+
+                    <h5 class="mb-0">
+
+                        <i class="bi bi-journal-medical"></i>
+
+                        Antecedentes Permanentes
+
+                    </h5>
+
+                </div>
+
+                <div class="card-body">
+
+                    <form method="post">
+
+                        {% csrf_token %}
 
                         <input
-                            type="text"
+                            type="hidden"
                             name="dni"
-                            class="form-control"
-                            value="{{ dni|default:'' }}"
-                            autofocus>
+                            value="{{ paciente.dni }}">
 
-                    </div>
+                        <div class="mb-4">
 
-                    <div class="col-md-4 d-flex align-items-end">
+                            <label class="form-label fw-bold">
 
-                        <button
-                            type="submit"
-                            class="btn btn-primary w-100">
+                                Antecedentes Patológicos
 
-                            Buscar
+                            </label>
 
-                        </button>
+                            <textarea
+                                class="form-control"
+                                rows="4"
+                                name="antecedentes_patologicos">{{ historia.antecedentes_patologicos }}</textarea>
 
-                    </div>
+                        </div>
+
+                        <div class="mb-4">
+
+                            <label class="form-label fw-bold">
+
+                                Antecedentes Alérgicos
+
+                            </label>
+
+                            <textarea
+                                class="form-control"
+                                rows="4"
+                                name="antecedentes_alergicos">{{ historia.antecedentes_alergicos }}</textarea>
+
+                        </div>
+
+                        <div class="mb-4">
+
+                            <label class="form-label fw-bold">
+
+                                Antecedentes Tóxicos
+
+                            </label>
+
+                            <textarea
+                                class="form-control"
+                                rows="4"
+                                name="antecedentes_toxicos">{{ historia.antecedentes_toxicos }}</textarea>
+
+                        </div>
+
+                        <div class="mb-4">
+
+                            <label class="form-label fw-bold">
+
+                                Antecedentes Quirúrgicos
+
+                            </label>
+
+                            <textarea
+                                class="form-control"
+                                rows="4"
+                                name="antecedentes_quirurgicos">{{ historia.antecedentes_quirurgicos }}</textarea>
+
+                        </div>
+
+                        <div class="mb-4">
+
+                            <label class="form-label fw-bold">
+
+                                Medicación Base
+
+                            </label>
+
+                            <textarea
+                                class="form-control"
+                                rows="4"
+                                name="medicacion_base">{{ historia.medicacion_base }}</textarea>
+
+                        </div>
+
+                        <hr>
+
+                        <div class="d-flex justify-content-end">
+
+                            <button
+                                class="btn btn-success btn-lg px-5">
+
+                                <i class="bi bi-floppy-fill"></i>
+
+                                Guardar Cambios
+
+                            </button>
+
+                        </div>
+
+                    </form>
 
                 </div>
 
-            </form>
-
-            {% if mensaje %}
-
-                <div class="alert alert-warning mt-4">
-                    {{ mensaje }}
-                </div>
+            </div>
 
             {% endif %}
 
         </div>
 
     </div>
-
-    {% if paciente and historia %}
-
-    <div class="card shadow mt-4">
-
-        <div class="card-header bg-success text-white">
-
-            <h5 class="mb-0">
-                Paciente Encontrado
-            </h5>
-
-        </div>
-
-        <div class="card-body">
-
-            <div class="row">
-
-                <div class="col-md-4">
-                    <strong>Apellido y Nombre</strong><br>
-                    {{ paciente.apellido }}, {{ paciente.nombre }}
-                </div>
-
-                <div class="col-md-2">
-                    <strong>DNI</strong><br>
-                    {{ paciente.dni }}
-                </div>
-
-                <div class="col-md-3">
-                    <strong>Fecha Historia</strong><br>
-                    {{ historia.fecha }}
-                </div>
-
-                <div class="col-md-3">
-                    <strong>Estado</strong><br>
-                    {{ historia.estado }}
-                </div>
-
-            </div>
-
-            <hr>
-
-           <form method="post">
-
-    {% csrf_token %}
-
-    <input
-        type="hidden"
-        name="dni"
-        value="{{ paciente.dni }}">
-
-    <div class="mb-3">
-
-        <label class="fw-bold">
-            Antecedentes Patológicos
-        </label>
-
-        <textarea
-            name="antecedentes_patologicos"
-            class="form-control"
-            rows="3">{{ historia.antecedentes_patologicos }}</textarea>
-
-    </div>
-
-    <div class="mb-3">
-
-        <label class="fw-bold">
-            Antecedentes Alérgicos
-        </label>
-
-        <textarea
-            name="antecedentes_alergicos"
-            class="form-control"
-            rows="3">{{ historia.antecedentes_alergicos }}</textarea>
-
-    </div>
-
-    <div class="mb-3">
-
-        <label class="fw-bold">
-            Antecedentes Tóxicos
-        </label>
-
-        <textarea
-            name="antecedentes_toxicos"
-            class="form-control"
-            rows="3">{{ historia.antecedentes_toxicos }}</textarea>
-
-    </div>
-
-    <div class="mb-3">
-
-        <label class="fw-bold">
-            Antecedentes Quirúrgicos
-        </label>
-
-        <textarea
-            name="antecedentes_quirurgicos"
-            class="form-control"
-            rows="3">{{ historia.antecedentes_quirurgicos }}</textarea>
-
-    </div>
-
-    <div class="mb-3">
-
-        <label class="fw-bold">
-            Medicación Base
-        </label>
-
-        <textarea
-            name="medicacion_base"
-            class="form-control"
-            rows="3">{{ historia.medicacion_base }}</textarea>
-
-    </div>
-
-    <div class="text-end">
-
-        <button
-            type="submit"
-            class="btn btn-success">
-
-            <i class="bi bi-floppy"></i>
-
-            Guardar Cambios
-
-        </button>
-
-    </div>
-
-</form>
-
-        </div>
-
-    </div>
-
-    {% endif %}
 
 </div>
 
