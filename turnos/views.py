@@ -19,36 +19,140 @@ from turnos.utils.utils_historial import registrar_historial_turno
 from collections import defaultdict   
 from core.models import CentroMedico
 from core.utils import mostrar_exito, mostrar_error
-def obtener_consultorio_disponible(fecha, hora_inicio, hora_fin, medico=None):
 
-    consultorios = Consultorio.objects.all()
+def obtener_consultorio_disponible(
+    fecha,
+    hora_inicio,
+    hora_fin,
+    centro_activo,
+    medico=None,
+    consultorio_preferido=None
+):
 
-    for consultorio in consultorios:
+    # =============================================
+    # 🔵 CONSULTORIOS DE LA SEDE ACTIVA
+    # =============================================
 
-        # 🔴 VALIDAR CONTRA AGENDA
+    consultorios = Consultorio.objects.filter(
+        centro_medico=centro_activo
+    ).order_by('numero')
+
+    # =============================================
+    # 🔵 INTENTAR CONSERVAR EL MISMO CONSULTORIO
+    # =============================================
+
+    if consultorio_preferido:
+
         conflicto_agenda = AgendaMedico.objects.filter(
             fecha=fecha,
-            consultorio=consultorio,
+            consultorio=consultorio_preferido,
+            centro_medico=centro_activo,
             hora_inicio__lt=hora_fin,
             hora_fin__gt=hora_inicio
         )
 
         if medico:
-            conflicto_agenda = conflicto_agenda.exclude(medico=medico)
+            conflicto_agenda = conflicto_agenda.exclude(
+                medico=medico
+            )
 
-        # 🔴 VALIDAR CONTRA TURNOS (CLAVE 🔥)
+        medicos_en_consultorio = AgendaMedico.objects.filter(
+            fecha=fecha,
+            consultorio=consultorio_preferido,
+            centro_medico=centro_activo
+        ).values_list(
+            'medico_id',
+            flat=True
+        )
+
         conflicto_turnos = Turnos.objects.filter(
             fecha=fecha,
-            consultorio=consultorio,
+            centro_medico=centro_activo,
+            medico_id__in=medicos_en_consultorio,
             hora__gte=hora_inicio,
-            hora__lte=hora_fin,
+            hora__lt=hora_fin,
             estado='PENDIENTE'
         )
 
-        if not conflicto_agenda.exists() and not conflicto_turnos.exists():
+        conflicto_sobreturnos = Sobreturno.objects.filter(
+            fecha=fecha,
+            centro_medico=centro_activo,
+            medico_id__in=medicos_en_consultorio,
+            hora__gte=hora_inicio,
+            hora__lt=hora_fin
+        ).exclude(
+            estado='CANCELADO'
+        )
+
+        if (
+            not conflicto_agenda.exists()
+            and not conflicto_turnos.exists()
+            and not conflicto_sobreturnos.exists()
+        ):
+            return consultorio_preferido
+
+    # =============================================
+    # 🔵 BUSCAR OTRO CONSULTORIO DISPONIBLE
+    # =============================================
+
+    for consultorio in consultorios:
+
+        if (
+            consultorio_preferido
+            and consultorio.id == consultorio_preferido.id
+        ):
+            continue
+
+        conflicto_agenda = AgendaMedico.objects.filter(
+            fecha=fecha,
+            consultorio=consultorio,
+            centro_medico=centro_activo,
+            hora_inicio__lt=hora_fin,
+            hora_fin__gt=hora_inicio
+        )
+
+        if medico:
+            conflicto_agenda = conflicto_agenda.exclude(
+                medico=medico
+            )
+
+        medicos_en_consultorio = AgendaMedico.objects.filter(
+            fecha=fecha,
+            consultorio=consultorio,
+            centro_medico=centro_activo
+        ).values_list(
+            'medico_id',
+            flat=True
+        )
+
+        conflicto_turnos = Turnos.objects.filter(
+            fecha=fecha,
+            centro_medico=centro_activo,
+            medico_id__in=medicos_en_consultorio,
+            hora__gte=hora_inicio,
+            hora__lt=hora_fin,
+            estado='PENDIENTE'
+        )
+
+        conflicto_sobreturnos = Sobreturno.objects.filter(
+            fecha=fecha,
+            centro_medico=centro_activo,
+            medico_id__in=medicos_en_consultorio,
+            hora__gte=hora_inicio,
+            hora__lt=hora_fin
+        ).exclude(
+            estado='CANCELADO'
+        )
+
+        if (
+            not conflicto_agenda.exists()
+            and not conflicto_turnos.exists()
+            and not conflicto_sobreturnos.exists()
+        ):
             return consultorio
 
     return None
+
 
 
 @login_required
@@ -1885,6 +1989,10 @@ def crear_excepcion(request):
 
         form = ExcepcionAgendaForm(request.POST)
 
+        form.fields['consultorio'].queryset = Consultorio.objects.filter(
+            centro_medico=centro_activo
+        ).order_by('numero')
+
         if form.is_valid():
 
             data = form.cleaned_data
@@ -2115,6 +2223,13 @@ def crear_excepcion(request):
                     s.save()
 
                     sobreturnos_cancelados += 1
+                
+                # =============================================
+                # 🔴 ELIMINAR AGENDA ORIGINAL
+                # =============================================
+
+                if agenda_original:
+                    agenda_original.delete()
 
                 messages.warning(
 
@@ -2233,6 +2348,8 @@ def crear_excepcion(request):
                     f"Se cancelaron {cancelados} turnos. Consultorio: {consultorio.numero}"
                 )
 
+            
+            
             # =================================================
             # 🔥 OK
             # =================================================
@@ -2253,6 +2370,10 @@ def crear_excepcion(request):
     else:
 
         form = ExcepcionAgendaForm()
+
+        form.fields['consultorio'].queryset = Consultorio.objects.filter(
+            centro_medico=centro_activo
+        ).order_by('numero')
 
     return render(request, 'turnos/excepcion_form.html', {
 
@@ -2735,7 +2856,8 @@ def ver_disponibilidad_consulta(request):
 
     agendas_medico = AgendaMedico.objects.filter(
         medico=medico,
-        centro_medico=centro_activo
+        centro_medico=centro_activo,
+        fecha__gte=hoy
     ).order_by('fecha')
 
     resumen_agenda = OrderedDict()

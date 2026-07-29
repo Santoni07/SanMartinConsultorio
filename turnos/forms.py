@@ -163,19 +163,69 @@ class ConfiguracionAgendaForm(forms.Form):
     sabado_inicio = forms.ChoiceField(choices=HORAS, required=False)
     sabado_fin = forms.ChoiceField(choices=HORAS, required=False)
     
+from .models import Consultorio
 
 class ExcepcionAgendaForm(forms.ModelForm):
+
+    consultorio = forms.ModelChoiceField(
+        queryset=Consultorio.objects.none(),
+        required=False,
+        empty_label="Seleccione un consultorio",
+        widget=forms.Select(
+            attrs={
+                   'class': 'form-control',
+                'id': 'consultorio'
+            }
+        )
+    )
+
     class Meta:
         model = ExcepcionAgenda
-        fields = ['fecha', 'tipo', 'hora_inicio', 'hora_fin', 'nueva_fecha', 'motivo']
+
+        fields = [
+            'fecha',
+            'tipo',
+            'hora_inicio',
+            'hora_fin',
+            'nueva_fecha',
+            'consultorio',
+            'motivo',
+        ]
 
         widgets = {
-            'fecha': forms.DateInput(attrs={'type': 'date', 'class': 'form-control'}),
-            'tipo': forms.Select(attrs={'class': 'form-control', 'id': 'tipo'}),
-            'hora_inicio': forms.TimeInput(attrs={'type': 'time', 'class': 'form-control', 'id': 'hora_inicio'}),
-            'hora_fin': forms.TimeInput(attrs={'type': 'time', 'class': 'form-control', 'id': 'hora_fin'}),
-            'nueva_fecha': forms.DateInput(attrs={'type': 'date', 'class': 'form-control', 'id': 'nueva_fecha'}),
-            'motivo': forms.TextInput(attrs={'class': 'form-control', 'id': 'motivo'}),
+
+            'fecha': forms.DateInput(attrs={
+                'type': 'date',
+                'class': 'form-control'
+            }),
+
+            'tipo': forms.Select(attrs={
+                'class': 'form-control',
+                'id': 'tipo'
+            }),
+
+            'hora_inicio': forms.TimeInput(attrs={
+                'type': 'time',
+                'class': 'form-control',
+                'id': 'hora_inicio'
+            }),
+
+            'hora_fin': forms.TimeInput(attrs={
+                'type': 'time',
+                'class': 'form-control',
+                'id': 'hora_fin'
+            }),
+
+            'nueva_fecha': forms.DateInput(attrs={
+                'type': 'date',
+                'class': 'form-control',
+                'id': 'nueva_fecha'
+            }),
+
+            'motivo': forms.TextInput(attrs={
+                'class': 'form-control',
+                'id': 'motivo'
+            }),
         }
 class SeleccionMedicoConsultaForm(forms.Form):
 
