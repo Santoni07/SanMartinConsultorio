@@ -1,0 +1,388 @@
+{% extends "core/base.html" %}
+
+{% block content %}
+
+<div class="container mt-4">
+
+    <!-- ===================================== -->
+    <!-- TITULO -->
+    <!-- ===================================== -->
+
+    <div class="row mb-4">
+
+        <div class="col">
+
+            <h2>
+
+                <i class="bi bi-graph-up-arrow text-primary"></i>
+
+                Resultado Económico - Depilación
+
+            </h2>
+
+            <hr>
+
+        </div>
+
+    </div>
+
+    <!-- ===================================== -->
+    <!-- FILTRO -->
+    <!-- ===================================== -->
+
+    <div class="card shadow-sm mb-4">
+
+        <div class="card-header bg-light">
+
+            <strong>
+
+                <i class="bi bi-funnel"></i>
+
+                Filtros
+
+            </strong>
+
+        </div>
+
+        <div class="card-body">
+
+            <form method="get">
+
+                <div class="row">
+
+                    <div class="col-md-3">
+
+                        <label class="form-label">
+
+                            Desde
+
+                        </label>
+
+                        <input
+                            type="date"
+                            name="desde"
+                            value="{{ desde }}"
+                            class="form-control">
+
+                    </div>
+
+                    <div class="col-md-3">
+
+                        <label class="form-label">
+
+                            Hasta
+
+                        </label>
+
+                        <input
+                            type="date"
+                            name="hasta"
+                            value="{{ hasta }}"
+                            class="form-control">
+
+                    </div>
+
+                    <div class="col-md-2 d-flex align-items-end">
+
+                        <button
+                            class="btn btn-primary w-100">
+
+                            <i class="bi bi-search"></i>
+
+                            Buscar
+
+                        </button>
+
+                    </div>
+
+                </div>
+
+            </form>
+
+        </div>
+
+    </div>
+
+    <!-- ===================================== -->
+    <!-- RESUMEN -->
+    <!-- ===================================== -->
+
+    <div class="row">
+
+        <!-- INGRESOS -->
+
+        <div class="col-lg-4 mb-4">
+
+            <div class="card border-success shadow-sm h-100">
+
+                <div class="card-body">
+
+                    <h6 class="text-success">
+
+                        <i class="bi bi-arrow-down-circle-fill"></i>
+
+                        Total Ingresos
+
+                    </h6>
+
+                    <h2>
+
+                        $ {{ total_ingresos }}
+
+                    </h2>
+
+                </div>
+
+            </div>
+
+        </div>
+
+        <!-- EGRESOS -->
+
+        <div class="col-lg-4 mb-4">
+
+            <div class="card border-danger shadow-sm h-100">
+
+                <div class="card-body">
+
+                    <h6 class="text-danger">
+
+                        <i class="bi bi-arrow-up-circle-fill"></i>
+
+                        Total Egresos
+
+                    </h6>
+
+                    <h2>
+
+                        $ {{ total_egresos }}
+
+                    </h2>
+
+                </div>
+
+            </div>
+
+        </div>
+
+        <!-- GANANCIA -->
+
+        <div class="col-lg-4 mb-4">
+
+            <div class="card border-primary shadow-sm h-100">
+
+                <div class="card-body">
+
+                    <h6 class="text-primary">
+
+                        <i class="bi bi-cash-stack"></i>
+
+                        Ganancia
+
+                    </h6>
+
+                    <h2>
+
+                        $ {{ ganancia }}
+
+                    </h2>
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+    <!-- ===================================== -->
+    <!-- INGRESOS -->
+    <!-- ===================================== -->
+
+    <div class="card shadow-sm mb-4">
+
+        <div class="card-header bg-success text-white">
+
+            <strong>
+
+                Ingresos por Depilación
+
+            </strong>
+
+        </div>
+
+        <div class="card-body">
+
+            <div class="table-responsive">
+
+                <table class="table table-hover table-striped">
+
+                    <thead>
+
+                        <tr>
+
+                            <th>Fecha</th>
+
+                            <th>Paciente</th>
+
+                            <th>Concepto</th>
+
+                            <th class="text-end">Importe</th>
+
+                        </tr>
+
+                    </thead>
+
+                    <tbody>
+
+                        {% for movimiento in ingresos %}
+
+                        <tr>
+
+                            <td>
+
+                                {{ movimiento.fecha_creacion|date:"d/m/Y" }}
+
+                            </td>
+
+                            <td>
+
+                                {{ movimiento.paciente }}
+
+                            </td>
+
+                            <td>
+
+                                {{ movimiento.concepto_facturacion.nomenclador.descripcion }}
+
+                            </td>
+
+                            <td class="text-end">
+
+                                $ {{ movimiento.importe }}
+
+                            </td>
+
+                        </tr>
+
+                        {% empty %}
+
+                        <tr>
+
+                            <td colspan="4" class="text-center text-muted">
+
+                                No existen ingresos para el período seleccionado.
+
+                            </td>
+
+                        </tr>
+
+                        {% endfor %}
+
+                    </tbody>
+
+                </table>
+
+            </div>
+
+        </div>
+
+    </div>
+
+    <!-- ===================================== -->
+    <!-- EGRESOS -->
+    <!-- ===================================== -->
+
+    <div class="card shadow-sm">
+
+        <div class="card-header bg-danger text-white">
+
+            <strong>
+
+                Egresos de Depilación
+
+            </strong>
+
+        </div>
+
+        <div class="card-body">
+
+            <div class="table-responsive">
+
+                <table class="table table-hover table-striped">
+
+                    <thead>
+
+                        <tr>
+
+                            <th>Fecha</th>
+
+                            <th>Tipo</th>
+
+                            <th>Concepto</th>
+
+                            <th class="text-end">Importe</th>
+
+                        </tr>
+
+                    </thead>
+
+                    <tbody>
+
+                        {% for movimiento in egresos %}
+
+                        <tr>
+
+                            <td>
+
+                                {{ movimiento.fecha_creacion|date:"d/m/Y" }}
+
+                            </td>
+
+                            <td>
+
+                                {{ movimiento.get_tipo_egreso_depilacion_display }}
+
+                            </td>
+
+                            <td>
+
+                                {{ movimiento.concepto }}
+
+                            </td>
+
+                            <td class="text-end">
+
+                                $ {{ movimiento.importe }}
+
+                            </td>
+
+                        </tr>
+
+                        {% empty %}
+
+                        <tr>
+
+                            <td colspan="4" class="text-center text-muted">
+
+                                No existen egresos para el período seleccionado.
+
+                            </td>
+
+                        </tr>
+
+                        {% endfor %}
+
+                    </tbody>
+
+                </table>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+{% endblock %}

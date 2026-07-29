@@ -16,6 +16,13 @@ document.addEventListener("DOMContentLoaded", () => {
 // ======================================================
 
 let mediosPago = [];
+let selectTipoMovimiento;
+
+let bloqueDepilacion;
+
+let checkDepilacion;
+
+let tipoEgresoDepilacion;
 
 // ======================================================
 // ELEMENTOS
@@ -42,6 +49,7 @@ function inicializar(){
     inicializarMediosPago();
 
     inicializarFormulario();
+    inicializarDepilacion();
 
 }
 
@@ -241,5 +249,86 @@ function inicializarFormulario(){
 
         }
     );
+
+}
+// ======================================================
+// DEPILACIÓN
+// ======================================================
+
+function inicializarDepilacion(){
+
+    selectTipoMovimiento =
+        document.getElementById(
+            "id_tipo"
+        );
+
+    bloqueDepilacion =
+        document.getElementById(
+            "bloque_depilacion"
+        );
+
+    checkDepilacion =
+        document.getElementById(
+            "id_es_depilacion"
+        );
+
+    tipoEgresoDepilacion =
+        document.getElementById(
+            "tipo_egreso_depilacion"
+        );
+
+    if(
+        !selectTipoMovimiento ||
+        !bloqueDepilacion ||
+        !checkDepilacion ||
+        !tipoEgresoDepilacion
+    ){
+        return;
+    }
+
+    selectTipoMovimiento.addEventListener(
+        "change",
+        actualizarDepilacion
+    );
+
+    checkDepilacion.addEventListener(
+        "change",
+        actualizarDepilacion
+    );
+
+    actualizarDepilacion();
+
+}
+function actualizarDepilacion(){
+
+    if(
+        selectTipoMovimiento.value === "EGRESO"
+    ){
+
+        bloqueDepilacion.style.display = "block";
+
+    }else{
+
+        bloqueDepilacion.style.display = "none";
+
+        checkDepilacion.checked = false;
+
+        tipoEgresoDepilacion.style.display = "none";
+
+        return;
+
+    }
+
+    if(checkDepilacion.checked){
+
+        tipoEgresoDepilacion.style.display =
+            "block";
+
+    }else{
+
+        tipoEgresoDepilacion.style.display =
+            "none";
+
+    }
 
 }

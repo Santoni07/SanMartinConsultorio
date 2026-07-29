@@ -81,6 +81,71 @@
                     {{ form.importe }}
 
                 </div>
+                
+                <!-- ====================== -->
+                <!-- DEPILACIÓN -->
+                <!-- ====================== -->
+
+                <div
+                    id="bloque_depilacion"
+                    class="card mb-4"
+                    >
+
+                    <div class="card-header bg-info text-white">
+
+                        <strong>
+
+                            Depilación
+
+                        </strong>
+
+                    </div>
+
+                    <div class="card-body">
+
+                       {% comment %}  <div class="form-check mb-3">
+
+                            {{ form.es_depilacion }}
+
+                            <label
+                                class="form-check-label"
+                                for="id_es_depilacion">
+
+                                Corresponde a Depilación
+
+                            </label>
+
+                        </div> {% endcomment %}
+
+                        <div
+                            id="tipo_egreso_depilacion"
+                            >
+
+                            <label class="form-label">
+
+                                Tipo de egreso
+
+                            </label>
+
+                           {{ form.tipo_egreso_depilacion.errors }}
+
+{% for radio in form.tipo_egreso_depilacion %}
+    <div class="form-check mb-2">
+        {{ radio.tag }}
+        <label class="form-check-label">
+            {{ radio.choice_label }}
+        </label>
+    </div>
+{% endfor %}
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+
+
 
                 <!-- ====================== -->
                 <!-- MEDIOS DE PAGO -->

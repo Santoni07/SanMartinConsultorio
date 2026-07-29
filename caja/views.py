@@ -336,12 +336,22 @@ def registrar_movimiento(request):
 
             movimiento = form.save(commit=False)
 
-            print("ANTES SAVE")
+        
 
             movimiento.caja = caja
             movimiento.centro_medico = centro_medico
             movimiento.creado_por = request.user
             movimiento.estado = "ACTIVO"
+            
+            # =====================================
+            # DEPILACIÓN
+            # =====================================
+
+            movimiento.es_depilacion = (
+                movimiento.tipo == "EGRESO"
+                and
+                movimiento.tipo_egreso_depilacion is not None
+            )
 
             movimiento.save()
 
@@ -384,14 +394,17 @@ def registrar_movimiento(request):
                 descripcion=f"{movimiento.tipo} registrado por {request.user}.",
 
                 datos_nuevos={
+                     "tipo": movimiento.tipo,
 
-                    "tipo": movimiento.tipo,
+                     "importe": str(movimiento.importe),
 
-                    "importe": str(movimiento.importe),
+                     "concepto": movimiento.concepto,
 
-                    "concepto": movimiento.concepto,
+                     "observacion": movimiento.observacion,
 
-                    "observacion": movimiento.observacion,
+                     "es_depilacion": movimiento.es_depilacion,
+
+                     "tipo_egreso_depilacion": movimiento.tipo_egreso_depilacion,
 
                 }
 
@@ -1380,3 +1393,100 @@ def pdf_cierre_caja(request, caja_id):
     )
 
     return response
+
+
+@login_required
+def resultado_depilacion(request):
+
+    # =====================================
+    # FILTROS
+    # =====================================
+
+    desde = request.GET.get("desde")
+    hasta = request.GET.get("hasta")
+
+    # =====================================
+    # INGRESOS
+    # =====================================
+
+    ingresos = MovimientoCaja.objects.filter(
+        tipo="INGRESO",
+        estado="ACTIVO",
+        concepto_facturacion__tipo_concepto="DEPILACION"
+    )
+
+    # =====================================
+    # EGRESOS
+    # =====================================
+
+    egresos = MovimientoCaja.objects.filter(
+        tipo="EGRESO",
+        estado="ACTIVO",
+        es_depilacion=True
+    )
+
+    # =====================================
+    # FILTRAR POR FECHA
+    # =====================================
+
+    if desde:
+
+        ingresos = ingresos.filter(
+            fecha_creacion__date__gte=desde
+        )
+
+        egresos = egresos.filter(
+            fecha_creacion__date__gte=desde
+        )
+
+    if hasta:
+
+        ingresos = ingresos.filter(
+            fecha_creacion__date__lte=hasta
+        )
+
+        egresos = egresos.filter(
+            fecha_creacion__date__lte=hasta
+        )
+
+    # =====================================
+    # TOTALES
+    # =====================================
+
+    total_ingresos = ingresos.aggregate(
+        total=Sum("importe")
+    )["total"] or Decimal("0.00")
+
+    total_egresos = egresos.aggregate(
+        total=Sum("importe")
+    )["total"] or Decimal("0.00")
+
+    ganancia = total_ingresos - total_egresos
+
+    # =====================================
+    # CONTEXT
+    # =====================================
+
+    context = {
+
+        "ingresos": ingresos,
+
+        "egresos": egresos,
+
+        "total_ingresos": total_ingresos,
+
+        "total_egresos": total_egresos,
+
+        "ganancia": ganancia,
+
+        "desde": desde,
+
+        "hasta": hasta,
+
+    }
+
+    return render(
+        request,
+        "caja/resultado_depilacion.html",
+        context,
+    )

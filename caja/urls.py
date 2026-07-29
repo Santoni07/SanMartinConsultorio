@@ -34,4 +34,9 @@ urlpatterns = [
     views.pdf_cierre_caja,
     name="pdf_cierre_caja",
 ),
+  path(
+    "resultado-depilacion/",
+    views.resultado_depilacion,
+    name="resultado_depilacion",
+),
 ]

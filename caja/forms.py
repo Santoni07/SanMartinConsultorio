@@ -44,6 +44,8 @@ class MovimientoCajaForm(forms.ModelForm):
             'retencion_motivo',
             'concepto',
             'observacion',
+            
+            'tipo_egreso_depilacion',
         ]
 
         widgets = {
@@ -56,6 +58,13 @@ class MovimientoCajaForm(forms.ModelForm):
             }),
 
            
+
+            'tipo_egreso_depilacion': forms.RadioSelect(
+    attrs={
+        'class': 'form-check-input'
+    }
+),
+            
 
             'importe': forms.NumberInput(attrs={
                 'class': 'form-control',
@@ -88,6 +97,10 @@ class MovimientoCajaForm(forms.ModelForm):
         super().__init__(*args, **kwargs)
         self.fields['retencion_monto'].required = False
         self.fields['retencion_motivo'].required = False
+        self.fields['tipo_egreso_depilacion'].required = False
+        self.fields['tipo_egreso_depilacion'].choices = (
+        MovimientoCaja.TIPOS_EGRESO_DEPILACION
+    )
 
        
         self.fields[
@@ -99,7 +112,31 @@ class MovimientoCajaForm(forms.ModelForm):
     .select_related("nomenclador")
     .order_by("nomenclador__descripcion")
 )
-        
+    def clean(self):
+
+        cleaned_data = super().clean()
+
+        tipo = cleaned_data.get("tipo")
+        tipo_egreso = cleaned_data.get("tipo_egreso_depilacion")
+
+        # Si no es un egreso, limpiamos los datos
+        if tipo != "EGRESO":
+
+            cleaned_data["tipo_egreso_depilacion"] = None
+            cleaned_data["es_depilacion"] = False
+
+            return cleaned_data
+
+        # Si eligió un tipo de egreso, automáticamente es de depilación
+        if tipo_egreso:
+
+            cleaned_data["es_depilacion"] = True
+
+        else:
+
+            cleaned_data["es_depilacion"] = False
+
+        return cleaned_data
 
 
 

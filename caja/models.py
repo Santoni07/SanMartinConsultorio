@@ -228,7 +228,23 @@ class MovimientoCaja(models.Model):
         ('ACTIVO', 'Activo'),
         ('ANULADO', 'Anulado'),
     ]
+    
+    TIPOS_EGRESO_DEPILACION = [
+        ('OPERADORA', 'Operadora'),
+        ('ALQUILER', 'Alquiler de máquina'),
+    ]
+    es_depilacion = models.BooleanField(
+        default=False,
+        verbose_name="Corresponde a Depilación"
+    )
 
+    tipo_egreso_depilacion = models.CharField(
+        max_length=20,
+        choices=TIPOS_EGRESO_DEPILACION,
+        blank=True,
+        null=True,
+        verbose_name="Tipo de egreso de depilación"
+    )
     caja = models.ForeignKey(
         CajaDiaria,
         on_delete=models.PROTECT,
