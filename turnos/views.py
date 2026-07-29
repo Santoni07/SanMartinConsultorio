@@ -2673,6 +2673,7 @@ def excepciones_detalle(request):
     for t in turnos:
         pacientes_afectados.append({
             'nombre': f"{t.paciente.nombre} {t.paciente.apellido}",
+            'dni': t.paciente.dni,
             'telefono': t.paciente.telefono,
             'email': t.paciente.email,
             'tipo': 'Turno',
@@ -2683,6 +2684,7 @@ def excepciones_detalle(request):
     for s in sobreturnos:
         pacientes_afectados.append({
             'nombre': f"{s.paciente.nombre} {s.paciente.apellido}",
+            'dni': t.paciente.dni,
             'telefono': s.paciente.telefono,
             'email': s.paciente.email,
             'tipo': 'Sobreturno',
