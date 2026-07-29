@@ -1,0 +1,233 @@
+{% extends 'core/base.html' %}
+
+{% block content %}
+
+<div class="container mt-4">
+
+    <div class="row justify-content-center">
+
+        <div class="col-lg-9">
+
+            <div class="card shadow">
+
+                <div class="card-header bg-primary text-white">
+
+                    <h4 class="mb-0">
+                        👤 Mi Cuenta
+                    </h4>
+
+                </div>
+
+                <div class="card-body">
+
+                    <form method="POST">
+
+                        {% csrf_token %}
+
+                        {% if messages %}
+                            {% for message in messages %}
+                                <div class="alert alert-success">
+                                    {{ message }}
+                                </div>
+                            {% endfor %}
+                        {% endif %}
+
+                        <div class="row">
+
+                            <!-- FOTO -->
+                            <div class="col-md-3 text-center">
+
+                                {% if medico.img %}
+
+                                    <img src="{{ medico.img.url }}"
+                                         class="img-fluid rounded-circle border shadow"
+                                         style="width:170px;height:170px;object-fit:cover;">
+
+                                {% else %}
+
+                                    <i class="bi bi-person-circle"
+                                       style="font-size:170px;color:#0d6efd;"></i>
+
+                                {% endif %}
+
+                            </div>
+
+                            <!-- DATOS -->
+                            <div class="col-md-9">
+
+                                <h3 class="mb-1">
+
+                                    Dr. {{ medico.nombre }} {{ medico.apellido }}
+
+                                </h3>
+
+                                <p class="text-muted">
+
+                                    Usuario:
+                                    <strong>{{ usuario.username }}</strong>
+
+                                </p>
+
+                                <div class="mb-3">
+
+                                    {% for esp in medico.especialidad.all %}
+
+                                        <span class="badge bg-primary fs-6 me-1">
+
+                                            {{ esp.nombre }}
+
+                                        </span>
+
+                                    {% empty %}
+
+                                        <span class="badge bg-secondary">
+
+                                            Sin especialidad
+
+                                        </span>
+
+                                    {% endfor %}
+
+                                </div>
+
+                            </div>
+
+                        </div>
+
+                        <hr>
+
+                        <div class="row">
+
+                            <div class="col-md-6 mb-3">
+
+                                <label class="form-label fw-bold">
+
+                                    Nombre
+
+                                </label>
+
+                                <input
+                                    class="form-control"
+                                    value="{{ medico.nombre }}"
+                                    readonly>
+
+                            </div>
+
+                            <div class="col-md-6 mb-3">
+
+                                <label class="form-label fw-bold">
+
+                                    Apellido
+
+                                </label>
+
+                                <input
+                                    class="form-control"
+                                    value="{{ medico.apellido }}"
+                                    readonly>
+
+                            </div>
+
+                            <div class="col-md-6 mb-3">
+
+                                <label class="form-label fw-bold">
+
+                                    Matrícula
+
+                                </label>
+
+                                <input
+                                    class="form-control"
+                                    value="{{ medico.matricula }}"
+                                    readonly>
+
+                            </div>
+
+                            <div class="col-md-6 mb-3">
+
+                                <label class="form-label fw-bold">
+
+                                    Teléfono
+
+                                </label>
+
+                                <input
+                                    class="form-control"
+                                    value="{{ medico.telefono }}"
+                                    readonly>
+
+                            </div>
+
+                            <div class="col-md-6 mb-3">
+
+                                <label class="form-label fw-bold">
+
+                                    Rol
+
+                                </label>
+
+                                <input
+                                    class="form-control"
+                                    value="Médico"
+                                    readonly>
+
+                            </div>
+
+                            <div class="col-md-6 mb-3">
+
+                                <label class="form-label fw-bold">
+
+                                    Correo electrónico
+
+                                </label>
+
+                                {{ form.email }}
+
+                                {% if form.email.errors %}
+
+                                    <div class="text-danger mt-1">
+
+                                        {{ form.email.errors }}
+
+                                    </div>
+
+                                {% endif %}
+
+                            </div>
+
+                        </div>
+
+                        <hr>
+
+                        <div class="d-flex justify-content-between">
+
+                            <a href="javascript:history.back()"
+                               class="btn btn-secondary">
+
+                                ← Volver
+
+                            </a>
+
+                            <button
+                                type="submit"
+                                class="btn btn-primary">
+
+                                💾 Guardar cambios
+
+                            </button>
+
+                        </div>
+
+                    </form>
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+{% endblock %}

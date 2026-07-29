@@ -757,6 +757,30 @@
                 </a>
             </li>
 
+                <li class="dropdown">
+
+                <a href="#">
+                    <span>Mi Cuenta</span>
+                    <i class="bi bi-chevron-down"></i>
+                </a>
+
+                <ul>
+
+                    <li>
+                        <a href="{% url 'mis_datos' %}">
+                            Mis Datos
+                        </a>
+                    </li>
+
+                    <li>
+                        <a href="  {% url 'cambiar_password' %} ">
+                            Cambiar contraseña
+                        </a>
+                    </li>
+
+                </ul>
+
+            </li>
             {% endif %}
 
     

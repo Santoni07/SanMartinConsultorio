@@ -4,7 +4,7 @@ from django.contrib.auth import authenticate, login, logout
 from django.contrib import messages
 from django.urls import reverse_lazy
 from django.views.generic import CreateView
-from .form import UserCreationFormWithEmail
+from .form import UserCreationFormWithEmail,MiCuentaForm
 from django import forms
 
 # Create your views here.
@@ -163,3 +163,92 @@ def logout_view(request):
 def logout_view(request):
     logout(request)
     return redirect('core:index')
+
+
+from django.contrib import messages
+from django.contrib.auth.decorators import login_required
+from django.shortcuts import render
+
+@login_required
+def mis_datos(request):
+
+    medico = getattr(request.user, "medico", None)
+
+    if request.method == "POST":
+
+        form = MiCuentaForm(
+            request.POST,
+            instance=request.user
+        )
+
+        if form.is_valid():
+
+            form.save()
+
+            messages.success(
+                request,
+                "El correo electrónico fue actualizado correctamente."
+            )
+
+    else:
+
+        form = MiCuentaForm(
+            instance=request.user
+        )
+
+    return render(
+        request,
+        "registration/mis_datos.html",
+        {
+            "usuario": request.user,
+            "medico": medico,
+            "form": form,
+        }
+    )
+    
+    
+from django.contrib.auth.forms import PasswordChangeForm
+from django.contrib.auth import update_session_auth_hash   
+
+@login_required
+def cambiar_password(request):
+
+    if request.method == "POST":
+
+        form = PasswordChangeForm(
+            request.user,
+            request.POST
+        )
+
+        if form.is_valid():
+
+            user = form.save()
+
+            update_session_auth_hash(
+                request,
+                user
+            )
+
+            messages.success(
+                request,
+                "La contraseña fue modificada correctamente."
+            )
+
+            return redirect("cambiar_password")
+
+    else:
+
+        form = PasswordChangeForm(
+            request.user
+        )
+    for field in form.fields.values():
+        field.widget.attrs.update({
+            "class": "form-control"
+        })
+    return render(
+        request,
+        "registration/cambiar_password.html",
+        {
+            "form": form
+        }
+    )

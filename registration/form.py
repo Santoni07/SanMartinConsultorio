@@ -21,4 +21,17 @@ class UserCreationFormWithEmail(UserCreationForm):
         return email
         
         
- 
+class MiCuentaForm(forms.ModelForm):
+
+    class Meta:
+        model = User
+
+        fields = [
+            'email',
+        ]
+
+        widgets = {
+            'email': forms.EmailInput(attrs={
+                'class': 'form-control'
+            })
+        }
