@@ -237,9 +237,11 @@ def cambiar_password(request):
             )
 
             return redirect("cambiar_password")
+        else:
+            print(form.errors)
 
     else:
-        print(form.error)
+        
         form = PasswordChangeForm(
             request.user
         )
