@@ -234,7 +234,7 @@ def cambiar_password(request):
                 "La contraseña fue modificada correctamente."
             )
 
-            return redirect("password_change_done")
+            return redirect("cambiar_password")
 
     else:
         print(form.errors)
