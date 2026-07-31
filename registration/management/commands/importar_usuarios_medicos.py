@@ -8,7 +8,7 @@ from medicos.models import Medico
 
 class Command(BaseCommand):
 
-    help = "Importa usuarios para médicos desde un archivo Excel"
+    help = "Importa usuarios de médicos desde un archivo Excel"
 
     def add_arguments(self, parser):
 
@@ -31,70 +31,56 @@ class Command(BaseCommand):
         errores = 0
 
         # ===========================================
-        # COLUMNAS
+        # EL EXCEL
+        #
         # A = Nombre
         # B = Matrícula
         # C = Clave
         # D = Usuario
+        #
+        # La fila 1 son encabezados
         # ===========================================
-        for i in range(1, 10):
-            print(i, [c.value for c in hoja[i]])
-        
-        
-        for fila in hoja.iter_rows(min_row=2):
-            print([c.value for c in fila])
 
-            break
+        for fila in hoja.iter_rows(min_row=2, values_only=True):
 
-            nombre = str(fila[0].value).strip() if fila[0].value else ""
+            # Saltar filas totalmente vacías
+            if not any(fila):
+                continue
 
-            matricula = str(fila[1].value).strip() if fila[1].value else ""
+            nombre = str(fila[0]).strip() if fila[0] else ""
+            matricula = str(fila[1]).strip() if fila[1] else ""
+            clave = str(fila[2]).strip() if fila[2] else ""
+            usuario = str(fila[3]).strip() if fila[3] else ""
 
-            clave = str(fila[2].value).strip() if fila[2].value else ""
-
-            usuario = str(fila[3].value).strip() if fila[3].value else ""
-
-            # ===========================================
-            # VALIDACIONES
-            # ===========================================
-
+            # Validaciones
             if not matricula:
-
                 self.stdout.write(
                     self.style.ERROR(
                         f"{nombre}: matrícula vacía."
                     )
                 )
-
                 errores += 1
                 continue
 
             if not usuario:
-
                 self.stdout.write(
                     self.style.ERROR(
                         f"{nombre}: usuario vacío."
                     )
                 )
-
                 errores += 1
                 continue
 
             if not clave:
-
                 self.stdout.write(
                     self.style.ERROR(
                         f"{nombre}: clave vacía."
                     )
                 )
-
                 errores += 1
                 continue
 
-            # ===========================================
-            # BUSCAR MÉDICO
-            # ===========================================
-
+            # Buscar médico
             try:
 
                 medico = Medico.objects.get(
@@ -112,28 +98,20 @@ class Command(BaseCommand):
                 errores += 1
                 continue
 
-            # ===========================================
-            # ¿YA TIENE USUARIO?
-            # ===========================================
-
+            # ¿Ya tiene usuario?
             if medico.user:
 
                 self.stdout.write(
                     self.style.WARNING(
-                        f"{medico.nombre} {medico.apellido} ya tiene un usuario asociado."
+                        f"{medico.nombre} {medico.apellido} ya tiene usuario."
                     )
                 )
 
                 existentes += 1
                 continue
 
-            # ===========================================
-            # ¿USERNAME EXISTENTE?
-            # ===========================================
-
-            if User.objects.filter(
-                username=usuario
-            ).exists():
+            # ¿Ya existe el username?
+            if User.objects.filter(username=usuario).exists():
 
                 self.stdout.write(
                     self.style.WARNING(
@@ -144,67 +122,44 @@ class Command(BaseCommand):
                 existentes += 1
                 continue
 
-            # ===========================================
-            # CREAR USUARIO
-            # ===========================================
-
+            # Crear usuario
             user = User.objects.create_user(
 
                 username=usuario,
-
-                email=medico.email,
-
+                password=clave,
                 first_name=medico.nombre,
-
                 last_name=medico.apellido,
-
-                password=clave
+                email=medico.email
 
             )
 
-            # ===========================================
-            # ASOCIAR AL MÉDICO
-            # ===========================================
-
+            # Asociar médico
             medico.user = user
-
             medico.save()
 
             creados += 1
 
             self.stdout.write(
-
                 self.style.SUCCESS(
-
-                    f"✔ {medico.nombre} {medico.apellido} -> Usuario creado correctamente."
-
+                    f"✔ {medico.nombre} {medico.apellido}"
                 )
-
             )
-
-        # ===========================================
-        # RESUMEN
-        # ===========================================
 
         self.stdout.write("")
         self.stdout.write("=" * 60)
-
         self.stdout.write(
             self.style.SUCCESS(
                 f"Usuarios creados : {creados}"
             )
         )
-
         self.stdout.write(
             self.style.WARNING(
                 f"Ya existentes    : {existentes}"
             )
         )
-
         self.stdout.write(
             self.style.ERROR(
                 f"Errores          : {errores}"
             )
         )
-
         self.stdout.write("=" * 60)
