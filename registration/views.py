@@ -214,6 +214,8 @@ from django.contrib.auth import update_session_auth_hash
 def cambiar_password(request):
 
     if request.method == "POST":
+        
+        print(form)
 
         form = PasswordChangeForm(
             request.user,
@@ -237,8 +239,7 @@ def cambiar_password(request):
             return redirect("cambiar_password")
 
     else:
-        print(form.errors)
-
+        print(form.error)
         form = PasswordChangeForm(
             request.user
         )
