@@ -215,7 +215,7 @@ def cambiar_password(request):
 
     if request.method == "POST":
         
-        print(form)
+      
 
         form = PasswordChangeForm(
             request.user,
