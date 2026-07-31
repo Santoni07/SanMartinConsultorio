@@ -37,7 +37,10 @@ class Command(BaseCommand):
         # C = Clave
         # D = Usuario
         # ===========================================
-
+        for i in range(1, 10):
+            print(i, [c.value for c in hoja[i]])
+        
+        
         for fila in hoja.iter_rows(min_row=2):
             print([c.value for c in fila])
 
