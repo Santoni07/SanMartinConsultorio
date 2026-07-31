@@ -39,7 +39,8 @@ class Command(BaseCommand):
         # ===========================================
 
         for fila in hoja.iter_rows(min_row=2):
-            print(fila)
+            print([c.value for c in fila])
+
             break
 
             nombre = str(fila[0].value).strip() if fila[0].value else ""
