@@ -1,0 +1,295 @@
+{% extends 'core/base.html' %}
+
+{% block content %}
+
+<div class="container mt-4">
+
+    <div class="card shadow">
+
+        <div class="card-header bg-primary text-white">
+
+            <div class="d-flex justify-content-between align-items-center">
+
+                <h4 class="mb-0">
+                    📋 Agenda del Día
+                </h4>
+
+                <span class="badge bg-light text-dark">
+                    {{ centro_activo.nombre }}
+                </span>
+
+            </div>
+
+        </div>
+
+        <div class="card-body">
+
+            <form method="get">
+
+                <div class="row g-3">
+
+                    <div class="col-md-3">
+
+                        <label class="form-label">
+                            Fecha
+                        </label>
+
+                        <input
+                            type="date"
+                            name="fecha"
+                            class="form-control"
+                            value="{{ fecha|date:'Y-m-d' }}">
+
+                    </div>
+
+                    <div class="col-md-3">
+
+                        <label class="form-label">
+                            Especialidad
+                        </label>
+
+                        <select
+                            name="especialidad"
+                            class="form-select">
+
+                            <option value="">
+                                Todas
+                            </option>
+
+                            {% for e in especialidades %}
+
+                                <option value="{{ e.id }}">
+
+                                    {{ e }}
+
+                                </option>
+
+                            {% endfor %}
+
+                        </select>
+
+                    </div>
+
+                    <div class="col-md-3">
+
+                        <label class="form-label">
+                            Médico
+                        </label>
+
+                        <select
+                            name="medico"
+                            class="form-select">
+
+                            <option value="">
+                                Todos
+                            </option>
+
+                            {% for m in medicos %}
+
+                                <option value="{{ m.id }}">
+
+                                    {{ m }}
+
+                                </option>
+
+                            {% endfor %}
+
+                        </select>
+
+                    </div>
+
+                    <div class="col-md-3 d-flex align-items-end">
+
+                        <button
+    type="submit"
+    name="buscar"
+    value="1"
+    class="btn btn-primary w-100">
+    Buscar
+</button>
+
+                    </div>
+
+                </div>
+
+            </form>
+
+            <hr>
+
+            <div class="table-responsive">
+
+                <table class="table table-hover table-striped align-middle">
+
+                    <thead class="table-dark">
+
+                        <tr>
+
+                            <th>Hora</th>
+
+                            <th>Paciente</th>
+
+                            <th>Edad</th>
+
+                            <th>DNI</th>
+
+                            <th>Teléfono</th>
+
+                            <th>Obra Social</th>
+
+                            <th>Médico</th>
+
+                            <th>Especialidad</th>
+
+                            <th>Estado</th>
+
+                            <th>Observaciones</th>
+
+                        </tr>
+
+                    </thead>
+
+                    <tbody>
+
+                        {% for turno in turnos %}
+
+                        <tr>
+
+                            <td>
+                                {{ turno.hora|time:"H:i" }}
+                            </td>
+
+                            <td>
+
+                                <strong>
+
+                                    {{ turno.paciente.apellido }},
+
+                                    {{ turno.paciente.nombre }}
+
+                                </strong>
+
+                            </td>
+
+                            <td>
+
+                                {{ turno.paciente.edad }}
+
+                            </td>
+
+                            <td>
+
+                                {{ turno.paciente.dni }}
+
+                            </td>
+
+                            <td>
+
+                                {{ turno.paciente.telefono }}
+
+                            </td>
+
+                            <td>
+
+                                {{ turno.paciente.obrasocial }}
+
+                            </td>
+
+                            <td>
+
+                                {{ turno.medico }}
+
+                            </td>
+
+                            <td>
+
+                                {{ turno.especialidad }}
+
+                            </td>
+
+                            <td>
+
+                                {% if turno.estado == "PENDIENTE" %}
+
+                                    <span class="badge bg-warning text-dark">
+
+                                        Pendiente
+
+                                    </span>
+
+                                {% elif turno.estado == "ATENDIDO" %}
+
+                                    <span class="badge bg-success">
+
+                                        Atendido
+
+                                    </span>
+
+                                {% elif turno.estado == "AUSENTE" %}
+
+                                    <span class="badge bg-secondary">
+
+                                        Ausente
+
+                                    </span>
+
+                                {% else %}
+
+                                    <span class="badge bg-danger">
+
+                                        Cancelado
+
+                                    </span>
+
+                                {% endif %}
+
+                            </td>
+
+                            <td>
+
+                                {{ turno.observaciones|default:"-" }}
+
+                            </td>
+
+                        </tr>
+
+                        {% empty %}
+
+                        <tr>
+
+                            <td
+                                colspan="10"
+                                class="text-center">
+
+                                No hay turnos para la fecha seleccionada.
+
+                            </td>
+
+                        </tr>
+
+                        {% endfor %}
+
+                    </tbody>
+
+                </table>
+
+            </div>
+
+            <div class="mt-3">
+
+                <strong>
+
+                    Total de turnos:
+
+                    {{ turnos|length }}
+
+                </strong>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+{% endblock %}

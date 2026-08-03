@@ -48,4 +48,9 @@ urlpatterns = [
     views.previsualizar_excepcion,
     name='previsualizar_excepcion'
 ),
+    path(
+    'agenda-del-dia/',
+    views.agenda_del_dia,
+    name='agenda_del_dia'
+),
 ]

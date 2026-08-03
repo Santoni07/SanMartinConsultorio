@@ -3391,3 +3391,101 @@ def previsualizar_excepcion(request):
         'pacientes': pacientes
 
     })
+    
+from especialidades.models import Especialidades
+
+@login_required
+def agenda_del_dia(request):
+
+    # ===============================
+    # SEDE ACTIVA
+    # ===============================
+
+    centro_id = request.session.get("centro_id")
+
+    centro_activo = None
+
+    if centro_id:
+        centro_activo = CentroMedico.objects.filter(
+            id=centro_id
+        ).first()
+
+    # ===============================
+    # FILTROS
+    # ===============================
+
+    fecha = request.GET.get("fecha")
+
+    if fecha:
+
+        fecha = datetime.strptime(
+            fecha,
+            "%Y-%m-%d"
+        ).date()
+
+    else:
+
+        fecha = date.today()
+
+    especialidad_id = request.GET.get("especialidad")
+
+    medico_id = request.GET.get("medico")
+
+    # ===============================
+    # CONSULTA
+    # ===============================
+
+    turnos = Turnos.objects.none()
+
+    buscar = request.GET.get("buscar")
+
+    if buscar:
+
+        turnos = (
+            Turnos.objects
+            .select_related(
+                "paciente",
+                "paciente__obrasocial",
+                "medico",
+                "especialidad",
+            )
+            .filter(
+                centro_medico=centro_activo,
+                fecha=fecha
+            )
+            .exclude(
+                estado="CANCELADO"
+            )
+        )
+
+        if especialidad_id:
+            turnos = turnos.filter(
+                especialidad_id=especialidad_id
+            )
+
+        if medico_id:
+            turnos = turnos.filter(
+                medico_id=medico_id
+            )
+
+        turnos = turnos.order_by("hora")
+
+    context = {
+
+        "fecha": fecha,
+
+        "turnos": turnos,
+
+        "medicos": Medico.objects.all(),
+
+        "especialidades": Especialidades.objects.all(),
+
+        "centro_activo": centro_activo,
+
+    }
+
+    return render(
+        request,
+        "turnos/agenda_del_dia.html",
+        context
+    )
