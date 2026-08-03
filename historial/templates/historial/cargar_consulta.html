@@ -403,15 +403,35 @@
 
             <div class="d-flex justify-content-between mb-2">
 
-                <strong class="text-dark">
-                    {{ consulta.fecha }}
-                </strong>
+    <strong class="text-dark">
+        {{ consulta.fecha }}
+    </strong>
 
-                <span class="badge bg-secondary">
-                    Dr/a {{ consulta.medico }}
-                </span>
+    <div class="text-end">
 
-            </div>
+        <span class="badge bg-secondary">
+            Dr/a {{ consulta.medico }}
+        </span>
+
+        <br>
+
+        <span class="badge bg-info mt-1">
+
+            {% if consulta.turno %}
+
+                {{ consulta.turno.especialidad }}
+
+            {% elif consulta.sobreturno and consulta.sobreturno.turno %}
+
+                {{ consulta.sobreturno.turno.especialidad }}
+
+            {% endif %}
+
+        </span>
+
+    </div>
+
+</div>
 
             <div class="mb-2">
 
@@ -510,7 +530,7 @@
 
 <div class="modal fade" id="successModal" tabindex="-1">
 
-```
+
 <div class="modal-dialog modal-dialog-centered">
 
     <div class="modal-content">
@@ -552,7 +572,7 @@
     </div>
 
 </div>
-```
+
 
 </div>
 
@@ -560,7 +580,7 @@
 
 <div class="modal fade" id="estudioExitoModal" tabindex="-1">
 
-```
+
 <div class="modal-dialog modal-dialog-centered">
 
     <div class="modal-content">
@@ -600,7 +620,7 @@
     </div>
 
 </div>
-```
+
 
 </div>
 
