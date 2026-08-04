@@ -1,36 +1,145 @@
 {% extends 'core/base.html' %}
 {% load static %}
-{% block title %}Editar Especialidades{% endblock %}
+
+{% block title %}Editar Paciente{% endblock %}
+
 {% block content %}
 
-<main role="main">
-  <div class="container">
-    <div class="row mt-3">
-      <div class="col-md-9 mx-auto">
-        <div>
-            {% if 'ok' in request.GET %}
-            <p style="color: green;">
-             Paciente editado correctamente
-            </a>
-          </p>
-  
-            {% endif%}
-            <h3>Formulario Para Editar Paciente </h3>
-            <br>
-            <form action="" method="post" enctype="multipart/form-data">{% csrf_token %}
-                <table>
-                    {{ form.as_p}}
-                </table>
-                <br>
-                <input type="submit" value="Editar" />
-            </form>
-        </div>
-      </div>
-    </div>
-  </div>
-</main>
-<div class="d-flex justify-content-center align-items-center mt-2">
+<style>
 
-  <a href="{% url 'core:IndexAdmin' %}" class="btn btn-success">Volver</a>
+.card-editar{
+    border: none;
+    border-radius: 18px;
+    overflow: hidden;
+    box-shadow: 0 12px 30px rgba(0,0,0,.12);
+}
+
+.header-editar{
+    background: linear-gradient(135deg,#0d6efd,#0b5ed7);
+    color:white;
+    padding:25px;
+}
+
+.header-editar h2{
+    margin:0;
+    font-weight:700;
+}
+
+.header-editar p{
+    margin:0;
+    opacity:.85;
+}
+
+.card-body{
+    background:#f8f9fa;
+}
+
+form p{
+    margin-bottom:18px;
+}
+
+form label{
+    font-weight:600;
+    margin-bottom:5px;
+}
+
+.form-control,
+.form-select{
+    border-radius:10px;
+}
+
+.btn{
+    border-radius:10px;
+    padding:10px 30px;
+    font-weight:600;
+}
+
+.btn-success{
+    box-shadow:0 4px 12px rgba(25,135,84,.3);
+}
+
+.btn-secondary{
+    box-shadow:0 4px 12px rgba(108,117,125,.25);
+}
+
+</style>
+
+<div class="container py-4">
+
+    <div class="row justify-content-center">
+
+        <div class="col-lg-9">
+
+            <div class="card card-editar">
+
+                <div class="header-editar">
+
+                    <h2>
+                        <i class="fas fa-user-edit me-2"></i>
+                        Editar Paciente
+                    </h2>
+
+                    <p>
+                        Modifique la información del paciente y presione
+                        <strong>Guardar Cambios</strong>.
+                    </p>
+
+                </div>
+
+                <div class="card-body p-4">
+
+                    {% if 'ok' in request.GET %}
+
+                        <div class="alert alert-success shadow-sm">
+
+                            <i class="fas fa-check-circle"></i>
+
+                            El paciente fue actualizado correctamente.
+
+                        </div>
+
+                    {% endif %}
+
+                    <form method="post" enctype="multipart/form-data">
+
+                        {% csrf_token %}
+
+                        {{ form.as_p }}
+
+                        <hr class="my-4">
+
+                        <div class="d-flex justify-content-between">
+
+                            <a href="{% url 'core:IndexAdmin' %}"
+                               class="btn btn-secondary">
+
+                                <i class="fas fa-arrow-left"></i>
+
+                                Volver
+
+                            </a>
+
+                            <button class="btn btn-success"
+                                    type="submit">
+
+                                <i class="fas fa-save"></i>
+
+                                Guardar Cambios
+
+                            </button>
+
+                        </div>
+
+                    </form>
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
 </div>
+
 {% endblock %}

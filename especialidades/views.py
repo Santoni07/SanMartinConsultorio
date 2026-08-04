@@ -57,13 +57,15 @@ class EspecialidadesCreateView(LoginRequiredMixin,CreateView):
         return super().form_invalid(form)
 
 
-class EspecialidadesUpdateView(LoginRequiredMixin,UpdateView):
-    model=Especialidades
+
+class EspecialidadesUpdateView(LoginRequiredMixin, UpdateView):
+    model = Especialidades
+    form_class = EspecialidadesForm
     success_url = reverse_lazy('especialidades:list')
-    fields= ["descripcion", "img" ]
-    template_name_suffix = '_update_form' 
+    template_name_suffix = '_update_form'
+
     def get_success_url(self):
-      return reverse_lazy('especialidades:update', args=[self.object.id]) + '?ok'
+        return reverse_lazy('especialidades:update', args=[self.object.id]) + '?ok'
 
 
 class EspecialidadesDeleteView(LoginRequiredMixin,DeleteView):

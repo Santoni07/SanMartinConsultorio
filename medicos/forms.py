@@ -7,8 +7,12 @@ class MedicosForm(forms.ModelForm):
 
     especialidad = forms.ModelMultipleChoiceField(
         queryset=Especialidades.objects.all(),
-        widget=forms.CheckboxSelectMultiple,
-        required=False
+        required=False,
+        widget=forms.CheckboxSelectMultiple(
+            attrs={
+                'class':'form-check-input'
+            }
+        )
     )
 
     class Meta:

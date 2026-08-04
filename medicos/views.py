@@ -45,7 +45,7 @@ class MedicoCreateView(LoginRequiredMixin,CreateView):
 
 class MedicoUpdateView(LoginRequiredMixin,UpdateView):
     model=Medico
-    fields = [ 'email', 'telefono', 'img', 'especialidad']
+    form_class = MedicosForm
     success_url = reverse_lazy('medicos:list')
     template_name_suffix = '_update_form'
     def get_success_url(self):
