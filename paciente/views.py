@@ -1,7 +1,7 @@
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import render
 from django.views.generic import  CreateView, UpdateView, DeleteView,TemplateView
-from paciente.forms import BusquedaPacienteForm,  PacienteForm
+from paciente.forms import BusquedaPacienteForm,  PacienteForm, PacienteUpdateForm
 from django.contrib.auth.mixins import LoginRequiredMixin
 
 from django.contrib import messages
@@ -38,13 +38,12 @@ class PacienteUpdateView(LoginRequiredMixin, UpdateView):
 
     model = Paciente
 
-    form_class = PacienteForm
-
-    success_url = reverse_lazy('IndexAdmin.html')
+    form_class = PacienteUpdateForm
 
     template_name_suffix = '_update_form'
 
     def get_success_url(self):
+
         return reverse_lazy(
             'paciente:update',
             args=[self.object.id]

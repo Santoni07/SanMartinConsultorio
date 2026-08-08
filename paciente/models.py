@@ -52,3 +52,19 @@ class Paciente(models.Model):
                 (today.month, today.day) < (self.fecha_nacimiento.month, self.fecha_nacimiento.day)
             )
         return None
+
+    def save(self, *args, **kwargs):
+
+        if self.nombre:
+            self.nombre = self.nombre.strip().upper()
+
+        if self.apellido:
+            self.apellido = self.apellido.strip().upper()
+
+        if self.email:
+            self.email = self.email.strip().lower()
+
+        if self.dni:
+            self.dni = self.dni.strip()
+
+        super().save(*args, **kwargs)
