@@ -4,18 +4,30 @@ from datetime import date
 
 
 class Paciente(models.Model):
-    
+
     SEXOS = [
         ('M', 'Masculino'),
         ('F', 'Femenino'),
         ('O', 'Otro'),
     ]
 
-    nombre = models.CharField(max_length=50)
-    apellido = models.CharField(max_length=50)
-    dni = models.CharField(max_length=8, unique=True)
+    nombre = models.CharField(
+        max_length=50
+    )
 
-    fecha_nacimiento = models.DateField()
+    apellido = models.CharField(
+        max_length=50
+    )
+
+    dni = models.CharField(
+        max_length=8,
+        unique=True
+    )
+
+    fecha_nacimiento = models.DateField(
+        blank=True,
+        null=True
+    )
 
     sexo = models.CharField(
         max_length=1,
@@ -24,22 +36,43 @@ class Paciente(models.Model):
         null=True
     )
 
-    telefono = models.CharField(max_length=20)
-    email = models.EmailField()
-    direccion = models.CharField(max_length=100)
+    telefono = models.CharField(
+        max_length=20,
+        blank=True
+    )
 
-    observaciones = models.TextField(blank=True, null=True)
+    email = models.EmailField(
+        blank=True
+    )
+
+    direccion = models.CharField(
+        max_length=100,
+        blank=True
+    )
+
+    observaciones = models.TextField(
+        blank=True,
+        null=True
+    )
 
     obrasocial = models.ForeignKey(
         ObraSocial,
-        on_delete=models.CASCADE
+        on_delete=models.SET_NULL,
+        blank=True,
+        null=True
     )
 
-    activo = models.BooleanField(default=True)
+    activo = models.BooleanField(
+        default=True
+    )
 
-    fecha_alta = models.DateTimeField(auto_now_add=True)
+    fecha_alta = models.DateTimeField(
+        auto_now_add=True
+    )
 
-    fecha_modificacion = models.DateTimeField(auto_now=True)
+    fecha_modificacion = models.DateTimeField(
+        auto_now=True
+    )
 
     def __str__(self):
         return f"{self.apellido}, {self.nombre}"
@@ -48,9 +81,13 @@ class Paciente(models.Model):
     def edad(self):
         if self.fecha_nacimiento:
             today = date.today()
+
             return today.year - self.fecha_nacimiento.year - (
-                (today.month, today.day) < (self.fecha_nacimiento.month, self.fecha_nacimiento.day)
+                (today.month, today.day)
+                <
+                (self.fecha_nacimiento.month, self.fecha_nacimiento.day)
             )
+
         return None
 
     def save(self, *args, **kwargs):

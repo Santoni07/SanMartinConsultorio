@@ -21,50 +21,26 @@ class PacienteForm(forms.ModelForm):
         ]
 
         widgets = {
-
-            'dni': forms.TextInput(attrs={
-                'class': 'form-control'
-            }),
-
-            'nombre': forms.TextInput(attrs={
-                'class': 'form-control'
-            }),
-
-            'apellido': forms.TextInput(attrs={
-                'class': 'form-control'
-            }),
-
-            'fecha_nacimiento': forms.DateInput(attrs={
-                'class': 'form-control',
-                'type': 'date'
-            }),
-
-            'sexo': forms.Select(attrs={
-                'class': 'form-select'
-            }),
-
-            'telefono': forms.TextInput(attrs={
-                'class': 'form-control'
-            }),
-
-            'email': forms.EmailInput(attrs={
-                'class': 'form-control'
-            }),
-
-            'direccion': forms.TextInput(attrs={
-                'class': 'form-control'
-            }),
-
-            'observaciones': forms.Textarea(attrs={
-                'class': 'form-control',
-                'rows': 3
-            }),
-
-            'obrasocial': forms.Select(attrs={
-                'class': 'form-select'
-            })
-
+            ...
         }
+
+    def __init__(self, *args, **kwargs):
+
+        super().__init__(*args, **kwargs)
+
+        # Campos obligatorios
+        self.fields['dni'].required = True
+        self.fields['nombre'].required = True
+        self.fields['apellido'].required = True
+
+        # Campos opcionales
+        self.fields['fecha_nacimiento'].required = False
+        self.fields['telefono'].required = False
+        self.fields['sexo'].required = False
+        self.fields['email'].required = False
+        self.fields['direccion'].required = False
+        self.fields['observaciones'].required = False
+        self.fields['obrasocial'].required = False
 
     def clean_dni(self):
 
@@ -82,6 +58,7 @@ class PacienteForm(forms.ModelForm):
             )
 
         return dni
+
 
 
 class BusquedaPacienteForm(forms.Form):
