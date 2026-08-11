@@ -38,12 +38,14 @@ class ObraSocialAdmin(admin.ModelAdmin):
         "codigo",
         "sigla",
         "nombre",
+        "usa_planes",
         "telefono",
         "email",
         "activa",
     )
 
     list_filter = (
+        "usa_planes",
         "activa",
         "provincia",
     )
@@ -78,8 +80,8 @@ class ObraSocialAdmin(admin.ModelAdmin):
                     ("telefono", "email"),
                     ("domicilio",),
                     ("ciudad", "provincia"),
+                    ("usa_planes", "activa"),
                     ("observaciones",),
-                    "activa",
                 )
             },
         ),

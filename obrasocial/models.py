@@ -111,6 +111,15 @@ class ObraSocial(models.Model):
         "Observaciones del Portal",
         blank=True
     )
+    
+    usa_planes = models.BooleanField(
+        "¿Utiliza planes?",
+        default=False
+    )
+    es_particular = models.BooleanField(
+        default=False,
+        verbose_name="Es Particular"
+    )
 
     class Meta:
 
@@ -217,16 +226,24 @@ class PrestacionPlan(models.Model):
         ("INACTIVA", "Inactiva"),
     ]
 
+    obra_social = models.ForeignKey(
+        ObraSocial,
+        on_delete=models.CASCADE,
+        related_name="prestaciones"
+    )
+
     plan = models.ForeignKey(
         PlanObraSocial,
         on_delete=models.CASCADE,
-        related_name="prestaciones"
+        related_name="prestaciones",
+        null=True,
+        blank=True
     )
 
     nomenclador = models.ForeignKey(
         NomencladorGeneral,
         on_delete=models.PROTECT,
-        related_name="planes"
+        related_name="prestaciones_convenio"
     )
 
     valor = models.DecimalField(
@@ -262,17 +279,35 @@ class PrestacionPlan(models.Model):
 
     class Meta:
 
-        verbose_name = "Prestación del Plan"
+        verbose_name = "Prestación"
 
-        verbose_name_plural = "Prestaciones del Plan"
+        verbose_name_plural = "Prestaciones"
 
         ordering = [
             "nomenclador__codigo"
         ]
 
+        constraints = [
+
+            models.UniqueConstraint(
+                fields=[
+                    "obra_social",
+                    "plan",
+                    "nomenclador"
+                ],
+                name="prestacion_unica_por_convenio"
+            )
+
+        ]
+
     def __str__(self):
 
-        return f"{self.plan} - {self.nomenclador}"
+        if self.plan:
+            return f"{self.obra_social} - {self.plan.nombre} - {self.nomenclador.codigo}"
+
+        return f"{self.obra_social} - {self.nomenclador.codigo}"
+
+
 
 class PrestacionPlanValor(models.Model):
 
@@ -301,3 +336,16 @@ class PrestacionPlanValor(models.Model):
     fecha_alta = models.DateTimeField(
         auto_now_add=True
     )
+    moneda = models.CharField(
+
+        max_length=10,
+
+        default="ARS"
+
+    )
+    class Meta:
+
+        ordering = [
+            "-vigente_desde"
+        ]
+    

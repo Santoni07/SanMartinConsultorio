@@ -34,6 +34,9 @@ class ObraSocialForm(forms.ModelForm):
 
             "activa",
             
+            "es_particular",
+            "usa_planes",
+            
            
 
             "sitio_web",
@@ -128,8 +131,37 @@ class ObraSocialForm(forms.ModelForm):
                 "class": "form-control",
                 "rows": 4
             }),
+            "es_particular": forms.CheckboxInput(attrs={
+                "class": "form-check-input"
+            }),
+
+            "usa_planes": forms.CheckboxInput(attrs={
+                "class": "form-check-input"
+            }),
 
         }
+    def clean(self):
+
+        cleaned_data = super().clean()
+
+        es_particular = cleaned_data.get(
+            "es_particular"
+        )
+
+        usa_planes = cleaned_data.get(
+            "usa_planes"
+        )
+
+        if es_particular and usa_planes:
+
+            raise forms.ValidationError(
+
+                "Una obra social marcada como Particular no puede utilizar planes."
+
+            )
+
+        return cleaned_data   
+        
         
 class PlanObraSocialForm(forms.ModelForm):
 

@@ -198,25 +198,69 @@ Nueva Obra Social
 
                         </div>
 
-                        <div class="row">
+                      <div class="row">
 
-                            <div class="col-md-4">
+    <div class="col-md-4">
 
-                                <div class="form-check form-switch">
+        <div class="form-check form-switch mb-3">
 
-                                    {{ form.activa }}
+            {{ form.activa }}
 
-                                    <label class="form-check-label">
+            <label class="form-check-label">
 
-                                        Obra Social Activa
+                Obra Social Activa
 
-                                    </label>
+            </label>
 
-                                </div>
+        </div>
 
-                            </div>
+    </div>
 
-                        </div>
+    <div class="col-md-4">
+
+        <div class="form-check form-switch mb-3">
+
+            {{ form.es_particular }}
+
+            <label class="form-check-label">
+
+                Es Particular
+
+            </label>
+
+            <div class="form-text">
+
+                Utiliza la lista de precios propia del consultorio.
+
+            </div>
+
+        </div>
+
+    </div>
+
+    <div class="col-md-4" id="usa-planes-container">
+
+        <div class="form-check form-switch mb-3">
+
+            {{ form.usa_planes }}
+
+            <label class="form-check-label">
+
+                Utiliza Planes
+
+            </label>
+
+            <div class="form-text">
+
+                La obra social administra distintos planes.
+
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
 
                     </div>
 
@@ -257,5 +301,41 @@ Nueva Obra Social
     </div>
 
 </div>
+<script>
 
+document.addEventListener("DOMContentLoaded", function(){
+
+    const particular = document.getElementById("id_es_particular");
+
+    const usaPlanes = document.getElementById("usa-planes-container");
+
+    function actualizarFormulario(){
+
+        if(particular.checked){
+
+            usaPlanes.style.display = "none";
+
+            document.getElementById("id_usa_planes").checked = false;
+
+        }else{
+
+            usaPlanes.style.display = "block";
+
+        }
+
+    }
+
+    actualizarFormulario();
+
+    particular.addEventListener(
+
+        "change",
+
+        actualizarFormulario
+
+    );
+
+});
+
+</script>
 {% endblock %}

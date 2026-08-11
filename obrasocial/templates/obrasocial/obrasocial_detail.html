@@ -243,16 +243,41 @@
 
                 </a>
 
-                <a href="#planes"
-                   class="list-group-item list-group-item-action"
-                   data-bs-toggle="tab">
+               {% if obra_social.es_particular %}
 
-                    <i class="bi bi-card-list"></i>
+    <a href="{% url 'caja:conceptos_facturacion' %}"
+       class="list-group-item">
 
-                    Planes
+        <i class="bi bi-cash-stack me-2"></i>
 
-                </a>
+        Lista de Precios
 
+    </a>
+
+{% elif obra_social.usa_planes %}
+
+    <a class="list-group-item"
+       data-bs-toggle="tab"
+       href="#planes">
+
+        <i class="bi bi-card-list me-2"></i>
+
+        Planes
+
+    </a>
+
+{% else %}
+
+    <a href="{% url 'obrasocial:listar_prestaciones' obra_social.id %}"
+       class="list-group-item">
+
+        <i class="bi bi-clipboard2-pulse me-2"></i>
+
+        Prestaciones
+
+    </a>
+
+{% endif %}
                 <a href="#convenios"
                    class="list-group-item list-group-item-action"
                    data-bs-toggle="tab">
