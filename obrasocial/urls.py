@@ -96,4 +96,24 @@ path(
     name="desactivar_prestacion",
 ),
 
+path(
+    "<int:pk>/lista-precios/",
+    views.lista_precios_particular,
+    name="lista_precios_particular"
+),
+path(
+    '<int:pk>/lista-precios/<int:concepto_id>/editar/',
+    views.editar_precio_particular,
+    name='editar_precio_particular'
+),
+path(
+    '<int:pk>/lista-precios/<int:concepto_id>/ver/',
+    views.ver_precio_particular,
+    name='ver_precio_particular'
+),
+path(
+    '<int:pk>/lista-precios/importar/',
+    views.importar_nomenclador_particular,
+    name='importar_nomenclador_particular'
+),
 ], 'obrasocial')

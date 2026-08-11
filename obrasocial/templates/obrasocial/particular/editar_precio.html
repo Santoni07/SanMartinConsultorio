@@ -1,0 +1,530 @@
+
+{% extends 'core/base.html' %}
+{% load static %}
+
+{% block title %}Editar Precio Particular{% endblock %}
+
+{% block content %}
+
+<div class="container mt-4 mb-5">
+
+    <div class="row justify-content-center">
+        <div class="col-xl-10 col-lg-11">
+
+            <!-- ENCABEZADO -->
+            <div class="card shadow border-0 mb-4">
+
+                <div class="card-header bg-primary text-white py-3">
+
+                    <div class="d-flex justify-content-between align-items-center">
+
+                        <div>
+                            <h2 class="mb-1">
+                                <i class="bi bi-pencil-square"></i>
+                                Editar Prestación
+                            </h2>
+
+                            <p class="mb-0">
+                                Lista de Precios Particular
+                            </p>
+
+                            <small>
+                                {{ obra_social.nombre }}
+                            </small>
+                        </div>
+
+                        <a href="{% url 'obrasocial:lista_precios_particular' obra_social.id %}"
+                           class="btn btn-light">
+
+                            <i class="bi bi-arrow-left-circle"></i>
+                            Volver
+
+                        </a>
+
+                    </div>
+
+                </div>
+            </div>
+
+
+            <!-- INFORMACIÓN DE LA PRESTACIÓN -->
+            <div class="card shadow-sm border-0 mb-4">
+
+                <div class="card-header bg-light">
+                    <h5 class="mb-0">
+                        <i class="bi bi-journal-medical text-primary"></i>
+                        Prestación
+                    </h5>
+                </div>
+
+                <div class="card-body">
+
+                    <div class="row g-3">
+
+                        <div class="col-md-3">
+
+                            <label class="form-label fw-bold">
+                                Código
+                            </label>
+
+                            <div class="form-control bg-light">
+                                {{ concepto.nomenclador.codigo }}
+                            </div>
+
+                        </div>
+
+                        <div class="col-md-9">
+
+                            <label class="form-label fw-bold">
+                                Descripción
+                            </label>
+
+                            <div class="form-control bg-light">
+                                {{ concepto.nomenclador.descripcion }}
+                            </div>
+
+                        </div>
+
+                    </div>
+
+                    <div class="alert alert-info mt-3 mb-0">
+
+                        <i class="bi bi-info-circle"></i>
+
+                        El código y la descripción pertenecen al
+                        <strong>Nomenclador General</strong>
+                        y no se modifican desde esta pantalla.
+
+                    </div>
+
+                </div>
+
+            </div>
+
+
+            <!-- FORMULARIO -->
+            <form method="post" novalidate>
+
+                {% csrf_token %}
+
+                <!-- ERRORES GENERALES -->
+                {% if form.non_field_errors %}
+
+                    <div class="alert alert-danger">
+
+                        <i class="bi bi-exclamation-triangle"></i>
+
+                        {% for error in form.non_field_errors %}
+                            <div>{{ error }}</div>
+                        {% endfor %}
+
+                    </div>
+
+                {% endif %}
+
+
+                <!-- PRECIO Y TIPO -->
+                <div class="card shadow-sm border-0 mb-4">
+
+                    <div class="card-header bg-light">
+
+                        <h5 class="mb-0">
+                            <i class="bi bi-currency-dollar text-success"></i>
+                            Configuración Particular
+                        </h5>
+
+                    </div>
+
+                    <div class="card-body">
+
+                        <div class="row g-3">
+
+                            <div class="col-md-4">
+
+                                <label class="form-label fw-bold">
+                                    {{ form.importe_particular.label }}
+                                </label>
+
+                                <div class="input-group">
+
+                                    <span class="input-group-text">
+                                        $
+                                    </span>
+
+                                    {{ form.importe_particular }}
+
+                                </div>
+
+                                {% for error in form.importe_particular.errors %}
+                                    <div class="text-danger small mt-1">
+                                        {{ error }}
+                                    </div>
+                                {% endfor %}
+
+                            </div>
+
+
+                            <div class="col-md-4">
+
+                                <label class="form-label fw-bold">
+                                    {{ form.tipo_concepto.label }}
+                                </label>
+
+                                {{ form.tipo_concepto }}
+
+                                {% for error in form.tipo_concepto.errors %}
+                                    <div class="text-danger small mt-1">
+                                        {{ error }}
+                                    </div>
+                                {% endfor %}
+
+                            </div>
+
+
+                            <div class="col-md-4">
+
+                                <label class="form-label fw-bold">
+                                    {{ form.porcentaje_iva.label }}
+                                </label>
+
+                                <div class="input-group">
+
+                                    {{ form.porcentaje_iva }}
+
+                                    <span class="input-group-text">
+                                        %
+                                    </span>
+
+                                </div>
+
+                                {% for error in form.porcentaje_iva.errors %}
+                                    <div class="text-danger small mt-1">
+                                        {{ error }}
+                                    </div>
+                                {% endfor %}
+
+                            </div>
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+
+                <!-- DISTRIBUCIÓN -->
+                <div class="card shadow-sm border-0 mb-4">
+
+                    <div class="card-header bg-light">
+
+                        <h5 class="mb-0">
+                            <i class="bi bi-calculator text-primary"></i>
+                            Distribución del Importe
+                        </h5>
+
+                    </div>
+
+                    <div class="card-body">
+
+                        <div class="row g-3">
+
+                            <div class="col-md-4">
+
+                                <label class="form-label fw-bold">
+                                    {{ form.tipo_calculo.label }}
+                                </label>
+
+                                {{ form.tipo_calculo }}
+
+                                {% for error in form.tipo_calculo.errors %}
+                                    <div class="text-danger small mt-1">
+                                        {{ error }}
+                                    </div>
+                                {% endfor %}
+
+                            </div>
+
+                        </div>
+
+
+                        <!-- CÁLCULO POR PORCENTAJE -->
+                        <div id="bloquePorcentaje" class="mt-4">
+
+                            <div class="row g-3">
+
+                                <div class="col-md-6">
+
+                                    <label class="form-label fw-bold">
+                                        {{ form.porcentaje_medico.label }}
+                                    </label>
+
+                                    <div class="input-group">
+
+                                        {{ form.porcentaje_medico }}
+
+                                        <span class="input-group-text">
+                                            %
+                                        </span>
+
+                                    </div>
+
+                                    {% for error in form.porcentaje_medico.errors %}
+                                        <div class="text-danger small mt-1">
+                                            {{ error }}
+                                        </div>
+                                    {% endfor %}
+
+                                </div>
+
+
+                                <div class="col-md-6">
+
+                                    <label class="form-label fw-bold">
+                                        {{ form.porcentaje_consultorio.label }}
+                                    </label>
+
+                                    <div class="input-group">
+
+                                        {{ form.porcentaje_consultorio }}
+
+                                        <span class="input-group-text">
+                                            %
+                                        </span>
+
+                                    </div>
+
+                                    {% for error in form.porcentaje_consultorio.errors %}
+                                        <div class="text-danger small mt-1">
+                                            {{ error }}
+                                        </div>
+                                    {% endfor %}
+
+                                </div>
+
+                            </div>
+
+                        </div>
+
+
+                        <!-- HONORARIO FIJO -->
+                        <div id="bloqueHonorarioFijo" class="mt-4">
+
+                            <div class="row">
+
+                                <div class="col-md-6">
+
+                                    <label class="form-label fw-bold">
+                                        {{ form.honorario_fijo_medico.label }}
+                                    </label>
+
+                                    <div class="input-group">
+
+                                        <span class="input-group-text">
+                                            $
+                                        </span>
+
+                                        {{ form.honorario_fijo_medico }}
+
+                                    </div>
+
+                                    {% for error in form.honorario_fijo_medico.errors %}
+                                        <div class="text-danger small mt-1">
+                                            {{ error }}
+                                        </div>
+                                    {% endfor %}
+
+                                </div>
+
+                            </div>
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+
+                <!-- PROVEEDOR -->
+                <div class="card shadow-sm border-0 mb-4">
+
+                    <div class="card-header bg-light">
+
+                        <h5 class="mb-0">
+                            <i class="bi bi-building text-secondary"></i>
+                            Proveedor
+                        </h5>
+
+                    </div>
+
+                    <div class="card-body">
+
+                        <div class="row g-3">
+
+                            <div class="col-md-7">
+
+                                <label class="form-label fw-bold">
+                                    {{ form.proveedor.label }}
+                                </label>
+
+                                {{ form.proveedor }}
+
+                                {% for error in form.proveedor.errors %}
+                                    <div class="text-danger small mt-1">
+                                        {{ error }}
+                                    </div>
+                                {% endfor %}
+
+                            </div>
+
+
+                            <div class="col-md-5">
+
+                                <label class="form-label fw-bold">
+                                    {{ form.importe_proveedor.label }}
+                                </label>
+
+                                <div class="input-group">
+
+                                    <span class="input-group-text">
+                                        $
+                                    </span>
+
+                                    {{ form.importe_proveedor }}
+
+                                </div>
+
+                                {% for error in form.importe_proveedor.errors %}
+                                    <div class="text-danger small mt-1">
+                                        {{ error }}
+                                    </div>
+                                {% endfor %}
+
+                            </div>
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+
+                <!-- ESTADO -->
+                <div class="card shadow-sm border-0 mb-4">
+
+                    <div class="card-header bg-light">
+
+                        <h5 class="mb-0">
+                            <i class="bi bi-toggle-on text-success"></i>
+                            Estado
+                        </h5>
+
+                    </div>
+
+                    <div class="card-body">
+
+                        <div class="form-check form-switch">
+
+                            {{ form.activo }}
+
+                            <label class="form-check-label fw-bold"
+                                   for="{{ form.activo.id_for_label }}">
+
+                                Concepto activo
+
+                            </label>
+
+                        </div>
+
+                        <small class="text-muted">
+
+                            Si el concepto está inactivo, permanecerá registrado
+                            pero no deberá utilizarse para nuevos cobros.
+
+                        </small>
+
+                    </div>
+
+                </div>
+
+
+                <!-- BOTONES -->
+                <div class="d-flex justify-content-between">
+
+                    <a href="{% url 'obrasocial:lista_precios_particular' obra_social.id %}"
+                       class="btn btn-secondary">
+
+                        <i class="bi bi-x-circle"></i>
+                        Cancelar
+
+                    </a>
+
+
+                    <button type="submit"
+                            class="btn btn-success px-4">
+
+                        <i class="bi bi-check-circle"></i>
+                        Guardar cambios
+
+                    </button>
+
+                </div>
+
+            </form>
+
+        </div>
+    </div>
+
+</div>
+
+
+<!-- ========================================================= -->
+<!-- MOSTRAR CAMPOS SEGÚN TIPO DE CÁLCULO -->
+<!-- ========================================================= -->
+
+<script>
+
+document.addEventListener("DOMContentLoaded", function () {
+
+    const tipoCalculo = document.getElementById("id_tipo_calculo");
+
+    const bloquePorcentaje =
+        document.getElementById("bloquePorcentaje");
+
+    const bloqueHonorarioFijo =
+        document.getElementById("bloqueHonorarioFijo");
+
+
+    function actualizarCampos() {
+
+        if (!tipoCalculo) {
+            return;
+        }
+
+        if (tipoCalculo.value === "FIJO_MEDICO") {
+
+            bloquePorcentaje.style.display = "none";
+            bloqueHonorarioFijo.style.display = "block";
+
+        } else {
+
+            bloquePorcentaje.style.display = "block";
+            bloqueHonorarioFijo.style.display = "none";
+
+        }
+
+    }
+
+
+    actualizarCampos();
+
+    tipoCalculo.addEventListener(
+        "change",
+        actualizarCampos
+    );
+
+});
+
+</script>
+
+{% endblock %}
+

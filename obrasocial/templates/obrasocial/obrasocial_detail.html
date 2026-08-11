@@ -229,109 +229,119 @@
         <!-- MENÚ -->
         <!-- ========================================================= -->
 
-        <div class="col-lg-3">
+        
+<div class="col-lg-3">
 
-            <div class="list-group shadow-sm">
+    <div class="list-group shadow-sm">
 
-                <a href="#datos"
-                   class="list-group-item list-group-item-action active"
-                   data-bs-toggle="tab">
+        {% if obra_social.es_particular %}
 
-                    <i class="bi bi-building"></i>
+            <!-- ================================================= -->
+            <!-- MENÚ PARTICULAR -->
+            <!-- ================================================= -->
 
-                    Datos Generales
+            <a href="{% url 'obrasocial:lista_precios_particular' obra_social.id %}"
+               class="list-group-item list-group-item-action active">
 
-                </a>
+                <i class="bi bi-cash-stack"></i>
+                Lista de Precios
 
-               {% if obra_social.es_particular %}
+            </a>
 
-    <a href="{% url 'caja:conceptos_facturacion' %}"
-       class="list-group-item">
+        {% else %}
 
-        <i class="bi bi-cash-stack me-2"></i>
+            <!-- ================================================= -->
+            <!-- MENÚ OBRAS SOCIALES -->
+            <!-- ================================================= -->
 
-        Lista de Precios
+            <a href="#datos"
+               class="list-group-item list-group-item-action active"
+               data-bs-toggle="tab">
 
-    </a>
+                <i class="bi bi-building"></i>
+                Datos Generales
 
-{% elif obra_social.usa_planes %}
+            </a>
 
-    <a class="list-group-item"
-       data-bs-toggle="tab"
-       href="#planes">
 
-        <i class="bi bi-card-list me-2"></i>
+            {% if obra_social.usa_planes %}
 
-        Planes
+                <a class="list-group-item list-group-item-action"
+                   data-bs-toggle="tab"
+                   href="#planes">
 
-    </a>
-
-{% else %}
-
-    <a href="{% url 'obrasocial:listar_prestaciones' obra_social.id %}"
-       class="list-group-item">
-
-        <i class="bi bi-clipboard2-pulse me-2"></i>
-
-        Prestaciones
-
-    </a>
-
-{% endif %}
-                <a href="#convenios"
-                   class="list-group-item list-group-item-action"
-                   data-bs-toggle="tab">
-
-                    <i class="bi bi-file-earmark-text"></i>
-
-                    Convenios
+                    <i class="bi bi-card-list"></i>
+                    Planes
 
                 </a>
 
-                <a href="#contactos"
-                   class="list-group-item list-group-item-action"
-                   data-bs-toggle="tab">
+            {% else %}
 
-                    <i class="bi bi-people"></i>
+                <a href="{% url 'obrasocial:listar_prestaciones' obra_social.id %}"
+                   class="list-group-item list-group-item-action">
 
-                    Contactos
-
-                </a>
-
-                <a href="#portal"
-                   class="list-group-item list-group-item-action"
-                   data-bs-toggle="tab">
-
-                    <i class="bi bi-globe"></i>
-
-                    Portal Web
+                    <i class="bi bi-clipboard2-pulse"></i>
+                    Prestaciones
 
                 </a>
 
-                <a href="#documentacion"
-                   class="list-group-item list-group-item-action"
-                   data-bs-toggle="tab">
+            {% endif %}
 
-                    <i class="bi bi-folder"></i>
 
-                    Documentación
+            <a href="#convenios"
+               class="list-group-item list-group-item-action"
+               data-bs-toggle="tab">
 
-                </a>
+                <i class="bi bi-file-earmark-text"></i>
+                Convenios
 
-                <a href="#liquidaciones"
-                   class="list-group-item list-group-item-action"
-                   data-bs-toggle="tab">
+            </a>
 
-                    <i class="bi bi-cash-stack"></i>
 
-                    Liquidaciones
+            <a href="#contactos"
+               class="list-group-item list-group-item-action"
+               data-bs-toggle="tab">
 
-                </a>
+                <i class="bi bi-people"></i>
+                Contactos
 
-            </div>
+            </a>
 
-        </div>
 
+            <a href="#portal"
+               class="list-group-item list-group-item-action"
+               data-bs-toggle="tab">
+
+                <i class="bi bi-globe"></i>
+                Portal Web
+
+            </a>
+
+
+            <a href="#documentacion"
+               class="list-group-item list-group-item-action"
+               data-bs-toggle="tab">
+
+                <i class="bi bi-folder"></i>
+                Documentación
+
+            </a>
+
+
+            <a href="#liquidaciones"
+               class="list-group-item list-group-item-action"
+               data-bs-toggle="tab">
+
+                <i class="bi bi-cash-stack"></i>
+                Liquidaciones
+
+            </a>
+
+        {% endif %}
+
+    </div>
+
+</div>
 
 
         <!-- ========================================================= -->
@@ -368,7 +378,13 @@
 
                                 </div>
 
-                                <i class="bi bi-pencil-square fs-3"></i>
+                                <a href="{% url 'obrasocial:list' %}"
+   class="btn btn-outline-secondary">
+
+    <i class="bi bi-arrow-left-circle me-1"></i>
+    Volver a Obras Sociales
+
+</a>
 
                             </div>
 

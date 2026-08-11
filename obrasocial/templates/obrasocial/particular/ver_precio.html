@@ -1,0 +1,195 @@
+
+{% extends 'core/base.html' %}
+{% load static %}
+
+{% block title %}Detalle de Prestación{% endblock %}
+
+{% block content %}
+
+<div class="container mt-4 mb-5">
+
+    <div class="row justify-content-center">
+
+        <div class="col-lg-9">
+
+            <div class="card shadow border-0">
+
+                <!-- ENCABEZADO -->
+                <div class="card-header bg-primary text-white py-3">
+
+                    <div class="d-flex justify-content-between align-items-center">
+
+                        <div>
+                            <h3 class="mb-1">
+                                <i class="bi bi-eye"></i>
+                                Detalle de Prestación
+                            </h3>
+
+                            <small>
+                                Lista de Precios Particular
+                            </small>
+                        </div>
+
+                        <a href="{% url 'obrasocial:lista_precios_particular' obra_social.id %}"
+                           class="btn btn-light">
+
+                            <i class="bi bi-arrow-left-circle"></i>
+                            Volver
+
+                        </a>
+
+                    </div>
+
+                </div>
+
+
+                <div class="card-body">
+
+                    <ul class="list-group list-group-flush">
+
+                        <!-- CÓDIGO -->
+                        <li class="list-group-item d-flex justify-content-between">
+                            <strong>Código</strong>
+                            <span>{{ concepto.nomenclador.codigo }}</span>
+                        </li>
+
+
+                        <!-- PRESTACIÓN -->
+                        <li class="list-group-item d-flex justify-content-between">
+                            <strong>Prestación</strong>
+                            <span>{{ concepto.nomenclador.descripcion }}</span>
+                        </li>
+
+
+                        <!-- PRECIO -->
+                        <li class="list-group-item d-flex justify-content-between">
+                            <strong>Precio Particular</strong>
+                            <span class="fw-bold text-success">
+                                $ {{ concepto.importe_particular }}
+                            </span>
+                        </li>
+
+
+                        <!-- TIPO -->
+                        <li class="list-group-item d-flex justify-content-between">
+                            <strong>Tipo de prestación</strong>
+                            <span>
+                                {{ concepto.get_tipo_concepto_display }}
+                            </span>
+                        </li>
+
+
+                        <!-- IVA -->
+                        <li class="list-group-item d-flex justify-content-between">
+                            <strong>IVA</strong>
+                            <span>
+                                {{ concepto.porcentaje_iva }} %
+                            </span>
+                        </li>
+
+
+                        <!-- TIPO CÁLCULO -->
+                        <li class="list-group-item d-flex justify-content-between">
+                            <strong>Tipo de cálculo</strong>
+                            <span>
+                                {{ concepto.get_tipo_calculo_display }}
+                            </span>
+                        </li>
+
+
+                        {% if concepto.tipo_calculo == "PORCENTAJE" %}
+
+                        <!-- PORCENTAJE MÉDICO -->
+                        <li class="list-group-item d-flex justify-content-between">
+                            <strong>Porcentaje Médico</strong>
+                            <span>
+                                {{ concepto.porcentaje_medico }} %
+                            </span>
+                        </li>
+
+
+                        <!-- PORCENTAJE CONSULTORIO -->
+                        <li class="list-group-item d-flex justify-content-between">
+                            <strong>Porcentaje Consultorio</strong>
+                            <span>
+                                {{ concepto.porcentaje_consultorio }} %
+                            </span>
+                        </li>
+
+                        {% else %}
+
+                        <!-- HONORARIO FIJO -->
+                        <li class="list-group-item d-flex justify-content-between">
+                            <strong>Honorario fijo médico</strong>
+                            <span>
+                                $ {{ concepto.honorario_fijo_medico }}
+                            </span>
+                        </li>
+
+                        {% endif %}
+
+
+                        <!-- PROVEEDOR -->
+                        <li class="list-group-item d-flex justify-content-between">
+                            <strong>Proveedor</strong>
+
+                            <span>
+                                {% if concepto.proveedor %}
+                                    {{ concepto.proveedor }}
+                                {% else %}
+                                    -
+                                {% endif %}
+                            </span>
+                        </li>
+
+
+                        <!-- IMPORTE PROVEEDOR -->
+                        <li class="list-group-item d-flex justify-content-between">
+                            <strong>Importe proveedor</strong>
+
+                            <span>
+                                $ {{ concepto.importe_proveedor }}
+                            </span>
+                        </li>
+
+
+                        <!-- ESTADO -->
+                        <li class="list-group-item d-flex justify-content-between">
+                            <strong>Estado</strong>
+
+                            <span>
+
+                                {% if concepto.activo %}
+
+                                    <span class="badge bg-success">
+                                        <i class="bi bi-check-circle"></i>
+                                        Activo
+                                    </span>
+
+                                {% else %}
+
+                                    <span class="badge bg-danger">
+                                        <i class="bi bi-x-circle"></i>
+                                        Inactivo
+                                    </span>
+
+                                {% endif %}
+
+                            </span>
+
+                        </li>
+
+                    </ul>
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+{% endblock %}
+
