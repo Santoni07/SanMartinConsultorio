@@ -116,4 +116,14 @@ path(
     views.importar_nomenclador_particular,
     name='importar_nomenclador_particular'
 ),
+path(
+    '<int:obra_social_id>/prestaciones/importar-excel/',
+    views.importar_excel_prestaciones,
+    name='importar_excel_prestaciones'
+),
+path(
+    '<int:obra_social_id>/prestaciones/resultado-importacion/',
+    views.resultado_importacion_prestaciones,
+    name='resultado_importacion_prestaciones'
+),
 ], 'obrasocial')

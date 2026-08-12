@@ -1,6 +1,6 @@
 from django import forms
 
-from .models import ObraSocial,PlanObraSocial
+from .models import ObraSocial,PlanObraSocial,PrestacionPlan
 
 
 
@@ -338,4 +338,91 @@ class ConceptoFacturacionParticularForm(forms.ModelForm):
             "proveedor": "Proveedor",
             "importe_proveedor": "Importe proveedor",
             "activo": "Concepto activo",
+        }
+        
+class PrestacionPlanForm(forms.ModelForm):
+
+    class Meta:
+
+        model = PrestacionPlan
+
+        fields = [
+            "valor",
+            "porcentaje_iva",
+            "tipo_calculo",
+            "porcentaje_medico",
+            "porcentaje_consultorio",
+            "honorario_fijo_medico",
+            "tipo_concepto",
+            "proveedor",
+            "importe_proveedor",
+            "estado",
+        ]
+
+        widgets = {
+
+            "valor": forms.NumberInput(attrs={
+                "class": "form-control",
+                "step": "0.01",
+                "min": "0",
+            }),
+
+            "porcentaje_iva": forms.NumberInput(attrs={
+                "class": "form-control",
+                "step": "0.01",
+                "min": "0",
+            }),
+
+            "tipo_calculo": forms.Select(attrs={
+                "class": "form-select"
+            }),
+
+            "porcentaje_medico": forms.NumberInput(attrs={
+                "class": "form-control",
+                "step": "0.01",
+                "min": "0",
+            }),
+
+            "porcentaje_consultorio": forms.NumberInput(attrs={
+                "class": "form-control",
+                "step": "0.01",
+                "min": "0",
+            }),
+
+            "honorario_fijo_medico": forms.NumberInput(attrs={
+                "class": "form-control",
+                "step": "0.01",
+                "min": "0",
+            }),
+
+            "tipo_concepto": forms.Select(attrs={
+                "class": "form-select"
+            }),
+
+            "proveedor": forms.Select(attrs={
+                "class": "form-select"
+            }),
+
+            "importe_proveedor": forms.NumberInput(attrs={
+                "class": "form-control",
+                "step": "0.01",
+                "min": "0",
+            }),
+
+            "estado": forms.Select(attrs={
+                "class": "form-select"
+            }),
+        }
+
+        labels = {
+            "valor": "Valor Convenio",
+            "porcentaje_iva": "IVA (%)",
+            "tipo_calculo": "Tipo de cálculo",
+            "porcentaje_medico": "Porcentaje Médico",
+            "porcentaje_consultorio": "Porcentaje Consultorio",
+            "honorario_fijo_medico": "Honorario fijo médico",
+            "tipo_concepto": "Tipo de prestación",
+            "proveedor": "Proveedor",
+            "importe_proveedor": "Importe proveedor",
+            "estado": "Estado",
         }

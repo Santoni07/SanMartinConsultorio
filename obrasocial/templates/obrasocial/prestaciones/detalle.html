@@ -1,0 +1,497 @@
+{% extends 'core/base.html' %}
+{% load static %}
+
+{% block title %}Detalle de Prestación{% endblock %}
+
+{% block content %}
+
+<div class="container mt-4 mb-5">
+
+    <div class="row justify-content-center">
+
+        <div class="col-lg-10">
+
+            <!-- ================================================= -->
+            <!-- ENCABEZADO -->
+            <!-- ================================================= -->
+
+            <div class="card shadow border-0 mb-4">
+
+                <div class="card-header bg-primary text-white py-3">
+
+                    <div class="d-flex justify-content-between align-items-center">
+
+                        <div>
+
+                            <h2 class="mb-1">
+                                <i class="bi bi-eye"></i>
+                                Detalle de Prestación
+                            </h2>
+
+                            <p class="mb-0">
+                                {{ obra_social.nombre }}
+                            </p>
+
+                            {% if prestacion.plan %}
+
+                                <small>
+                                    Plan: {{ prestacion.plan.nombre }}
+                                </small>
+
+                            {% else %}
+
+                                <small>
+                                    Convenio general sin planes
+                                </small>
+
+                            {% endif %}
+
+                        </div>
+
+                        <a href="{% url 'obrasocial:listar_prestaciones' obra_social.id %}"
+                           class="btn btn-light">
+
+                            <i class="bi bi-arrow-left-circle"></i>
+                            Volver
+
+                        </a>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+
+            <!-- ================================================= -->
+            <!-- PRESTACIÓN -->
+            <!-- ================================================= -->
+
+            <div class="card shadow-sm border-0 mb-4">
+
+                <div class="card-header bg-light">
+
+                    <h5 class="mb-0">
+
+                        <i class="bi bi-clipboard2-pulse text-primary"></i>
+                        Prestación
+
+                    </h5>
+
+                </div>
+
+                <div class="card-body">
+
+                    <div class="row g-4">
+
+                        <div class="col-md-3">
+
+                            <small class="text-muted d-block">
+                                Código
+                            </small>
+
+                            <span class="fw-bold fs-5">
+                                {{ prestacion.nomenclador.codigo }}
+                            </span>
+
+                        </div>
+
+
+                        <div class="col-md-9">
+
+                            <small class="text-muted d-block">
+                                Descripción
+                            </small>
+
+                            <span class="fw-bold">
+                                {{ prestacion.nomenclador.descripcion }}
+                            </span>
+
+                        </div>
+
+
+                        <div class="col-md-4">
+
+                            <small class="text-muted d-block">
+                                Tipo de prestación
+                            </small>
+
+                            <span class="badge bg-secondary fs-6">
+
+                                {{ prestacion.get_tipo_concepto_display }}
+
+                            </span>
+
+                        </div>
+
+
+                        <div class="col-md-4">
+
+                            <small class="text-muted d-block">
+                                Estado
+                            </small>
+
+                            {% if prestacion.estado == "ACTIVA" %}
+
+                                <span class="badge bg-success fs-6">
+                                    <i class="bi bi-check-circle"></i>
+                                    Activa
+                                </span>
+
+                            {% else %}
+
+                                <span class="badge bg-danger fs-6">
+                                    <i class="bi bi-x-circle"></i>
+                                    Inactiva
+                                </span>
+
+                            {% endif %}
+
+                        </div>
+
+
+                        <div class="col-md-4">
+
+                            <small class="text-muted d-block">
+                                Plan
+                            </small>
+
+                            {% if prestacion.plan %}
+
+                                <strong>
+                                    {{ prestacion.plan.nombre }}
+                                </strong>
+
+                            {% else %}
+
+                                <span class="text-muted">
+                                    Sin plan
+                                </span>
+
+                            {% endif %}
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+
+            <!-- ================================================= -->
+            <!-- ARANCEL -->
+            <!-- ================================================= -->
+
+            <div class="card shadow-sm border-0 mb-4">
+
+                <div class="card-header bg-light">
+
+                    <h5 class="mb-0">
+
+                        <i class="bi bi-cash-stack text-success"></i>
+                        Arancel del Convenio
+
+                    </h5>
+
+                </div>
+
+
+                <div class="card-body">
+
+                    <div class="row g-4">
+
+                        <div class="col-md-4">
+
+                            <small class="text-muted d-block">
+                                Valor Convenio
+                            </small>
+
+                            {% if prestacion.valor > 0 %}
+
+                                <span class="fs-4 fw-bold text-success">
+                                    $ {{ prestacion.valor }}
+                                </span>
+
+                            {% else %}
+
+                                <span class="badge bg-warning text-dark fs-6">
+                                    Sin configurar
+                                </span>
+
+                            {% endif %}
+
+                        </div>
+
+
+                        <div class="col-md-4">
+
+                            <small class="text-muted d-block">
+                                Vigencia desde
+                            </small>
+
+                            <strong>
+                                {{ prestacion.fecha_vigencia_desde|date:"d/m/Y" }}
+                            </strong>
+
+                        </div>
+
+
+                        <div class="col-md-4">
+
+                            <small class="text-muted d-block">
+                                Vigencia hasta
+                            </small>
+
+                            {% if prestacion.fecha_vigencia_hasta %}
+
+                                <strong>
+                                    {{ prestacion.fecha_vigencia_hasta|date:"d/m/Y" }}
+                                </strong>
+
+                            {% else %}
+
+                                <span class="text-muted">
+                                    Sin fecha de finalización
+                                </span>
+
+                            {% endif %}
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+
+            <!-- ================================================= -->
+            <!-- DISTRIBUCIÓN -->
+            <!-- ================================================= -->
+
+            <div class="card shadow-sm border-0 mb-4">
+
+                <div class="card-header bg-light">
+
+                    <h5 class="mb-0">
+
+                        <i class="bi bi-percent text-primary"></i>
+                        Distribución del Arancel
+
+                    </h5>
+
+                </div>
+
+
+                <div class="card-body">
+
+                    <div class="row text-center g-3">
+
+                        <div class="col-md-4">
+
+                            <div class="border rounded p-3 h-100">
+
+                                <small class="text-muted">
+                                    IVA
+                                </small>
+
+                                <h3 class="mb-0 mt-2">
+                                    {{ prestacion.porcentaje_iva }} %
+                                </h3>
+
+                            </div>
+
+                        </div>
+
+
+                        <div class="col-md-4">
+
+                            <div class="border rounded p-3 h-100">
+
+                                <small class="text-muted">
+                                    Médico
+                                </small>
+
+                                <h3 class="mb-0 mt-2">
+                                    {{ prestacion.porcentaje_medico }} %
+                                </h3>
+
+                            </div>
+
+                        </div>
+
+
+                        <div class="col-md-4">
+
+                            <div class="border rounded p-3 h-100">
+
+                                <small class="text-muted">
+                                    Consultorio
+                                </small>
+
+                                <h3 class="mb-0 mt-2">
+                                    {{ prestacion.porcentaje_consultorio }} %
+                                </h3>
+
+                            </div>
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+
+            <!-- ================================================= -->
+            <!-- HONORARIO MÉDICO -->
+            <!-- ================================================= -->
+
+            <div class="card shadow-sm border-0 mb-4">
+
+                <div class="card-header bg-light">
+
+                    <h5 class="mb-0">
+
+                        <i class="bi bi-person-badge text-primary"></i>
+                        Honorario Médico
+
+                    </h5>
+
+                </div>
+
+
+                <div class="card-body">
+
+                    <div class="row g-4">
+
+                        <div class="col-md-6">
+
+                            <small class="text-muted d-block">
+                                Tipo de cálculo
+                            </small>
+
+                            <strong>
+                                {{ prestacion.get_tipo_calculo_display }}
+                            </strong>
+
+                        </div>
+
+
+                        <div class="col-md-6">
+
+                            <small class="text-muted d-block">
+                                Honorario fijo médico
+                            </small>
+
+                            <strong>
+                                $ {{ prestacion.honorario_fijo_medico }}
+                            </strong>
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+
+            <!-- ================================================= -->
+            <!-- PROVEEDOR -->
+            <!-- ================================================= -->
+
+            <div class="card shadow-sm border-0 mb-4">
+
+                <div class="card-header bg-light">
+
+                    <h5 class="mb-0">
+
+                        <i class="bi bi-truck text-secondary"></i>
+                        Proveedor
+
+                    </h5>
+
+                </div>
+
+
+                <div class="card-body">
+
+                    <div class="row g-4">
+
+                        <div class="col-md-8">
+
+                            <small class="text-muted d-block">
+                                Proveedor asociado
+                            </small>
+
+                            {% if prestacion.proveedor %}
+
+                                <strong>
+                                    {{ prestacion.proveedor }}
+                                </strong>
+
+                            {% else %}
+
+                                <span class="text-muted">
+                                    Sin proveedor
+                                </span>
+
+                            {% endif %}
+
+                        </div>
+
+
+                        <div class="col-md-4">
+
+                            <small class="text-muted d-block">
+                                Importe proveedor
+                            </small>
+
+                            <strong>
+                                $ {{ prestacion.importe_proveedor }}
+                            </strong>
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+
+            <!-- ================================================= -->
+            <!-- BOTONES -->
+            <!-- ================================================= -->
+
+            <div class="d-flex justify-content-between">
+
+                <a href="{% url 'obrasocial:listar_prestaciones' obra_social.id %}"
+                   class="btn btn-secondary">
+
+                    <i class="bi bi-arrow-left"></i>
+                    Volver al listado
+
+                </a>
+
+
+                <a href="{% url 'obrasocial:editar_prestacion' prestacion.id %}"
+                   class="btn btn-warning">
+
+                    <i class="bi bi-pencil"></i>
+                    Editar Prestación
+
+                </a>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+{% endblock %}

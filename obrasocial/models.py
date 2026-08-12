@@ -276,6 +276,70 @@ class PrestacionPlan(models.Model):
     fecha_modificacion = models.DateTimeField(
         auto_now=True
     )
+    
+    porcentaje_iva = models.DecimalField(
+    max_digits=5,
+    decimal_places=2,
+    default=0
+    )
+
+    TIPOS_CALCULO = [
+        ('PORCENTAJE', 'Porcentaje'),
+        ('FIJO_MEDICO', 'Honorario fijo médico'),
+    ]
+
+    tipo_calculo = models.CharField(
+        max_length=20,
+        choices=TIPOS_CALCULO,
+        default='PORCENTAJE'
+    )
+
+    porcentaje_medico = models.DecimalField(
+        max_digits=5,
+        decimal_places=2,
+        default=0
+    )
+
+    porcentaje_consultorio = models.DecimalField(
+        max_digits=5,
+        decimal_places=2,
+        default=0
+    )
+
+    honorario_fijo_medico = models.DecimalField(
+        max_digits=12,
+        decimal_places=2,
+        default=0
+    )
+
+    TIPOS_CONCEPTOS = [
+        ('CONSULTA', 'Consulta'),
+        ('ESTUDIO', 'Estudio'),
+        ('PRACTICA', 'Práctica'),
+        ('CERTIFICADOS', 'Certificados'),
+    ]
+
+    tipo_concepto = models.CharField(
+        max_length=20,
+        choices=TIPOS_CONCEPTOS,
+        default='CONSULTA'
+    )
+
+    proveedor = models.ForeignKey(
+        'proveedores.Proveedor',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="prestaciones_obras_sociales"
+    )
+
+    importe_proveedor = models.DecimalField(
+        max_digits=12,
+        decimal_places=2,
+        default=0,
+        verbose_name="Importe Proveedor"
+    )
+        
 
     class Meta:
 

@@ -1,0 +1,458 @@
+{% extends 'core/base.html' %}
+{% load static %}
+
+{% block title %}Editar Prestación{% endblock %}
+
+{% block content %}
+
+<div class="container mt-4 mb-5">
+
+    <div class="row justify-content-center">
+
+        <div class="col-lg-10">
+
+            <!-- ================================================= -->
+            <!-- ENCABEZADO -->
+            <!-- ================================================= -->
+
+            <div class="card shadow border-0 mb-4">
+
+                <div class="card-header bg-primary text-white py-3">
+
+                    <div class="d-flex justify-content-between align-items-center">
+
+                        <div>
+
+                            <h2 class="mb-1">
+                                <i class="bi bi-pencil-square"></i>
+                                Editar Prestación
+                            </h2>
+
+                            <p class="mb-0">
+                                {{ obra_social.nombre }}
+                            </p>
+
+                            {% if prestacion.plan %}
+
+                                <small>
+                                    Plan: {{ prestacion.plan.nombre }}
+                                </small>
+
+                            {% else %}
+
+                                <small>
+                                    Convenio general sin planes
+                                </small>
+
+                            {% endif %}
+
+                        </div>
+
+                        <a href="{% url 'obrasocial:listar_prestaciones' obra_social.id %}"
+                           class="btn btn-light">
+
+                            <i class="bi bi-arrow-left-circle"></i>
+                            Volver
+
+                        </a>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+
+            <!-- ================================================= -->
+            <!-- DATOS DE LA PRESTACIÓN -->
+            <!-- ================================================= -->
+
+            <div class="card shadow-sm border-0 mb-4">
+
+                <div class="card-header bg-light">
+
+                    <h5 class="mb-0">
+                        <i class="bi bi-clipboard2-pulse text-primary"></i>
+                        Prestación
+                    </h5>
+
+                </div>
+
+                <div class="card-body">
+
+                    <div class="row g-3">
+
+                        <div class="col-md-3">
+
+                            <label class="form-label text-muted">
+                                Código
+                            </label>
+
+                            <div class="form-control bg-light fw-bold">
+                                {{ prestacion.nomenclador.codigo }}
+                            </div>
+
+                        </div>
+
+
+                        <div class="col-md-9">
+
+                            <label class="form-label text-muted">
+                                Descripción
+                            </label>
+
+                            <div class="form-control bg-light">
+                                {{ prestacion.nomenclador.descripcion }}
+                            </div>
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+
+            <!-- ================================================= -->
+            <!-- ERRORES -->
+            <!-- ================================================= -->
+
+            {% if form.errors %}
+
+                <div class="alert alert-danger">
+
+                    <h6 class="fw-bold">
+                        <i class="bi bi-exclamation-triangle"></i>
+                        Revise los datos ingresados
+                    </h6>
+
+                    {{ form.errors }}
+
+                </div>
+
+            {% endif %}
+
+
+            <!-- ================================================= -->
+            <!-- FORMULARIO -->
+            <!-- ================================================= -->
+
+            <form method="post">
+
+                {% csrf_token %}
+
+
+                <!-- ============================================= -->
+                <!-- ARANCEL -->
+                <!-- ============================================= -->
+
+                <div class="card shadow-sm border-0 mb-4">
+
+                    <div class="card-header bg-light">
+
+                        <h5 class="mb-0">
+                            <i class="bi bi-cash-stack text-success"></i>
+                            Arancel
+                        </h5>
+
+                    </div>
+
+                    <div class="card-body">
+
+                        <div class="row g-3">
+
+                            <div class="col-md-4">
+
+                                <label class="form-label fw-bold">
+                                    {{ form.valor.label }}
+                                </label>
+
+                                <div class="input-group">
+
+                                    <span class="input-group-text">
+                                        $
+                                    </span>
+
+                                    {{ form.valor }}
+
+                                </div>
+
+                            </div>
+
+
+                            <div class="col-md-4">
+
+                                <label class="form-label fw-bold">
+                                    {{ form.tipo_concepto.label }}
+                                </label>
+
+                                {{ form.tipo_concepto }}
+
+                            </div>
+
+
+                            <div class="col-md-4">
+
+                                <label class="form-label fw-bold">
+                                    {{ form.estado.label }}
+                                </label>
+
+                                {{ form.estado }}
+
+                            </div>
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+
+                <!-- ============================================= -->
+                <!-- DISTRIBUCIÓN -->
+                <!-- ============================================= -->
+
+                <div class="card shadow-sm border-0 mb-4">
+
+                    <div class="card-header bg-light">
+
+                        <h5 class="mb-0">
+                            <i class="bi bi-percent text-primary"></i>
+                            Distribución del arancel
+                        </h5>
+
+                    </div>
+
+
+                    <div class="card-body">
+
+                        <div class="row g-3">
+
+                            <div class="col-md-4">
+
+                                <label class="form-label fw-bold">
+                                    {{ form.porcentaje_iva.label }}
+                                </label>
+
+                                <div class="input-group">
+
+                                    {{ form.porcentaje_iva }}
+
+                                    <span class="input-group-text">
+                                        %
+                                    </span>
+
+                                </div>
+
+                            </div>
+
+
+                            <div class="col-md-4">
+
+                                <label class="form-label fw-bold">
+                                    {{ form.porcentaje_medico.label }}
+                                </label>
+
+                                <div class="input-group">
+
+                                    {{ form.porcentaje_medico }}
+
+                                    <span class="input-group-text">
+                                        %
+                                    </span>
+
+                                </div>
+
+                            </div>
+
+
+                            <div class="col-md-4">
+
+                                <label class="form-label fw-bold">
+                                    {{ form.porcentaje_consultorio.label }}
+                                </label>
+
+                                <div class="input-group">
+
+                                    {{ form.porcentaje_consultorio }}
+
+                                    <span class="input-group-text">
+                                        %
+                                    </span>
+
+                                </div>
+
+                            </div>
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+
+                <!-- ============================================= -->
+                <!-- HONORARIO MÉDICO -->
+                <!-- ============================================= -->
+
+                <div class="card shadow-sm border-0 mb-4">
+
+                    <div class="card-header bg-light">
+
+                        <h5 class="mb-0">
+                            <i class="bi bi-person-badge text-primary"></i>
+                            Honorario médico
+                        </h5>
+
+                    </div>
+
+
+                    <div class="card-body">
+
+                        <div class="row g-3">
+
+                            <div class="col-md-6">
+
+                                <label class="form-label fw-bold">
+                                    {{ form.tipo_calculo.label }}
+                                </label>
+
+                                {{ form.tipo_calculo }}
+
+                                <div class="form-text">
+                                    Indique si el honorario se calcula
+                                    por porcentaje o mediante un importe fijo.
+                                </div>
+
+                            </div>
+
+
+                            <div class="col-md-6">
+
+                                <label class="form-label fw-bold">
+                                    {{ form.honorario_fijo_medico.label }}
+                                </label>
+
+                                <div class="input-group">
+
+                                    <span class="input-group-text">
+                                        $
+                                    </span>
+
+                                    {{ form.honorario_fijo_medico }}
+
+                                </div>
+
+                            </div>
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+
+                <!-- ============================================= -->
+                <!-- PROVEEDOR -->
+                <!-- ============================================= -->
+
+                <div class="card shadow-sm border-0 mb-4">
+
+                    <div class="card-header bg-light">
+
+                        <h5 class="mb-0">
+                            <i class="bi bi-truck text-secondary"></i>
+                            Proveedor
+                        </h5>
+
+                    </div>
+
+
+                    <div class="card-body">
+
+                        <div class="row g-3">
+
+                            <div class="col-md-8">
+
+                                <label class="form-label fw-bold">
+                                    {{ form.proveedor.label }}
+                                </label>
+
+                                {{ form.proveedor }}
+
+                                <div class="form-text">
+                                    Opcional. Utilizar solamente cuando
+                                    la prestación tenga un proveedor asociado.
+                                </div>
+
+                            </div>
+
+
+                            <div class="col-md-4">
+
+                                <label class="form-label fw-bold">
+                                    {{ form.importe_proveedor.label }}
+                                </label>
+
+                                <div class="input-group">
+
+                                    <span class="input-group-text">
+                                        $
+                                    </span>
+
+                                    {{ form.importe_proveedor }}
+
+                                </div>
+
+                            </div>
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+
+                <!-- ============================================= -->
+                <!-- BOTONES -->
+                <!-- ============================================= -->
+
+                <div class="card shadow-sm border-0">
+
+                    <div class="card-body">
+
+                        <div class="d-flex justify-content-between">
+
+                            <a href="{% url 'obrasocial:listar_prestaciones' obra_social.id %}"
+                               class="btn btn-secondary">
+
+                                <i class="bi bi-x-circle"></i>
+                                Cancelar
+
+                            </a>
+
+
+                            <button type="submit"
+                                    class="btn btn-primary px-4">
+
+                                <i class="bi bi-check-circle"></i>
+                                Guardar Cambios
+
+                            </button>
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+            </form>
+
+        </div>
+
+    </div>
+
+</div>
+
+{% endblock %}

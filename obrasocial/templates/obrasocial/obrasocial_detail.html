@@ -461,12 +461,9 @@
                 </div>
 
 
+<!-- PLANES -->
 
-                <!-- PLANES -->
-
-                <div class="tab-pane fade" id="planes">
-
-<div class="card shadow-sm">
+<div class="tab-pane fade" id="planes">
 
     <div class="card-header d-flex justify-content-between align-items-center">
 
@@ -478,9 +475,7 @@
             </h5>
 
             <small class="text-muted">
-
                 Administración de planes y convenios.
-
             </small>
 
         </div>
@@ -489,141 +484,165 @@
            class="btn btn-success">
 
             <i class="bi bi-plus-circle me-1"></i>
-
             Crear Plan
 
         </a>
 
     </div>
 
+
     <div class="card-body">
 
         {% if planes %}
 
-        <div class="table-responsive">
+            <div class="table-responsive">
 
-            <table class="table table-hover align-middle">
+                <table class="table table-hover align-middle">
 
-                <thead>
+                    <thead>
 
-                    <tr>
+                        <tr>
 
-                        <th width="120">Código</th>
+                            <th width="120">
+                                Código
+                            </th>
 
-                        <th>Nombre</th>
+                            <th>
+                                Nombre
+                            </th>
 
-                        <th width="100">Estado</th>
+                            <th width="100">
+                                Estado
+                            </th>
 
-                        <th width="170" class="text-center">
-                            Acciones
-                        </th>
+                            <th width="240"
+                                class="text-center">
 
-                    </tr>
+                                Acciones
 
-                </thead>
+                            </th>
 
-                <tbody>
+                        </tr>
 
-                {% for plan in planes %}
+                    </thead>
 
-                    <tr>
 
-                        <td>
+                    <tbody>
 
-                            <strong>
+                        {% for plan in planes %}
 
-                                {{ plan.codigo }}
+                            <tr>
 
-                            </strong>
+                                <!-- CÓDIGO -->
 
-                        </td>
+                                <td>
 
-                        <td>
+                                    <strong>
+                                        {{ plan.codigo }}
+                                    </strong>
 
-                            {{ plan.nombre }}
+                                </td>
 
-                        </td>
 
-                        <td>
+                                <!-- NOMBRE -->
 
-                            {% if plan.activo %}
+                                <td>
 
-                                <span class="badge bg-success">
+                                    {{ plan.nombre }}
 
-                                    Activo
+                                </td>
 
-                                </span>
 
-                            {% else %}
+                                <!-- ESTADO -->
 
-                                <span class="badge bg-danger">
+                                <td>
 
-                                    Inactivo
+                                    {% if plan.activo %}
 
-                                </span>
+                                        <span class="badge bg-success">
+                                            Activo
+                                        </span>
 
-                            {% endif %}
+                                    {% else %}
 
-                        </td>
+                                        <span class="badge bg-danger">
+                                            Inactivo
+                                        </span>
 
-                        <td class="text-center">
+                                    {% endif %}
 
-                            <a href="{% url 'obrasocial:detalle_plan' plan.id %}"
-                               class="btn btn-sm btn-outline-primary">
+                                </td>
 
-                                <i class="bi bi-eye"></i>
 
-                            </a>
+                                <!-- ACCIONES -->
 
-                            <a href="{% url 'obrasocial:editar_plan' plan.id %}"
-                               class="btn btn-sm btn-outline-warning">
+                                <td class="text-center">
 
-                                <i class="bi bi-pencil"></i>
+                                    <!-- VER PLAN -->
 
-                            </a>
+                                    <a href="{% url 'obrasocial:detalle_plan' plan.id %}"
+                                       class="btn btn-sm btn-outline-primary"
+                                       title="Ver Plan">
 
-                        </td>
+                                        <i class="bi bi-eye"></i>
 
-                    </tr>
+                                    </a>
 
-                {% endfor %}
 
-                </tbody>
+                                    <!-- EDITAR PLAN -->
 
-            </table>
+                                    <a href="{% url 'obrasocial:editar_plan' plan.id %}"
+                                       class="btn btn-sm btn-outline-warning"
+                                       title="Editar Plan">
 
-        </div>
+                                        <i class="bi bi-pencil"></i>
+
+                                    </a>
+
+
+                                    <!-- PRESTACIONES DEL PLAN -->
+
+                                    <a href="{% url 'obrasocial:listar_prestaciones' obra_social.id %}?plan={{ plan.id }}"
+                                       class="btn btn-sm btn-outline-success"
+                                       title="Prestaciones del Plan">
+
+                                        <i class="bi bi-clipboard2-pulse"></i>
+
+                                    </a>
+
+                                </td>
+
+                            </tr>
+
+                        {% endfor %}
+
+                    </tbody>
+
+                </table>
+
+            </div>
 
         {% else %}
 
-        <div class="text-center py-5">
+            <div class="text-center py-5">
 
-            <i class="bi bi-diagram-3 display-5 text-muted"></i>
+                <i class="bi bi-diagram-3 display-5 text-muted"></i>
 
-            <h5 class="mt-3">
+                <h5 class="mt-3">
+                    No hay planes registrados.
+                </h5>
 
-                No hay planes registrados.
+                <p class="text-muted">
+                    Comience creando el primer plan para esta obra social.
+                </p>
 
-            </h5>
-
-            <p class="text-muted">
-
-                Comience creando el primer plan para esta obra social.
-
-            </p>
-
-        </div>
+            </div>
 
         {% endif %}
 
     </div>
 
 </div>
-
-</div>
-
-
-
                 <!-- RESTO -->
 
            
