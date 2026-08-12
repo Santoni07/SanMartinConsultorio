@@ -1,6 +1,6 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from .services import CierreCajaService
-
+from turnos.models import Turnos
 from .pdf.cierre_caja import generar_pdf_cierre
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
@@ -1342,6 +1342,130 @@ def ajax_importe_prestacion(request):
             "importe": 0
         })
         
+
+@login_required
+def ajax_cobertura_turno(request):
+
+    turno_id = request.GET.get("turno_id")
+
+    if not turno_id:
+        return JsonResponse({
+            "ok": False,
+            "error": "No se recibió el turno."
+        })
+
+    try:
+        turno = Turnos.objects.select_related(
+            "paciente",
+            "paciente__obrasocial",
+            "paciente__plan_obra_social",
+        ).get(
+            pk=turno_id
+        )
+
+    except Turnos.DoesNotExist:
+        return JsonResponse({
+            "ok": False,
+            "error": "El turno no existe."
+        })
+
+    paciente = turno.paciente
+    obra_social = paciente.obrasocial
+    plan = paciente.plan_obra_social
+
+    # ==========================================
+    # PARTICULAR
+    # ==========================================
+
+    if obra_social.es_particular:
+
+        return JsonResponse({
+            "ok": True,
+            "tipo": "PARTICULAR",
+
+            "paciente": {
+                "id": paciente.id,
+                "nombre": str(paciente),
+            },
+
+            "obra_social": {
+                "id": obra_social.id,
+                "nombre": obra_social.nombre,
+            },
+
+            "plan": None,
+        })
+
+    # ==========================================
+    # OBRA SOCIAL QUE UTILIZA PLANES
+    # ==========================================
+
+    if obra_social.usa_planes:
+
+        if not plan:
+
+            return JsonResponse({
+                "ok": False,
+                "error": (
+                    f"El paciente {paciente} pertenece a "
+                    f"{obra_social.nombre}, pero no tiene un plan asignado."
+                )
+            })
+
+        # Seguridad:
+        # el plan debe pertenecer a la obra social del paciente.
+
+        if plan.obra_social_id != obra_social.id:
+
+            return JsonResponse({
+                "ok": False,
+                "error": (
+                    "El plan asignado al paciente no pertenece "
+                    "a su obra social."
+                )
+            })
+
+        return JsonResponse({
+            "ok": True,
+            "tipo": "OBRA_SOCIAL",
+
+            "paciente": {
+                "id": paciente.id,
+                "nombre": str(paciente),
+            },
+
+            "obra_social": {
+                "id": obra_social.id,
+                "nombre": obra_social.nombre,
+            },
+
+            "plan": {
+                "id": plan.id,
+                "codigo": plan.codigo,
+                "nombre": plan.nombre,
+            },
+        })
+
+    # ==========================================
+    # OBRA SOCIAL SIN PLANES
+    # ==========================================
+
+    return JsonResponse({
+        "ok": True,
+        "tipo": "OBRA_SOCIAL",
+
+        "paciente": {
+            "id": paciente.id,
+            "nombre": str(paciente),
+        },
+
+        "obra_social": {
+            "id": obra_social.id,
+            "nombre": obra_social.nombre,
+        },
+
+        "plan": None,
+    })
 @login_required
 def pdf_cierre_caja(request, caja_id):
 

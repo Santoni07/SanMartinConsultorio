@@ -34,6 +34,15 @@ class Paciente(models.Model):
         ObraSocial,
         on_delete=models.CASCADE
     )
+    
+    plan_obra_social = models.ForeignKey(
+        'obrasocial.PlanObraSocial',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='pacientes',
+        verbose_name='Plan de Obra Social'
+    )
 
     activo = models.BooleanField(default=True)
 

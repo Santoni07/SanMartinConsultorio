@@ -34,4 +34,9 @@ urlpatterns = [
     views.pdf_cierre_caja,
     name="pdf_cierre_caja",
 ),
+  path(
+    "ajax/cobertura-turno/",
+    views.ajax_cobertura_turno,
+    name="ajax_cobertura_turno"
+),
 ]

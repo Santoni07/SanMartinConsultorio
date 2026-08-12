@@ -9,7 +9,7 @@ from turnos.models import Turnos
 from medicos.models import Medico
 from decimal import Decimal
 from proveedores.models import Proveedor
-
+from obrasocial.models import PrestacionPlan
 class CajaDiaria(models.Model):
     ESTADOS = [
         ('ABIERTA', 'Abierta'),
@@ -513,6 +513,17 @@ class DetalleMovimientoCaja(models.Model):
         on_delete=models.PROTECT,
         verbose_name="Prestación"
     )
+    
+    prestacion_obra_social = models.ForeignKey(
+        PrestacionPlan,
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+        related_name="detalles_caja",
+        verbose_name="Prestación Obra Social"
+    )
+    
+    
 
     # ==========================================
     # FOTOGRAFÍA DEL NOMENCLADOR
@@ -828,36 +839,121 @@ class DetalleMovimientoCaja(models.Model):
             self.importe_medico = Decimal("0.00")
             self.importe_consultorio = base_distribucion
     
+    
+    def copiar_desde_prestacion_obra_social(self, prestacion):
+        """
+        Copia la configuración completa de PrestacionPlan.
+
+        El detalle conserva una fotografía histórica de la prestación
+        aunque posteriormente cambien los valores o la configuración
+        del convenio.
+        """
+
+        self.prestacion_obra_social = prestacion
+
+        # ===============================
+        # Datos del nomenclador
+        # ===============================
+
+        self.codigo = prestacion.nomenclador.codigo
+        self.descripcion = prestacion.nomenclador.descripcion
+        self.tipo_concepto = prestacion.tipo_concepto
+
+        # ===============================
+        # Configuración de cálculo
+        # ===============================
+
+        self.tipo_calculo = prestacion.tipo_calculo
+
+        self.porcentaje_iva = prestacion.porcentaje_iva
+
+        self.porcentaje_medico = prestacion.porcentaje_medico
+
+        self.porcentaje_consultorio = prestacion.porcentaje_consultorio
+
+        self.honorario_fijo_medico = prestacion.honorario_fijo_medico
+
+        # ===============================
+        # Proveedor
+        # ===============================
+
+        self.proveedor = prestacion.proveedor
+
+        if prestacion.proveedor:
+            self.nombre_proveedor = prestacion.proveedor.nombre
+        else:
+            self.nombre_proveedor = ""
+
+        self.importe_proveedor = prestacion.importe_proveedor
+
+        # ===============================
+        # Importe Obra Social
+        # ===============================
+
+        self.importe = (
+            Decimal(self.cantidad) *
+            prestacion.valor
+        )
+        
     def save(self, *args, **kwargs):
         """
         Antes de guardar:
-        - Copia la configuración del ConceptoFacturacion (si aún no existe).
+        - Si es PARTICULAR, copia la configuración desde ConceptoFacturacion.
+        - Si es OBRA SOCIAL, copia la configuración desde PrestacionPlan.
         - Calcula todos los importes.
 
         Después de guardar:
         - Recalcula automáticamente los totales del MovimientoCaja.
         """
 
-        # Copiar la fotografía sólo la primera vez
-        if self._state.adding:
-            self.copiar_desde_concepto(
-                self.concepto_facturacion
-            )
-            
-        print("=" * 80)
-        print("ANTES DEL SAVE")
-        print("Proveedor:", self.proveedor)
-        print("Nombre:", self.nombre_proveedor)
-        print("Importe:", self.importe_proveedor)
+        # ==========================================
+        # COPIAR FOTOGRAFÍA SOLO LA PRIMERA VEZ
+        # ==========================================
 
-        # Calcular importes
+        if self._state.adding:
+
+            # PARTICULAR
+            if self.concepto_facturacion:
+
+                self.copiar_desde_concepto(
+                    self.concepto_facturacion
+                )
+
+            # OBRA SOCIAL
+            elif self.prestacion_obra_social:
+
+                self.copiar_desde_prestacion_obra_social(
+                    self.prestacion_obra_social
+                )
+
+            # SIN PRESTACIÓN
+            else:
+
+                raise ValueError(
+                    "El detalle debe tener una prestación particular "
+                    "o una prestación de obra social."
+                )
+
+        # ==========================================
+        # CALCULAR IMPORTES
+        # ==========================================
+
         self.calcular_importes()
+
+        # ==========================================
+        # GUARDAR DETALLE
+        # ==========================================
 
         super().save(*args, **kwargs)
 
-        # Actualizar el movimiento
+        # ==========================================
+        # RECALCULAR TOTALES DEL MOVIMIENTO
+        # ==========================================
+
         if self.movimiento_id:
+
             self.movimiento.recalcular_totales()
+    
     
     @property
     def descripcion_prestaciones(self):
