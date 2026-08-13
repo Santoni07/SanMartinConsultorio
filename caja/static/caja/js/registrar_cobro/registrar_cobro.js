@@ -64,6 +64,7 @@ let formularioRegistrarCobro;
 
 function inicializar(){
 
+    inicializarCobertura();
     inicializarPrestacionesAjax();
     inicializarImporteAjax();
     inicializarPrestaciones();

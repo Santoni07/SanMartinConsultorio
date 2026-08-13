@@ -1,7 +1,6 @@
 from django.contrib import admin
 from .models import Paciente
 
-
 @admin.register(Paciente)
 class PacienteAdmin(admin.ModelAdmin):
 
@@ -13,6 +12,7 @@ class PacienteAdmin(admin.ModelAdmin):
         'sexo',
         'telefono',
         'obrasocial',
+        'plan_obra_social',
         'activo',
         'fecha_alta',
     )
@@ -21,6 +21,7 @@ class PacienteAdmin(admin.ModelAdmin):
         'sexo',
         'activo',
         'obrasocial',
+        'plan_obra_social',
         'fecha_alta',
     )
 
@@ -65,6 +66,7 @@ class PacienteAdmin(admin.ModelAdmin):
         ('Información Médica', {
             'fields': (
                 'obrasocial',
+                'plan_obra_social',
                 'observaciones',
             )
         }),

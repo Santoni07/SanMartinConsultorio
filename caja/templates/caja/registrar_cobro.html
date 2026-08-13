@@ -34,38 +34,80 @@
                     {{ form.turno }}
                 </div>
 
-                <!-- ========================= -->
-                <!-- COBERTURA -->
-                <!-- ========================= -->
+              <!-- ========================= -->
+<!-- COBERTURA DEL PACIENTE -->
+<!-- ========================= -->
 
-                <div class="mb-3">
+<div
+    id="contenedor_cobertura"
+    class="card border-primary mb-3 d-none"
+>
+    <div class="card-header bg-light">
+        <strong>
+            <i class="bi bi-shield-check me-1"></i>
+            Cobertura del Paciente
+        </strong>
+    </div>
 
-                    <label class="form-label">
-                        Tipo de Cobertura
-                    </label>
+    <div class="card-body">
 
-                    <select
-                        class="form-select"
-                        id="tipo_cobertura">
+        <div class="row">
 
-                        <option
-                            value="PARTICULAR"
-                            selected>
+            <div class="col-md-4 mb-2">
 
-                            Particular
+                <small class="text-muted">
+                    Paciente
+                </small>
 
-                        </option>
-
-                        <option
-                            value="OBRA_SOCIAL">
-
-                            Obra Social
-
-                        </option>
-
-                    </select>
-
+                <div
+                    id="cobertura_paciente"
+                    class="fw-bold"
+                >
+                    -
                 </div>
+
+            </div>
+
+            <div class="col-md-4 mb-2">
+
+                <small class="text-muted">
+                    Cobertura
+                </small>
+
+                <div
+                    id="cobertura_obra_social"
+                    class="fw-bold"
+                >
+                    -
+                </div>
+
+            </div>
+
+            <div class="col-md-4 mb-2">
+
+                <small class="text-muted">
+                    Plan
+                </small>
+
+                <div
+                    id="cobertura_plan"
+                    class="fw-bold"
+                >
+                    -
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+</div>
+
+<input
+    type="hidden"
+    id="tipo_cobertura"
+    value=""
+>
 
                 <!-- ========================= -->
                 <!-- TIPO -->
@@ -632,6 +674,7 @@
 <script src="{% static 'caja/js/registrar_cobro/mensajes.js' %}"></script>
 
 <script src="{% static 'caja/js/registrar_cobro/validaciones.js' %}"></script>
+<script src="{% static 'caja/js/registrar_cobro/cobertura.js' %}"></script>
 
 <script src="{% static 'caja/js/registrar_cobro/registrar_cobro.js' %}"></script>
 

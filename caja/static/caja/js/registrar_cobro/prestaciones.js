@@ -1,4 +1,3 @@
-
 // ======================================================
 // PRESTACIONES
 // ======================================================
@@ -53,48 +52,142 @@ function inicializarPrestaciones(){
 
     });
 
+
     // =====================================
-// AGREGAR PRESTACIÓN
-// =====================================
+    // AGREGAR PRESTACIÓN
+    // =====================================
 
-btnAgregarPrestacion.addEventListener("click", function(){
+    btnAgregarPrestacion.addEventListener("click", function(){
 
-    if(!selectPrestacion.value){
+        if(!selectPrestacion.value){
 
-        mostrarError(
-            "Debe seleccionar una prestación."
+            mostrarError(
+                "Debe seleccionar una prestación."
+            );
+
+            return;
+        }
+
+
+        // =====================================
+        // OBTENER OPCIÓN SELECCIONADA
+        // =====================================
+
+        const opcionSeleccionada =
+            selectPrestacion.options[
+                selectPrestacion.selectedIndex
+            ];
+
+        const origen =
+            opcionSeleccionada.dataset.origen;
+
+
+        if(!origen){
+
+            mostrarError(
+                "No se pudo determinar el origen de la prestación."
+            );
+
+            return;
+        }
+
+
+        // =====================================
+        // IMPORTE
+        // =====================================
+
+        const importe = parseFloat(
+            inputImporte.value || 0
         );
 
-        return;
+        if(importe < 0){
 
-    }
+            mostrarError(
+                "El importe de la prestación no puede ser negativo."
+            );
 
-    const importe = parseFloat(
-        inputImporte.value || 0
-    );
+            return;
+        }
 
-    if (importe < 0) {
 
-        mostrarError(
-            "El importe de la prestación no puede ser negativo."
+        // =====================================
+        // CONTROLAR PRESTACIÓN REPETIDA
+        // =====================================
+
+        const existente = prestaciones.find(
+            p =>
+                p.id == selectPrestacion.value &&
+                p.origen == origen
         );
 
-        return;
 
-    }
+        if(existente){
 
-    const existente = prestaciones.find(
-        p => p.id == selectPrestacion.value
-    );
+            existente.cantidad++;
 
-    if(existente){
+            mostrarAdvertencia(
+                "La prestación ya estaba agregada. " +
+                "Se incrementó la cantidad."
+            );
 
-        existente.cantidad++;
-        mostrarAdvertencia(
-    "La prestación ya estaba agregada. Se incrementó la cantidad."
-);
+            renderPrestaciones();
+
+            // ===============================
+            // LIMPIAR CONTROLES
+            // ===============================
+
+            selectPrestacion.selectedIndex = 0;
+
+            inputImporte.value = "";
+
+            btnAgregarPrestacion.disabled = true;
+
+            selectPrestacion.focus();
+
+            return;
+        }
+
+
+        // =====================================
+        // DATOS DE LA PRESTACIÓN
+        // =====================================
+
+        const texto =
+            opcionSeleccionada.text;
+
+        const partes =
+            texto.split(" - ");
+
+
+        // =====================================
+        // AGREGAR AL ARRAY
+        // =====================================
+
+        prestaciones.push({
+
+            id: selectPrestacion.value,
+
+            origen: origen,
+
+            codigo: partes[0],
+
+            descripcion:
+                partes.slice(1).join(" - "),
+
+            cantidad: 1,
+
+            importe: importe
+
+        });
+
+
+        mostrarExito(
+            "Prestación agregada correctamente."
+        );
+
 
         renderPrestaciones();
+
 
         // ===============================
         // LIMPIAR CONTROLES
@@ -108,48 +201,8 @@ btnAgregarPrestacion.addEventListener("click", function(){
 
         selectPrestacion.focus();
 
-        return;
-
-    }
-
-    const texto =
-        selectPrestacion.options[
-            selectPrestacion.selectedIndex
-        ].text;
-
-    const partes = texto.split(" - ");
-
-    prestaciones.push({
-
-        id: selectPrestacion.value,
-
-        codigo: partes[0],
-
-        descripcion: partes.slice(1).join(" - "),
-
-        cantidad: 1,
-
-        importe: importe
-
     });
-    mostrarExito(
-    "Prestación agregada correctamente."
-);
-    renderPrestaciones();
 
-    // ===============================
-    // LIMPIAR CONTROLES
-    // ===============================
-
-    selectPrestacion.selectedIndex = 0;
-
-    inputImporte.value = "";
-
-    btnAgregarPrestacion.disabled = true;
-
-    selectPrestacion.focus();
-
-});
 
     // =====================================
     // ELIMINAR
@@ -169,6 +222,7 @@ btnAgregarPrestacion.addEventListener("click", function(){
 
 }
 
+
 // ======================================================
 // RENDER PRESTACIONES
 // ======================================================
@@ -177,29 +231,30 @@ function renderPrestaciones(){
 
     tablaPrestaciones.innerHTML = "";
 
-    
 
     prestaciones.forEach(function(item,index){
-
-      
 
         tablaPrestaciones.innerHTML += `
 
             <tr>
 
-                <td>${item.codigo}</td>
+                <td>
+                    ${item.codigo}
+                </td>
 
-                <td>${item.descripcion}</td>
+                <td>
+                    ${item.descripcion}
+                </td>
 
                 <td class="text-center">
-
                     ${item.cantidad}
-
                 </td>
 
                 <td class="text-end">
 
-                   $ ${formatoMoneda(item.cantidad * item.importe)}
+                    $ ${formatoMoneda(
+                        item.cantidad * item.importe
+                    )}
 
                 </td>
 
@@ -222,10 +277,18 @@ function renderPrestaciones(){
 
     });
 
-    
+
+    // =====================================
+    // ACTUALIZAR JSON
+    // =====================================
 
     detallesJson.value =
         JSON.stringify(prestaciones);
+
+
+    // =====================================
+    // ACTUALIZAR RESUMEN
+    // =====================================
 
     actualizarResumen();
 

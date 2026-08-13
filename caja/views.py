@@ -18,7 +18,7 @@ from .forms import (
 from core.models import CentroMedico, PerfilUsuario
 import json
 from django.http import HttpResponse
-
+from obrasocial.models import PrestacionPlan
 from decimal import Decimal
 
 from .calculos import calcular_detalle
@@ -1283,65 +1283,284 @@ from django.http import JsonResponse
 def ajax_prestaciones(request):
 
     tipo = request.GET.get("tipo")
+    turno_id = request.GET.get("turno_id")
 
-    print("TIPO RECIBIDO:", tipo)
+    if not tipo:
+        return JsonResponse([], safe=False)
 
-    prestaciones = ConceptoFacturacion.objects.filter(
-        activo=True,
-        tipo_concepto=tipo
+    # ==========================================
+    # OBTENER TURNO Y COBERTURA
+    # ==========================================
+
+    if not turno_id:
+        return JsonResponse({
+            "error": "Debe seleccionar un turno."
+        }, status=400)
+
+    try:
+
+        turno = Turnos.objects.select_related(
+            "paciente",
+            "paciente__obrasocial",
+            "paciente__plan_obra_social",
+        ).get(
+            pk=turno_id
+        )
+
+    except Turnos.DoesNotExist:
+
+        return JsonResponse({
+            "error": "El turno seleccionado no existe."
+        }, status=404)
+
+    paciente = turno.paciente
+    obra_social = paciente.obrasocial
+    plan = paciente.plan_obra_social
+
+    data = []
+
+    # ==========================================
+    # PARTICULAR
+    # ==========================================
+
+    if obra_social.es_particular:
+
+        prestaciones = ConceptoFacturacion.objects.filter(
+            activo=True,
+            tipo_concepto=tipo
+        ).select_related(
+            "nomenclador"
+        ).order_by(
+            "nomenclador__descripcion"
+        )
+
+        for p in prestaciones:
+
+            if not p.nomenclador:
+                continue
+
+            data.append({
+                "id": p.id,
+                "origen": "PARTICULAR",
+                "nombre": (
+                    f"{p.nomenclador.codigo} - "
+                    f"{p.nomenclador.descripcion}"
+                )
+            })
+
+        return JsonResponse(data, safe=False)
+
+    # ==========================================
+    # OBRA SOCIAL
+    # ==========================================
+
+    filtros = {
+        "obra_social": obra_social,
+        "estado": "ACTIVA",
+        "tipo_concepto": tipo,
+    }
+
+    # ==========================================
+    # OBRA SOCIAL CON PLANES
+    # ==========================================
+
+    if obra_social.usa_planes:
+
+        if not plan:
+
+            return JsonResponse({
+                "error": (
+                    f"El paciente {paciente} no tiene "
+                    f"un plan asignado para {obra_social.nombre}."
+                )
+            }, status=400)
+
+        if plan.obra_social_id != obra_social.id:
+
+            return JsonResponse({
+                "error": (
+                    "El plan asignado al paciente no pertenece "
+                    "a su obra social."
+                )
+            }, status=400)
+
+        filtros["plan"] = plan
+
+    # ==========================================
+    # OBRA SOCIAL SIN PLANES
+    # ==========================================
+
+    else:
+
+        filtros["plan__isnull"] = True
+
+    prestaciones = PrestacionPlan.objects.filter(
+        **filtros
     ).select_related(
         "nomenclador"
     ).order_by(
         "nomenclador__descripcion"
     )
 
-    print("CANTIDAD:", prestaciones.count())
-
-    data = []
-
     for p in prestaciones:
-
-        print(
-            p.id,
-            p.nomenclador
-        )
-
-        if not p.nomenclador:
-            continue
 
         data.append({
             "id": p.id,
-            "nombre": f"{p.nomenclador.codigo} - {p.nomenclador.descripcion}"
+            "origen": "OBRA_SOCIAL",
+            "nombre": (
+                f"{p.nomenclador.codigo} - "
+                f"{p.nomenclador.descripcion}"
+            )
         })
 
     return JsonResponse(data, safe=False)
+
 @login_required
 def ajax_importe_prestacion(request):
 
-    concepto_id = request.GET.get("concepto_id")
+    prestacion_id = request.GET.get("prestacion_id")
+    origen = request.GET.get("origen")
+    turno_id = request.GET.get("turno_id")
 
-    if not concepto_id:
-        return JsonResponse({"importe": 0})
+    if not prestacion_id or not origen or not turno_id:
+
+        return JsonResponse({
+            "error": "Faltan datos para obtener el importe.",
+            "importe": 0
+        }, status=400)
+
+    # ==========================================
+    # OBTENER TURNO
+    # ==========================================
 
     try:
 
-        concepto = ConceptoFacturacion.objects.get(
-            pk=concepto_id,
-            activo=True
+        turno = Turnos.objects.select_related(
+            "paciente",
+            "paciente__obrasocial",
+            "paciente__plan_obra_social",
+        ).get(
+            pk=turno_id
         )
+
+    except Turnos.DoesNotExist:
+
+        return JsonResponse({
+            "error": "El turno no existe.",
+            "importe": 0
+        }, status=404)
+
+    paciente = turno.paciente
+    obra_social = paciente.obrasocial
+    plan = paciente.plan_obra_social
+
+    # ==========================================
+    # PARTICULAR
+    # ==========================================
+
+    if origen == "PARTICULAR":
+
+        if not obra_social.es_particular:
+
+            return JsonResponse({
+                "error": "El paciente no posee cobertura Particular.",
+                "importe": 0
+            }, status=400)
+
+        try:
+
+            concepto = ConceptoFacturacion.objects.select_related(
+                "nomenclador"
+            ).get(
+                pk=prestacion_id,
+                activo=True
+            )
+
+        except ConceptoFacturacion.DoesNotExist:
+
+            return JsonResponse({
+                "error": "La prestación particular no existe.",
+                "importe": 0
+            }, status=404)
 
         return JsonResponse({
             "importe": float(concepto.importe_particular),
             "codigo": concepto.nomenclador.codigo,
             "descripcion": concepto.nomenclador.descripcion,
+            "origen": "PARTICULAR"
         })
 
-    except ConceptoFacturacion.DoesNotExist:
+    # ==========================================
+    # OBRA SOCIAL
+    # ==========================================
+
+    if origen == "OBRA_SOCIAL":
+
+        filtros = {
+            "pk": prestacion_id,
+            "obra_social": obra_social,
+            "estado": "ACTIVA",
+        }
+
+        if obra_social.usa_planes:
+
+            if not plan:
+
+                return JsonResponse({
+                    "error": "El paciente no tiene un plan asignado.",
+                    "importe": 0
+                }, status=400)
+
+            if plan.obra_social_id != obra_social.id:
+
+                return JsonResponse({
+                    "error": (
+                        "El plan del paciente no pertenece "
+                        "a su obra social."
+                    ),
+                    "importe": 0
+                }, status=400)
+
+            filtros["plan"] = plan
+
+        else:
+
+            filtros["plan__isnull"] = True
+
+        try:
+
+            prestacion = PrestacionPlan.objects.select_related(
+                "nomenclador"
+            ).get(
+                **filtros
+            )
+
+        except PrestacionPlan.DoesNotExist:
+
+            return JsonResponse({
+                "error": (
+                    "La prestación no pertenece al convenio "
+                    "del paciente."
+                ),
+                "importe": 0
+            }, status=404)
 
         return JsonResponse({
-            "importe": 0
+            "importe": float(prestacion.valor),
+            "codigo": prestacion.nomenclador.codigo,
+            "descripcion": prestacion.nomenclador.descripcion,
+            "origen": "OBRA_SOCIAL"
         })
-        
+
+    # ==========================================
+    # ORIGEN INVÁLIDO
+    # ==========================================
+
+    return JsonResponse({
+        "error": "Origen de prestación inválido.",
+        "importe": 0
+    }, status=400)
+
 
 @login_required
 def ajax_cobertura_turno(request):
