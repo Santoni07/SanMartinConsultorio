@@ -1229,6 +1229,32 @@ def detalle_caja(request, caja_id):
         )
         .order_by("medio_pago__nombre")
     )
+    
+    # ======================================================
+    # RESUMEN DE EFECTIVO
+    # ======================================================
+
+    ingresos_efectivo = (
+        DetalleMedioPago.objects.filter(
+            movimiento__caja=caja,
+            movimiento__estado="ACTIVO",
+            movimiento__tipo="INGRESO",
+            medio_pago__nombre__iexact="EFECTIVO",
+        )
+        .aggregate(total=Sum("importe"))["total"] or 0
+    )
+
+    egresos_efectivo = (
+        DetalleMedioPago.objects.filter(
+            movimiento__caja=caja,
+            movimiento__estado="ACTIVO",
+            movimiento__tipo="EGRESO",
+            medio_pago__nombre__iexact="EFECTIVO",
+        )
+        .aggregate(total=Sum("importe"))["total"] or 0
+    )
+
+    saldo_efectivo = ingresos_efectivo - egresos_efectivo
 
     return render(
         request,
@@ -1240,6 +1266,11 @@ def detalle_caja(request, caja_id):
             'total_egresos': total_egresos,
             'resultado': resultado,
             'medios_pago': medios_pago,
+            
+                # Resumen efectivo
+            'ingresos_efectivo': ingresos_efectivo,
+            'egresos_efectivo': egresos_efectivo,
+            'saldo_efectivo': saldo_efectivo,
         }
     )
 
