@@ -511,6 +511,8 @@ class DetalleMovimientoCaja(models.Model):
     concepto_facturacion = models.ForeignKey(
         ConceptoFacturacion,
         on_delete=models.PROTECT,
+        null=True,
+        blank=True,
         verbose_name="Prestación"
     )
     

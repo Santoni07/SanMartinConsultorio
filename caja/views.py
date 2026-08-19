@@ -743,43 +743,139 @@ def registrar_cobro(request):
 
             for item in detalles:
 
-                concepto = ConceptoFacturacion.objects.select_related(
-                    "nomenclador"
-                ).get(
-                    pk=item["id"]
+                origen = item.get("origen")
+
+                cantidad = int(
+                    item.get("cantidad", 1)
                 )
 
-                cantidad = int(item["cantidad"])
-                
-                detalle = DetalleMovimientoCaja(
+                # =================================
+                # PARTICULAR
+                # =================================
 
-                    movimiento=movimiento,
+                if origen == "PARTICULAR":
 
-                    concepto_facturacion=concepto,
+                    concepto = get_object_or_404(
+                        ConceptoFacturacion.objects.select_related(
+                            "nomenclador",
+                            "proveedor",
+                        ),
+                        pk=item["id"],
+                        activo=True
+                    )
 
-                    fecha_prestacion=turno.fecha,
+                    detalle = DetalleMovimientoCaja(
+                        movimiento=movimiento,
+                        concepto_facturacion=concepto,
+                        prestacion_obra_social=None,
+                        fecha_prestacion=turno.fecha,
+                        cantidad=cantidad,
+                        orden=orden,
+                    )
 
-                    cantidad=cantidad,
+                # =================================
+                # OBRA SOCIAL
+                # =================================
 
-                    orden=orden,
+                elif origen == "OBRA_SOCIAL":
 
-                )
+                    prestacion = get_object_or_404(
+                        PrestacionPlan.objects.select_related(
+                            "nomenclador",
+                            "obra_social",
+                            "plan",
+                            "proveedor",
+                        ),
+                        pk=item["id"],
+                        estado="ACTIVA"
+                    )
+
+                    detalle = DetalleMovimientoCaja(
+                        movimiento=movimiento,
+                        concepto_facturacion=None,
+                        prestacion_obra_social=prestacion,
+                        fecha_prestacion=turno.fecha,
+                        cantidad=cantidad,
+                        orden=orden,
+                    )
+
+                # =================================
+                # ORIGEN INCORRECTO
+                # =================================
+
+                else:
+
+                    raise ValueError(
+                        "Origen de prestación inválido."
+                    )
 
                 detalle.save()
 
-                
+                orden += 1
 
                 
 
+                
+
+
+            # =====================================
+            # DESCRIPCIÓN DEL MOVIMIENTO
+            # =====================================
 
             if len(detalles) == 1:
 
-                movimiento.concepto_facturacion = concepto
+                item = detalles[0]
 
-                movimiento.concepto = (
-                    f"{concepto.nomenclador.codigo} - "
-                    f"{concepto.nomenclador.descripcion}"
-                )
+                origen = item.get("origen")
+
+                # =================================
+                # PARTICULAR
+                # =================================
+
+                if origen == "PARTICULAR":
+
+                    concepto = ConceptoFacturacion.objects.select_related(
+                        "nomenclador"
+                    ).get(
+                        pk=item["id"]
+                    )
+
+                    movimiento.concepto_facturacion = concepto
+
+                    movimiento.concepto = (
+                        f"{concepto.nomenclador.codigo} - "
+                        f"{concepto.nomenclador.descripcion}"
+                    )
+
+                # =================================
+                # OBRA SOCIAL
+                # =================================
+
+                elif origen == "OBRA_SOCIAL":
+
+                    prestacion = PrestacionPlan.objects.select_related(
+                        "nomenclador"
+                    ).get(
+                        pk=item["id"]
+                    )
+
+                    # MovimientoCaja sigue teniendo solamente
+                    # concepto_facturacion para Particular.
+                    movimiento.concepto_facturacion = None
+
+                    movimiento.concepto = (
+                        f"{prestacion.nomenclador.codigo} - "
+                        f"{prestacion.nomenclador.descripcion}"
+                    )
+
+                else:
+
+                    movimiento.concepto_facturacion = None
+                    movimiento.concepto = "Cobro de prestación"
+
+            # =====================================
+            # VARIAS PRESTACIONES
+            # =====================================
 
             else:
 
@@ -788,6 +884,7 @@ def registrar_cobro(request):
                 movimiento.concepto = (
                     f"{len(detalles)} prestaciones"
                 )
+
 
             movimiento.save(
                 update_fields=[
