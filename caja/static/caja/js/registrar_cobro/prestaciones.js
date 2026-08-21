@@ -81,6 +81,14 @@ function inicializarPrestaciones(){
         const origen =
             opcionSeleccionada.dataset.origen;
 
+        const tieneCoseguro =
+            opcionSeleccionada.dataset.tieneCoseguro === "1";
+
+        const importeCoseguro =
+            parseFloat(
+                opcionSeleccionada.dataset.importeCoseguro || 0
+            );
+
 
         if(!origen){
 
@@ -176,7 +184,14 @@ function inicializarPrestaciones(){
 
             cantidad: 1,
 
-            importe: importe
+            // Valor TOTAL de la prestación
+            importe: importe,
+
+            // Datos del coseguro
+            tiene_coseguro: tieneCoseguro,
+
+            importe_coseguro:
+                importeCoseguro
 
         });
 

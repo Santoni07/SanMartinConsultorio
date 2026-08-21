@@ -1,232 +1,232 @@
-from django.utils import timezone
-from core.utils import mostrar_exito
+from decimal import Decimal
+import json
+
+from django.contrib import messages
+from django.contrib.auth.decorators import login_required
+from django.db import transaction
+from django.db.models import Sum
 from django.shortcuts import (
     render,
     redirect,
-    get_object_or_404
+    get_object_or_404,
 )
-import json
-
-from decimal import Decimal
+from django.utils import timezone
+from django.db.models import Count, Case, When, F, IntegerField
+from caja.models import (
+    MovimientoCaja,
+    DetalleMovimientoCaja,
+    DetalleMedioPago,
+    MedioPago,
+)
 from caja.views import obtener_caja_abierta
+
+from core.utils import (
+    obtener_centro_activo,
+    mostrar_error,
+    mostrar_exito,
+)
+
+from medicos.models import Medico
 
 from honorarios.models import (
     LiquidacionMedica,
-    PagoLiquidacionMedica
+    DetalleLiquidacionMedica,
+    PagoLiquidacionMedica,
 )
 
 from honorarios.forms import (
     PagoLiquidacionForm,
-    FiltroHistorialLiquidacionesForm
+    FiltroHistorialLiquidacionesForm,
 )
-
-from caja.models import (
-    MovimientoCaja,
-    DetalleMedioPago,
-    MedioPago
-)
-
-from core.utils import (
-    obtener_centro_activo
-)
-from django.contrib import messages
-
-from django.db import transaction
-
-
-from .models import LiquidacionMedica
-
-from core.utils import obtener_centro_activo,mostrar_error
-# Create your views here.
-from django.db.models import Sum
-from medicos.models import Medico
-from caja.models import MovimientoCaja,  DetalleMovimientoCaja
-from django.contrib.auth.decorators import login_required
-
 
 @login_required
 def honorarios_medicos(request):
 
     medico_id = request.GET.get("medico")
+    centro_medico = obtener_centro_activo(request)
 
     medicos = Medico.objects.all().order_by(
         "apellido",
         "nombre"
     )
 
-    detalles = DetalleMovimientoCaja.objects.none()
+    # ==========================================
+    # QUERYSETS VACÍOS
+    # ==========================================
 
-    resumen = {}
+    particulares = DetalleMovimientoCaja.objects.none()
+    coseguros = DetalleMovimientoCaja.objects.none()
+    obras_sociales_pendientes = DetalleMovimientoCaja.objects.none()
+
+    # ==========================================
+    # RESUMEN INICIAL
+    # ==========================================
+
+    resumen = {
+        "total_particulares": Decimal("0.00"),
+        "total_coseguros": Decimal("0.00"),
+        "total_os_pendiente": Decimal("0.00"),
+        "total_honorarios_os_pendiente": Decimal("0.00"),
+        "total_disponible": Decimal("0.00"),
+    }
+
+    # ==========================================
+    # SI SE SELECCIONÓ MÉDICO
+    # ==========================================
 
     if medico_id:
 
-        detalles = DetalleMovimientoCaja.objects.filter(
+        # ==========================================
+        # BASE COMÚN
+        # ==========================================
 
+        base = DetalleMovimientoCaja.objects.filter(
             movimiento__turno__medico_id=medico_id,
-
+            movimiento__centro_medico=centro_medico,
             movimiento__tipo="INGRESO",
-
             movimiento__estado="ACTIVO",
-
             estado="PENDIENTE",
-
-            liquidacion__isnull=True,
-
         ).select_related(
-
             "movimiento",
-
             "movimiento__paciente",
-
             "movimiento__turno",
-
+            "prestacion_obra_social",
+            "prestacion_obra_social__obra_social",
         )
 
-        resumen = detalles.aggregate(
+        # ==========================================
+        # PARTICULARES
+        # ==========================================
 
-            total_bruto=Sum("importe"),
-
-            total_iva=Sum("importe_iva"),
-
-            total_consultorio=Sum("importe_consultorio"),
-
-            total_honorarios=Sum("importe_medico"),
-
+        particulares = base.filter(
+            concepto_facturacion__isnull=False,
+            prestacion_obra_social__isnull=True,
+            liquidacion__isnull=True,
         )
 
-        resumen["total_retenciones"] = 0
+        total_particulares = (
+            particulares.aggregate(
+                total=Sum("importe_medico")
+            )["total"]
+            or Decimal("0.00")
+        )
+
+        # ==========================================
+        # COSEGUROS COBRADOS
+        # PENDIENTES DE LIQUIDAR
+        # ==========================================
+
+        coseguros = base.filter(
+            prestacion_obra_social__isnull=False,
+            coseguro_cobrado=True,
+            coseguro_liquidado=False,
+            importe_coseguro__gt=0,
+        )
+
+        total_coseguros = (
+            coseguros.aggregate(
+                total=Sum("importe_coseguro")
+            )["total"]
+            or Decimal("0.00")
+        )
+
+        # ==========================================
+        # OBRAS SOCIALES PENDIENTES DE COBRO
+        # ==========================================
+
+        obras_sociales_pendientes = base.filter(
+            prestacion_obra_social__isnull=False,
+            obra_social_cobrada=False,
+            honorario_os_liquidado=False,
+        )
+
+        # IMPORTANTE:
+        # Inicializamos los acumuladores ANTES del for.
+
+        total_os_pendiente = Decimal("0.00")
+        total_honorarios_os_pendiente = Decimal("0.00")
+
+        # ==========================================
+        # CALCULAR CADA PRESTACIÓN OS
+        # ==========================================
+
+        for detalle in obras_sociales_pendientes:
+
+            # --------------------------------------
+            # SALDO QUE DEBE PAGAR LA OBRA SOCIAL
+            # --------------------------------------
+
+            saldo_os = (
+                detalle.importe
+                - detalle.importe_coseguro
+            )
+
+            if saldo_os < 0:
+                saldo_os = Decimal("0.00")
+
+            # Atributo temporal para mostrar en HTML
+            detalle.saldo_os_calculado = saldo_os
+
+            total_os_pendiente += saldo_os
+
+            # --------------------------------------
+            # HONORARIO MÉDICO PENDIENTE DE LA OS
+            # --------------------------------------
+
+            honorario_os = (
+                detalle.importe_medico
+                - detalle.importe_coseguro
+            )
+
+            if honorario_os < 0:
+                honorario_os = Decimal("0.00")
+
+            # Atributo temporal para mostrar en HTML
+            detalle.honorario_os_calculado = honorario_os
+
+            total_honorarios_os_pendiente += honorario_os
+
+        # ==========================================
+        # RESUMEN FINAL
+        # ==========================================
+
+        resumen = {
+            "total_particulares":
+                total_particulares,
+
+            "total_coseguros":
+                total_coseguros,
+
+            "total_os_pendiente":
+                total_os_pendiente,
+
+            "total_honorarios_os_pendiente":
+                total_honorarios_os_pendiente,
+
+            "total_disponible":
+                total_particulares + total_coseguros,
+        }
+
+    # ==========================================
+    # RENDER
+    # ==========================================
 
     return render(
-
         request,
-
         "honorarios/honorarios_medicos.html",
-
         {
-
             "medicos": medicos,
-
-            "detalles": detalles,
-
+            "particulares": particulares,
+            "coseguros": coseguros,
+            "obras_sociales_pendientes":
+                obras_sociales_pendientes,
             "resumen": resumen,
-
             "medico_id": medico_id,
-
         },
-
     )
 
-@login_required
-@transaction.atomic
-def generar_liquidacion(request, medico_id):
 
-    centro_medico = obtener_centro_activo(request)
 
-    medico = get_object_or_404(
-        Medico,
-        pk=medico_id
-    )
-
-    detalles = DetalleMovimientoCaja.objects.filter(
-
-        movimiento__turno__medico=medico,
-
-        movimiento__centro_medico=centro_medico,
-
-        movimiento__tipo="INGRESO",
-
-        movimiento__estado="ACTIVO",
-
-        estado="PENDIENTE",
-
-        liquidacion__isnull=True,
-
-    )
-
-    if not detalles.exists():
-
-        messages.warning(
-            request,
-            "No existen prestaciones pendientes para liquidar."
-        )
-
-        return redirect(
-            "honorarios_medicos"
-        )
-
-    resumen = detalles.aggregate(
-
-        total_bruto=Sum(
-            "importe"
-        ),
-
-        total_iva=Sum(
-            "importe_iva"
-        ),
-
-        total_consultorio=Sum(
-            "importe_consultorio"
-        ),
-
-        total_honorarios=Sum(
-            "importe_medico"
-        ),
-
-    )
-
-    liquidacion = LiquidacionMedica.objects.create(
-
-        medico=medico,
-
-        centro_medico=centro_medico,
-
-        cantidad_prestaciones=detalles.count(),
-
-        total_bruto=(
-            resumen["total_bruto"] or 0
-        ),
-
-        total_iva=(
-            resumen["total_iva"] or 0
-        ),
-
-        total_retenciones=0,
-
-        total_consultorio=(
-            resumen["total_consultorio"] or 0
-        ),
-
-        total_honorarios=(
-            resumen["total_honorarios"] or 0
-        ),
-
-        generado_por=request.user,
-
-    )
-
-    detalles.update(
-
-        estado="LIQUIDADO",
-
-        liquidacion=liquidacion,
-
-    )
-
-    messages.success(
-
-        request,
-
-        (
-            f"Liquidación generada correctamente. "
-            f"Total honorarios: "
-            f"${liquidacion.total_honorarios}"
-        ),
-
-    )
-
-    return redirect(
-        "honorarios_medicos"
-    )
     
 @login_required
 def previsualizar_liquidacion(request, medico_id):
@@ -238,386 +238,118 @@ def previsualizar_liquidacion(request, medico_id):
         pk=medico_id
     )
 
-    detalles = DetalleMovimientoCaja.objects.filter(
+    # ==========================================
+    # BASE COMÚN
+    # ==========================================
 
+    base = DetalleMovimientoCaja.objects.filter(
         movimiento__turno__medico=medico,
-
         movimiento__centro_medico=centro_medico,
-
         movimiento__tipo="INGRESO",
-
         movimiento__estado="ACTIVO",
-
         estado="PENDIENTE",
-
-        liquidacion__isnull=True,
-
     ).select_related(
-
         "movimiento",
-
         "movimiento__paciente",
-
+        "movimiento__turno",
+        "concepto_facturacion",
+        "prestacion_obra_social",
+        "prestacion_obra_social__obra_social",
     )
 
-    if not detalles.exists():
-
-        messages.warning(
-            request,
-            "No existen prestaciones pendientes."
-        )
-
-        return redirect(
-            "honorarios_medicos"
-        )
-
-    resumen = detalles.aggregate(
-
-        total_bruto=Sum("importe"),
-
-        total_iva=Sum("importe_iva"),
-
-        total_consultorio=Sum("importe_consultorio"),
-
-        total_honorarios=Sum("importe_medico"),
-
-    )
-
-    resumen["total_retenciones"] = 0
-
-    return render(
-
-        request,
-
-        "honorarios/previsualizar_liquidacion.html",
-
-        {
-
-            "medico": medico,
-
-            "detalles": detalles,
-
-            "resumen": resumen,
-
-        }
-
-    )
-
-
-
-
-from django.utils import timezone
-from core.utils import mostrar_exito
-from django.shortcuts import (
-    render,
-    redirect,
-    get_object_or_404
-)
-import json
-
-from decimal import Decimal
-from caja.views import obtener_caja_abierta
-
-from honorarios.models import (
-    LiquidacionMedica,
-    PagoLiquidacionMedica
-)
-
-from honorarios.forms import (
-    PagoLiquidacionForm
-)
-
-from caja.models import (
-    MovimientoCaja,
-    DetalleMedioPago,
-    MedioPago
-)
-
-from core.utils import (
-    obtener_centro_activo
-)
-from django.contrib import messages
-
-from django.db import transaction
-
-
-from .models import LiquidacionMedica
-
-from core.utils import obtener_centro_activo,mostrar_error
-# Create your views here.
-from django.db.models import Sum
-from medicos.models import Medico
-from caja.models import MovimientoCaja,  DetalleMovimientoCaja
-from django.contrib.auth.decorators import login_required
-
-
-@login_required
-def honorarios_medicos(request):
-
-    medico_id = request.GET.get("medico")
-
-    medicos = Medico.objects.all().order_by(
-        "apellido",
-        "nombre"
-    )
-
-    detalles = DetalleMovimientoCaja.objects.none()
-
-    resumen = {}
-
-    if medico_id:
-
-        detalles = DetalleMovimientoCaja.objects.filter(
-
-            movimiento__turno__medico_id=medico_id,
-
-            movimiento__tipo="INGRESO",
-
-            movimiento__estado="ACTIVO",
-
-            estado="PENDIENTE",
-
-            liquidacion__isnull=True,
-
-        ).select_related(
-
-            "movimiento",
-
-            "movimiento__paciente",
-
-            "movimiento__turno",
-
-        )
-
-        resumen = detalles.aggregate(
-
-            total_bruto=Sum("importe"),
-
-            total_iva=Sum("importe_iva"),
-
-            total_consultorio=Sum("importe_consultorio"),
-
-            total_honorarios=Sum("importe_medico"),
-
-        )
-
-        resumen["total_retenciones"] = 0
-
-    return render(
-
-        request,
-
-        "honorarios/honorarios_medicos.html",
-
-        {
-
-            "medicos": medicos,
-
-            "detalles": detalles,
-
-            "resumen": resumen,
-
-            "medico_id": medico_id,
-
-        },
-
-    )
-
-@login_required
-@transaction.atomic
-def generar_liquidacion(request, medico_id):
-    
-    if request.method != "POST":
-        return redirect("honorarios_medicos")
-
-    centro_medico = obtener_centro_activo(request)
-
-    medico = get_object_or_404(
-        Medico,
-        pk=medico_id
-    )
-
-    detalles = DetalleMovimientoCaja.objects.filter(
-
-        movimiento__turno__medico=medico,
-
-        movimiento__centro_medico=centro_medico,
-
-        movimiento__tipo="INGRESO",
-
-        movimiento__estado="ACTIVO",
-
-        estado="PENDIENTE",
-
+    # ==========================================
+    # PARTICULARES
+    # ==========================================
+
+    particulares = base.filter(
+        concepto_facturacion__isnull=False,
+        prestacion_obra_social__isnull=True,
         liquidacion__isnull=True,
-
     )
 
-    if not detalles.exists():
+    # ==========================================
+    # COSEGUROS COBRADOS
+    # ==========================================
+
+    coseguros = base.filter(
+        prestacion_obra_social__isnull=False,
+        coseguro_cobrado=True,
+        coseguro_liquidado=False,
+        importe_coseguro__gt=0,
+    )
+
+    # ==========================================
+    # TOTAL PARTICULARES
+    # ==========================================
+
+    total_particulares = (
+        particulares.aggregate(
+            total=Sum("importe_medico")
+        )["total"]
+        or Decimal("0.00")
+    )
+
+    # ==========================================
+    # TOTAL COSEGUROS
+    # ==========================================
+
+    total_coseguros = (
+        coseguros.aggregate(
+            total=Sum("importe_coseguro")
+        )["total"]
+        or Decimal("0.00")
+    )
+
+    # ==========================================
+    # TOTAL A LIQUIDAR
+    # ==========================================
+
+    total_honorarios = (
+        total_particulares
+        + total_coseguros
+    )
+
+    # ==========================================
+    # VALIDAR
+    # ==========================================
+
+    if total_honorarios <= 0:
 
         messages.warning(
             request,
-            "No existen prestaciones pendientes para liquidar."
+            "No existen honorarios disponibles para liquidar."
         )
 
         return redirect(
             "honorarios_medicos"
         )
 
-    resumen = detalles.aggregate(
+    # ==========================================
+    # RESUMEN
+    # ==========================================
 
-        total_bruto=Sum(
-            "importe"
-        ),
+    resumen = {
+        "total_particulares": total_particulares,
+        "total_coseguros": total_coseguros,
+        "total_honorarios": total_honorarios,
+        "cantidad_particulares": particulares.count(),
+        "cantidad_coseguros": coseguros.count(),
+    }
 
-        total_iva=Sum(
-            "importe_iva"
-        ),
-
-        total_consultorio=Sum(
-            "importe_consultorio"
-        ),
-
-        total_honorarios=Sum(
-            "importe_medico"
-        ),
-
-    )
-
-    liquidacion = LiquidacionMedica.objects.create(
-
-        medico=medico,
-
-        centro_medico=centro_medico,
-
-        cantidad_prestaciones=detalles.count(),
-
-        total_bruto=(
-            resumen["total_bruto"] or 0
-        ),
-
-        total_iva=(
-            resumen["total_iva"] or 0
-        ),
-
-        total_retenciones=0,
-
-        total_consultorio=(
-            resumen["total_consultorio"] or 0
-        ),
-
-        total_honorarios=(
-            resumen["total_honorarios"] or 0
-        ),
-
-        generado_por=request.user,
-
-    )
-
-    detalles.update(
-
-        estado="LIQUIDADO",
-
-        liquidacion=liquidacion,
-
-    )
-
-    messages.success(
-
-        request,
-
-        (
-            f"Liquidación generada correctamente. "
-            f"Total honorarios: "
-            f"${liquidacion.total_honorarios}"
-        ),
-
-    )
-
-    return redirect(
-        "honorarios_medicos"
-    )
-    
-@login_required
-def previsualizar_liquidacion(request, medico_id):
-
-    centro_medico = obtener_centro_activo(request)
-
-    medico = get_object_or_404(
-        Medico,
-        pk=medico_id
-    )
-
-    detalles = DetalleMovimientoCaja.objects.filter(
-
-        movimiento__turno__medico=medico,
-
-        movimiento__centro_medico=centro_medico,
-
-        movimiento__tipo="INGRESO",
-
-        movimiento__estado="ACTIVO",
-
-        estado="PENDIENTE",
-
-        liquidacion__isnull=True,
-
-    ).select_related(
-
-        "movimiento",
-
-        "movimiento__paciente",
-
-    )
-
-    if not detalles.exists():
-
-        messages.warning(
-            request,
-            "No existen prestaciones pendientes."
-        )
-
-        return redirect(
-            "honorarios_medicos"
-        )
-
-    resumen = detalles.aggregate(
-
-        total_bruto=Sum("importe"),
-
-        total_iva=Sum("importe_iva"),
-
-        total_consultorio=Sum("importe_consultorio"),
-
-        total_honorarios=Sum("importe_medico"),
-
-    )
-
-    resumen["total_retenciones"] = 0
+    # ==========================================
+    # RENDER
+    # ==========================================
 
     return render(
-
         request,
-
         "honorarios/previsualizar_liquidacion.html",
-
         {
-
             "medico": medico,
-
-            "detalles": detalles,
-
+            "particulares": particulares,
+            "coseguros": coseguros,
             "resumen": resumen,
-
         }
-
     )
-
-
-
-
-
-
 @login_required
 @transaction.atomic
 def registrar_pago_liquidacion(
@@ -884,7 +616,255 @@ def registrar_pago_liquidacion(
 
 
 
+@login_required
+@transaction.atomic
+def generar_liquidacion(request, medico_id):
 
+    # ==========================================
+    # SOLO POST
+    # ==========================================
+
+    if request.method != "POST":
+        return redirect(
+            "previsualizar_liquidacion",
+            medico_id=medico_id
+        )
+
+    # ==========================================
+    # CENTRO Y MÉDICO
+    # ==========================================
+
+    centro_medico = obtener_centro_activo(request)
+
+    medico = get_object_or_404(
+        Medico,
+        pk=medico_id
+    )
+
+    # ==========================================
+    # BASE COMÚN
+    # ==========================================
+
+    base = DetalleMovimientoCaja.objects.filter(
+        movimiento__turno__medico=medico,
+        movimiento__centro_medico=centro_medico,
+        movimiento__tipo="INGRESO",
+        movimiento__estado="ACTIVO",
+        estado="PENDIENTE",
+    ).select_related(
+        "movimiento",
+        "movimiento__paciente",
+        "movimiento__turno",
+        "concepto_facturacion",
+        "prestacion_obra_social",
+        "prestacion_obra_social__obra_social",
+    )
+
+    # ==========================================
+    # PARTICULARES PENDIENTES
+    # ==========================================
+
+    particulares = list(
+        base.filter(
+            concepto_facturacion__isnull=False,
+            prestacion_obra_social__isnull=True,
+            liquidacion__isnull=True,
+        )
+    )
+
+    # ==========================================
+    # COSEGUROS COBRADOS PENDIENTES
+    # ==========================================
+
+    coseguros = list(
+        base.filter(
+            prestacion_obra_social__isnull=False,
+            coseguro_cobrado=True,
+            coseguro_liquidado=False,
+            importe_coseguro__gt=0,
+        )
+    )
+
+    # ==========================================
+    # VALIDAR QUE HAYA ALGO PARA LIQUIDAR
+    # ==========================================
+
+    if not particulares and not coseguros:
+
+        messages.warning(
+            request,
+            "No existen honorarios disponibles para liquidar."
+        )
+
+        return redirect(
+            "honorarios_medicos"
+        )
+
+    # ==========================================
+    # TOTALES
+    # ==========================================
+
+    total_particulares = sum(
+        (
+            detalle.importe_medico
+            for detalle in particulares
+        ),
+        Decimal("0.00")
+    )
+
+    total_coseguros = sum(
+        (
+            detalle.importe_coseguro
+            for detalle in coseguros
+        ),
+        Decimal("0.00")
+    )
+
+    total_honorarios = (
+        total_particulares
+        + total_coseguros
+    )
+
+    # ==========================================
+    # DATOS FINANCIEROS DE PARTICULARES
+    # ==========================================
+    #
+    # Los valores de OS no entran todavía
+    # porque la Obra Social no fue cobrada.
+    #
+    # El coseguro solamente forma parte del
+    # honorario que estamos pagando ahora.
+    # ==========================================
+
+    total_bruto = sum(
+        (
+            detalle.importe
+            for detalle in particulares
+        ),
+        Decimal("0.00")
+    )
+
+    total_iva = sum(
+        (
+            detalle.importe_iva
+            for detalle in particulares
+        ),
+        Decimal("0.00")
+    )
+
+    total_consultorio = sum(
+        (
+            detalle.importe_consultorio
+            for detalle in particulares
+        ),
+        Decimal("0.00")
+    )
+
+    total_retenciones = Decimal("0.00")
+
+    # ==========================================
+    # CREAR LIQUIDACIÓN
+    # ==========================================
+
+    liquidacion = LiquidacionMedica.objects.create(
+        medico=medico,
+        centro_medico=centro_medico,
+
+        total_bruto=total_bruto,
+        total_iva=total_iva,
+        total_consultorio=total_consultorio,
+
+        total_honorarios=total_honorarios,
+        total_retenciones=total_retenciones,
+
+        estado="PENDIENTE",
+        generado_por=request.user,
+        creado_por=request.user,
+    )
+
+    # ==========================================
+    # CREAR ITEMS PARTICULARES
+    # ==========================================
+
+    for detalle in particulares:
+
+        DetalleLiquidacionMedica.objects.create(
+            liquidacion=liquidacion,
+            detalle_movimiento=detalle,
+            tipo="PARTICULAR",
+            importe=detalle.importe_medico,
+        )
+
+        # --------------------------------------
+        # PARTICULAR QUEDA TOTALMENTE LIQUIDADO
+        # --------------------------------------
+
+        detalle.liquidacion = liquidacion
+        detalle.estado = "LIQUIDADO"
+
+        detalle.save(
+            update_fields=[
+                "liquidacion",
+                "estado",
+            ]
+        )
+
+    # ==========================================
+    # CREAR ITEMS COSEGUROS
+    # ==========================================
+
+    for detalle in coseguros:
+
+        DetalleLiquidacionMedica.objects.create(
+            liquidacion=liquidacion,
+            detalle_movimiento=detalle,
+            tipo="COSEGURO",
+            importe=detalle.importe_coseguro,
+        )
+
+        # --------------------------------------
+        # SOLO LIQUIDAMOS EL COSEGURO
+        # --------------------------------------
+        #
+        # NO cambiamos:
+        #
+        # detalle.estado
+        # detalle.liquidacion
+        # detalle.obra_social_cobrada
+        # detalle.honorario_os_liquidado
+        #
+        # La prestación OS debe continuar
+        # pendiente hasta que la OS pague.
+        # --------------------------------------
+
+        detalle.coseguro_liquidado = True
+
+        detalle.save(
+            update_fields=[
+                "coseguro_liquidado",
+            ]
+        )
+
+    # ==========================================
+    # MENSAJE
+    # ==========================================
+
+    messages.success(
+        request,
+        (
+            f"Liquidación #{liquidacion.id} generada correctamente. "
+            f"Total: ${total_honorarios:,.2f}"
+        )
+    )
+
+    # ==========================================
+    # IR AL DETALLE
+    # ==========================================
+
+    return redirect(
+    "detalle_liquidacion_medica",
+    liquidacion_id=liquidacion.id
+)
 
 @login_required
 def liquidaciones_pendientes(request):
@@ -1172,22 +1152,39 @@ def registrar_pago_liquidacion(
     )
 
 
-
-
-
 @login_required
 def historial_liquidaciones_medicas(request):
 
     liquidaciones = (
-        LiquidacionMedica.objects
-        .select_related(
-            "medico",
-            "centro_medico",
-            "generado_por",
-            "pagado_por",
-        )
-        .order_by("-fecha")
+    LiquidacionMedica.objects
+    .select_related(
+        "medico",
+        "centro_medico",
+        "generado_por",
+        "pagado_por",
     )
+    .annotate(
+        cantidad_items_nuevos=Count(
+            "items",
+            distinct=True
+        ),
+        cantidad_detalles_anteriores=Count(
+            "detalles",
+            distinct=True
+        ),
+    )
+    .annotate(
+        cantidad_conceptos=Case(
+            When(
+                cantidad_items_nuevos__gt=0,
+                then=F("cantidad_items_nuevos")
+            ),
+            default=F("cantidad_detalles_anteriores"),
+            output_field=IntegerField(),
+        )
+    )
+    .order_by("-fecha")
+)
 
     form = FiltroHistorialLiquidacionesForm(
         request.GET or None
@@ -1246,42 +1243,131 @@ def historial_liquidaciones_medicas(request):
             )
 
     return render(
-
         request,
-
         "honorarios/historial_liquidaciones.html",
-
         {
-
             "form": form,
-
             "liquidaciones": liquidaciones,
-
         },
-
     )
-    
+
+
 @login_required
 def detalle_liquidacion_medica(
     request,
     liquidacion_id
 ):
 
+    # ==========================================
+    # LIQUIDACIÓN
+    # ==========================================
+
     liquidacion = get_object_or_404(
         LiquidacionMedica,
         pk=liquidacion_id
     )
 
-    detalles = (
-        liquidacion.detalles
+    # ==========================================
+    # ITEMS NUEVOS
+    # ==========================================
+    #
+    # Sistema actual:
+    #
+    # DetalleLiquidacionMedica
+    #   - PARTICULAR
+    #   - COSEGURO
+    #   - OBRA SOCIAL (futuro)
+    #
+    # ==========================================
+
+    items_nuevos = list(
+        DetalleLiquidacionMedica.objects
+        .filter(
+            liquidacion=liquidacion
+        )
         .select_related(
-            "movimiento",
-            "movimiento__paciente"
+            "detalle_movimiento",
+            "detalle_movimiento__movimiento",
+            "detalle_movimiento__movimiento__paciente",
+            "detalle_movimiento__prestacion_obra_social",
+            "detalle_movimiento__prestacion_obra_social__obra_social",
+            "detalle_movimiento__concepto_facturacion",
         )
         .order_by(
-            "fecha_prestacion"
+            "detalle_movimiento__fecha_prestacion",
+            "id"
         )
     )
+
+    # ==========================================
+    # DETERMINAR SISTEMA
+    # ==========================================
+
+    usa_sistema_nuevo = bool(items_nuevos)
+
+    # ==========================================
+    # SISTEMA NUEVO
+    # ==========================================
+
+    if usa_sistema_nuevo:
+
+        items = items_nuevos
+
+        total_particulares = sum(
+            (
+                item.importe
+                for item in items
+                if item.tipo == "PARTICULAR"
+            ),
+            Decimal("0.00")
+        )
+
+        total_coseguros = sum(
+            (
+                item.importe
+                for item in items
+                if item.tipo == "COSEGURO"
+            ),
+            Decimal("0.00")
+        )
+
+        cantidad_conceptos = len(items)
+
+    # ==========================================
+    # SISTEMA HISTÓRICO
+    # ==========================================
+
+    else:
+
+        items = list(
+            liquidacion.detalles
+            .select_related(
+                "movimiento",
+                "movimiento__paciente",
+                "concepto_facturacion",
+                "prestacion_obra_social",
+            )
+            .order_by(
+                "fecha_prestacion",
+                "id"
+            )
+        )
+
+        # En las liquidaciones históricas no
+        # necesitamos reconstruir PARTICULAR /
+        # COSEGURO.
+        #
+        # Conservamos los totales originales
+        # de la liquidación.
+
+        total_particulares = Decimal("0.00")
+        total_coseguros = Decimal("0.00")
+
+        cantidad_conceptos = len(items)
+
+    # ==========================================
+    # PAGOS
+    # ==========================================
 
     pagos = (
         PagoLiquidacionMedica.objects
@@ -1299,12 +1385,23 @@ def detalle_liquidacion_medica(
         .order_by("-fecha")
     )
 
+    # ==========================================
+    # CONTEXTO
+    # ==========================================
+
     return render(
         request,
         "honorarios/detalle_liquidacion_medica.html",
         {
             "liquidacion": liquidacion,
-            "detalles": detalles,
+
+            "items": items,
             "pagos": pagos,
+
+            "usa_sistema_nuevo": usa_sistema_nuevo,
+            "cantidad_conceptos": cantidad_conceptos,
+
+            "total_particulares": total_particulares,
+            "total_coseguros": total_coseguros,
         },
     )

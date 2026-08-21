@@ -449,35 +449,60 @@ def registrar_cobro(request):
 
     centro_medico = obtener_centro_activo(request)
 
+    # =====================================
+    # VALIDACIONES DE CAJA
+    # =====================================
+
     if not validar_permiso_caja(request):
+
         messages.error(
             request,
             'No tiene permisos para acceder a la caja de esta sede.'
         )
-        return redirect('turnos:ver_disponibilidad')
+
+        return redirect(
+            'turnos:ver_disponibilidad'
+        )
 
     if not centro_medico:
+
         messages.error(
             request,
             'No hay una sede activa seleccionada.'
         )
-        return redirect('caja_home')
 
-    caja = obtener_caja_abierta(centro_medico)
-        # =====================================
+        return redirect(
+            'caja_home'
+        )
+
+    caja = obtener_caja_abierta(
+        centro_medico
+    )
+
+    # =====================================
     # MEDIOS DE PAGO
     # =====================================
 
     medios_pago = MedioPago.objects.filter(
         activo=True
-    ).order_by("nombre")
+    ).order_by(
+        "nombre"
+    )
 
     if not caja:
+
         messages.error(
             request,
             'Primero debe abrir la caja de esta sede.'
         )
-        return redirect('abrir_caja')
+
+        return redirect(
+            'abrir_caja'
+        )
+
+    # =====================================
+    # POST
+    # =====================================
 
     if request.method == 'POST':
 
@@ -485,26 +510,31 @@ def registrar_cobro(request):
             request.POST,
             centro_medico=centro_medico
         )
+
         print("=" * 80)
-        print("FORM ES VÁLIDO:", form.is_valid())
+        print(
+            "FORM ES VÁLIDO:",
+            form.is_valid()
+        )
+
         if not form.is_valid():
-                print(form.errors)
+            print(form.errors)
 
         if form.is_valid():
-            
-            
-            
-            
 
             print("=" * 80)
 
-            turno = form.cleaned_data["turno"]
+            turno = form.cleaned_data[
+                "turno"
+            ]
 
             # =====================================
             # LEER DETALLES
             # =====================================
 
-            detalles_json = request.POST.get("detalles_json")
+            detalles_json = request.POST.get(
+                "detalles_json"
+            )
 
             if not detalles_json:
 
@@ -520,13 +550,15 @@ def registrar_cobro(request):
                         "form": form,
                         "caja": caja,
                         "centro_medico": centro_medico,
-                         "medios_pago": medios_pago,
+                        "medios_pago": medios_pago,
                     },
                 )
 
             try:
 
-                detalles = json.loads(detalles_json)
+                detalles = json.loads(
+                    detalles_json
+                )
 
             except json.JSONDecodeError:
 
@@ -563,24 +595,137 @@ def registrar_cobro(request):
                         "medios_pago": medios_pago,
                     },
                 )
-                
-            
-            total_prestaciones = Decimal("0")
+
+            # =====================================
+            # CALCULAR VALOR DE PRESTACIONES
+            # Y MONTO A COBRAR AL PACIENTE
+            # =====================================
+
+            total_prestaciones = Decimal(
+                "0.00"
+            )
+
+            total_a_cobrar_paciente = Decimal(
+                "0.00"
+            )
 
             for detalle in detalles:
 
-                cantidad = Decimal(str(detalle.get("cantidad", 1)))
-                importe = Decimal(str(detalle.get("importe", 0)))
+                cantidad = Decimal(
+                    str(
+                        detalle.get(
+                            "cantidad",
+                            1
+                        )
+                    )
+                )
 
-                total_prestaciones += cantidad * importe
-            
-            #=====================================
+                importe = Decimal(
+                    str(
+                        detalle.get(
+                            "importe",
+                            0
+                        )
+                    )
+                )
+
+                subtotal = (
+                    cantidad * importe
+                )
+
+                # Valor económico de la prestación
+                total_prestaciones += subtotal
+
+                origen = detalle.get(
+                    "origen"
+                )
+
+                # =================================
+                # PARTICULAR
+                # =================================
+
+                if origen == "PARTICULAR":
+
+                    # Particular lo paga
+                    # completamente el paciente.
+
+                    total_a_cobrar_paciente += (
+                        subtotal
+                    )
+
+                # =================================
+                # OBRA SOCIAL
+                # =================================
+
+                elif origen == "OBRA_SOCIAL":
+
+                    # =================================
+                    # OBTENER PRESTACIÓN DEL CONVENIO
+                    # =================================
+
+                    prestacion = (
+                        PrestacionPlan.objects
+                        .filter(
+                            pk=detalle.get("id"),
+                            estado="ACTIVA",
+                        )
+                        .first()
+                    )
+
+                    if not prestacion:
+
+                        raise ValueError(
+                            "La prestación de Obra Social no existe "
+                            "o no se encuentra activa."
+                        )
+
+                    # =================================
+                    # COSEGURO
+                    # =================================
+                    #
+                    # El valor de convenio NO lo paga
+                    # el paciente.
+                    #
+                    # Si la prestación posee coseguro,
+                    # el paciente paga únicamente ese
+                    # importe.
+                    # =================================
+
+                    if prestacion.tiene_coseguro:
+
+                        coseguro = Decimal(
+                            str(
+                                prestacion.importe_coseguro
+                                or 0
+                            )
+                        )
+
+                        total_a_cobrar_paciente += (
+                            cantidad * coseguro
+                        )
+
+                else:
+
+                    raise ValueError(
+                        "Origen de prestación inválido."
+                    )
+
+            # =====================================
             # LEER MEDIOS DE PAGO
-            #=====================================
+            # =====================================
 
-            medios_pago_json = request.POST.get("medios_pago_json")
+            medios_pago_json = request.POST.get(
+                "medios_pago_json"
+            )
 
-            if total_prestaciones > Decimal("0"):
+            # Solamente exigimos medios de pago
+            # cuando realmente el paciente
+            # tiene algo que pagar.
+
+            if (
+                total_a_cobrar_paciente
+                > Decimal("0.00")
+            ):
 
                 if not medios_pago_json:
 
@@ -601,7 +746,10 @@ def registrar_cobro(request):
                     )
 
                 try:
-                    medios_pago_data = json.loads(medios_pago_json)
+
+                    medios_pago_data = json.loads(
+                        medios_pago_json
+                    )
 
                 except json.JSONDecodeError:
 
@@ -622,99 +770,100 @@ def registrar_cobro(request):
                     )
 
             else:
+
+                # Obra Social sin coseguro:
+                # no existe dinero recibido
+                # del paciente.
+
                 medios_pago_data = []
-                
+
             # =====================================
-            # VALIDAR TOTALES DE COBRO
+            # VALIDAR TOTAL REAL COBRADO
             # =====================================
 
-            total_prestaciones = Decimal("0")
-
-            for detalle in detalles:
-
-                cantidad = Decimal(
-                    str(detalle.get("cantidad", 1))
-                )
-
-                importe = Decimal(
-                    str(detalle.get("importe", 0))
-                )
-
-                total_prestaciones += (
-                    cantidad * importe
-                )
-
-            total_medios = Decimal("0")
+            total_medios = Decimal(
+                "0.00"
+            )
 
             for medio in medios_pago_data:
 
                 total_medios += Decimal(
-                    str(medio.get("importe", 0))
+                    str(
+                        medio.get(
+                            "importe",
+                            0
+                        )
+                    )
                 )
 
-            if abs(total_prestaciones - total_medios) > Decimal("0.01"):
+            if abs(
+                total_a_cobrar_paciente
+                - total_medios
+            ) > Decimal("0.01"):
 
                 diferencia = (
-                    total_prestaciones -
-                    total_medios
+                    total_a_cobrar_paciente
+                    - total_medios
                 )
 
                 if diferencia > 0:
 
                     messages.error(
-
                         request,
-
                         f"El cobro no puede registrarse. "
-                        f"Faltan cobrar ${diferencia:.2f}."
-
+                        f"Faltan cobrar "
+                        f"${diferencia:.2f}."
                     )
 
                 else:
 
                     messages.error(
-
                         request,
-
                         f"El cobro no puede registrarse. "
-                        f"Existe un excedente de ${abs(diferencia):.2f}."
-
+                        f"Existe un excedente de "
+                        f"${abs(diferencia):.2f}."
                     )
 
                 return render(
-
                     request,
-
                     "caja/registrar_cobro.html",
-
                     {
                         "form": form,
                         "caja": caja,
                         "centro_medico": centro_medico,
                         "medios_pago": medios_pago,
                     },
-
                 )
-            
+
             # =====================================
             # CREAR MOVIMIENTO
             # =====================================
 
-            movimiento = form.save(commit=False)
+            movimiento = form.save(
+                commit=False
+            )
 
             movimiento.caja = caja
-            movimiento.centro_medico = centro_medico
+            movimiento.centro_medico = (
+                centro_medico
+            )
             movimiento.turno = turno
-            movimiento.paciente = turno.paciente
+            movimiento.paciente = (
+                turno.paciente
+            )
             movimiento.tipo = "INGRESO"
-            movimiento.creado_por = request.user
+            movimiento.creado_por = (
+                request.user
+            )
             movimiento.estado = "ACTIVO"
 
-            # Temporalmente dejamos estos valores.
-            # Después los reemplazaremos por los
-            # totales calculados.
+            # Los importes se calculan
+            # posteriormente desde los detalles.
 
-            movimiento.concepto = "Cobro de prestaciones"
+            movimiento.concepto = (
+                "Cobro de prestaciones"
+            )
+
             movimiento.importe = 0
             movimiento.importe_bruto = 0
             movimiento.importe_iva = 0
@@ -723,30 +872,24 @@ def registrar_cobro(request):
             movimiento.importe_consultorio = 0
 
             movimiento.save()
-            
-            # =====================================
-            # TOTALES DEL MOVIMIENTO
-            # =====================================
 
-            total_importe = Decimal("0")
-            total_bruto = Decimal("0")
-            total_iva = Decimal("0")
-            total_neto = Decimal("0")
-            total_medico = Decimal("0")
-            total_consultorio = Decimal("0")
+            # =====================================
+            # RECORRER PRESTACIONES
+            # =====================================
 
             orden = 1
 
-            # =====================================
-            # RECORRER DETALLES
-            # =====================================
-
             for item in detalles:
 
-                origen = item.get("origen")
+                origen = item.get(
+                    "origen"
+                )
 
                 cantidad = int(
-                    item.get("cantidad", 1)
+                    item.get(
+                        "cantidad",
+                        1
+                    )
                 )
 
                 # =================================
@@ -790,6 +933,22 @@ def registrar_cobro(request):
                         estado="ACTIVA"
                     )
 
+                    # =================================
+                    # COSEGURO COBRADO AL PACIENTE
+                    # =================================
+                    #
+                    # Si la prestación posee coseguro,
+                    # registrar_cobro ya validó que ese
+                    # importe fue efectivamente pagado
+                    # mediante los medios de pago.
+                    #
+
+                    coseguro_cobrado = (
+                        prestacion.tiene_coseguro
+                        and prestacion.importe_coseguro
+                        and prestacion.importe_coseguro > Decimal("0.00")
+                    )
+
                     detalle = DetalleMovimientoCaja(
                         movimiento=movimiento,
                         concepto_facturacion=None,
@@ -797,8 +956,16 @@ def registrar_cobro(request):
                         fecha_prestacion=turno.fecha,
                         cantidad=cantidad,
                         orden=orden,
-                    )
 
+                        # Control de honorarios
+                        coseguro_cobrado=bool(coseguro_cobrado),
+                        coseguro_liquidado=False,
+
+                        # La OS todavía NO pagó
+                        obra_social_cobrada=False,
+                        fecha_cobro_obra_social=None,
+                        honorario_os_liquidado=False,
+                    )
                 # =================================
                 # ORIGEN INCORRECTO
                 # =================================
@@ -809,14 +976,13 @@ def registrar_cobro(request):
                         "Origen de prestación inválido."
                     )
 
+                # El modelo DetalleMovimientoCaja
+                # calcula sus importes económicos
+                # al guardarse.
+
                 detalle.save()
 
                 orden += 1
-
-                
-
-                
-
 
             # =====================================
             # DESCRIPCIÓN DEL MOVIMIENTO
@@ -826,7 +992,9 @@ def registrar_cobro(request):
 
                 item = detalles[0]
 
-                origen = item.get("origen")
+                origen = item.get(
+                    "origen"
+                )
 
                 # =================================
                 # PARTICULAR
@@ -834,13 +1002,19 @@ def registrar_cobro(request):
 
                 if origen == "PARTICULAR":
 
-                    concepto = ConceptoFacturacion.objects.select_related(
-                        "nomenclador"
-                    ).get(
-                        pk=item["id"]
+                    concepto = (
+                        ConceptoFacturacion.objects
+                        .select_related(
+                            "nomenclador"
+                        )
+                        .get(
+                            pk=item["id"]
+                        )
                     )
 
-                    movimiento.concepto_facturacion = concepto
+                    movimiento.concepto_facturacion = (
+                        concepto
+                    )
 
                     movimiento.concepto = (
                         f"{concepto.nomenclador.codigo} - "
@@ -853,15 +1027,19 @@ def registrar_cobro(request):
 
                 elif origen == "OBRA_SOCIAL":
 
-                    prestacion = PrestacionPlan.objects.select_related(
-                        "nomenclador"
-                    ).get(
-                        pk=item["id"]
+                    prestacion = (
+                        PrestacionPlan.objects
+                        .select_related(
+                            "nomenclador"
+                        )
+                        .get(
+                            pk=item["id"]
+                        )
                     )
 
-                    # MovimientoCaja sigue teniendo solamente
-                    # concepto_facturacion para Particular.
-                    movimiento.concepto_facturacion = None
+                    movimiento.concepto_facturacion = (
+                        None
+                    )
 
                     movimiento.concepto = (
                         f"{prestacion.nomenclador.codigo} - "
@@ -870,8 +1048,13 @@ def registrar_cobro(request):
 
                 else:
 
-                    movimiento.concepto_facturacion = None
-                    movimiento.concepto = "Cobro de prestación"
+                    movimiento.concepto_facturacion = (
+                        None
+                    )
+
+                    movimiento.concepto = (
+                        "Cobro de prestación"
+                    )
 
             # =====================================
             # VARIAS PRESTACIONES
@@ -879,12 +1062,13 @@ def registrar_cobro(request):
 
             else:
 
-                movimiento.concepto_facturacion = None
+                movimiento.concepto_facturacion = (
+                    None
+                )
 
                 movimiento.concepto = (
                     f"{len(detalles)} prestaciones"
                 )
-
 
             movimiento.save(
                 update_fields=[
@@ -892,6 +1076,18 @@ def registrar_cobro(request):
                     "concepto_facturacion",
                 ]
             )
+
+            # =====================================
+            # MEDIOS DE PAGO
+            # =====================================
+
+            # PARTICULAR:
+            # se crean normalmente.
+            #
+            # OBRA SOCIAL SIN COSEGURO:
+            # medios_pago_data está vacío,
+            # por lo que no crea ninguno.
+
             for item in medios_pago_data:
 
                 medio = MedioPago.objects.get(
@@ -901,44 +1097,72 @@ def registrar_cobro(request):
                 DetalleMedioPago.objects.create(
                     movimiento=movimiento,
                     medio_pago=medio,
-                    importe=Decimal(str(item["importe"]))
+                    importe=Decimal(
+                        str(
+                            item["importe"]
+                        )
+                    )
                 )
-           
-            
+
+            # =====================================
+            # MENSAJE FINAL
+            # =====================================
+
+            detalles_mensaje = [
+
+                f"Paciente: "
+                f"{movimiento.paciente}",
+
+                f"Prestaciones: "
+                f"{len(detalles)}",
+
+                f"Valor prestaciones: "
+                f"${movimiento.importe}",
+
+            ]
+
+            if (
+                total_a_cobrar_paciente
+                > Decimal("0.00")
+            ):
+
+                detalles_mensaje.append(
+                    f"Cobrado al paciente: "
+                    f"${total_a_cobrar_paciente}"
+                )
+
+            else:
+
+                detalles_mensaje.append(
+                    "Cobrado al paciente: $0.00 "
+                    "(Obra Social)"
+                )
+
             mostrar_exito(
+                request,
+                titulo="Cobro registrado",
+                mensaje=(
+                    "La prestación fue registrada "
+                    "correctamente."
+                ),
+                icono="bi-cash-coin",
+                detalles=detalles_mensaje,
+            )
 
-            request,
+            return redirect(
+                "caja_home"
+            )
 
-            titulo="Cobro registrado",
+    # =====================================
+    # GET
+    # =====================================
 
-            mensaje="El cobro fue registrado correctamente.",
-
-            icono="bi-cash-coin",
-
-            detalles=[
-
-                f"Paciente: {movimiento.paciente}",
-
-                f"Prestaciones: {len(detalles)}",
-
-                f"Importe: ${movimiento.importe}",
-
-            ],
-
-        )
-
-        return redirect("caja_home")
-
-            
-                        
-            
     else:
 
         form = CobroConsultaForm(
             centro_medico=centro_medico
         )
 
- 
     return render(
         request,
         'caja/registrar_cobro.html',
@@ -946,9 +1170,11 @@ def registrar_cobro(request):
             'form': form,
             'caja': caja,
             'centro_medico': centro_medico,
-            "medios_pago": medios_pago,
+            'medios_pago': medios_pago,
         }
     )
+
+
 
 @login_required
 @transaction.atomic
@@ -1581,10 +1807,23 @@ def ajax_importe_prestacion(request):
             }, status=404)
 
         return JsonResponse({
-            "importe": float(concepto.importe_particular),
-            "codigo": concepto.nomenclador.codigo,
-            "descripcion": concepto.nomenclador.descripcion,
-            "origen": "PARTICULAR"
+
+            "importe": float(
+                concepto.importe_particular
+            ),
+
+            # Particular no utiliza coseguro
+            "tiene_coseguro": False,
+            "importe_coseguro": 0,
+
+            "codigo":
+                concepto.nomenclador.codigo,
+
+            "descripcion":
+                concepto.nomenclador.descripcion,
+
+            "origen":
+                "PARTICULAR"
         })
 
     # ==========================================
@@ -1599,12 +1838,17 @@ def ajax_importe_prestacion(request):
             "estado": "ACTIVA",
         }
 
+        # ======================================
+        # OBRA SOCIAL CON PLAN
+        # ======================================
+
         if obra_social.usa_planes:
 
             if not plan:
 
                 return JsonResponse({
-                    "error": "El paciente no tiene un plan asignado.",
+                    "error":
+                        "El paciente no tiene un plan asignado.",
                     "importe": 0
                 }, status=400)
 
@@ -1620,16 +1864,24 @@ def ajax_importe_prestacion(request):
 
             filtros["plan"] = plan
 
+        # ======================================
+        # OBRA SOCIAL SIN PLAN
+        # ======================================
+
         else:
 
             filtros["plan__isnull"] = True
 
         try:
 
-            prestacion = PrestacionPlan.objects.select_related(
-                "nomenclador"
-            ).get(
-                **filtros
+            prestacion = (
+                PrestacionPlan.objects
+                .select_related(
+                    "nomenclador"
+                )
+                .get(
+                    **filtros
+                )
             )
 
         except PrestacionPlan.DoesNotExist:
@@ -1642,11 +1894,45 @@ def ajax_importe_prestacion(request):
                 "importe": 0
             }, status=404)
 
+        # ======================================
+        # COSEGURO
+        # ======================================
+
+        importe_coseguro = 0
+
+        if prestacion.tiene_coseguro:
+
+            importe_coseguro = (
+                prestacion.importe_coseguro
+            )
+
+        # ======================================
+        # RESPUESTA
+        # ======================================
+
         return JsonResponse({
-            "importe": float(prestacion.valor),
-            "codigo": prestacion.nomenclador.codigo,
-            "descripcion": prestacion.nomenclador.descripcion,
-            "origen": "OBRA_SOCIAL"
+
+            # Valor TOTAL de la prestación
+            "importe": float(
+                prestacion.valor
+            ),
+
+            # Datos del coseguro
+            "tiene_coseguro":
+                prestacion.tiene_coseguro,
+
+            "importe_coseguro": float(
+                importe_coseguro
+            ),
+
+            "codigo":
+                prestacion.nomenclador.codigo,
+
+            "descripcion":
+                prestacion.nomenclador.descripcion,
+
+            "origen":
+                "OBRA_SOCIAL"
         })
 
     # ==========================================
@@ -1657,6 +1943,7 @@ def ajax_importe_prestacion(request):
         "error": "Origen de prestación inválido.",
         "importe": 0
     }, status=400)
+
 
 
 @login_required

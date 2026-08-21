@@ -4,14 +4,182 @@
 
 function actualizarResumen(){
 
+    // =====================================
+    // VALOR TOTAL DE LAS PRESTACIONES
+    // =====================================
+
     const totalPrestacionesCalculado =
         obtenerTotalPrestaciones();
+
+
+    // =====================================
+    // TOTAL A COBRAR AL PACIENTE
+    // =====================================
+    //
+    // PARTICULAR:
+    // paga el valor completo.
+    //
+    // OBRA SOCIAL SIN COSEGURO:
+    // paga $0.
+    //
+    // OBRA SOCIAL CON COSEGURO:
+    // paga solamente el coseguro.
+    // =====================================
+
+    let totalACobrarPaciente = 0;
+
+    let totalCoseguros = 0;
+
+    let hayObraSocial = false;
+
+    let hayParticular = false;
+
+
+    prestaciones.forEach(function(item){
+
+        const cantidad =
+            parseFloat(
+                item.cantidad || 0
+            );
+
+        const importe =
+            parseFloat(
+                item.importe || 0
+            );
+
+        const subtotal =
+            cantidad * importe;
+
+
+        // =================================
+        // PARTICULAR
+        // =================================
+
+        if(item.origen === "PARTICULAR"){
+
+            hayParticular = true;
+
+            totalACobrarPaciente +=
+                subtotal;
+
+        }
+
+
+        // =================================
+        // OBRA SOCIAL
+        // =================================
+
+        else if(item.origen === "OBRA_SOCIAL"){
+
+            hayObraSocial = true;
+
+            const tieneCoseguro =
+                item.tiene_coseguro === true ||
+                item.tiene_coseguro === "true" ||
+                item.tiene_coseguro === 1 ||
+                item.tiene_coseguro === "1";
+
+
+            const importeCoseguro =
+                parseFloat(
+                    item.importe_coseguro || 0
+                );
+
+
+            if(tieneCoseguro){
+
+                const subtotalCoseguro =
+                    cantidad *
+                    importeCoseguro;
+
+                totalCoseguros +=
+                    subtotalCoseguro;
+
+                totalACobrarPaciente +=
+                    subtotalCoseguro;
+
+            }
+
+        }
+
+    });
+
+
+    // =====================================
+    // TOTAL A CARGO DE OBRA SOCIAL
+    // =====================================
+
+    const totalObraSocial =
+        prestaciones.reduce(
+            function(total, item){
+
+                if(
+                    item.origen !==
+                    "OBRA_SOCIAL"
+                ){
+                    return total;
+                }
+
+                const cantidad =
+                    parseFloat(
+                        item.cantidad || 0
+                    );
+
+                const importe =
+                    parseFloat(
+                        item.importe || 0
+                    );
+
+                const coseguro =
+                    parseFloat(
+                        item.importe_coseguro || 0
+                    );
+
+                const tieneCoseguro =
+                    item.tiene_coseguro === true ||
+                    item.tiene_coseguro === "true" ||
+                    item.tiene_coseguro === 1 ||
+                    item.tiene_coseguro === "1";
+
+
+                const subtotal =
+                    cantidad *
+                    importe;
+
+
+                const subtotalCoseguro =
+                    tieneCoseguro
+                        ? cantidad * coseguro
+                        : 0;
+
+
+                return (
+                    total +
+                    subtotal -
+                    subtotalCoseguro
+                );
+
+            },
+            0
+        );
+
+
+    // =====================================
+    // TOTAL MEDIOS DE PAGO
+    // =====================================
 
     const totalMediosCalculado =
         obtenerTotalMediosPago();
 
+
+    // =====================================
+    // SALDO QUE DEBE PAGAR EL PACIENTE
+    // =====================================
+
     const saldoPendiente =
-        obtenerSaldoPendiente();
+        totalACobrarPaciente -
+        totalMediosCalculado;
+
 
     // =====================================
     // TOTAL PRESTACIONES
@@ -21,9 +189,12 @@ function actualizarResumen(){
 
         totalPrestaciones.innerHTML =
             "$ " +
-            formatoMoneda(totalPrestacionesCalculado);
+            formatoMoneda(
+                totalPrestacionesCalculado
+            );
 
     }
+
 
     const resumenPrestaciones =
         document.getElementById(
@@ -34,9 +205,12 @@ function actualizarResumen(){
 
         resumenPrestaciones.innerHTML =
             "$ " +
-            formatoMoneda(totalPrestacionesCalculado);
+            formatoMoneda(
+                totalPrestacionesCalculado
+            );
 
     }
+
 
     // =====================================
     // TOTAL MEDIOS DE PAGO
@@ -46,9 +220,12 @@ function actualizarResumen(){
 
         totalMediosPago.innerHTML =
             "$ " +
-            formatoMoneda(totalMediosCalculado);
+            formatoMoneda(
+                totalMediosCalculado
+            );
 
     }
+
 
     const resumenMedios =
         document.getElementById(
@@ -59,9 +236,12 @@ function actualizarResumen(){
 
         resumenMedios.innerHTML =
             "$ " +
-            formatoMoneda(totalMediosCalculado);
+            formatoMoneda(
+                totalMediosCalculado
+            );
 
     }
+
 
     // =====================================
     // SALDO PENDIENTE
@@ -76,16 +256,25 @@ function actualizarResumen(){
 
         saldo.innerHTML =
             "$ " +
-            formatoMoneda(saldoPendiente);
+            formatoMoneda(
+                saldoPendiente
+            );
 
-        if(saldoPendiente === 0){
+
+        if(
+            Math.abs(
+                saldoPendiente
+            ) < 0.01
+        ){
 
             saldo.className =
                 "text-success";
 
         }
 
-        else if(saldoPendiente > 0){
+        else if(
+            saldoPendiente > 0
+        ){
 
             saldo.className =
                 "text-warning";
@@ -101,6 +290,7 @@ function actualizarResumen(){
 
     }
 
+
     // =====================================
     // ESTADO DEL PAGO
     // =====================================
@@ -110,9 +300,16 @@ function actualizarResumen(){
             "estado_pago"
         );
 
+
     if(estado){
 
-        if(totalPrestacionesCalculado === 0){
+        // ---------------------------------
+        // SIN PRESTACIONES
+        // ---------------------------------
+
+        if(
+            prestaciones.length === 0
+        ){
 
             estado.className =
                 "text-secondary fw-bold";
@@ -122,26 +319,106 @@ function actualizarResumen(){
 
         }
 
-        else if(saldoPendiente === 0){
+
+        // ---------------------------------
+        // OBRA SOCIAL SIN COSEGURO
+        // ---------------------------------
+
+        else if(
+            hayObraSocial &&
+            !hayParticular &&
+            totalCoseguros === 0 &&
+            totalMediosCalculado === 0
+        ){
+
+            estado.className =
+                "text-primary fw-bold";
+
+            estado.innerHTML =
+                "✔ Prestación a cargo de la Obra Social";
+
+        }
+
+
+        // ---------------------------------
+        // COSEGURO PENDIENTE
+        // ---------------------------------
+
+        else if(
+            hayObraSocial &&
+            totalCoseguros > 0 &&
+            saldoPendiente > 0
+        ){
+
+            estado.className =
+                "text-warning fw-bold";
+
+            estado.innerHTML =
+                "⚠ Coseguro a cobrar al paciente: $ " +
+                formatoMoneda(
+                    saldoPendiente
+                );
+
+        }
+
+
+        // ---------------------------------
+        // PAGO COMPLETO
+        // ---------------------------------
+
+        else if(
+            Math.abs(
+                saldoPendiente
+            ) < 0.01
+        ){
 
             estado.className =
                 "text-success fw-bold";
 
-            estado.innerHTML =
-                "✔ Pago Completo";
+
+            if(
+                hayObraSocial &&
+                totalCoseguros > 0
+            ){
+
+                estado.innerHTML =
+                    "✔ Coseguro abonado completamente";
+
+            }
+
+            else{
+
+                estado.innerHTML =
+                    "✔ Pago Completo";
+
+            }
 
         }
 
-        else if(saldoPendiente > 0){
+
+        // ---------------------------------
+        // FALTA COBRAR
+        // ---------------------------------
+
+        else if(
+            saldoPendiente > 0
+        ){
 
             estado.className =
                 "text-warning fw-bold";
 
             estado.innerHTML =
                 "⚠ Faltan cobrar $ " +
-                formatoMoneda(saldoPendiente);
+                formatoMoneda(
+                    saldoPendiente
+                );
 
         }
+
+
+        // ---------------------------------
+        // EXCESO
+        // ---------------------------------
 
         else{
 
@@ -151,12 +428,15 @@ function actualizarResumen(){
             estado.innerHTML =
                 "✖ Exceso de $ " +
                 formatoMoneda(
-                    Math.abs(saldoPendiente)
+                    Math.abs(
+                        saldoPendiente
+                    )
                 );
 
         }
 
     }
+
 
     // =====================================
     // BOTÓN GUARDAR
@@ -167,17 +447,50 @@ function actualizarResumen(){
             "btn_guardar_cobro"
         );
 
-    if (btnGuardar) {
+
+    if(btnGuardar){
 
         const hayPrestaciones =
             prestaciones.length > 0;
 
+
+        const pagoCorrecto =
+            Math.abs(
+                saldoPendiente
+            ) < 0.01;
+
+
         btnGuardar.disabled =
             (
                 !hayPrestaciones ||
-                saldoPendiente !== 0
+                !pagoCorrecto
             );
 
     }
+
+
+    // =====================================
+    // DEBUG TEMPORAL
+    // =====================================
+
+    console.log(
+        "Total prestaciones:",
+        totalPrestacionesCalculado
+    );
+
+    console.log(
+        "A cargo OS:",
+        totalObraSocial
+    );
+
+    console.log(
+        "Coseguros:",
+        totalCoseguros
+    );
+
+    console.log(
+        "A cobrar paciente:",
+        totalACobrarPaciente
+    );
 
 }

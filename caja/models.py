@@ -218,6 +218,7 @@ class ConceptoFacturacion(models.Model):
         )  
 
 class MovimientoCaja(models.Model):
+
     TIPOS = [
         ('INGRESO', 'Ingreso'),
         ('EGRESO', 'Egreso'),
@@ -227,6 +228,32 @@ class MovimientoCaja(models.Model):
         ('ACTIVO', 'Activo'),
         ('ANULADO', 'Anulado'),
     ]
+
+    # ==================================================
+    # DEPILACIÓN
+    # ==================================================
+
+    TIPOS_EGRESO_DEPILACION = [
+        ('OPERADORA', 'Operadora'),
+        ('ALQUILER', 'Alquiler de máquina'),
+    ]
+
+    es_depilacion = models.BooleanField(
+        default=False,
+        verbose_name="Corresponde a Depilación"
+    )
+
+    tipo_egreso_depilacion = models.CharField(
+        max_length=20,
+        choices=TIPOS_EGRESO_DEPILACION,
+        blank=True,
+        null=True,
+        verbose_name="Tipo de egreso de depilación"
+    )
+
+    # ==================================================
+    # CAJA / CENTRO
+    # ==================================================
 
     caja = models.ForeignKey(
         CajaDiaria,
@@ -239,12 +266,18 @@ class MovimientoCaja(models.Model):
         on_delete=models.PROTECT,
         related_name='movimientos_caja'
     )
+
+    # ==================================================
+    # CONCEPTO / TURNO / PACIENTE
+    # ==================================================
+
     concepto_facturacion = models.ForeignKey(
         ConceptoFacturacion,
         on_delete=models.PROTECT,
         null=True,
         blank=True
     )
+
     turno = models.ForeignKey(
         Turnos,
         on_delete=models.SET_NULL,
@@ -261,13 +294,15 @@ class MovimientoCaja(models.Model):
         related_name='movimientos_caja'
     )
 
+    # ==================================================
+    # MOVIMIENTO
+    # ==================================================
+
     tipo = models.CharField(
         max_length=20,
         choices=TIPOS,
         default='INGRESO'
     )
-
-  
 
     importe = models.DecimalField(
         max_digits=12,
@@ -279,7 +314,10 @@ class MovimientoCaja(models.Model):
         default='Consulta médica'
     )
 
-    observacion = models.TextField(blank=True, null=True)
+    observacion = models.TextField(
+        blank=True,
+        null=True
+    )
 
     estado = models.CharField(
         max_length=20,
@@ -287,13 +325,19 @@ class MovimientoCaja(models.Model):
         default='ACTIVO'
     )
 
+    # ==================================================
+    # USUARIO / FECHAS
+    # ==================================================
+
     creado_por = models.ForeignKey(
         User,
         on_delete=models.PROTECT,
         related_name='movimientos_caja_creados'
     )
 
-    fecha_creacion = models.DateTimeField(auto_now_add=True)
+    fecha_creacion = models.DateTimeField(
+        auto_now_add=True
+    )
 
     anulado_por = models.ForeignKey(
         User,
@@ -302,9 +346,24 @@ class MovimientoCaja(models.Model):
         blank=True,
         related_name='movimientos_caja_anulados'
     )
+
+    fecha_anulacion = models.DateTimeField(
+        null=True,
+        blank=True
+    )
+
+    motivo_anulacion = models.TextField(
+        blank=True,
+        null=True
+    )
+
+    # ==================================================
+    # LIQUIDACIÓN
+    # ==================================================
+
     liquidado = models.BooleanField(
-    default=False
-)
+        default=False
+    )
 
     liquidacion = models.ForeignKey(
         LiquidacionMedica,
@@ -312,8 +371,10 @@ class MovimientoCaja(models.Model):
         null=True,
         blank=True
     )
-    fecha_anulacion = models.DateTimeField(null=True, blank=True)
-    motivo_anulacion = models.TextField(blank=True, null=True)
+
+    # ==================================================
+    # IMPORTES
+    # ==================================================
 
     importe_bruto = models.DecimalField(
         max_digits=12,
@@ -332,11 +393,13 @@ class MovimientoCaja(models.Model):
         decimal_places=2,
         default=0
     )
+
     retencion_motivo = models.CharField(
-    max_length=255,
-    blank=True,
-    null=True
-)
+        max_length=255,
+        blank=True,
+        null=True
+    )
+
     importe_neto = models.DecimalField(
         max_digits=12,
         decimal_places=2,
@@ -354,15 +417,25 @@ class MovimientoCaja(models.Model):
         decimal_places=2,
         default=0
     )
-        
-    
+
+    # ==================================================
+    # META
+    # ==================================================
+
     class Meta:
         verbose_name = 'Movimiento de caja'
         verbose_name_plural = 'Movimientos de caja'
         ordering = ['-fecha_creacion']
 
     def __str__(self):
-        return f'{self.fecha_creacion:%d/%m/%Y %H:%M} - {self.tipo} - ${self.importe}'
+        return (
+            f'{self.fecha_creacion:%d/%m/%Y %H:%M} - '
+            f'{self.tipo} - ${self.importe}'
+        )
+
+    # ==================================================
+    # ANULAR MOVIMIENTO
+    # ==================================================
 
     def anular(self, usuario, motivo=""):
 
@@ -387,13 +460,20 @@ class MovimientoCaja(models.Model):
             self.turno.save(
                 update_fields=["estado"]
             )
-        
+
+    # ==================================================
+    # RECALCULAR TOTALES
+    # ==================================================
+
     def recalcular_totales(self):
         """
-        Recalcula todos los importes del movimiento a partir de sus detalles.
+        Recalcula todos los importes del movimiento
+        a partir de sus detalles.
         """
 
-        detalles = self.detalles.exclude(estado="ANULADO")
+        detalles = self.detalles.exclude(
+            estado="ANULADO"
+        )
 
         self.importe_bruto = sum(
             (detalle.importe for detalle in detalles),
@@ -416,11 +496,15 @@ class MovimientoCaja(models.Model):
         )
 
         self.importe_consultorio = sum(
-            (detalle.importe_consultorio for detalle in detalles),
+            (
+                detalle.importe_consultorio
+                for detalle in detalles
+            ),
             Decimal("0.00")
         )
 
         # El importe total del movimiento será el bruto
+
         self.importe = self.importe_bruto
 
         self.save(
@@ -433,9 +517,6 @@ class MovimientoCaja(models.Model):
                 "importe_consultorio",
             ]
         )
-        
-    
-
 
 class HistorialMovimientoCaja(models.Model):
     ACCIONES = [
@@ -618,7 +699,52 @@ class DetalleMovimientoCaja(models.Model):
         verbose_name="Importe Proveedor"
         
     )
+    # ==========================================
+    # COSEGURO
+    # ==========================================
 
+    tiene_coseguro = models.BooleanField(
+        default=False,
+        verbose_name="Tiene coseguro"
+    )
+
+    importe_coseguro = models.DecimalField(
+        max_digits=12,
+        decimal_places=2,
+        default=0,
+        verbose_name="Importe coseguro"
+    )
+
+    # ==========================================
+    # CONTROL COSEGURO / OBRA SOCIAL
+    # ==========================================
+
+    coseguro_cobrado = models.BooleanField(
+        default=False,
+        verbose_name="Coseguro cobrado"
+    )
+
+    coseguro_liquidado = models.BooleanField(
+        default=False,
+        verbose_name="Coseguro liquidado"
+    )
+
+    obra_social_cobrada = models.BooleanField(
+        default=False,
+        verbose_name="Obra social cobrada"
+    )
+
+    fecha_cobro_obra_social = models.DateField(
+        null=True,
+        blank=True,
+        verbose_name="Fecha de cobro obra social"
+    )
+
+    honorario_os_liquidado = models.BooleanField(
+        default=False,
+        verbose_name="Honorario de obra social liquidado"
+    )
+    
     # ==========================================
     # IMPORTES CALCULADOS
     # ==========================================
@@ -752,6 +878,8 @@ class DetalleMovimientoCaja(models.Model):
             self.nombre_proveedor = ""
 
         self.importe_proveedor = concepto.importe_proveedor
+        
+        
 
         # ===============================
         # Importe Particular
@@ -887,6 +1015,25 @@ class DetalleMovimientoCaja(models.Model):
             self.nombre_proveedor = ""
 
         self.importe_proveedor = prestacion.importe_proveedor
+        
+        # ===============================
+        # Coseguro
+        # ===============================
+
+        self.tiene_coseguro = (
+            prestacion.tiene_coseguro
+        )
+
+        if prestacion.tiene_coseguro:
+
+            self.importe_coseguro = (
+                Decimal(self.cantidad) *
+                prestacion.importe_coseguro
+            )
+
+        else:
+
+            self.importe_coseguro = Decimal("0.00")
 
         # ===============================
         # Importe Obra Social
@@ -914,12 +1061,22 @@ class DetalleMovimientoCaja(models.Model):
 
         if self._state.adding:
 
+            # ==========================================
             # PARTICULAR
+            # ==========================================
+
             if self.concepto_facturacion:
 
                 self.copiar_desde_concepto(
                     self.concepto_facturacion
                 )
+
+                # ===============================
+                # Coseguro
+                # ===============================
+
+                self.tiene_coseguro = False
+                self.importe_coseguro = Decimal("0.00")
 
             # OBRA SOCIAL
             elif self.prestacion_obra_social:

@@ -348,6 +348,8 @@ class PrestacionPlanForm(forms.ModelForm):
 
         fields = [
             "valor",
+            "tiene_coseguro",
+            "importe_coseguro",
             "porcentaje_iva",
             "tipo_calculo",
             "porcentaje_medico",
@@ -362,6 +364,16 @@ class PrestacionPlanForm(forms.ModelForm):
         widgets = {
 
             "valor": forms.NumberInput(attrs={
+                "class": "form-control",
+                "step": "0.01",
+                "min": "0",
+            }),
+            
+            "tiene_coseguro": forms.CheckboxInput(attrs={
+                "class": "form-check-input",
+            }),
+
+            "importe_coseguro": forms.NumberInput(attrs={
                 "class": "form-control",
                 "step": "0.01",
                 "min": "0",
@@ -416,6 +428,8 @@ class PrestacionPlanForm(forms.ModelForm):
 
         labels = {
             "valor": "Valor Convenio",
+            "tiene_coseguro": "Tiene coseguro",
+            "importe_coseguro": "Importe del coseguro",
             "porcentaje_iva": "IVA (%)",
             "tipo_calculo": "Tipo de cálculo",
             "porcentaje_medico": "Porcentaje Médico",
@@ -426,3 +440,60 @@ class PrestacionPlanForm(forms.ModelForm):
             "importe_proveedor": "Importe proveedor",
             "estado": "Estado",
         }
+        
+    def clean(self):
+
+        cleaned_data = super().clean()
+
+        tiene_coseguro = cleaned_data.get(
+            "tiene_coseguro"
+        )
+
+        importe_coseguro = cleaned_data.get(
+            "importe_coseguro"
+        )
+
+        valor = cleaned_data.get(
+            "valor"
+        )
+
+        # ==========================================
+        # SIN COSEGURO
+        # ==========================================
+
+        if not tiene_coseguro:
+
+            cleaned_data["importe_coseguro"] = 0
+
+            return cleaned_data
+
+        # ==========================================
+        # CON COSEGURO
+        # ==========================================
+
+        if (
+            importe_coseguro is None or
+            importe_coseguro <= 0
+        ):
+
+            self.add_error(
+                "importe_coseguro",
+                "Debe ingresar un importe de coseguro mayor a $0."
+            )
+
+        # ==========================================
+        # NO PUEDE SUPERAR VALOR CONVENIO
+        # ==========================================
+
+        if (
+            valor is not None and
+            importe_coseguro is not None and
+            importe_coseguro > valor
+        ):
+
+            self.add_error(
+                "importe_coseguro",
+                "El coseguro no puede superar el valor de la prestación."
+            )
+
+        return cleaned_data

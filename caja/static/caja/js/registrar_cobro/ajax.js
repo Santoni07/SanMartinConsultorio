@@ -240,10 +240,54 @@ function inicializarImporteAjax(){
 
         .then(data => {
 
-            importe.value =
-                parseFloat(data.importe || 0).toFixed(2);
+        // ==========================================
+        // VALOR TOTAL DE LA PRESTACIÓN
+        // ==========================================
 
-        })
+        importe.value =
+            parseFloat(
+                data.importe || 0
+            ).toFixed(2);
+
+
+        // ==========================================
+        // GUARDAR DATOS EN LA OPCIÓN SELECCIONADA
+        // ==========================================
+
+        const opcionSeleccionada =
+            prestacion.options[
+                prestacion.selectedIndex
+            ];
+
+
+        opcionSeleccionada.dataset.tieneCoseguro =
+            data.tiene_coseguro
+                ? "1"
+                : "0";
+
+
+        opcionSeleccionada.dataset.importeCoseguro =
+            parseFloat(
+                data.importe_coseguro || 0
+            ).toFixed(2);
+
+
+        // ==========================================
+        // DEBUG TEMPORAL
+        // ==========================================
+
+        console.log(
+            "Prestación:",
+            data.codigo,
+            "Valor:",
+            data.importe,
+            "Tiene coseguro:",
+            data.tiene_coseguro,
+            "Coseguro:",
+            data.importe_coseguro
+        );
+
+    })
 
         .catch(error => {
 

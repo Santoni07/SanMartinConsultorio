@@ -2,197 +2,781 @@
 
 {% block content %}
 
-<div class="container mt-4">
+<div class="container mt-4 mb-5">
 
-<div class="card shadow-sm">
+    <!-- ================================================== -->
+    <!-- ENCABEZADO / SELECCIÓN MÉDICO -->
+    <!-- ================================================== -->
 
-    <div class="card-header bg-dark text-white">
-        <h4 class="mb-0">
-            Honorarios Médicos
-        </h4>
-    </div>
+    <div class="card shadow-sm">
 
-    <div class="card-body">
+        <div class="card-header bg-dark text-white">
+            <h4 class="mb-0">
+                Honorarios Médicos
+            </h4>
+        </div>
 
-        <form method="get">
+        <div class="card-body">
 
-            <div class="row">
+            <form method="get">
 
-                <div class="col-md-6">
+                <div class="row">
 
-                    <label class="form-label">
-                        Médico
-                    </label>
+                    <div class="col-md-6">
 
-                    <select
-                        name="medico"
-                        class="form-select"
-                        onchange="this.form.submit()"
-                    >
+                        <label class="form-label fw-bold">
+                            Médico
+                        </label>
 
-                        <option value="">
-                            Seleccionar médico
-                        </option>
+                        <select
+                            name="medico"
+                            class="form-select"
+                            onchange="this.form.submit()"
+                        >
 
-                        {% for medico in medicos %}
-
-                            <option
-                                value="{{ medico.id }}"
-                                {% if medico.id|stringformat:"s" == medico_id %}
-                                    selected
-                                {% endif %}
-                            >
-                                {{ medico.apellido }}, {{ medico.nombre }}
+                            <option value="">
+                                Seleccionar médico
                             </option>
 
-                        {% endfor %}
+                            {% for medico in medicos %}
 
-                    </select>
+                                <option
+                                    value="{{ medico.id }}"
+                                    {% if medico.id|stringformat:"s" == medico_id %}
+                                        selected
+                                    {% endif %}
+                                >
+                                    {{ medico.apellido }}, {{ medico.nombre }}
+                                </option>
+
+                            {% endfor %}
+
+                        </select>
+
+                    </div>
+
+                </div>
+
+            </form>
+
+        </div>
+
+    </div>
+
+
+    {% if medico_id %}
+
+    <!-- ================================================== -->
+    <!-- RESUMEN DISPONIBLE -->
+    <!-- ================================================== -->
+
+    <div class="row mt-4 g-3">
+
+        <!-- PARTICULARES -->
+
+        <div class="col-md-4">
+
+            <div class="card shadow-sm h-100">
+
+                <div class="card-body">
+
+                    <div class="text-muted">
+                        Particulares pendientes
+                    </div>
+
+                    <h3 class="mt-2 mb-1">
+                        $ {{ resumen.total_particulares|floatformat:2 }}
+                    </h3>
+
+                    <span class="badge bg-primary">
+                        Disponible para liquidar
+                    </span>
 
                 </div>
 
             </div>
 
-        </form>
-
-    </div>
-
-</div>
-
-{% if detalles %}
-
-<div class="card mt-4 shadow-sm">
-
-    <div class="card-header">
-        Prestaciones Pendientes de Liquidar
-    </div>
-
-    <div class="card-body">
-
-        <div class="table-responsive">
-
-            <table class="table table-striped">
-
-                <thead>
-
-                    <tr>
-                        <th>Fecha</th>
-                        <th>Paciente</th>
-                        <th>Código</th>
-                        <th>Prestación</th>
-                        <th class="text-end">
-                            Honorario
-                        </th>
-                    </tr>
-
-                </thead>
-
-                <tbody>
-
-                    {% for detalle in detalles %}
-
-                    <tr>
-
-                        <td>
-                            {{ detalle.fecha_prestacion|date:"d/m/Y" }}
-                        </td>
-
-                        <td>
-                            {{ detalle.movimiento.paciente }}
-                        </td>
-
-                        <td>
-                            {{ detalle.codigo }}
-                        </td>
-
-                        <td>
-                            {{ detalle.descripcion }}
-                        </td>
-
-                        <td class="text-end">
-                            $ {{ detalle.importe_medico }}
-                        </td>
-
-                    </tr>
-
-                    {% endfor %}
-
-                </tbody>
-
-            </table>
-
         </div>
 
-    </div>
 
-</div>
+        <!-- COSEGUROS -->
 
-<div class="card mt-4 shadow-sm">
+        <div class="col-md-4">
 
-    <div class="card-header">
-        Resumen
-    </div>
+            <div class="card shadow-sm h-100 border-success">
 
-    <div class="card-body">
+                <div class="card-body">
 
-        <div class="row">
+                    <div class="text-muted">
+                        Coseguros cobrados
+                    </div>
 
-            <div class="col-md-4">
+                    <h3 class="mt-2 mb-1 text-success">
+                        $ {{ resumen.total_coseguros|floatformat:2 }}
+                    </h3>
 
-                <p>
-                    <strong>Facturación Bruta:</strong><br>
-                    $ {{ resumen.total_bruto|default:0 }}
-                </p>
+                    <span class="badge bg-success">
+                        ✓ Cobrado al paciente
+                    </span>
 
-                <p>
-                    <strong>IVA:</strong><br>
-                    $ {{ resumen.total_iva|default:0 }}
-                </p>
-
-            </div>
-
-            <div class="col-md-4">
-
-                <p>
-                    <strong>Retenciones:</strong><br>
-                    $ {{ resumen.total_retenciones|default:0 }}
-                </p>
-
-                <p>
-                    <strong>Consultorio:</strong><br>
-                    $ {{ resumen.total_consultorio|default:0 }}
-                </p>
-
-            </div>
-
-            <div class="col-md-4">
-
-                <h4 class="text-success">
-                    Honorarios Médico
-                </h4>
-
-                <h2>
-                    $ {{ resumen.total_honorarios|default:0 }}
-                </h2>
+                </div>
 
             </div>
 
         </div>
 
-        <hr>
 
-        <a
-            href="{% url 'previsualizar_liquidacion' medico_id %}"
-            class="btn btn-success"
-        >
-            Preparar Liquidación
-        </a>
+        <!-- TOTAL DISPONIBLE -->
+
+        <div class="col-md-4">
+
+            <div class="card shadow-sm h-100 border-success">
+
+                <div class="card-body">
+
+                    <div class="fw-bold text-success">
+                        Total disponible ahora
+                    </div>
+
+                    <h2 class="mt-2 mb-1 text-success">
+                        $ {{ resumen.total_disponible|floatformat:2 }}
+                    </h2>
+
+                    <small class="text-muted">
+                        Particular + Coseguros
+                    </small>
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <!-- ================================================== -->
+    <!-- PARTICULARES -->
+    <!-- ================================================== -->
+
+    <div class="card mt-4 shadow-sm">
+
+        <div class="card-header">
+
+            <div class="d-flex justify-content-between align-items-center">
+
+                <strong>
+                    Particulares pendientes de liquidar
+                </strong>
+
+                <span class="badge bg-primary">
+                    {{ particulares|length }}
+                </span>
+
+            </div>
+
+        </div>
+
+        <div class="card-body p-0">
+
+            {% if particulares %}
+
+                <div class="table-responsive">
+
+                    <table class="table table-striped table-hover mb-0">
+
+                        <thead class="table-light">
+
+                            <tr>
+                                <th>Fecha</th>
+                                <th>Paciente</th>
+                                <th>Código</th>
+                                <th>Prestación</th>
+
+                                <th class="text-end">
+                                    Honorario
+                                </th>
+                            </tr>
+
+                        </thead>
+
+                        <tbody>
+
+                            {% for detalle in particulares %}
+
+                                <tr>
+
+                                    <td>
+                                        {{ detalle.fecha_prestacion|date:"d/m/Y" }}
+                                    </td>
+
+                                    <td>
+                                        {{ detalle.movimiento.paciente }}
+                                    </td>
+
+                                    <td>
+                                        {{ detalle.codigo }}
+                                    </td>
+
+                                    <td>
+                                        {{ detalle.descripcion }}
+                                    </td>
+
+                                    <td class="text-end fw-bold">
+                                        $ {{ detalle.importe_medico|floatformat:2 }}
+                                    </td>
+
+                                </tr>
+
+                            {% endfor %}
+
+                        </tbody>
+
+                    </table>
+
+                </div>
+
+            {% else %}
+
+                <div class="text-center text-muted p-4">
+                    No existen prestaciones particulares pendientes.
+                </div>
+
+            {% endif %}
+
+        </div>
+
+    </div>
+
+
+    <!-- ================================================== -->
+    <!-- COSEGUROS COBRADOS -->
+    <!-- ================================================== -->
+
+    <div class="card mt-4 shadow-sm border-success">
+
+        <div class="card-header bg-success text-white">
+
+            <div class="d-flex justify-content-between align-items-center">
+
+                <strong>
+                    Coseguros cobrados pendientes de liquidar
+                </strong>
+
+                <span class="badge bg-light text-success">
+                    {{ coseguros|length }}
+                </span>
+
+            </div>
+
+        </div>
+
+        <div class="card-body p-0">
+
+            {% if coseguros %}
+
+                <div class="table-responsive">
+
+                    <table class="table table-striped table-hover mb-0">
+
+                        <thead class="table-light">
+
+                            <tr>
+
+                                <th>Fecha</th>
+                                <th>Paciente</th>
+                                <th>Obra Social</th>
+                                <th>Prestación</th>
+
+                                <th class="text-end">
+                                    Coseguro
+                                </th>
+
+                                <th>
+                                    Estado
+                                </th>
+
+                            </tr>
+
+                        </thead>
+
+                        <tbody>
+
+                            {% for detalle in coseguros %}
+
+                                <tr>
+
+                                    <td>
+                                        {{ detalle.fecha_prestacion|date:"d/m/Y" }}
+                                    </td>
+
+                                    <td>
+                                        {{ detalle.movimiento.paciente }}
+                                    </td>
+
+                                    <td>
+                                        {{ detalle.prestacion_obra_social.obra_social }}
+                                    </td>
+
+                                    <td>
+
+                                        {{ detalle.descripcion }}
+
+                                        <div>
+                                            <small class="text-muted">
+                                                Código {{ detalle.codigo }}
+                                            </small>
+                                        </div>
+
+                                    </td>
+
+                                    <td class="text-end fw-bold text-success">
+
+                                        $ {{ detalle.importe_coseguro|floatformat:2 }}
+
+                                    </td>
+
+                                    <td>
+
+                                        <span class="badge bg-success">
+                                            ✓ Cobrado
+                                        </span>
+
+                                        <div>
+                                            <small class="text-muted">
+                                                Pendiente de liquidar
+                                            </small>
+                                        </div>
+
+                                    </td>
+
+                                </tr>
+
+                            {% endfor %}
+
+                        </tbody>
+
+                    </table>
+
+                </div>
+
+            {% else %}
+
+                <div class="text-center text-muted p-4">
+                    No existen coseguros cobrados pendientes de liquidar.
+                </div>
+
+            {% endif %}
+
+        </div>
+
+    </div>
+
+
+    <!-- ================================================== -->
+    <!-- OBRAS SOCIALES PENDIENTES -->
+    <!-- ================================================== -->
+
+    <div class="card mt-4 shadow-sm border-warning">
+
+        <div class="card-header bg-warning">
+
+            <div class="d-flex justify-content-between align-items-center">
+
+                <strong>
+                    Obras Sociales pendientes de cobro
+                </strong>
+
+                <span class="badge bg-dark">
+                    {{ obras_sociales_pendientes|length }}
+                </span>
+
+            </div>
+
+        </div>
+
+
+        <div class="card-body">
+
+            <!-- RESUMEN OBRAS SOCIALES -->
+
+            <div class="row g-3 mb-4">
+
+                <div class="col-md-6">
+
+                    <div class="border rounded p-3 h-100">
+
+                        <div class="text-muted">
+                            Saldo pendiente de cobrar a Obras Sociales
+                        </div>
+
+                        <h3 class="mt-2 mb-0">
+                            $ {{ resumen.total_os_pendiente|floatformat:2 }}
+                        </h3>
+
+                    </div>
+
+                </div>
+
+
+                <div class="col-md-6">
+
+                    <div class="border rounded p-3 h-100">
+
+                        <div class="text-muted">
+                            Honorarios médicos pendientes por OS
+                        </div>
+
+                        <h3 class="mt-2 mb-0">
+                            $ {{ resumen.total_honorarios_os_pendiente|floatformat:2 }}
+                        </h3>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+
+            {% if obras_sociales_pendientes %}
+
+<div class="table-responsive">
+
+    <table class="table table-hover align-middle mb-0">
+
+        <thead class="table-light">
+
+            <tr>
+                <th style="width: 13%;">
+                    Fecha / Paciente
+                </th>
+
+                <th style="width: 13%;">
+                    Obra Social
+                </th>
+
+                <th>
+                    Prestación
+                </th>
+
+                <th style="width: 18%;">
+                    Importes prestación
+                </th>
+
+                <th style="width: 18%;">
+                    Honorarios médico
+                </th>
+
+                <th style="width: 12%;">
+                    Estado
+                </th>
+            </tr>
+
+        </thead>
+
+        <tbody>
+
+            {% for detalle in obras_sociales_pendientes %}
+
+            <tr>
+
+                <!-- FECHA / PACIENTE -->
+
+                <td>
+
+                    <div class="fw-bold">
+                        {{ detalle.fecha_prestacion|date:"d/m/Y" }}
+                    </div>
+
+                    <div class="mt-1">
+                        {{ detalle.movimiento.paciente }}
+                    </div>
+
+                </td>
+
+
+                <!-- OBRA SOCIAL -->
+
+                <td>
+
+                    <div class="fw-semibold">
+                        {{ detalle.prestacion_obra_social.obra_social }}
+                    </div>
+
+                </td>
+
+
+                <!-- PRESTACIÓN -->
+
+                <td>
+
+                    <div>
+                        {{ detalle.descripcion }}
+                    </div>
+
+                    <div class="mt-1">
+                        <small class="text-muted">
+                            Código {{ detalle.codigo }}
+                        </small>
+                    </div>
+
+                </td>
+
+
+                <!-- IMPORTES PRESTACIÓN -->
+
+                <td>
+
+                    <div class="d-flex justify-content-between">
+                        <span class="text-muted">
+                            Valor:
+                        </span>
+
+                        <strong>
+                            $ {{ detalle.importe|floatformat:2 }}
+                        </strong>
+                    </div>
+
+
+                    <div class="d-flex justify-content-between mt-1">
+
+                        <span class="text-muted">
+                            Coseguro:
+                        </span>
+
+                        {% if detalle.coseguro_cobrado %}
+
+                            <strong class="text-success">
+                                $ {{ detalle.importe_coseguro|floatformat:2 }}
+                            </strong>
+
+                        {% elif detalle.tiene_coseguro %}
+
+                            <strong>
+                                $ {{ detalle.importe_coseguro|floatformat:2 }}
+                            </strong>
+
+                        {% else %}
+
+                            <span>-</span>
+
+                        {% endif %}
+
+                    </div>
+
+
+                    {% if detalle.coseguro_cobrado %}
+
+                    <div class="text-end mt-1">
+
+                        <span class="badge bg-success">
+                            ✓ Coseguro cobrado
+                        </span>
+
+                    </div>
+
+                    {% endif %}
+
+
+                    <hr class="my-2">
+
+
+                    <div class="d-flex justify-content-between">
+
+                        <span class="fw-bold">
+                            Saldo OS:
+                        </span>
+
+                        <strong>
+                            $ {{ detalle.saldo_os_calculado|floatformat:2 }}
+                        </strong>
+
+                    </div>
+
+                </td>
+
+
+                <!-- HONORARIOS -->
+
+                <td>
+
+                    <div class="d-flex justify-content-between">
+
+                        <span class="text-muted">
+                            Honorario total:
+                        </span>
+
+                        <strong>
+                            $ {{ detalle.importe_medico|floatformat:2 }}
+                        </strong>
+
+                    </div>
+
+
+                    {% if detalle.coseguro_cobrado %}
+
+                    <div class="d-flex justify-content-between mt-1">
+
+                        <span class="text-success">
+                            Coseguro:
+                        </span>
+
+                        <strong class="text-success">
+                            - $ {{ detalle.importe_coseguro|floatformat:2 }}
+                        </strong>
+
+                    </div>
+
+                    {% endif %}
+
+
+                    <hr class="my-2">
+
+
+                    <div class="d-flex justify-content-between">
+
+                        <span class="fw-bold">
+                            Pendiente OS:
+                        </span>
+
+                        <strong>
+                            $ {{ detalle.honorario_os_calculado|floatformat:2 }}
+                        </strong>
+
+                    </div>
+
+                </td>
+
+
+                <!-- ESTADO -->
+
+                <td>
+
+                    <span class="badge bg-warning text-dark">
+                        Pendiente OS
+                    </span>
+
+                    {% if detalle.coseguro_cobrado %}
+
+                        <div class="mt-2">
+
+                            <small class="text-success fw-bold">
+                                ✓ Coseguro cobrado
+                            </small>
+
+                        </div>
+
+                    {% elif detalle.tiene_coseguro %}
+
+                        <div class="mt-2">
+
+                            <small class="text-muted">
+                                Coseguro no registrado
+                            </small>
+
+                        </div>
+
+                    {% endif %}
+
+                </td>
+
+            </tr>
+
+            {% endfor %}
+
+        </tbody>
+
+    </table>
+
+</div>
+
+{% else %}
+
+<div class="text-center text-muted py-4">
+
+    No existen prestaciones de Obras Sociales
+    pendientes de cobro.
+
+</div>
+
+{% endif %}
+
+        </div>
+
+    </div>
+
+{% if resumen.total_disponible > 0 %}
+
+<div class="card mt-4 shadow-sm border-success">
+
+    <div class="card-body">
+
+        <div class="row align-items-center">
+
+            <div class="col-md-8">
+
+                <h5 class="mb-1">
+                    Honorarios disponibles para liquidar
+                </h5>
+
+                <div class="text-muted">
+                    Incluye prestaciones particulares y
+                    coseguros efectivamente cobrados.
+                </div>
+
+            </div>
+
+            <div class="col-md-4 text-end">
+
+                <div class="mb-2">
+
+                    <strong class="fs-4 text-success">
+                        $ {{ resumen.total_disponible|floatformat:2 }}
+                    </strong>
+
+                </div>
+
+                <a
+                    href="{% url 'previsualizar_liquidacion' medico_id %}"
+                    class="btn btn-success"
+                >
+                    Preparar liquidación
+                </a>
+
+            </div>
+
+        </div>
 
     </div>
 
 </div>
 
 {% endif %}
+    <!-- ================================================== -->
+    <!-- INFORMACIÓN -->
+    <!-- ================================================== -->
+
+    <div class="alert alert-info mt-4 mb-0">
+
+        <strong>
+            Liquidaciones separadas
+        </strong>
+
+        <div class="mt-1">
+
+            Los particulares y los coseguros efectivamente cobrados
+            están disponibles para liquidar.
+
+            Las prestaciones correspondientes a Obras Sociales
+            permanecerán pendientes hasta que el consultorio
+            registre el cobro de la Obra Social.
+
+        </div>
+
+    </div>
+
+
+    {% endif %}
 
 </div>
 

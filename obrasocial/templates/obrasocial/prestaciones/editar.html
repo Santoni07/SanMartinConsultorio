@@ -207,7 +207,113 @@
                     </div>
 
                 </div>
+                
 
+
+                <!-- ============================================= -->
+                <!-- COSEGURO -->
+                <!-- ============================================= -->
+
+                <div class="card shadow-sm border-0 mb-4">
+
+                    <div class="card-header bg-light">
+
+                        <h5 class="mb-0">
+                            <i class="bi bi-cash-coin text-warning"></i>
+                            Coseguro
+                        </h5>
+
+                    </div>
+
+                    <div class="card-body">
+
+                        <div class="row g-3 align-items-end">
+
+                            <!-- TIENE COSEGURO -->
+
+                            <div class="col-md-4">
+
+                                <label class="form-label fw-bold d-block">
+                                    Coseguro del paciente
+                                </label>
+
+                                <div class="form-check form-switch mt-2">
+
+                                    {{ form.tiene_coseguro }}
+
+                                    <label
+                                        class="form-check-label"
+                                        for="{{ form.tiene_coseguro.id_for_label }}"
+                                    >
+                                        Esta prestación tiene coseguro
+                                    </label>
+
+                                </div>
+
+                                {% if form.tiene_coseguro.errors %}
+
+                                    <div class="text-danger small mt-1">
+                                        {{ form.tiene_coseguro.errors }}
+                                    </div>
+
+                                {% endif %}
+
+                            </div>
+
+
+                            <!-- IMPORTE COSEGURO -->
+
+                            <div class="col-md-4"
+                                id="contenedor_importe_coseguro">
+
+                                <label class="form-label fw-bold">
+                                    {{ form.importe_coseguro.label }}
+                                </label>
+
+                                <div class="input-group">
+
+                                    <span class="input-group-text">
+                                        $
+                                    </span>
+
+                                    {{ form.importe_coseguro }}
+
+                                </div>
+
+                                {% if form.importe_coseguro.errors %}
+
+                                    <div class="text-danger small mt-1">
+                                        {{ form.importe_coseguro.errors }}
+                                    </div>
+
+                                {% endif %}
+
+                            </div>
+
+
+                            <!-- INFORMACIÓN -->
+
+                            <div class="col-md-4">
+
+                                <div class="alert alert-info mb-0 py-2">
+
+                                    <small>
+
+                                        El coseguro es abonado por el paciente
+                                        y forma parte del valor total de la
+                                        prestación.
+
+                                    </small>
+
+                                </div>
+
+                            </div>
+
+                        </div>
+
+                    </div>
+
+                </div>
 
                 <!-- ============================================= -->
                 <!-- DISTRIBUCIÓN -->
@@ -454,5 +560,73 @@
     </div>
 
 </div>
+
+<script>
+
+document.addEventListener("DOMContentLoaded", function(){
+
+    const tieneCoseguro =
+        document.getElementById(
+            "{{ form.tiene_coseguro.id_for_label }}"
+        );
+
+    const importeCoseguro =
+        document.getElementById(
+            "{{ form.importe_coseguro.id_for_label }}"
+        );
+
+    const contenedor =
+        document.getElementById(
+            "contenedor_importe_coseguro"
+        );
+
+
+    if(
+        !tieneCoseguro ||
+        !importeCoseguro ||
+        !contenedor
+    ){
+        return;
+    }
+
+
+    function actualizarCoseguro(){
+
+        if(tieneCoseguro.checked){
+
+            importeCoseguro.disabled = false;
+
+            contenedor.classList.remove(
+                "opacity-50"
+            );
+
+        }
+
+        else{
+
+            importeCoseguro.value = "0";
+
+            importeCoseguro.disabled = true;
+
+            contenedor.classList.add(
+                "opacity-50"
+            );
+
+        }
+
+    }
+
+
+    tieneCoseguro.addEventListener(
+        "change",
+        actualizarCoseguro
+    );
+
+
+    actualizarCoseguro();
+
+});
+
+</script>
 
 {% endblock %}

@@ -251,6 +251,20 @@ class PrestacionPlan(models.Model):
         max_digits=12,
         decimal_places=2
     )
+    
+    tiene_coseguro = models.BooleanField(
+        default=False,
+        verbose_name="Tiene coseguro"
+    )
+
+    importe_coseguro = models.DecimalField(
+        max_digits=12,
+        decimal_places=2,
+        default=0,
+        verbose_name="Importe Coseguro"
+    )
+    
+    
 
     fecha_vigencia_desde = models.DateField()
 

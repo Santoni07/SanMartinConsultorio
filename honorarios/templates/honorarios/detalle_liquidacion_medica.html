@@ -4,16 +4,163 @@
 
 <div class="container mt-4">
 
+    <!-- ===================================================== -->
     <!-- CABECERA -->
+    <!-- ===================================================== -->
 
     <div class="card shadow-sm">
 
         <div class="card-header bg-primary text-white">
-
             <h4 class="mb-0">
                 Detalle de Liquidación Médica
             </h4>
+        </div>
 
+        <div class="card-body">
+
+            <div class="row">
+
+                <div class="col-md-3">
+                    <small class="text-muted">Médico</small>
+                    <div class="fw-bold">
+                        {{ liquidacion.medico }}
+                    </div>
+                </div>
+
+                <div class="col-md-3">
+                    <small class="text-muted">Sede</small>
+                    <div class="fw-bold">
+                        {{ liquidacion.centro_medico }}
+                    </div>
+                </div>
+
+                <div class="col-md-3">
+                    <small class="text-muted">Fecha</small>
+                    <div class="fw-bold">
+                        {{ liquidacion.fecha|date:"d/m/Y H:i" }}
+                    </div>
+                </div>
+
+                <div class="col-md-3">
+                    <small class="text-muted">Estado</small>
+
+                    <div>
+                        {% if liquidacion.estado == "PAGADA" %}
+
+                            <span class="badge bg-success">
+                                Pagada
+                            </span>
+
+                        {% elif liquidacion.estado == "PARCIAL" %}
+
+                            <span class="badge bg-warning text-dark">
+                                Parcial
+                            </span>
+
+                        {% else %}
+
+                            <span class="badge bg-danger">
+                                Pendiente
+                            </span>
+
+                        {% endif %}
+                    </div>
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <!-- ===================================================== -->
+    <!-- RESUMEN -->
+    <!-- ===================================================== -->
+
+    <div class="row mt-4">
+
+        <div class="col-md-3">
+            <div class="card border-primary h-100">
+                <div class="card-body text-center">
+
+                    <div class="text-muted">
+                        Total Honorarios
+                    </div>
+
+                    <h3 class="text-primary mb-0">
+                        $ {{ liquidacion.total_honorarios }}
+                    </h3>
+
+                </div>
+            </div>
+        </div>
+
+
+        <div class="col-md-3">
+            <div class="card border-success h-100">
+                <div class="card-body text-center">
+
+                    <div class="text-muted">
+                        Total Pagado
+                    </div>
+
+                    <h3 class="text-success mb-0">
+                        $ {{ liquidacion.total_pagado }}
+                    </h3>
+
+                </div>
+            </div>
+        </div>
+
+
+        <div class="col-md-3">
+            <div class="card border-danger h-100">
+                <div class="card-body text-center">
+
+                    <div class="text-muted">
+                        Saldo Pendiente
+                    </div>
+
+                    <h3 class="text-danger mb-0">
+                        $ {{ liquidacion.saldo_pendiente }}
+                    </h3>
+
+                </div>
+            </div>
+        </div>
+
+
+        <div class="col-md-3">
+            <div class="card border-info h-100">
+                <div class="card-body text-center">
+
+                    <div class="text-muted">
+                        Conceptos incluidos
+                    </div>
+
+                    <h3 class="text-info mb-0">
+                        {{ cantidad_conceptos }}
+                    </h3>
+
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+
+    <!-- ===================================================== -->
+    <!-- DESGLOSE -->
+    <!-- SOLO SISTEMA NUEVO -->
+    <!-- ===================================================== -->
+
+    {% if usa_sistema_nuevo %}
+
+    <div class="card mt-3 shadow-sm">
+
+        <div class="card-header fw-bold">
+            Desglose de la Liquidación
         </div>
 
         <div class="card-body">
@@ -22,145 +169,39 @@
 
                 <div class="col-md-4">
 
-                    <h6>Médico</h6>
+                    <small class="text-muted">
+                        Honorarios particulares
+                    </small>
 
-                    <p class="mb-0">
-                        {{ liquidacion.medico }}
-                    </p>
-
-                </div>
-
-                <div class="col-md-3">
-
-                    <h6>Sede</h6>
-
-                    <p class="mb-0">
-                        {{ liquidacion.centro_medico }}
-                    </p>
+                    <div class="fs-5">
+                        $ {{ total_particulares }}
+                    </div>
 
                 </div>
 
-                <div class="col-md-3">
 
-                    <h6>Fecha</h6>
+                <div class="col-md-4">
 
-                    <p class="mb-0">
-                        {{ liquidacion.fecha|date:"d/m/Y H:i" }}
-                    </p>
+                    <small class="text-muted">
+                        Coseguros cobrados
+                    </small>
 
-                </div>
-
-                <div class="col-md-2">
-
-                    <h6>Estado</h6>
-
-                    {% if liquidacion.estado == "PAGADA" %}
-
-                        <span class="badge bg-success">
-                            Pagada
-                        </span>
-
-                    {% elif liquidacion.estado == "PARCIAL" %}
-
-                        <span class="badge bg-warning text-dark">
-                            Parcial
-                        </span>
-
-                    {% else %}
-
-                        <span class="badge bg-danger">
-                            Pendiente
-                        </span>
-
-                    {% endif %}
+                    <div class="fs-5 text-success">
+                        $ {{ total_coseguros }}
+                    </div>
 
                 </div>
 
-            </div>
 
-        </div>
+                <div class="col-md-4">
 
-    </div>
+                    <small class="text-muted">
+                        Total liquidación
+                    </small>
 
-
-
-    <!-- RESUMEN -->
-
-    <div class="row mt-3">
-
-        <div class="col-md-3">
-
-            <div class="card border-primary">
-
-                <div class="card-body text-center">
-
-                    <h6>Total Honorarios</h6>
-
-                    <h3 class="text-primary">
-
+                    <div class="fs-5 text-primary">
                         $ {{ liquidacion.total_honorarios }}
-
-                    </h3>
-
-                </div>
-
-            </div>
-
-        </div>
-
-        <div class="col-md-3">
-
-            <div class="card border-success">
-
-                <div class="card-body text-center">
-
-                    <h6>Total Pagado</h6>
-
-                    <h3 class="text-success">
-
-                        $ {{ liquidacion.total_pagado }}
-
-                    </h3>
-
-                </div>
-
-            </div>
-
-        </div>
-
-        <div class="col-md-3">
-
-            <div class="card border-danger">
-
-                <div class="card-body text-center">
-
-                    <h6>Saldo Pendiente</h6>
-
-                    <h3 class="text-danger">
-
-                        $ {{ liquidacion.saldo_pendiente }}
-
-                    </h3>
-
-                </div>
-
-            </div>
-
-        </div>
-
-        <div class="col-md-3">
-
-            <div class="card border-info">
-
-                <div class="card-body text-center">
-
-                    <h6>Prestaciones</h6>
-
-                    <h3 class="text-info">
-
-                        {{ detalles.count }}
-
-                    </h3>
+                    </div>
 
                 </div>
 
@@ -170,15 +211,236 @@
 
     </div>
 
+    {% endif %}
 
 
-    <!-- PRESTACIONES -->
+    <!-- ===================================================== -->
+    <!-- CONCEPTOS - SISTEMA NUEVO -->
+    <!-- ===================================================== -->
+
+    {% if usa_sistema_nuevo %}
 
     <div class="card mt-3 shadow-sm">
 
-        <div class="card-header">
+        <div class="card-header fw-bold">
+            Conceptos Incluidos
+        </div>
 
-            Prestaciones Incluidas
+        <div class="card-body">
+
+            <div class="table-responsive">
+
+                <table class="table table-striped table-hover align-middle">
+
+                    <thead>
+
+                        <tr>
+
+                            <th>Fecha</th>
+
+                            <th>Paciente</th>
+
+                            <th>Tipo</th>
+
+                            <th>Código</th>
+
+                            <th>Prestación</th>
+
+                            <th class="text-end">
+                                Valor
+                            </th>
+
+                            <th class="text-end">
+                                Honorario
+                            </th>
+
+                        </tr>
+
+                    </thead>
+
+                    <tbody>
+
+                        {% for item in items %}
+
+                            {% with detalle=item.detalle_movimiento %}
+
+                            <tr>
+
+                                <!-- FECHA -->
+
+                                <td>
+                                    {{ detalle.fecha_prestacion|date:"d/m/Y" }}
+                                </td>
+
+
+                                <!-- PACIENTE -->
+
+                                <td>
+                                    {{ detalle.movimiento.paciente }}
+                                </td>
+
+
+                                <!-- TIPO -->
+
+                                <td>
+
+                                    {% if item.tipo == "PARTICULAR" %}
+
+                                        <span class="badge bg-primary">
+                                            Particular
+                                        </span>
+
+                                    {% elif item.tipo == "COSEGURO" %}
+
+                                        <span class="badge bg-success">
+                                            Coseguro
+                                        </span>
+
+                                    {% elif item.tipo == "OBRA_SOCIAL" %}
+
+                                        <span class="badge bg-info text-dark">
+                                            Obra Social
+                                        </span>
+
+                                    {% else %}
+
+                                        <span class="badge bg-secondary">
+                                            {{ item.tipo }}
+                                        </span>
+
+                                    {% endif %}
+
+                                </td>
+
+
+                                <!-- CÓDIGO -->
+
+                                <td>
+                                    {{ detalle.codigo|default:"-" }}
+                                </td>
+
+
+                                <!-- PRESTACIÓN -->
+
+                                <td>
+
+                                    <div>
+                                        {{ detalle.descripcion }}
+                                    </div>
+
+                                    {% if item.tipo == "COSEGURO" %}
+
+                                        {% if detalle.prestacion_obra_social %}
+
+                                            <small class="text-muted">
+                                                {{ detalle.prestacion_obra_social.obra_social }}
+                                            </small>
+
+                                        {% endif %}
+
+                                    {% endif %}
+
+                                </td>
+
+
+                                <!-- VALOR -->
+
+                                <td class="text-end">
+
+                                    {% if item.tipo == "COSEGURO" %}
+
+                                        $ {{ detalle.importe_coseguro }}
+
+                                    {% else %}
+
+                                        $ {{ detalle.importe }}
+
+                                    {% endif %}
+
+                                </td>
+
+
+                                <!-- HONORARIO -->
+
+                                <td class="text-end">
+
+                                    <strong class="text-success">
+                                        $ {{ item.importe }}
+                                    </strong>
+
+                                </td>
+
+                            </tr>
+
+                            {% endwith %}
+
+                        {% empty %}
+
+                            <tr>
+
+                                <td
+                                    colspan="7"
+                                    class="text-center text-muted py-4"
+                                >
+                                    No existen conceptos asociados a esta liquidación.
+                                </td>
+
+                            </tr>
+
+                        {% endfor %}
+
+                    </tbody>
+
+
+                    <tfoot>
+
+                        <tr class="table-light">
+
+                            <td
+                                colspan="6"
+                                class="text-end"
+                            >
+                                <strong>
+                                    Total liquidado
+                                </strong>
+                            </td>
+
+                            <td class="text-end">
+
+                                <strong class="text-success fs-5">
+                                    $ {{ liquidacion.total_honorarios }}
+                                </strong>
+
+                            </td>
+
+                        </tr>
+
+                    </tfoot>
+
+                </table>
+
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <!-- ===================================================== -->
+    <!-- CONCEPTOS - SISTEMA HISTÓRICO -->
+    <!-- ===================================================== -->
+
+    {% else %}
+
+    <div class="card mt-3 shadow-sm">
+
+        <div class="card-header fw-bold">
+
+            Conceptos Incluidos
+
+            <span class="badge bg-secondary ms-2">
+                Liquidación histórica
+            </span>
 
         </div>
 
@@ -186,7 +448,7 @@
 
             <div class="table-responsive">
 
-                <table class="table table-striped table-hover">
+                <table class="table table-striped table-hover align-middle">
 
                     <thead>
 
@@ -200,78 +462,104 @@
 
                             <th>Prestación</th>
 
-                            <th class="text-end">Bruto</th>
-
-                            <th class="text-end">IVA</th>
-
-                            <th class="text-end">Neto</th>
+                            <th class="text-end">
+                                Bruto
+                            </th>
 
                             <th class="text-end">
+                                IVA
+                            </th>
 
+                            <th class="text-end">
+                                Neto
+                            </th>
+
+                            <th class="text-end">
                                 Honorario
-
                             </th>
 
                         </tr>
 
                     </thead>
 
+
                     <tbody>
 
-                        {% for detalle in detalles %}
+                        {% for detalle in items %}
 
                         <tr>
 
-                            <td>
+                            <!-- FECHA -->
 
+                            <td>
                                 {{ detalle.fecha_prestacion|date:"d/m/Y" }}
-
                             </td>
 
-                            <td>
 
+                            <!-- PACIENTE -->
+
+                            <td>
                                 {{ detalle.movimiento.paciente }}
-
                             </td>
 
+
+                            <!-- CÓDIGO -->
+
                             <td>
-
-                                {{ detalle.codigo }}
-
+                                {{ detalle.codigo|default:"-" }}
                             </td>
 
-                            <td>
 
+                            <!-- PRESTACIÓN -->
+
+                            <td>
                                 {{ detalle.descripcion }}
-
                             </td>
 
-                            <td class="text-end">
 
+                            <!-- BRUTO -->
+
+                            <td class="text-end">
                                 $ {{ detalle.importe }}
-
                             </td>
 
-                            <td class="text-end">
 
+                            <!-- IVA -->
+
+                            <td class="text-end">
                                 $ {{ detalle.importe_iva }}
-
                             </td>
+
+
+                            <!-- NETO -->
 
                             <td class="text-end">
-
                                 $ {{ detalle.importe_neto }}
-
                             </td>
+
+
+                            <!-- HONORARIO -->
 
                             <td class="text-end">
 
                                 <strong>
-
                                     $ {{ detalle.importe_medico }}
-
                                 </strong>
 
+                            </td>
+
+                        </tr>
+
+
+                        {% empty %}
+
+                        <tr>
+
+                            <td
+                                colspan="8"
+                                class="text-center text-muted py-4"
+                            >
+                                No existen conceptos asociados a esta liquidación.
                             </td>
 
                         </tr>
@@ -279,6 +567,32 @@
                         {% endfor %}
 
                     </tbody>
+
+
+                    <tfoot>
+
+                        <tr class="table-light">
+
+                            <td
+                                colspan="7"
+                                class="text-end"
+                            >
+                                <strong>
+                                    Total liquidado
+                                </strong>
+                            </td>
+
+                            <td class="text-end">
+
+                                <strong class="text-success fs-5">
+                                    $ {{ liquidacion.total_honorarios }}
+                                </strong>
+
+                            </td>
+
+                        </tr>
+
+                    </tfoot>
 
                 </table>
 
@@ -288,16 +602,92 @@
 
     </div>
 
+    {% endif %}
 
 
-    <!-- PAGOS -->
+    <!-- ===================================================== -->
+    <!-- TRAZABILIDAD -->
+    <!-- ===================================================== -->
 
     <div class="card mt-3 shadow-sm">
 
-        <div class="card-header">
+        <div class="card-header fw-bold">
+            Trazabilidad
+        </div>
 
+        <div class="card-body">
+
+            <div class="row">
+
+                <div class="col-md-4">
+
+                    <small class="text-muted">
+                        Generada por
+                    </small>
+
+                    <div class="fw-bold">
+
+                        {% if liquidacion.generado_por %}
+
+                            {{ liquidacion.generado_por.get_full_name|default:liquidacion.generado_por.username }}
+
+                        {% elif liquidacion.creado_por %}
+
+                            {{ liquidacion.creado_por.get_full_name|default:liquidacion.creado_por.username }}
+
+                        {% else %}
+
+                            <span class="text-muted">
+                                Registro histórico
+                            </span>
+
+                        {% endif %}
+
+                    </div>
+
+                </div>
+
+
+                <div class="col-md-4">
+
+                    <small class="text-muted">
+                        Fecha de generación
+                    </small>
+
+                    <div>
+                        {{ liquidacion.fecha|date:"d/m/Y H:i" }}
+                    </div>
+
+                </div>
+
+
+                <div class="col-md-4">
+
+                    <small class="text-muted">
+                        N° de Liquidación
+                    </small>
+
+                    <div class="fw-bold">
+                        #{{ liquidacion.id }}
+                    </div>
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <!-- ===================================================== -->
+    <!-- PAGOS -->
+    <!-- ===================================================== -->
+
+    <div class="card mt-3 shadow-sm">
+
+        <div class="card-header fw-bold">
             Pagos Registrados
-
         </div>
 
         <div class="card-body">
@@ -306,107 +696,134 @@
 
                 {% for pago in pagos %}
 
-                <div class="card mb-3 border-success">
+                    <div class="card mb-3 border-success">
 
-                    <div class="card-body">
+                        <div class="card-body">
 
-                        <div class="row">
+                            <div class="row">
 
-                            <div class="col-md-3">
+                                <div class="col-md-3">
 
-                                <strong>Fecha</strong><br>
+                                    <strong>
+                                        Fecha
+                                    </strong>
 
-                                {{ pago.fecha|date:"d/m/Y H:i" }}
+                                    <br>
+
+                                    {{ pago.fecha|date:"d/m/Y H:i" }}
+
+                                </div>
+
+
+                                <div class="col-md-3">
+
+                                    <strong>
+                                        Importe
+                                    </strong>
+
+                                    <br>
+
+                                    $ {{ pago.importe }}
+
+                                </div>
+
+
+                                <div class="col-md-3">
+
+                                    <strong>
+                                        Usuario
+                                    </strong>
+
+                                    <br>
+
+                                    {{ pago.registrado_por }}
+
+                                </div>
+
+
+                                <div class="col-md-3">
+
+                                    <strong>
+                                        Movimiento Caja
+                                    </strong>
+
+                                    <br>
+
+                                    #{{ pago.movimiento_caja.id }}
+
+                                </div>
 
                             </div>
 
-                            <div class="col-md-3">
 
-                                <strong>Importe</strong><br>
+                            <hr>
 
-                                $ {{ pago.importe }}
 
-                            </div>
+                            <h6>
+                                Medios de Pago
+                            </h6>
 
-                            <div class="col-md-3">
 
-                                <strong>Usuario</strong><br>
+                            <table class="table table-sm">
 
-                                {{ pago.registrado_por }}
+                                <thead>
 
-                            </div>
+                                    <tr>
 
-                            <div class="col-md-3">
+                                        <th>
+                                            Medio
+                                        </th>
 
-                                <strong>Movimiento Caja</strong><br>
+                                        <th class="text-end">
+                                            Importe
+                                        </th>
 
-                                #{{ pago.movimiento_caja.id }}
+                                    </tr>
 
-                            </div>
+                                </thead>
+
+
+                                <tbody>
+
+                                    {% for medio in pago.movimiento_caja.detalles_medios_pago.all %}
+
+                                    <tr>
+
+                                        <td>
+                                            {{ medio.medio_pago.nombre }}
+                                        </td>
+
+                                        <td class="text-end">
+                                            $ {{ medio.importe }}
+                                        </td>
+
+                                    </tr>
+
+                                    {% empty %}
+
+                                    <tr>
+
+                                        <td
+                                            colspan="2"
+                                            class="text-center text-muted"
+                                        >
+                                            Sin detalle de medios de pago.
+                                        </td>
+
+                                    </tr>
+
+                                    {% endfor %}
+
+                                </tbody>
+
+                            </table>
 
                         </div>
 
-                        <hr>
-
-                        <h6>
-
-                            Medios de Pago
-
-                        </h6>
-
-                        <table class="table table-sm">
-
-                            <thead>
-
-                                <tr>
-
-                                    <th>
-
-                                        Medio
-
-                                    </th>
-
-                                    <th class="text-end">
-
-                                        Importe
-
-                                    </th>
-
-                                </tr>
-
-                            </thead>
-
-                            <tbody>
-
-                                {% for medio in pago.movimiento_caja.detalles_medios_pago.all %}
-
-                                <tr>
-
-                                    <td>
-
-                                        {{ medio.medio_pago.nombre }}
-
-                                    </td>
-
-                                    <td class="text-end">
-
-                                        $ {{ medio.importe }}
-
-                                    </td>
-
-                                </tr>
-
-                                {% endfor %}
-
-                            </tbody>
-
-                        </table>
-
                     </div>
 
-                </div>
-
                 {% endfor %}
+
 
             {% else %}
 
@@ -423,14 +840,16 @@
     </div>
 
 
-
+    <!-- ===================================================== -->
     <!-- BOTONES -->
+    <!-- ===================================================== -->
 
-    <div class="mt-4 d-flex justify-content-between">
+    <div class="mt-4 mb-4 d-flex justify-content-between">
 
         <a
             href="{% url 'historial_liquidaciones_medicas' %}"
-            class="btn btn-secondary">
+            class="btn btn-secondary"
+        >
 
             <i class="bi bi-arrow-left"></i>
 
@@ -438,11 +857,13 @@
 
         </a>
 
+
         {% if liquidacion.estado != "PAGADA" %}
 
             <a
                 href="{% url 'registrar_pago_liquidacion' liquidacion.id %}"
-                class="btn btn-success">
+                class="btn btn-success"
+            >
 
                 <i class="bi bi-cash-coin"></i>
 
@@ -453,6 +874,7 @@
         {% endif %}
 
     </div>
+
 
 </div>
 

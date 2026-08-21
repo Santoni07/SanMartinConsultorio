@@ -158,13 +158,37 @@
                             <tr>
                                 <td>{{ mov.fecha_creacion|localtime|date:"H:i" }}</td>
 
-                                <td>
-                                    {% if mov.tipo == 'INGRESO' %}
-                                        <span class="badge bg-success">Ingreso</span>
-                                    {% else %}
-                                        <span class="badge bg-danger">Egreso</span>
-                                    {% endif %}
-                                </td>
+                                    <td>
+
+    {% if mov.tipo == 'EGRESO' %}
+
+        <span class="badge bg-danger">
+            Egreso
+        </span>
+
+    {% else %}
+
+        {% with detalle=mov.detalles.first %}
+
+            {% if detalle and detalle.prestacion_obra_social %}
+
+                <span class="badge bg-primary">
+                    A cobrar OS
+                </span>
+
+            {% else %}
+
+                <span class="badge bg-success">
+                    Ingreso
+                </span>
+
+            {% endif %}
+
+        {% endwith %}
+
+    {% endif %}
+
+</td>
 
                                 <td>
                                     {% if mov.paciente %}

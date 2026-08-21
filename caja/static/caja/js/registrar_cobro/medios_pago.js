@@ -270,33 +270,147 @@ function renderMediosPago(){
 // UTILIDADES
 // ======================================================
 
+
+// ======================================================
+// TOTAL VALOR DE PRESTACIONES
+// ======================================================
+//
+// Este es el valor económico total de las prestaciones.
+//
+// PARTICULAR:
+// valor que paga el paciente.
+//
+// OBRA SOCIAL:
+// valor que luego deberá pagar la obra social.
+//
+// Este total NO representa necesariamente
+// lo que debe pagar el paciente.
+// ======================================================
+
 function obtenerTotalPrestaciones(){
 
-    return prestaciones.reduce(function(total,item){
+    return prestaciones.reduce(function(total, item){
 
-        return total +
-            (item.cantidad * item.importe);
+        const cantidad =
+            parseFloat(item.cantidad || 0);
 
-    },0);
+        const importe =
+            parseFloat(item.importe || 0);
+
+        return total + (cantidad * importe);
+
+    }, 0);
 
 }
+
+
+// ======================================================
+// TOTAL A COBRAR AL PACIENTE
+// ======================================================
+//
+// PARTICULAR:
+// paga el importe completo.
+//
+// OBRA SOCIAL:
+// solamente paga el coseguro, si corresponde.
+// ======================================================
+
+function obtenerTotalACobrarPaciente(){
+
+    return prestaciones.reduce(function(total, item){
+
+        const cantidad =
+            parseFloat(item.cantidad || 0);
+
+        // =====================================
+        // PARTICULAR
+        // =====================================
+
+        if(item.origen === "PARTICULAR"){
+
+            const importe =
+                parseFloat(item.importe || 0);
+
+            return total +
+                (cantidad * importe);
+
+        }
+
+
+        // =====================================
+        // OBRA SOCIAL
+        // =====================================
+
+        if(item.origen === "OBRA_SOCIAL"){
+
+            const tieneCoseguro =
+                item.tiene_coseguro === true ||
+                item.tiene_coseguro === "true" ||
+                item.tiene_coseguro === 1 ||
+                item.tiene_coseguro === "1";
+
+
+            if(tieneCoseguro){
+
+                const importeCoseguro =
+                    parseFloat(
+                        item.importe_coseguro || 0
+                    );
+
+                return total +
+                    (cantidad * importeCoseguro);
+
+            }
+
+        }
+
+
+        return total;
+
+    }, 0);
+
+}
+
+
+// ======================================================
+// TOTAL MEDIOS DE PAGO
+// ======================================================
 
 function obtenerTotalMediosPago(){
 
-    return mediosPago.reduce(function(total,item){
+    return mediosPago.reduce(function(total, item){
 
         return total +
-            item.importe;
+            parseFloat(item.importe || 0);
 
-    },0);
+    }, 0);
 
 }
+
+
+// ======================================================
+// SALDO PENDIENTE DEL PACIENTE
+// ======================================================
+//
+// IMPORTANTE:
+//
+// Ya NO usamos:
+//
+// total prestaciones - pagos
+//
+// porque una prestación de obra social
+// no la paga completa el paciente.
+//
+// Ahora usamos:
+//
+// total que corresponde al paciente - pagos
+// ======================================================
 
 function obtenerSaldoPendiente(){
 
     return (
 
-        obtenerTotalPrestaciones() -
+        obtenerTotalACobrarPaciente() -
 
         obtenerTotalMediosPago()
 
