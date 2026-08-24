@@ -5,6 +5,8 @@ from .pdf.cierre_caja import generar_pdf_cierre
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.utils import timezone
+
+from honorarios.models import PagoLiquidacionMedica
 from django.db import transaction
 from django.db.models import Sum
 from .models import CajaDiaria, MovimientoCaja, HistorialMovimientoCaja,    MedioPago, ConceptoFacturacion, DetalleMovimientoCaja,DetalleMedioPago
@@ -1180,7 +1182,15 @@ def registrar_cobro(request):
 @transaction.atomic
 def anular_movimiento(request, movimiento_id):
 
+    # ==========================================
+    # CENTRO ACTIVO
+    # ==========================================
+
     centro_medico = obtener_centro_activo(request)
+
+    # ==========================================
+    # VALIDAR PERMISOS
+    # ==========================================
 
     if not validar_permiso_caja(request):
 
@@ -1189,7 +1199,13 @@ def anular_movimiento(request, movimiento_id):
             'No tiene permisos para acceder a la caja de esta sede.'
         )
 
-        return redirect('turnos:ver_disponibilidad')
+        return redirect(
+            'turnos:ver_disponibilidad'
+        )
+
+    # ==========================================
+    # BUSCAR MOVIMIENTO
+    # ==========================================
 
     movimiento = get_object_or_404(
         MovimientoCaja,
@@ -1198,6 +1214,10 @@ def anular_movimiento(request, movimiento_id):
         estado='ACTIVO'
     )
 
+    # ==========================================
+    # NO PERMITIR ANULAR CAJA CERRADA
+    # ==========================================
+
     if movimiento.caja.estado == 'CERRADA':
 
         messages.error(
@@ -1205,21 +1225,37 @@ def anular_movimiento(request, movimiento_id):
             'No se puede anular un movimiento de una caja cerrada.'
         )
 
-        return redirect('caja_home')
+        return redirect(
+            'caja_home'
+        )
+
+    # ==========================================
+    # POST
+    # ==========================================
 
     if request.method == 'POST':
 
-        form = AnularMovimientoCajaForm(request.POST)
+        form = AnularMovimientoCajaForm(
+            request.POST
+        )
 
         if form.is_valid():
 
-            motivo = form.cleaned_data['motivo_anulacion']
+            motivo = form.cleaned_data[
+                'motivo_anulacion'
+            ]
+
+            # ==================================
+            # GUARDAR DATOS ANTERIORES
+            # ==================================
 
             datos_anteriores = {
 
                 "estado": movimiento.estado,
 
-                "importe": str(movimiento.importe),
+                "importe": str(
+                    movimiento.importe
+                ),
 
                 "tipo": movimiento.tipo,
 
@@ -1229,39 +1265,205 @@ def anular_movimiento(request, movimiento_id):
 
                     {
 
-                        "medio": detalle.medio_pago.nombre,
+                        "medio":
+                            detalle.medio_pago.nombre,
 
-                        "importe": str(detalle.importe),
+                        "importe":
+                            str(detalle.importe),
 
                     }
 
-                    for detalle in movimiento.detalles_medios_pago.all()
+                    for detalle
+                    in movimiento.detalles_medios_pago.all()
 
                 ],
 
             }
 
-            # =====================================
+            # ==================================
+            # DETECTAR SI ES PAGO DE HONORARIOS
+            # ==================================
+            #
+            # Lo hacemos ANTES de anular para
+            # conservar la referencia.
+            # ==================================
+
+            pago_honorarios = (
+                PagoLiquidacionMedica.objects
+                .select_related(
+                    "liquidacion"
+                )
+                .filter(
+                    movimiento_caja=movimiento
+                )
+                .first()
+            )
+
+            # ==================================
             # ANULAR MOVIMIENTO
-            # =====================================
+            # ==================================
 
             movimiento.anular(
                 usuario=request.user,
                 motivo=motivo
             )
 
-            # =====================================
-            # SI ES UN COBRO, EL TURNO VUELVE A
-            # PENDIENTE
-            # =====================================
+            # ==================================
+            # SI ERA COBRO DE UN TURNO
+            # ==================================
 
             if movimiento.turno:
 
-                movimiento.turno.estado = "PENDIENTE"
+                movimiento.turno.estado = (
+                    "PENDIENTE"
+                )
 
                 movimiento.turno.save(
-                    update_fields=["estado"]
+                    update_fields=[
+                        "estado"
+                    ]
                 )
+
+            # ==================================
+            # SI ERA PAGO DE HONORARIOS
+            # ==================================
+
+            if pago_honorarios:
+
+                liquidacion = (
+                    pago_honorarios.liquidacion
+                )
+
+                # ------------------------------
+                # SUMAR ÚNICAMENTE PAGOS
+                # CUYO MOVIMIENTO SIGUE ACTIVO
+                # ------------------------------
+
+                total_pagado_activo = (
+                    PagoLiquidacionMedica.objects
+                    .filter(
+                        liquidacion=liquidacion,
+                        movimiento_caja__estado="ACTIVO",
+                    )
+                    .aggregate(
+                        total=Sum("importe")
+                    )["total"]
+                    or Decimal("0.00")
+                )
+
+                # ------------------------------
+                # CANTIDAD DE PAGOS ACTIVOS
+                # ------------------------------
+
+                cantidad_pagos_activos = (
+                    PagoLiquidacionMedica.objects
+                    .filter(
+                        liquidacion=liquidacion,
+                        movimiento_caja__estado="ACTIVO",
+                    )
+                    .count()
+                )
+
+                # ------------------------------
+                # ACTUALIZAR TOTALES
+                # ------------------------------
+
+                liquidacion.total_pagado = (
+                    total_pagado_activo
+                )
+
+                liquidacion.cantidad_pagos = (
+                    cantidad_pagos_activos
+                )
+
+                # ==================================
+                # DETERMINAR ESTADO
+                # ==================================
+
+                if total_pagado_activo <= 0:
+
+                    liquidacion.estado = (
+                        "PENDIENTE"
+                    )
+
+                    liquidacion.fecha_pago = None
+                    liquidacion.pagado_por = None
+
+                elif (
+                    total_pagado_activo
+                    < liquidacion.total_honorarios
+                ):
+
+                    liquidacion.estado = (
+                        "PARCIAL"
+                    )
+
+                    # Buscamos el último pago
+                    # que todavía continúa activo.
+
+                    ultimo_pago = (
+                        PagoLiquidacionMedica.objects
+                        .filter(
+                            liquidacion=liquidacion,
+                            movimiento_caja__estado="ACTIVO",
+                        )
+                        .order_by("-fecha")
+                        .first()
+                    )
+
+                    if ultimo_pago:
+
+                        liquidacion.fecha_pago = (
+                            ultimo_pago.fecha
+                        )
+
+                        liquidacion.pagado_por = (
+                            ultimo_pago.registrado_por
+                        )
+
+                else:
+
+                    liquidacion.estado = (
+                        "PAGADA"
+                    )
+
+                    ultimo_pago = (
+                        PagoLiquidacionMedica.objects
+                        .filter(
+                            liquidacion=liquidacion,
+                            movimiento_caja__estado="ACTIVO",
+                        )
+                        .order_by("-fecha")
+                        .first()
+                    )
+
+                    if ultimo_pago:
+
+                        liquidacion.fecha_pago = (
+                            ultimo_pago.fecha
+                        )
+
+                        liquidacion.pagado_por = (
+                            ultimo_pago.registrado_por
+                        )
+
+                # ------------------------------
+                # GUARDAR LIQUIDACIÓN
+                # ------------------------------
+
+                liquidacion.save(
+                    update_fields=[
+                        "total_pagado",
+                        "cantidad_pagos",
+                        "estado",
+                        "fecha_pago",
+                        "pagado_por",
+                    ]
+                )
+
+            # ==================================
+            # HISTORIAL CAJA
+            # ==================================
 
             HistorialMovimientoCaja.objects.create(
 
@@ -1275,49 +1477,82 @@ def anular_movimiento(request, movimiento_id):
 
                 centro_medico=centro_medico,
 
-                descripcion=f'Movimiento anulado. Motivo: {motivo}',
+                descripcion=(
+                    f'Movimiento anulado. '
+                    f'Motivo: {motivo}'
+                ),
 
-                datos_anteriores=datos_anteriores,
+                datos_anteriores=(
+                    datos_anteriores
+                ),
 
                 datos_nuevos={
 
-                    'estado': movimiento.estado,
+                    'estado':
+                        movimiento.estado,
 
-                    'anulado_por': request.user.username,
+                    'anulado_por':
+                        request.user.username,
 
-                    'motivo_anulacion': motivo,
+                    'motivo_anulacion':
+                        motivo,
 
                 }
 
             )
 
-           
+            # ==================================
+            # MENSAJE
+            # ==================================
 
-            mostrar_exito(
-
-            request,
-
-            titulo="Movimiento anulado",
-
-            mensaje="El movimiento fue anulado correctamente.",
-
-            icono="bi-trash",
-
-            detalles=[
+            detalles_mensaje = [
 
                 f"Concepto: {movimiento.concepto}",
 
                 f"Importe: ${movimiento.importe}",
 
-            ],
+            ]
 
-        )
+            if pago_honorarios:
 
-        return redirect("caja_home")
+                detalles_mensaje.append(
+                    "El pago de honorarios "
+                    "asociado fue revertido."
+                )
+
+                detalles_mensaje.append(
+                    f"Liquidación "
+                    f"#{pago_honorarios.liquidacion_id}"
+                )
+
+            mostrar_exito(
+
+                request,
+
+                titulo="Movimiento anulado",
+
+                mensaje=(
+                    "El movimiento fue "
+                    "anulado correctamente."
+                ),
+
+                icono="bi-trash",
+
+                detalles=detalles_mensaje,
+
+            )
+
+            return redirect(
+                "caja_home"
+            )
 
     else:
 
         form = AnularMovimientoCajaForm()
+
+    # ==========================================
+    # MOSTRAR CONFIRMACIÓN
+    # ==========================================
 
     return render(
         request,

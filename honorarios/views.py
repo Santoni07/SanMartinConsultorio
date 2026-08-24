@@ -1,6 +1,6 @@
 from decimal import Decimal
 import json
-
+from obrasocial.models import ObraSocial
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.db import transaction
@@ -892,55 +892,80 @@ def liquidaciones_pendientes(request):
 def registrar_pago_liquidacion(
     request,
     liquidacion_id
-    ):
+):
 
+    # ==========================================
+    # CENTRO MÉDICO ACTIVO
+    # ==========================================
 
     centro_medico = obtener_centro_activo(request)
 
+    # ==========================================
+    # LIQUIDACIÓN
+    # ==========================================
+    #
+    # La liquidación debe pertenecer
+    # obligatoriamente a la sede activa.
+    # ==========================================
+
     liquidacion = get_object_or_404(
         LiquidacionMedica,
-        pk=liquidacion_id
+        pk=liquidacion_id,
+        centro_medico=centro_medico,
     )
+
+    # ==========================================
+    # CAJA ABIERTA
+    # ==========================================
 
     caja = obtener_caja_abierta(
         centro_medico
     )
-    medios_pago = MedioPago.objects.filter(
-        activo=True
-    ).order_by("nombre")
+
+    # ==========================================
+    # MEDIOS DE PAGO
+    # ==========================================
+
+    medios_pago = (
+        MedioPago.objects
+        .filter(activo=True)
+        .order_by("nombre")
+    )
+
+    # ==========================================
+    # VALIDAR CAJA ABIERTA
+    # ==========================================
 
     if not caja:
+
         mostrar_error(
-
             request,
-
             titulo="Caja cerrada",
-
             mensaje="No existe una caja abierta.",
-
             detalles=[
                 "Debe abrir una caja antes de registrar un pago."
             ],
-
         )
 
         return redirect(
             "liquidaciones_pendientes"
         )
 
-        
+    # ==========================================
+    # POST
+    # ==========================================
 
-    if request.method == 'POST':
+    if request.method == "POST":
 
         form = PagoLiquidacionForm(
             request.POST
         )
 
         if form.is_valid():
-            
-            # =====================================
+
+            # ==================================
             # MEDIOS DE PAGO
-            # =====================================
+            # ==================================
 
             medios_pago_json = request.POST.get(
                 "medios_pago_json"
@@ -959,13 +984,13 @@ def registrar_pago_liquidacion(
                     {
                         "form": form,
                         "liquidacion": liquidacion,
-                       "medios_pago": medios_pago,
+                        "medios_pago": medios_pago,
                     },
                 )
 
             try:
 
-                medios_pago = json.loads(
+                medios_pago_seleccionados = json.loads(
                     medios_pago_json
                 )
 
@@ -982,54 +1007,54 @@ def registrar_pago_liquidacion(
                     {
                         "form": form,
                         "liquidacion": liquidacion,
-                        "medios_pago": MedioPago.objects.filter(
-                            activo=True
-                        ).order_by("nombre"),
+                        "medios_pago": medios_pago,
                     },
                 )
 
+            # ==================================
+            # IMPORTE DEL PAGO
+            # ==================================
+
             importe = form.cleaned_data[
-                'importe'
+                "importe"
             ]
 
             if importe <= 0:
 
                 mostrar_error(
-
                     request,
-
                     titulo="Importe inválido",
-
                     mensaje="El importe debe ser mayor a cero.",
-
                 )
 
                 return redirect(
-                    'registrar_pago_liquidacion',
+                    "registrar_pago_liquidacion",
                     liquidacion.id
                 )
 
+            # ==================================
+            # VALIDAR SALDO
+            # ==================================
+
             if importe > liquidacion.saldo_pendiente:
+
                 mostrar_error(
-
                     request,
-
                     titulo="Importe inválido",
-
                     mensaje="El importe supera el saldo pendiente.",
-
                     detalles=[
                         f"Saldo pendiente: ${liquidacion.saldo_pendiente}"
                     ],
-
                 )
-
-               
 
                 return redirect(
-                    'registrar_pago_liquidacion',
+                    "registrar_pago_liquidacion",
                     liquidacion.id
                 )
+
+            # ==================================
+            # CREAR EGRESO EN CAJA
+            # ==================================
 
             movimiento = MovimientoCaja.objects.create(
 
@@ -1037,32 +1062,33 @@ def registrar_pago_liquidacion(
 
                 centro_medico=centro_medico,
 
-                tipo='EGRESO',
+                tipo="EGRESO",
 
                 importe=importe,
 
                 concepto=(
-                    f'Pago Honorarios Médicos - '
-                    f'{liquidacion.medico}'
+                    f"Pago Honorarios Médicos - "
+                    f"{liquidacion.medico}"
                 ),
 
                 observacion=form.cleaned_data[
-                    'observacion'
+                    "observacion"
                 ],
 
-                estado='ACTIVO',
+                estado="ACTIVO",
 
                 creado_por=request.user,
             )
 
-            # =====================================
+            # ==================================
             # GUARDAR MEDIOS DE PAGO
-            # =====================================
+            # ==================================
 
-            for item in medios_pago:
+            for item in medios_pago_seleccionados:
 
                 medio = MedioPago.objects.get(
-                    pk=item["medio"]
+                    pk=item["medio"],
+                    activo=True,
                 )
 
                 DetalleMedioPago.objects.create(
@@ -1073,9 +1099,13 @@ def registrar_pago_liquidacion(
 
                     importe=Decimal(
                         str(item["importe"])
-                    )
-
+                    ),
                 )
+
+            # ==================================
+            # REGISTRAR PAGO DE LIQUIDACIÓN
+            # ==================================
+
             PagoLiquidacionMedica.objects.create(
 
                 liquidacion=liquidacion,
@@ -1084,16 +1114,24 @@ def registrar_pago_liquidacion(
 
                 importe=importe,
 
-                registrado_por=request.user
+                registrado_por=request.user,
             )
+
+            # ==================================
+            # ACTUALIZAR LIQUIDACIÓN
+            # ==================================
 
             liquidacion.total_pagado += importe
 
             liquidacion.cantidad_pagos += 1
 
+            # ==================================
+            # ESTADO DE LA LIQUIDACIÓN
+            # ==================================
+
             if liquidacion.saldo_pendiente <= 0:
 
-                liquidacion.estado = 'PAGADA'
+                liquidacion.estado = "PAGADA"
 
                 liquidacion.fecha_pago = timezone.now()
 
@@ -1101,52 +1139,66 @@ def registrar_pago_liquidacion(
 
             elif liquidacion.total_pagado > 0:
 
-                liquidacion.estado = 'PARCIAL'
+                liquidacion.estado = "PARCIAL"
+
+                liquidacion.fecha_pago = None
+
+                liquidacion.pagado_por = None
 
             else:
 
-                liquidacion.estado = 'PENDIENTE'
+                liquidacion.estado = "PENDIENTE"
+
+                liquidacion.fecha_pago = None
+
+                liquidacion.pagado_por = None
 
             liquidacion.save()
 
+            # ==================================
+            # MENSAJE
+            # ==================================
+
             mostrar_exito(
+                request,
+                titulo="Pago registrado",
+                mensaje=(
+                    "El pago de la liquidación "
+                    "fue registrado correctamente."
+                ),
+                icono="bi-wallet2",
+                detalles=[
+                    f"Médico: {liquidacion.medico}",
+                    f"Importe pagado: ${importe}",
+                    (
+                        f"Saldo pendiente: "
+                        f"${liquidacion.saldo_pendiente}"
+                    ),
+                    (
+                        f"Estado: "
+                        f"{liquidacion.get_estado_display()}"
+                    ),
+                ],
+            )
 
-            request,
-
-            titulo="Pago registrado",
-
-            mensaje="El pago de la liquidación fue registrado correctamente.",
-
-            icono="bi-wallet2",
-
-            detalles=[
-
-                f"Médico: {liquidacion.medico}",
-
-                f"Importe pagado: ${importe}",
-
-                f"Saldo pendiente: ${liquidacion.saldo_pendiente}",
-
-                f"Estado: {liquidacion.get_estado_display()}",
-
-            ],
-
-        )
-
-        return redirect(
-            "liquidaciones_pendientes"
-        )
+            return redirect(
+                "liquidaciones_pendientes"
+            )
 
     else:
 
         form = PagoLiquidacionForm()
 
+    # ==========================================
+    # TEMPLATE
+    # ==========================================
+
     return render(
         request,
-        'honorarios/registrar_pago_liquidacion.html',
+        "honorarios/registrar_pago_liquidacion.html",
         {
-            'form': form,
-            'liquidacion': liquidacion,
+            "form": form,
+            "liquidacion": liquidacion,
             "medios_pago": medios_pago,
         }
     )
@@ -1404,4 +1456,614 @@ def detalle_liquidacion_medica(
             "total_particulares": total_particulares,
             "total_coseguros": total_coseguros,
         },
+    )
+    
+
+@login_required
+def generar_liquidacion_obra_social(request):
+
+    # ==========================================
+    # CENTRO ACTIVO
+    # ==========================================
+
+    centro_medico = obtener_centro_activo(request)
+
+    # ==========================================
+    # DATOS DEL FILTRO
+    # ==========================================
+
+    desde = request.GET.get("desde")
+    hasta = request.GET.get("hasta")
+    obra_social_id = request.GET.get("obra_social")
+    medico_id = request.GET.get("medico")
+
+    # ==========================================
+    # LISTAS PARA LOS SELECTORES
+    # ==========================================
+
+    obras_sociales = (
+        ObraSocial.objects
+        .filter(activa=True)
+        .order_by("nombre")
+    )
+
+    medicos = (
+        Medico.objects
+        .all()
+        .order_by("apellido", "nombre")
+    )
+
+    # ==========================================
+    # RESULTADOS
+    # ==========================================
+
+    prestaciones = DetalleMovimientoCaja.objects.none()
+
+    filtros_aplicados = False
+
+    # ==========================================
+    # BUSCAR
+    # ==========================================
+
+    if (
+        desde
+        and hasta
+        and obra_social_id
+        and medico_id
+    ):
+
+        filtros_aplicados = True
+
+        prestaciones = (
+            DetalleMovimientoCaja.objects
+            .filter(
+
+                # ----------------------------------
+                # CENTRO
+                # ----------------------------------
+
+                movimiento__centro_medico=centro_medico,
+
+                # ----------------------------------
+                # MOVIMIENTO VÁLIDO
+                # ----------------------------------
+
+                movimiento__tipo="INGRESO",
+                movimiento__estado="ACTIVO",
+
+                # ----------------------------------
+                # MÉDICO
+                # ----------------------------------
+
+                movimiento__turno__medico_id=medico_id,
+
+                # ----------------------------------
+                # OBRA SOCIAL
+                # ----------------------------------
+
+                prestacion_obra_social__isnull=False,
+
+                prestacion_obra_social__obra_social_id=obra_social_id,
+
+                # ----------------------------------
+                # FECHAS
+                # ----------------------------------
+
+                fecha_prestacion__range=(
+                    desde,
+                    hasta
+                ),
+
+                # ----------------------------------
+                # TODAVÍA NO COBRADA DE LA OS
+                # ----------------------------------
+
+                obra_social_cobrada=False,
+
+                # ----------------------------------
+                # HONORARIO OS TODAVÍA NO LIQUIDADO
+                # ----------------------------------
+
+                honorario_os_liquidado=False,
+            )
+            .select_related(
+                "movimiento",
+                "movimiento__paciente",
+                "movimiento__turno",
+
+                "prestacion_obra_social",
+                "prestacion_obra_social__obra_social",
+
+                # Necesario para código y descripción
+                "prestacion_obra_social__nomenclador",
+            )
+            .order_by(
+                "fecha_prestacion",
+                "movimiento__paciente__apellido",
+                "id",
+            )
+        )
+
+    # ==========================================
+    # CALCULAR HONORARIO OS PENDIENTE
+    # ==========================================
+    #
+    # IMPORTANTE:
+    #
+    # importe_medico contiene el honorario total
+    # correspondiente a la prestación.
+    #
+    # Si el coseguro ya fue liquidado anteriormente,
+    # debemos descontarlo para no volver a pagarlo.
+    #
+    # Ejemplo:
+    #
+    # Honorario médico original:     $179.550
+    # Coseguro ya liquidado:          $10.000
+    # Honorario pendiente por OS:    $169.550
+    #
+    # ==========================================
+
+    for detalle in prestaciones:
+
+        honorario_pendiente = (
+            detalle.importe_medico
+            or Decimal("0.00")
+        )
+
+        # --------------------------------------
+        # DESCONTAR COSEGURO YA LIQUIDADO
+        # --------------------------------------
+
+        if detalle.coseguro_liquidado:
+
+            honorario_pendiente -= (
+                detalle.importe_coseguro
+                or Decimal("0.00")
+            )
+
+        # --------------------------------------
+        # EVITAR VALORES NEGATIVOS
+        # --------------------------------------
+
+        if honorario_pendiente < Decimal("0.00"):
+
+            honorario_pendiente = Decimal("0.00")
+
+        # --------------------------------------
+        # ATRIBUTO TEMPORAL PARA EL HTML
+        # --------------------------------------
+
+        detalle.honorario_os_pendiente = (
+            honorario_pendiente
+        )
+
+    # ==========================================
+    # TOTALES PARA PREVISUALIZACIÓN
+    # ==========================================
+
+    cantidad_prestaciones = prestaciones.count()
+
+    # ------------------------------------------
+    # TOTAL COBRADO A LA OBRA SOCIAL
+    # ------------------------------------------
+
+    total_obra_social = sum(
+        (
+            detalle.importe
+            or Decimal("0.00")
+            for detalle in prestaciones
+        ),
+        Decimal("0.00")
+    )
+
+    # ------------------------------------------
+    # TOTAL HONORARIOS PENDIENTES
+    # ------------------------------------------
+    #
+    # Usamos honorario_os_pendiente y NO
+    # importe_medico, porque puede existir
+    # un coseguro previamente liquidado.
+    # ------------------------------------------
+
+    total_honorarios = sum(
+        (
+            detalle.honorario_os_pendiente
+            for detalle in prestaciones
+        ),
+        Decimal("0.00")
+    )
+
+    # ==========================================
+    # CONTEXTO
+    # ==========================================
+
+    context = {
+
+        "centro_medico": centro_medico,
+
+        # --------------------------------------
+        # SELECTORES
+        # --------------------------------------
+
+        "obras_sociales": obras_sociales,
+        "medicos": medicos,
+
+        # --------------------------------------
+        # RESULTADOS
+        # --------------------------------------
+
+        "prestaciones": prestaciones,
+
+        "filtros_aplicados": filtros_aplicados,
+
+        # --------------------------------------
+        # TOTALES
+        # --------------------------------------
+
+        "cantidad_prestaciones": cantidad_prestaciones,
+        "total_obra_social": total_obra_social,
+        "total_honorarios": total_honorarios,
+
+        # --------------------------------------
+        # MANTENER FILTROS SELECCIONADOS
+        # --------------------------------------
+
+        "desde": desde,
+        "hasta": hasta,
+        "obra_social_id": obra_social_id,
+        "medico_id": medico_id,
+    }
+
+    # ==========================================
+    # RENDER
+    # ==========================================
+
+    return render(
+        request,
+        "honorarios/generar_liquidacion_os.html",
+        context,
+    )
+    
+@login_required
+@transaction.atomic
+def confirmar_liquidacion_obra_social(request):
+
+    # ==========================================
+    # SOLO POST
+    # ==========================================
+
+    if request.method != "POST":
+        return redirect(
+            "generar_liquidacion_obra_social"
+        )
+
+    # ==========================================
+    # CENTRO ACTIVO
+    # ==========================================
+
+    centro_medico = obtener_centro_activo(request)
+
+    # ==========================================
+    # DATOS RECIBIDOS
+    # ==========================================
+
+    detalle_ids = request.POST.getlist(
+        "prestaciones"
+    )
+
+    obra_social_id = request.POST.get(
+        "obra_social"
+    )
+
+    medico_id = request.POST.get(
+        "medico"
+    )
+
+    desde = request.POST.get(
+        "desde"
+    )
+
+    hasta = request.POST.get(
+        "hasta"
+    )
+
+    # ==========================================
+    # VALIDACIONES BÁSICAS
+    # ==========================================
+
+    if not detalle_ids:
+
+        messages.warning(
+            request,
+            "Debe seleccionar al menos una prestación."
+        )
+
+        return redirect(
+            "generar_liquidacion_obra_social"
+        )
+
+    if not obra_social_id or not medico_id:
+
+        messages.error(
+            request,
+            "No se pudo identificar la obra social o el médico."
+        )
+
+        return redirect(
+            "generar_liquidacion_obra_social"
+        )
+
+    # ==========================================
+    # OBTENER MÉDICO Y OBRA SOCIAL
+    # ==========================================
+
+    medico = get_object_or_404(
+        Medico,
+        pk=medico_id
+    )
+
+    obra_social = get_object_or_404(
+        ObraSocial,
+        pk=obra_social_id
+    )
+
+    # ==========================================
+    # VOLVER A CONSULTAR LAS PRESTACIONES
+    # ==========================================
+    #
+    # MUY IMPORTANTE:
+    # No confiamos solamente en los IDs enviados
+    # por el navegador.
+    #
+    # Volvemos a comprobar:
+    #
+    # - sede
+    # - médico
+    # - obra social
+    # - movimiento activo
+    # - todavía no cobrada OS
+    # - honorario OS todavía no liquidado
+    #
+    # ==========================================
+
+    prestaciones = list(
+        DetalleMovimientoCaja.objects
+        .select_for_update()
+        .filter(
+            id__in=detalle_ids,
+
+            movimiento__centro_medico=centro_medico,
+            movimiento__tipo="INGRESO",
+            movimiento__estado="ACTIVO",
+
+            movimiento__turno__medico=medico,
+
+            prestacion_obra_social__isnull=False,
+            prestacion_obra_social__obra_social=obra_social,
+
+            obra_social_cobrada=False,
+            honorario_os_liquidado=False,
+        )
+        .select_related(
+            "movimiento",
+            "movimiento__paciente",
+            "movimiento__turno",
+            "prestacion_obra_social",
+            "prestacion_obra_social__obra_social",
+            "prestacion_obra_social__nomenclador",
+        )
+        .order_by(
+            "fecha_prestacion",
+            "id"
+        )
+    )
+
+    # ==========================================
+    # VALIDAR RESULTADOS
+    # ==========================================
+
+    if not prestaciones:
+
+        messages.warning(
+            request,
+            "Las prestaciones seleccionadas ya no están disponibles para liquidar."
+        )
+
+        return redirect(
+            "generar_liquidacion_obra_social"
+        )
+
+    # ==========================================
+    # SEGURIDAD: TODOS LOS IDS DEBEN SER VÁLIDOS
+    # ==========================================
+
+    ids_validos = {
+        str(detalle.id)
+        for detalle in prestaciones
+    }
+
+    ids_solicitados = {
+        str(detalle_id)
+        for detalle_id in detalle_ids
+    }
+
+    if ids_validos != ids_solicitados:
+
+        messages.error(
+            request,
+            (
+                "Una o más prestaciones seleccionadas ya no están "
+                "disponibles. No se generó la liquidación."
+            )
+        )
+
+        transaction.set_rollback(True)
+
+        return redirect(
+            "generar_liquidacion_obra_social"
+        )
+
+    # ==========================================
+    # TOTALES
+    # ==========================================
+
+    total_bruto = Decimal("0.00")
+    total_iva = Decimal("0.00")
+    total_consultorio = Decimal("0.00")
+    total_honorarios = Decimal("0.00")
+    total_retenciones = Decimal("0.00")
+
+    honorarios_por_detalle = {}
+
+    # ==========================================
+    # CALCULAR CADA PRESTACIÓN
+    # ==========================================
+
+    for detalle in prestaciones:
+
+        total_bruto += (
+            detalle.importe
+            or Decimal("0.00")
+        )
+
+        total_iva += (
+            detalle.importe_iva
+            or Decimal("0.00")
+        )
+
+        total_consultorio += (
+            detalle.importe_consultorio
+            or Decimal("0.00")
+        )
+
+        # --------------------------------------
+        # HONORARIO ORIGINAL
+        # --------------------------------------
+
+        honorario_os = (
+            detalle.importe_medico
+            or Decimal("0.00")
+        )
+
+        # --------------------------------------
+        # DESCONTAR COSEGURO YA LIQUIDADO
+        # --------------------------------------
+        #
+        # Ejemplo:
+        #
+        # Honorario total:       179.550
+        # Coseguro ya liquidado:  10.000
+        #
+        # Honorario OS:          169.550
+        #
+        # --------------------------------------
+
+        if detalle.coseguro_liquidado:
+
+            honorario_os -= (
+                detalle.importe_coseguro
+                or Decimal("0.00")
+            )
+
+        # Nunca permitir honorario negativo
+
+        if honorario_os < 0:
+            honorario_os = Decimal("0.00")
+
+        honorarios_por_detalle[
+            detalle.id
+        ] = honorario_os
+
+        total_honorarios += honorario_os
+
+    # ==========================================
+    # CREAR LIQUIDACIÓN
+    # ==========================================
+
+    liquidacion = LiquidacionMedica.objects.create(
+
+        medico=medico,
+        centro_medico=centro_medico,
+
+        cantidad_prestaciones=len(
+            prestaciones
+        ),
+
+        total_bruto=total_bruto,
+        total_iva=total_iva,
+        total_retenciones=total_retenciones,
+        total_consultorio=total_consultorio,
+
+        total_honorarios=total_honorarios,
+
+        estado="PENDIENTE",
+
+        generado_por=request.user,
+        creado_por=request.user,
+
+        observacion=(
+            f"Liquidación Obra Social: "
+            f"{obra_social.nombre}"
+        ),
+    )
+
+    # ==========================================
+    # CREAR ITEMS DE LIQUIDACIÓN
+    # ==========================================
+
+    for detalle in prestaciones:
+
+        honorario_os = (
+            honorarios_por_detalle[
+                detalle.id
+            ]
+        )
+
+        DetalleLiquidacionMedica.objects.create(
+
+            liquidacion=liquidacion,
+
+            detalle_movimiento=detalle,
+
+            tipo="OBRA_SOCIAL",
+
+            importe=honorario_os,
+        )
+
+        # ======================================
+        # MARCAR PARTE OS COMO LIQUIDADA
+        # ======================================
+
+        detalle.obra_social_cobrada = True
+        detalle.honorario_os_liquidado = True
+
+        detalle.save(
+            update_fields=[
+                "obra_social_cobrada",
+                "honorario_os_liquidado",
+            ]
+        )
+
+    # ==========================================
+    # MENSAJE
+    # ==========================================
+
+    messages.success(
+        request,
+        (
+            f"Liquidación #{liquidacion.id} generada correctamente "
+            f"para {obra_social.nombre}. "
+            f"{len(prestaciones)} prestaciones. "
+            f"Honorarios: ${total_honorarios:,.2f}"
+        )
+    )
+
+    # ==========================================
+    # IR AL DETALLE
+    # ==========================================
+
+    return redirect(
+        "detalle_liquidacion_medica",
+        liquidacion_id=liquidacion.id
     )

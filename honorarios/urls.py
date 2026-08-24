@@ -19,12 +19,26 @@ path(
     name='previsualizar_liquidacion'
 ),
 
-
+path(
+    "generar-obra-social/",
+    views.generar_liquidacion_obra_social,
+    name="generar_liquidacion_obra_social",
+),
  path(
     'pendientes/',
     views.liquidaciones_pendientes,
     name='liquidaciones_pendientes'
+),
+ path(
+    "confirmar-liquidacion-obra-social/",
+    views.confirmar_liquidacion_obra_social,
+    name="confirmar_liquidacion_obra_social",
 ), 
+ path(
+    "confirmar-liquidacion-obra-social/",
+    views.confirmar_liquidacion_obra_social,
+    name="confirmar_liquidacion_obra_social",
+),
 
 path(
     'pagar/<int:liquidacion_id>/',
