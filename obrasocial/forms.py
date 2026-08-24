@@ -348,8 +348,15 @@ class PrestacionPlanForm(forms.ModelForm):
 
         fields = [
             "valor",
+
+            # Coseguro
             "tiene_coseguro",
             "importe_coseguro",
+
+            # Copago
+            "tiene_copago",
+            "importe_copago",
+
             "porcentaje_iva",
             "tipo_calculo",
             "porcentaje_medico",
@@ -368,7 +375,11 @@ class PrestacionPlanForm(forms.ModelForm):
                 "step": "0.01",
                 "min": "0",
             }),
-            
+
+            # ==========================================
+            # COSEGURO
+            # ==========================================
+
             "tiene_coseguro": forms.CheckboxInput(attrs={
                 "class": "form-check-input",
             }),
@@ -378,6 +389,24 @@ class PrestacionPlanForm(forms.ModelForm):
                 "step": "0.01",
                 "min": "0",
             }),
+
+            # ==========================================
+            # COPAGO
+            # ==========================================
+
+            "tiene_copago": forms.CheckboxInput(attrs={
+                "class": "form-check-input",
+            }),
+
+            "importe_copago": forms.NumberInput(attrs={
+                "class": "form-control",
+                "step": "0.01",
+                "min": "0",
+            }),
+
+            # ==========================================
+            # CONFIGURACIÓN
+            # ==========================================
 
             "porcentaje_iva": forms.NumberInput(attrs={
                 "class": "form-control",
@@ -427,9 +456,17 @@ class PrestacionPlanForm(forms.ModelForm):
         }
 
         labels = {
+
             "valor": "Valor Convenio",
+
+            # Coseguro
             "tiene_coseguro": "Tiene coseguro",
             "importe_coseguro": "Importe del coseguro",
+
+            # Copago
+            "tiene_copago": "Tiene copago",
+            "importe_copago": "Importe del copago",
+
             "porcentaje_iva": "IVA (%)",
             "tipo_calculo": "Tipo de cálculo",
             "porcentaje_medico": "Porcentaje Médico",
@@ -440,10 +477,46 @@ class PrestacionPlanForm(forms.ModelForm):
             "importe_proveedor": "Importe proveedor",
             "estado": "Estado",
         }
-        
+
+    
+    
+    def __init__(self, *args, **kwargs):
+
+        super().__init__(*args, **kwargs)
+
+        # ==========================================
+        # COSEGURO
+        # ==========================================
+        #
+        # El importe solamente es obligatorio
+        # cuando tiene_coseguro está activado.
+        # La validación real se realiza en clean().
+        # ==========================================
+
+        self.fields[
+            "importe_coseguro"
+        ].required = False
+
+        # ==========================================
+        # COPAGO
+        # ==========================================
+        #
+        # El importe solamente es obligatorio
+        # cuando tiene_copago está activado.
+        # La validación real se realiza en clean().
+        # ==========================================
+
+        self.fields[
+            "importe_copago"
+        ].required = False
+    
     def clean(self):
 
         cleaned_data = super().clean()
+
+        # ==========================================
+        # DATOS
+        # ==========================================
 
         tiene_coseguro = cleaned_data.get(
             "tiene_coseguro"
@@ -453,47 +526,82 @@ class PrestacionPlanForm(forms.ModelForm):
             "importe_coseguro"
         )
 
+        tiene_copago = cleaned_data.get(
+            "tiene_copago"
+        )
+
+        importe_copago = cleaned_data.get(
+            "importe_copago"
+        )
+
         valor = cleaned_data.get(
             "valor"
         )
 
         # ==========================================
-        # SIN COSEGURO
+        # COSEGURO
         # ==========================================
 
         if not tiene_coseguro:
 
             cleaned_data["importe_coseguro"] = 0
 
-            return cleaned_data
+        else:
+
+            if (
+                importe_coseguro is None or
+                importe_coseguro <= 0
+            ):
+
+                self.add_error(
+                    "importe_coseguro",
+                    (
+                        "Debe ingresar un importe de "
+                        "coseguro mayor a $0."
+                    )
+                )
+
+            # ======================================
+            # COSEGURO NO PUEDE SUPERAR CONVENIO
+            # ======================================
+
+            if (
+                valor is not None and
+                importe_coseguro is not None and
+                importe_coseguro > valor
+            ):
+
+                self.add_error(
+                    "importe_coseguro",
+                    (
+                        "El coseguro no puede superar "
+                        "el valor de la prestación."
+                    )
+                )
 
         # ==========================================
-        # CON COSEGURO
+        # COPAGO
         # ==========================================
 
-        if (
-            importe_coseguro is None or
-            importe_coseguro <= 0
-        ):
+        if not tiene_copago:
 
-            self.add_error(
-                "importe_coseguro",
-                "Debe ingresar un importe de coseguro mayor a $0."
-            )
+            cleaned_data["importe_copago"] = 0
 
-        # ==========================================
-        # NO PUEDE SUPERAR VALOR CONVENIO
-        # ==========================================
+        else:
 
-        if (
-            valor is not None and
-            importe_coseguro is not None and
-            importe_coseguro > valor
-        ):
+            if (
+                importe_copago is None or
+                importe_copago <= 0
+            ):
 
-            self.add_error(
-                "importe_coseguro",
-                "El coseguro no puede superar el valor de la prestación."
-            )
+                self.add_error(
+                    "importe_copago",
+                    (
+                        "Debe ingresar un importe de "
+                        "copago mayor a $0."
+                    )
+                )
 
         return cleaned_data
+    
+    

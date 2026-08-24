@@ -129,6 +129,7 @@ class DetalleLiquidacionMedica(models.Model):
     TIPOS = [
         ("PARTICULAR", "Particular"),
         ("COSEGURO", "Coseguro"),
+         ("COPAGO", "Copago"),
         ("OBRA_SOCIAL", "Obra Social"),
     ]
 

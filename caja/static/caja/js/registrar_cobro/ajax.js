@@ -111,8 +111,12 @@ function inicializarPrestacionesAjax(){
 
                 option.textContent = item.nombre;
 
-                // Guardamos de dónde viene la prestación:
+                // ==========================================
+                // ORIGEN
+                // ==========================================
+                //
                 // PARTICULAR u OBRA_SOCIAL
+                // ==========================================
 
                 option.dataset.origen =
                     item.origen;
@@ -146,13 +150,19 @@ function inicializarPrestacionesAjax(){
 function inicializarImporteAjax(){
 
     const prestacion =
-        document.getElementById("id_concepto_facturacion");
+        document.getElementById(
+            "id_concepto_facturacion"
+        );
 
     const importe =
-        document.getElementById("id_importe_particular");
+        document.getElementById(
+            "id_importe_particular"
+        );
 
     const turno =
-        document.getElementById("id_turno");
+        document.getElementById(
+            "id_turno"
+        );
 
 
     if(
@@ -164,144 +174,189 @@ function inicializarImporteAjax(){
     }
 
 
-    prestacion.addEventListener("change", function(){
-
-        importe.value = "";
-
-
-        if(!this.value){
-            return;
-        }
-
-
-        if(!turno.value){
-
-            mostrarError(
-                "Debe seleccionar un turno."
-            );
-
-            return;
-        }
-
-
-        // ==========================================
-        // OBTENER ORIGEN DE LA PRESTACIÓN
-        // ==========================================
-
-        const opcionSeleccionada =
-            this.options[this.selectedIndex];
-
-        const origen =
-            opcionSeleccionada.dataset.origen;
-
-
-        if(!origen){
-
-            mostrarError(
-                "No se pudo determinar el origen de la prestación."
-            );
-
-            return;
-        }
-
-
-        // ==========================================
-        // CONSULTAR IMPORTE
-        // ==========================================
-
-        const url =
-            "/caja/ajax/importe-prestacion/?" +
-            "prestacion_id=" +
-            encodeURIComponent(this.value) +
-            "&origen=" +
-            encodeURIComponent(origen) +
-            "&turno_id=" +
-            encodeURIComponent(turno.value);
-
-
-        fetch(url)
-
-        .then(async response => {
-
-            const data = await response.json();
-
-            if(!response.ok){
-
-                throw new Error(
-                    data.error ||
-                    "No se pudo obtener el importe."
-                );
-
-            }
-
-            return data;
-
-        })
-
-        .then(data => {
-
-        // ==========================================
-        // VALOR TOTAL DE LA PRESTACIÓN
-        // ==========================================
-
-        importe.value =
-            parseFloat(
-                data.importe || 0
-            ).toFixed(2);
-
-
-        // ==========================================
-        // GUARDAR DATOS EN LA OPCIÓN SELECCIONADA
-        // ==========================================
-
-        const opcionSeleccionada =
-            prestacion.options[
-                prestacion.selectedIndex
-            ];
-
-
-        opcionSeleccionada.dataset.tieneCoseguro =
-            data.tiene_coseguro
-                ? "1"
-                : "0";
-
-
-        opcionSeleccionada.dataset.importeCoseguro =
-            parseFloat(
-                data.importe_coseguro || 0
-            ).toFixed(2);
-
-
-        // ==========================================
-        // DEBUG TEMPORAL
-        // ==========================================
-
-        console.log(
-            "Prestación:",
-            data.codigo,
-            "Valor:",
-            data.importe,
-            "Tiene coseguro:",
-            data.tiene_coseguro,
-            "Coseguro:",
-            data.importe_coseguro
-        );
-
-    })
-
-        .catch(error => {
-
-            console.error(
-                "Error obteniendo importe:",
-                error
-            );
+    prestacion.addEventListener(
+        "change",
+        function(){
 
             importe.value = "";
 
-            mostrarError(error.message);
 
-        });
+            if(!this.value){
+                return;
+            }
 
-    });
+
+            if(!turno.value){
+
+                mostrarError(
+                    "Debe seleccionar un turno."
+                );
+
+                return;
+            }
+
+
+            // ==========================================
+            // OBTENER ORIGEN DE LA PRESTACIÓN
+            // ==========================================
+
+            const opcionSeleccionada =
+                this.options[
+                    this.selectedIndex
+                ];
+
+            const origen =
+                opcionSeleccionada.dataset.origen;
+
+
+            if(!origen){
+
+                mostrarError(
+                    "No se pudo determinar el origen de la prestación."
+                );
+
+                return;
+            }
+
+
+            // ==========================================
+            // CONSULTAR IMPORTE
+            // ==========================================
+
+            const url =
+                "/caja/ajax/importe-prestacion/?" +
+                "prestacion_id=" +
+                encodeURIComponent(
+                    this.value
+                ) +
+                "&origen=" +
+                encodeURIComponent(
+                    origen
+                ) +
+                "&turno_id=" +
+                encodeURIComponent(
+                    turno.value
+                );
+
+
+            fetch(url)
+
+            .then(async response => {
+
+                const data =
+                    await response.json();
+
+
+                if(!response.ok){
+
+                    throw new Error(
+                        data.error ||
+                        "No se pudo obtener el importe."
+                    );
+
+                }
+
+
+                return data;
+
+            })
+
+            .then(data => {
+
+                // ==========================================
+                // VALOR TOTAL DE LA PRESTACIÓN
+                // ==========================================
+
+                importe.value =
+                    parseFloat(
+                        data.importe || 0
+                    ).toFixed(2);
+
+
+                // ==========================================
+                // OPCIÓN SELECCIONADA
+                // ==========================================
+
+                const opcionSeleccionada =
+                    prestacion.options[
+                        prestacion.selectedIndex
+                    ];
+
+
+                // ==========================================
+                // COSEGURO
+                // ==========================================
+
+                opcionSeleccionada.dataset.tieneCoseguro =
+                    data.tiene_coseguro
+                        ? "1"
+                        : "0";
+
+
+                opcionSeleccionada.dataset.importeCoseguro =
+                    parseFloat(
+                        data.importe_coseguro || 0
+                    ).toFixed(2);
+
+
+                // ==========================================
+                // COPAGO
+                // ==========================================
+
+                opcionSeleccionada.dataset.tieneCopago =
+                    data.tiene_copago
+                        ? "1"
+                        : "0";
+
+
+                opcionSeleccionada.dataset.importeCopago =
+                    parseFloat(
+                        data.importe_copago || 0
+                    ).toFixed(2);
+
+
+                // ==========================================
+                // DEBUG TEMPORAL
+                // ==========================================
+
+                console.log(
+                    "Prestación:",
+                    data.codigo,
+
+                    "| Valor:",
+                    data.importe,
+
+                    "| Tiene coseguro:",
+                    data.tiene_coseguro,
+
+                    "| Coseguro:",
+                    data.importe_coseguro,
+
+                    "| Tiene copago:",
+                    data.tiene_copago,
+
+                    "| Copago:",
+                    data.importe_copago
+                );
+
+            })
+
+            .catch(error => {
+
+                console.error(
+                    "Error obteniendo importe:",
+                    error
+                );
+
+                importe.value = "";
+
+                mostrarError(
+                    error.message
+                );
+
+            });
+
+        }
+    );
 
 }

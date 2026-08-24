@@ -264,7 +264,21 @@ class PrestacionPlan(models.Model):
         verbose_name="Importe Coseguro"
     )
     
-    
+    # ==========================================================
+    # COPAGO
+    # ==========================================================
+
+    tiene_copago = models.BooleanField(
+        default=False,
+        verbose_name="Tiene copago"
+    )
+
+    importe_copago = models.DecimalField(
+        max_digits=12,
+        decimal_places=2,
+        default=0,
+        verbose_name="Importe Copago"
+    )
 
     fecha_vigencia_desde = models.DateField()
 

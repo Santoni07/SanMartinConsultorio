@@ -445,6 +445,7 @@ def registrar_movimiento(request):
         },
     )
 
+
 @login_required
 @transaction.atomic
 def registrar_cobro(request):
@@ -514,6 +515,7 @@ def registrar_cobro(request):
         )
 
         print("=" * 80)
+
         print(
             "FORM ES VÁLIDO:",
             form.is_valid()
@@ -685,12 +687,7 @@ def registrar_cobro(request):
                     # COSEGURO
                     # =================================
                     #
-                    # El valor de convenio NO lo paga
-                    # el paciente.
-                    #
-                    # Si la prestación posee coseguro,
-                    # el paciente paga únicamente ese
-                    # importe.
+                    # El coseguro lo paga el paciente.
                     # =================================
 
                     if prestacion.tiene_coseguro:
@@ -704,6 +701,31 @@ def registrar_cobro(request):
 
                         total_a_cobrar_paciente += (
                             cantidad * coseguro
+                        )
+
+                    # =================================
+                    # COPAGO
+                    # =================================
+                    #
+                    # El copago también lo paga el
+                    # paciente.
+                    #
+                    # IMPORTANTE:
+                    # NO se descuenta del importe que
+                    # posteriormente paga la OS.
+                    # =================================
+
+                    if prestacion.tiene_copago:
+
+                        copago = Decimal(
+                            str(
+                                prestacion.importe_copago
+                                or 0
+                            )
+                        )
+
+                        total_a_cobrar_paciente += (
+                            cantidad * copago
                         )
 
                 else:
@@ -723,6 +745,12 @@ def registrar_cobro(request):
             # Solamente exigimos medios de pago
             # cuando realmente el paciente
             # tiene algo que pagar.
+            #
+            # Puede ser:
+            #
+            # - Particular
+            # - Coseguro
+            # - Copago
 
             if (
                 total_a_cobrar_paciente
@@ -773,7 +801,7 @@ def registrar_cobro(request):
 
             else:
 
-                # Obra Social sin coseguro:
+                # Obra Social sin coseguro ni copago:
                 # no existe dinero recibido
                 # del paciente.
 
@@ -846,17 +874,23 @@ def registrar_cobro(request):
             )
 
             movimiento.caja = caja
+
             movimiento.centro_medico = (
                 centro_medico
             )
+
             movimiento.turno = turno
+
             movimiento.paciente = (
                 turno.paciente
             )
+
             movimiento.tipo = "INGRESO"
+
             movimiento.creado_por = (
                 request.user
             )
+
             movimiento.estado = "ACTIVO"
 
             # Los importes se calculan
@@ -939,35 +973,83 @@ def registrar_cobro(request):
                     # COSEGURO COBRADO AL PACIENTE
                     # =================================
                     #
-                    # Si la prestación posee coseguro,
-                    # registrar_cobro ya validó que ese
-                    # importe fue efectivamente pagado
-                    # mediante los medios de pago.
-                    #
+                    # Si tiene coseguro, anteriormente
+                    # ya validamos que ese importe fue
+                    # pagado.
+                    # =================================
 
                     coseguro_cobrado = (
                         prestacion.tiene_coseguro
                         and prestacion.importe_coseguro
-                        and prestacion.importe_coseguro > Decimal("0.00")
+                        and prestacion.importe_coseguro
+                            > Decimal("0.00")
                     )
+
+                    # =================================
+                    # COPAGO COBRADO AL PACIENTE
+                    # =================================
+                    #
+                    # Si tiene copago, anteriormente
+                    # también validamos que ese importe
+                    # fue pagado.
+                    # =================================
+
+                    copago_cobrado = (
+                        prestacion.tiene_copago
+                        and prestacion.importe_copago
+                        and prestacion.importe_copago
+                            > Decimal("0.00")
+                    )
+
+                    # =================================
+                    # CREAR DETALLE
+                    # =================================
 
                     detalle = DetalleMovimientoCaja(
+
                         movimiento=movimiento,
+
                         concepto_facturacion=None,
+
                         prestacion_obra_social=prestacion,
+
                         fecha_prestacion=turno.fecha,
+
                         cantidad=cantidad,
+
                         orden=orden,
 
-                        # Control de honorarios
-                        coseguro_cobrado=bool(coseguro_cobrado),
+                        # =============================
+                        # COSEGURO
+                        # =============================
+
+                        coseguro_cobrado=bool(
+                            coseguro_cobrado
+                        ),
+
                         coseguro_liquidado=False,
 
-                        # La OS todavía NO pagó
+                        # =============================
+                        # COPAGO
+                        # =============================
+
+                        copago_cobrado=bool(
+                            copago_cobrado
+                        ),
+
+                        copago_liquidado=False,
+
+                        # =============================
+                        # OBRA SOCIAL
+                        # =============================
+
                         obra_social_cobrada=False,
+
                         fecha_cobro_obra_social=None,
+
                         honorario_os_liquidado=False,
                     )
+
                 # =================================
                 # ORIGEN INCORRECTO
                 # =================================
@@ -978,9 +1060,21 @@ def registrar_cobro(request):
                         "Origen de prestación inválido."
                     )
 
-                # El modelo DetalleMovimientoCaja
-                # calcula sus importes económicos
-                # al guardarse.
+                # =================================
+                # GUARDAR DETALLE
+                # =================================
+                #
+                # El modelo copia la fotografía
+                # económica de la prestación:
+                #
+                # - valor
+                # - coseguro
+                # - copago
+                # - IVA
+                # - honorarios
+                # - consultorio
+                # - proveedor
+                # =================================
 
                 detalle.save()
 
@@ -1082,13 +1176,19 @@ def registrar_cobro(request):
             # =====================================
             # MEDIOS DE PAGO
             # =====================================
-
+            #
             # PARTICULAR:
             # se crean normalmente.
             #
-            # OBRA SOCIAL SIN COSEGURO:
-            # medios_pago_data está vacío,
-            # por lo que no crea ninguno.
+            # OBRA SOCIAL CON COSEGURO:
+            # se registra el coseguro.
+            #
+            # OBRA SOCIAL CON COPAGO:
+            # se registra el copago.
+            #
+            # OBRA SOCIAL SIN COSEGURO NI COPAGO:
+            # medios_pago_data está vacío.
+            # =====================================
 
             for item in medios_pago_data:
 
@@ -1175,7 +1275,6 @@ def registrar_cobro(request):
             'medios_pago': medios_pago,
         }
     )
-
 
 
 @login_required
@@ -1976,16 +2075,36 @@ def ajax_prestaciones(request):
 @login_required
 def ajax_importe_prestacion(request):
 
-    prestacion_id = request.GET.get("prestacion_id")
-    origen = request.GET.get("origen")
-    turno_id = request.GET.get("turno_id")
+    prestacion_id = request.GET.get(
+        "prestacion_id"
+    )
 
-    if not prestacion_id or not origen or not turno_id:
+    origen = request.GET.get(
+        "origen"
+    )
+
+    turno_id = request.GET.get(
+        "turno_id"
+    )
+
+    # ==========================================
+    # VALIDAR DATOS
+    # ==========================================
+
+    if (
+        not prestacion_id or
+        not origen or
+        not turno_id
+    ):
 
         return JsonResponse({
-            "error": "Faltan datos para obtener el importe.",
+            "error": (
+                "Faltan datos para obtener "
+                "el importe."
+            ),
             "importe": 0
         }, status=400)
+
 
     # ==========================================
     # OBTENER TURNO
@@ -1993,12 +2112,16 @@ def ajax_importe_prestacion(request):
 
     try:
 
-        turno = Turnos.objects.select_related(
-            "paciente",
-            "paciente__obrasocial",
-            "paciente__plan_obra_social",
-        ).get(
-            pk=turno_id
+        turno = (
+            Turnos.objects
+            .select_related(
+                "paciente",
+                "paciente__obrasocial",
+                "paciente__plan_obra_social",
+            )
+            .get(
+                pk=turno_id
+            )
         )
 
     except Turnos.DoesNotExist:
@@ -2008,9 +2131,13 @@ def ajax_importe_prestacion(request):
             "importe": 0
         }, status=404)
 
+
     paciente = turno.paciente
+
     obra_social = paciente.obrasocial
+
     plan = paciente.plan_obra_social
+
 
     # ==========================================
     # PARTICULAR
@@ -2021,35 +2148,70 @@ def ajax_importe_prestacion(request):
         if not obra_social.es_particular:
 
             return JsonResponse({
-                "error": "El paciente no posee cobertura Particular.",
+                "error": (
+                    "El paciente no posee "
+                    "cobertura Particular."
+                ),
                 "importe": 0
             }, status=400)
 
+
         try:
 
-            concepto = ConceptoFacturacion.objects.select_related(
-                "nomenclador"
-            ).get(
-                pk=prestacion_id,
-                activo=True
+            concepto = (
+                ConceptoFacturacion.objects
+                .select_related(
+                    "nomenclador"
+                )
+                .get(
+                    pk=prestacion_id,
+                    activo=True
+                )
             )
 
         except ConceptoFacturacion.DoesNotExist:
 
             return JsonResponse({
-                "error": "La prestación particular no existe.",
+                "error": (
+                    "La prestación particular "
+                    "no existe."
+                ),
                 "importe": 0
             }, status=404)
 
+
         return JsonResponse({
+
+            # ======================================
+            # VALOR PARTICULAR
+            # ======================================
 
             "importe": float(
                 concepto.importe_particular
             ),
 
-            # Particular no utiliza coseguro
+
+            # ======================================
+            # PARTICULAR NO TIENE COSEGURO
+            # ======================================
+
             "tiene_coseguro": False,
+
             "importe_coseguro": 0,
+
+
+            # ======================================
+            # PARTICULAR NO TIENE COPAGO
+            # ======================================
+
+            "tiene_copago": False,
+
+            "importe_copago": 0,
+
+
+            # ======================================
+            # DATOS PRESTACIÓN
+            # ======================================
 
             "codigo":
                 concepto.nomenclador.codigo,
@@ -2061,6 +2223,7 @@ def ajax_importe_prestacion(request):
                 "PARTICULAR"
         })
 
+
     # ==========================================
     # OBRA SOCIAL
     # ==========================================
@@ -2068,10 +2231,17 @@ def ajax_importe_prestacion(request):
     if origen == "OBRA_SOCIAL":
 
         filtros = {
-            "pk": prestacion_id,
-            "obra_social": obra_social,
-            "estado": "ACTIVA",
+
+            "pk":
+                prestacion_id,
+
+            "obra_social":
+                obra_social,
+
+            "estado":
+                "ACTIVA",
         }
+
 
         # ======================================
         # OBRA SOCIAL CON PLAN
@@ -2082,22 +2252,31 @@ def ajax_importe_prestacion(request):
             if not plan:
 
                 return JsonResponse({
-                    "error":
-                        "El paciente no tiene un plan asignado.",
-                    "importe": 0
-                }, status=400)
-
-            if plan.obra_social_id != obra_social.id:
-
-                return JsonResponse({
                     "error": (
-                        "El plan del paciente no pertenece "
-                        "a su obra social."
+                        "El paciente no tiene "
+                        "un plan asignado."
                     ),
                     "importe": 0
                 }, status=400)
 
+
+            if (
+                plan.obra_social_id !=
+                obra_social.id
+            ):
+
+                return JsonResponse({
+                    "error": (
+                        "El plan del paciente "
+                        "no pertenece a su "
+                        "obra social."
+                    ),
+                    "importe": 0
+                }, status=400)
+
+
             filtros["plan"] = plan
+
 
         # ======================================
         # OBRA SOCIAL SIN PLAN
@@ -2105,7 +2284,14 @@ def ajax_importe_prestacion(request):
 
         else:
 
-            filtros["plan__isnull"] = True
+            filtros[
+                "plan__isnull"
+            ] = True
+
+
+        # ======================================
+        # OBTENER PRESTACIÓN
+        # ======================================
 
         try:
 
@@ -2123,11 +2309,12 @@ def ajax_importe_prestacion(request):
 
             return JsonResponse({
                 "error": (
-                    "La prestación no pertenece al convenio "
-                    "del paciente."
+                    "La prestación no pertenece "
+                    "al convenio del paciente."
                 ),
                 "importe": 0
             }, status=404)
+
 
         # ======================================
         # COSEGURO
@@ -2135,11 +2322,29 @@ def ajax_importe_prestacion(request):
 
         importe_coseguro = 0
 
+
         if prestacion.tiene_coseguro:
 
             importe_coseguro = (
                 prestacion.importe_coseguro
+                or 0
             )
+
+
+        # ======================================
+        # COPAGO
+        # ======================================
+
+        importe_copago = 0
+
+
+        if prestacion.tiene_copago:
+
+            importe_copago = (
+                prestacion.importe_copago
+                or 0
+            )
+
 
         # ======================================
         # RESPUESTA
@@ -2147,18 +2352,48 @@ def ajax_importe_prestacion(request):
 
         return JsonResponse({
 
-            # Valor TOTAL de la prestación
+            # ==================================
+            # VALOR CONVENIO
+            # ==================================
+            #
+            # Este valor es el valor de la
+            # prestación.
+            #
+            # El copago NO modifica este valor.
+            # ==================================
+
             "importe": float(
                 prestacion.valor
             ),
 
-            # Datos del coseguro
+
+            # ==================================
+            # COSEGURO
+            # ==================================
+
             "tiene_coseguro":
                 prestacion.tiene_coseguro,
 
             "importe_coseguro": float(
                 importe_coseguro
             ),
+
+
+            # ==================================
+            # COPAGO
+            # ==================================
+
+            "tiene_copago":
+                prestacion.tiene_copago,
+
+            "importe_copago": float(
+                importe_copago
+            ),
+
+
+            # ==================================
+            # DATOS PRESTACIÓN
+            # ==================================
 
             "codigo":
                 prestacion.nomenclador.codigo,
@@ -2170,17 +2405,17 @@ def ajax_importe_prestacion(request):
                 "OBRA_SOCIAL"
         })
 
+
     # ==========================================
     # ORIGEN INVÁLIDO
     # ==========================================
 
     return JsonResponse({
-        "error": "Origen de prestación inválido.",
+        "error": (
+            "Origen de prestación inválido."
+        ),
         "importe": 0
     }, status=400)
-
-
-
 @login_required
 def ajax_cobertura_turno(request):
 

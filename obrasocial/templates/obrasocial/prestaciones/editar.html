@@ -314,6 +314,118 @@
                     </div>
 
                 </div>
+                
+                <!-- ============================================= -->
+                <!-- COPAGO -->
+                <!-- ============================================= -->
+
+                <div class="card shadow-sm border-0 mb-4">
+
+                    <div class="card-header bg-light">
+
+                        <h5 class="mb-0">
+                            <i class="bi bi-wallet2 text-success"></i>
+                            Copago
+                        </h5>
+
+                    </div>
+
+                    <div class="card-body">
+
+                        <div class="row g-3 align-items-end">
+
+                            <!-- TIENE COPAGO -->
+
+                            <div class="col-md-4">
+
+                                <label class="form-label fw-bold d-block">
+                                    Copago del paciente
+                                </label>
+
+                                <div class="form-check form-switch mt-2">
+
+                                    {{ form.tiene_copago }}
+
+                                    <label
+                                        class="form-check-label"
+                                        for="{{ form.tiene_copago.id_for_label }}"
+                                    >
+                                        Esta prestación tiene copago
+                                    </label>
+
+                                </div>
+
+                                {% if form.tiene_copago.errors %}
+
+                                    <div class="text-danger small mt-1">
+                                        {{ form.tiene_copago.errors }}
+                                    </div>
+
+                                {% endif %}
+
+                            </div>
+
+
+                            <!-- IMPORTE COPAGO -->
+
+                            <div
+                                class="col-md-4"
+                                id="contenedor_importe_copago"
+                            >
+
+                                <label class="form-label fw-bold">
+                                    {{ form.importe_copago.label }}
+                                </label>
+
+                                <div class="input-group">
+
+                                    <span class="input-group-text">
+                                        $
+                                    </span>
+
+                                    {{ form.importe_copago }}
+
+                                </div>
+
+                                {% if form.importe_copago.errors %}
+
+                                    <div class="text-danger small mt-1">
+                                        {{ form.importe_copago.errors }}
+                                    </div>
+
+                                {% endif %}
+
+                            </div>
+
+
+                            <!-- INFORMACIÓN -->
+
+                            <div class="col-md-4">
+
+                                <div class="alert alert-success mb-0 py-2">
+
+                                    <small>
+
+                                        El copago es abonado por el paciente
+                                        y se destina al honorario médico.
+                                        No se descuenta del importe que debe
+                                        pagar la Obra Social.
+
+                                    </small>
+
+                                </div>
+
+                            </div>
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+
+
+
 
                 <!-- ============================================= -->
                 <!-- DISTRIBUCIÓN -->
@@ -565,6 +677,10 @@
 
 document.addEventListener("DOMContentLoaded", function(){
 
+    // ==========================================
+    // COSEGURO
+    // ==========================================
+
     const tieneCoseguro =
         document.getElementById(
             "{{ form.tiene_coseguro.id_for_label }}"
@@ -575,40 +691,37 @@ document.addEventListener("DOMContentLoaded", function(){
             "{{ form.importe_coseguro.id_for_label }}"
         );
 
-    const contenedor =
+    const contenedorCoseguro =
         document.getElementById(
             "contenedor_importe_coseguro"
         );
 
 
-    if(
-        !tieneCoseguro ||
-        !importeCoseguro ||
-        !contenedor
-    ){
-        return;
-    }
-
-
     function actualizarCoseguro(){
+
+        if(
+            !tieneCoseguro ||
+            !importeCoseguro ||
+            !contenedorCoseguro
+        ){
+            return;
+        }
 
         if(tieneCoseguro.checked){
 
             importeCoseguro.disabled = false;
 
-            contenedor.classList.remove(
+            contenedorCoseguro.classList.remove(
                 "opacity-50"
             );
 
-        }
-
-        else{
+        }else{
 
             importeCoseguro.value = "0";
 
             importeCoseguro.disabled = true;
 
-            contenedor.classList.add(
+            contenedorCoseguro.classList.add(
                 "opacity-50"
             );
 
@@ -617,13 +730,81 @@ document.addEventListener("DOMContentLoaded", function(){
     }
 
 
-    tieneCoseguro.addEventListener(
-        "change",
-        actualizarCoseguro
-    );
+    if(tieneCoseguro){
+
+        tieneCoseguro.addEventListener(
+            "change",
+            actualizarCoseguro
+        );
+
+        actualizarCoseguro();
+
+    }
 
 
-    actualizarCoseguro();
+    // ==========================================
+    // COPAGO
+    // ==========================================
+
+    const tieneCopago =
+        document.getElementById(
+            "{{ form.tiene_copago.id_for_label }}"
+        );
+
+    const importeCopago =
+        document.getElementById(
+            "{{ form.importe_copago.id_for_label }}"
+        );
+
+    const contenedorCopago =
+        document.getElementById(
+            "contenedor_importe_copago"
+        );
+
+
+    function actualizarCopago(){
+
+        if(
+            !tieneCopago ||
+            !importeCopago ||
+            !contenedorCopago
+        ){
+            return;
+        }
+
+        if(tieneCopago.checked){
+
+            importeCopago.disabled = false;
+
+            contenedorCopago.classList.remove(
+                "opacity-50"
+            );
+
+        }else{
+
+            importeCopago.value = "0";
+
+            importeCopago.disabled = true;
+
+            contenedorCopago.classList.add(
+                "opacity-50"
+            );
+
+        }
+
+    }
+
+
+    if(tieneCopago){
+
+        tieneCopago.addEventListener(
+            "change",
+            actualizarCopago
+        );
+
+        actualizarCopago();
+
+    }
 
 });
 

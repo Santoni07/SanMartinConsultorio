@@ -41,7 +41,7 @@
                     </div>
 
                     <h5 class="mb-0">
-                        {{ resumen.cantidad_particulares|add:resumen.cantidad_coseguros }}
+                        {{ resumen.cantidad_particulares|add:resumen.cantidad_coseguros|add:resumen.cantidad_copagos }}
                     </h5>
 
                 </div>
@@ -61,7 +61,7 @@
 
         <!-- PARTICULARES -->
 
-        <div class="col-md-4">
+        <div class="col-md-3">
 
             <div class="card shadow-sm h-100">
 
@@ -89,7 +89,7 @@
 
         <!-- COSEGUROS -->
 
-        <div class="col-md-4">
+        <div class="col-md-3">
 
             <div class="card shadow-sm h-100 border-success">
 
@@ -115,9 +115,37 @@
         </div>
 
 
+        <!-- COPAGOS -->
+
+        <div class="col-md-3">
+
+            <div class="card shadow-sm h-100 border-info">
+
+                <div class="card-body">
+
+                    <div class="text-muted">
+                        Copagos cobrados
+                    </div>
+
+                    <h3 class="mb-1 mt-2 text-info">
+                        $ {{ resumen.total_copagos|floatformat:2 }}
+                    </h3>
+
+                    <small class="text-info">
+                        {{ resumen.cantidad_copagos }}
+                        copago/s
+                    </small>
+
+                </div>
+
+            </div>
+
+        </div>
+
+
         <!-- TOTAL -->
 
-        <div class="col-md-4">
+        <div class="col-md-3">
 
             <div class="card shadow-sm h-100 border-success">
 
@@ -174,17 +202,11 @@
 
                             <tr>
 
-                                <th>
-                                    Fecha
-                                </th>
+                                <th>Fecha</th>
 
-                                <th>
-                                    Paciente
-                                </th>
+                                <th>Paciente</th>
 
-                                <th>
-                                    Prestación
-                                </th>
+                                <th>Prestación</th>
 
                                 <th class="text-end">
                                     Valor prestación
@@ -311,29 +333,19 @@
 
                             <tr>
 
-                                <th>
-                                    Fecha
-                                </th>
+                                <th>Fecha</th>
 
-                                <th>
-                                    Paciente
-                                </th>
+                                <th>Paciente</th>
 
-                                <th>
-                                    Obra Social
-                                </th>
+                                <th>Obra Social</th>
 
-                                <th>
-                                    Prestación
-                                </th>
+                                <th>Prestación</th>
 
                                 <th class="text-end">
                                     Coseguro cobrado
                                 </th>
 
-                                <th>
-                                    Estado
-                                </th>
+                                <th>Estado</th>
 
                             </tr>
 
@@ -435,6 +447,153 @@
 
 
     <!-- ================================================== -->
+    <!-- COPAGOS -->
+    <!-- ================================================== -->
+
+    <div class="card mt-4 shadow-sm border-info">
+
+        <div class="card-header bg-info text-dark">
+
+            <div class="d-flex justify-content-between align-items-center">
+
+                <strong>
+                    Copagos Cobrados
+                </strong>
+
+                <span class="badge bg-dark">
+                    {{ resumen.cantidad_copagos }}
+                </span>
+
+            </div>
+
+        </div>
+
+        <div class="card-body p-0">
+
+            {% if copagos %}
+
+                <div class="table-responsive">
+
+                    <table class="table table-striped table-hover align-middle mb-0">
+
+                        <thead class="table-light">
+
+                            <tr>
+
+                                <th>Fecha</th>
+
+                                <th>Paciente</th>
+
+                                <th>Obra Social</th>
+
+                                <th>Prestación</th>
+
+                                <th class="text-end">
+                                    Copago cobrado
+                                </th>
+
+                                <th>Estado</th>
+
+                            </tr>
+
+                        </thead>
+
+                        <tbody>
+
+                            {% for detalle in copagos %}
+
+                                <tr>
+
+                                    <td>
+                                        {{ detalle.fecha_prestacion|date:"d/m/Y" }}
+                                    </td>
+
+                                    <td>
+                                        {{ detalle.movimiento.paciente }}
+                                    </td>
+
+                                    <td>
+                                        {{ detalle.prestacion_obra_social.obra_social }}
+                                    </td>
+
+                                    <td>
+
+                                        <strong>
+                                            {{ detalle.codigo }}
+                                        </strong>
+
+                                        <div>
+                                            <small class="text-muted">
+                                                {{ detalle.descripcion }}
+                                            </small>
+                                        </div>
+
+                                    </td>
+
+                                    <td class="text-end">
+
+                                        <strong class="text-info">
+                                            $ {{ detalle.importe_copago|floatformat:2 }}
+                                        </strong>
+
+                                    </td>
+
+                                    <td>
+
+                                        <span class="badge bg-info text-dark">
+                                            ✓ Cobrado
+                                        </span>
+
+                                        <div>
+                                            <small class="text-muted">
+                                                Se liquidará al médico
+                                            </small>
+                                        </div>
+
+                                    </td>
+
+                                </tr>
+
+                            {% endfor %}
+
+                        </tbody>
+
+                        <tfoot>
+
+                            <tr class="table-light">
+
+                                <td colspan="4" class="text-end fw-bold">
+                                    Total Copagos
+                                </td>
+
+                                <td class="text-end fw-bold text-info">
+                                    $ {{ resumen.total_copagos|floatformat:2 }}
+                                </td>
+
+                                <td></td>
+
+                            </tr>
+
+                        </tfoot>
+
+                    </table>
+
+                </div>
+
+            {% else %}
+
+                <div class="text-center text-muted p-4">
+                    No hay copagos cobrados en esta liquidación.
+                </div>
+
+            {% endif %}
+
+        </div>
+
+    </div>
+
+
+    <!-- ================================================== -->
     <!-- TOTAL FINAL -->
     <!-- ================================================== -->
 
@@ -451,7 +610,7 @@
                     </h5>
 
                     <div class="text-muted">
-                        Particular + Coseguros efectivamente cobrados
+                        Particulares + Coseguros + Copagos efectivamente cobrados
                     </div>
 
                 </div>
@@ -484,8 +643,20 @@
         esta liquidación no incluye los honorarios pendientes
         correspondientes a Obras Sociales que todavía no fueron cobradas.
 
-        En las prestaciones con coseguro se incluye únicamente
-        el coseguro efectivamente cobrado al paciente.
+        <div class="mt-2">
+
+            En las prestaciones con coseguro se incluye únicamente
+            el coseguro efectivamente cobrado al paciente.
+
+        </div>
+
+        <div>
+
+            En las prestaciones con copago se incluye el copago
+            efectivamente cobrado al paciente, ya que dicho importe
+            corresponde directamente al honorario del médico.
+
+        </div>
 
     </div>
 
@@ -498,30 +669,22 @@
 
         <div class="card-body">
 
-            <!--
-                GENERAR LIQUIDACIÓN TODAVÍA DESHABILITADO.
+            <form
+                method="post"
+                action="{% url 'generar_liquidacion' medico.id %}"
+                class="d-inline"
+            >
 
-                Primero vamos a adaptar generar_liquidacion()
-                para que utilice DetalleLiquidacionMedica y no
-                marque una prestación OS completa como liquidada.
-            -->
+                {% csrf_token %}
 
-           <form
-    method="post"
-    action="{% url 'generar_liquidacion' medico.id %}"
-    class="d-inline"
->
+                <button
+                    type="submit"
+                    class="btn btn-success"
+                >
+                    Generar Liquidación
+                </button>
 
-    {% csrf_token %}
-
-    <button
-        type="submit"
-        class="btn btn-success"
-    >
-        Generar Liquidación
-    </button>
-
-</form>
+            </form>
 
             <a
                 href="{% url 'honorarios_medicos' %}?medico={{ medico.id }}"
@@ -529,15 +692,6 @@
             >
                 Volver
             </a>
-
-            <div class="mt-2">
-
-                <small class="text-muted">
-                    La generación se habilitará cuando se confirme
-                    la separación entre Particular, Coseguro y Obra Social.
-                </small>
-
-            </div>
 
         </div>
 

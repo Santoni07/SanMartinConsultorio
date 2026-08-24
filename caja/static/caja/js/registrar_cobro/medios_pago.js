@@ -322,6 +322,7 @@ function obtenerTotalACobrarPaciente(){
         const cantidad =
             parseFloat(item.cantidad || 0);
 
+
         // =====================================
         // PARTICULAR
         // =====================================
@@ -343,12 +344,18 @@ function obtenerTotalACobrarPaciente(){
 
         if(item.origen === "OBRA_SOCIAL"){
 
+            let totalPacientePrestacion = 0;
+
+
+            // =================================
+            // COSEGURO
+            // =================================
+
             const tieneCoseguro =
                 item.tiene_coseguro === true ||
                 item.tiene_coseguro === "true" ||
                 item.tiene_coseguro === 1 ||
                 item.tiene_coseguro === "1";
-
 
             if(tieneCoseguro){
 
@@ -357,10 +364,40 @@ function obtenerTotalACobrarPaciente(){
                         item.importe_coseguro || 0
                     );
 
-                return total +
-                    (cantidad * importeCoseguro);
+                totalPacientePrestacion +=
+                    importeCoseguro;
 
             }
+
+
+            // =================================
+            // COPAGO
+            // =================================
+
+            const tieneCopago =
+                item.tiene_copago === true ||
+                item.tiene_copago === "true" ||
+                item.tiene_copago === 1 ||
+                item.tiene_copago === "1";
+
+            if(tieneCopago){
+
+                const importeCopago =
+                    parseFloat(
+                        item.importe_copago || 0
+                    );
+
+                totalPacientePrestacion +=
+                    importeCopago;
+
+            }
+
+
+            return total +
+                (
+                    cantidad *
+                    totalPacientePrestacion
+                );
 
         }
 
@@ -370,7 +407,6 @@ function obtenerTotalACobrarPaciente(){
     }, 0);
 
 }
-
 
 // ======================================================
 // TOTAL MEDIOS DE PAGO

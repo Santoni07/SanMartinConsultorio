@@ -19,16 +19,25 @@ function actualizarResumen(){
     // PARTICULAR:
     // paga el valor completo.
     //
-    // OBRA SOCIAL SIN COSEGURO:
+    // OBRA SOCIAL SIN COSEGURO/COPAGO:
     // paga $0.
     //
     // OBRA SOCIAL CON COSEGURO:
-    // paga solamente el coseguro.
+    // paga el coseguro.
+    //
+    // OBRA SOCIAL CON COPAGO:
+    // paga el copago.
+    //
+    // IMPORTANTE:
+    // El copago NO se descuenta de lo que
+    // debe pagar la Obra Social.
     // =====================================
 
     let totalACobrarPaciente = 0;
 
     let totalCoseguros = 0;
+
+    let totalCopagos = 0;
 
     let hayObraSocial = false;
 
@@ -73,6 +82,11 @@ function actualizarResumen(){
 
             hayObraSocial = true;
 
+
+            // =================================
+            // COSEGURO
+            // =================================
+
             const tieneCoseguro =
                 item.tiene_coseguro === true ||
                 item.tiene_coseguro === "true" ||
@@ -100,6 +114,38 @@ function actualizarResumen(){
 
             }
 
+
+            // =================================
+            // COPAGO
+            // =================================
+
+            const tieneCopago =
+                item.tiene_copago === true ||
+                item.tiene_copago === "true" ||
+                item.tiene_copago === 1 ||
+                item.tiene_copago === "1";
+
+
+            const importeCopago =
+                parseFloat(
+                    item.importe_copago || 0
+                );
+
+
+            if(tieneCopago){
+
+                const subtotalCopago =
+                    cantidad *
+                    importeCopago;
+
+                totalCopagos +=
+                    subtotalCopago;
+
+                totalACobrarPaciente +=
+                    subtotalCopago;
+
+            }
+
         }
 
     });
@@ -107,6 +153,13 @@ function actualizarResumen(){
 
     // =====================================
     // TOTAL A CARGO DE OBRA SOCIAL
+    // =====================================
+    //
+    // COSEGURO:
+    // se descuenta del valor OS.
+    //
+    // COPAGO:
+    // NO se descuenta del valor OS.
     // =====================================
 
     const totalObraSocial =
@@ -120,20 +173,24 @@ function actualizarResumen(){
                     return total;
                 }
 
+
                 const cantidad =
                     parseFloat(
                         item.cantidad || 0
                     );
+
 
                 const importe =
                     parseFloat(
                         item.importe || 0
                     );
 
+
                 const coseguro =
                     parseFloat(
                         item.importe_coseguro || 0
                     );
+
 
                 const tieneCoseguro =
                     item.tiene_coseguro === true ||
@@ -152,6 +209,9 @@ function actualizarResumen(){
                         ? cantidad * coseguro
                         : 0;
 
+
+                // IMPORTANTE:
+                // El copago NO se resta acá.
 
                 return (
                     total +
@@ -201,6 +261,7 @@ function actualizarResumen(){
             "resumen_total_prestaciones"
         );
 
+
     if(resumenPrestaciones){
 
         resumenPrestaciones.innerHTML =
@@ -232,6 +293,7 @@ function actualizarResumen(){
             "resumen_total_medios"
         );
 
+
     if(resumenMedios){
 
         resumenMedios.innerHTML =
@@ -251,6 +313,7 @@ function actualizarResumen(){
         document.getElementById(
             "saldo_pendiente"
         );
+
 
     if(saldo){
 
@@ -321,13 +384,14 @@ function actualizarResumen(){
 
 
         // ---------------------------------
-        // OBRA SOCIAL SIN COSEGURO
+        // OBRA SOCIAL SIN COSEGURO/COPAGO
         // ---------------------------------
 
         else if(
             hayObraSocial &&
             !hayParticular &&
             totalCoseguros === 0 &&
+            totalCopagos === 0 &&
             totalMediosCalculado === 0
         ){
 
@@ -336,6 +400,51 @@ function actualizarResumen(){
 
             estado.innerHTML =
                 "✔ Prestación a cargo de la Obra Social";
+
+        }
+
+
+        // ---------------------------------
+        // COSEGURO + COPAGO PENDIENTES
+        // ---------------------------------
+
+        else if(
+            hayObraSocial &&
+            totalCoseguros > 0 &&
+            totalCopagos > 0 &&
+            saldoPendiente > 0
+        ){
+
+            estado.className =
+                "text-warning fw-bold";
+
+            estado.innerHTML =
+                "⚠ Coseguro + Copago a cobrar al paciente: $ " +
+                formatoMoneda(
+                    saldoPendiente
+                );
+
+        }
+
+
+        // ---------------------------------
+        // COPAGO PENDIENTE
+        // ---------------------------------
+
+        else if(
+            hayObraSocial &&
+            totalCopagos > 0 &&
+            saldoPendiente > 0
+        ){
+
+            estado.className =
+                "text-warning fw-bold";
+
+            estado.innerHTML =
+                "⚠ Copago a cobrar al paciente: $ " +
+                formatoMoneda(
+                    saldoPendiente
+                );
 
         }
 
@@ -377,6 +486,27 @@ function actualizarResumen(){
 
 
             if(
+                hayObraSocial &&
+                totalCoseguros > 0 &&
+                totalCopagos > 0
+            ){
+
+                estado.innerHTML =
+                    "✔ Coseguro y Copago abonados completamente";
+
+            }
+
+            else if(
+                hayObraSocial &&
+                totalCopagos > 0
+            ){
+
+                estado.innerHTML =
+                    "✔ Copago abonado completamente";
+
+            }
+
+            else if(
                 hayObraSocial &&
                 totalCoseguros > 0
             ){
@@ -486,6 +616,11 @@ function actualizarResumen(){
     console.log(
         "Coseguros:",
         totalCoseguros
+    );
+
+    console.log(
+        "Copagos:",
+        totalCopagos
     );
 
     console.log(

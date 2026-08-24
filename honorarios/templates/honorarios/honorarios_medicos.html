@@ -69,90 +69,116 @@
     <!-- ================================================== -->
     <!-- RESUMEN DISPONIBLE -->
     <!-- ================================================== -->
+        <div class="row mt-4 g-3">
 
-    <div class="row mt-4 g-3">
+            <!-- PARTICULARES -->
 
-        <!-- PARTICULARES -->
+            <div class="col-md-3">
 
-        <div class="col-md-4">
+                <div class="card shadow-sm h-100">
 
-            <div class="card shadow-sm h-100">
+                    <div class="card-body">
 
-                <div class="card-body">
+                        <div class="text-muted">
+                            Particulares pendientes
+                        </div>
 
-                    <div class="text-muted">
-                        Particulares pendientes
+                        <h3 class="mt-2 mb-1">
+                            $ {{ resumen.total_particulares|floatformat:2 }}
+                        </h3>
+
+                        <span class="badge bg-primary">
+                            Disponible para liquidar
+                        </span>
+
                     </div>
 
-                    <h3 class="mt-2 mb-1">
-                        $ {{ resumen.total_particulares|floatformat:2 }}
-                    </h3>
+                </div>
 
-                    <span class="badge bg-primary">
-                        Disponible para liquidar
-                    </span>
+            </div>
+
+
+            <!-- COSEGUROS -->
+
+            <div class="col-md-3">
+
+                <div class="card shadow-sm h-100 border-success">
+
+                    <div class="card-body">
+
+                        <div class="text-muted">
+                            Coseguros cobrados
+                        </div>
+
+                        <h3 class="mt-2 mb-1 text-success">
+                            $ {{ resumen.total_coseguros|floatformat:2 }}
+                        </h3>
+
+                        <span class="badge bg-success">
+                            ✓ Cobrado al paciente
+                        </span>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+
+            <!-- COPAGOS -->
+
+            <div class="col-md-3">
+
+                <div class="card shadow-sm h-100 border-info">
+
+                    <div class="card-body">
+
+                        <div class="text-muted">
+                            Copagos cobrados
+                        </div>
+
+                        <h3 class="mt-2 mb-1 text-info">
+                            $ {{ resumen.total_copagos|floatformat:2 }}
+                        </h3>
+
+                        <span class="badge bg-info text-dark">
+                            ✓ Para el médico
+                        </span>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+
+            <!-- TOTAL DISPONIBLE -->
+
+            <div class="col-md-3">
+
+                <div class="card shadow-sm h-100 border-success">
+
+                    <div class="card-body">
+
+                        <div class="fw-bold text-success">
+                            Total disponible ahora
+                        </div>
+
+                        <h2 class="mt-2 mb-1 text-success">
+                            $ {{ resumen.total_disponible|floatformat:2 }}
+                        </h2>
+
+                        <small class="text-muted">
+                            Particular + Coseguros + Copagos
+                        </small>
+
+                    </div>
 
                 </div>
 
             </div>
 
         </div>
-
-
-        <!-- COSEGUROS -->
-
-        <div class="col-md-4">
-
-            <div class="card shadow-sm h-100 border-success">
-
-                <div class="card-body">
-
-                    <div class="text-muted">
-                        Coseguros cobrados
-                    </div>
-
-                    <h3 class="mt-2 mb-1 text-success">
-                        $ {{ resumen.total_coseguros|floatformat:2 }}
-                    </h3>
-
-                    <span class="badge bg-success">
-                        ✓ Cobrado al paciente
-                    </span>
-
-                </div>
-
-            </div>
-
-        </div>
-
-
-        <!-- TOTAL DISPONIBLE -->
-
-        <div class="col-md-4">
-
-            <div class="card shadow-sm h-100 border-success">
-
-                <div class="card-body">
-
-                    <div class="fw-bold text-success">
-                        Total disponible ahora
-                    </div>
-
-                    <h2 class="mt-2 mb-1 text-success">
-                        $ {{ resumen.total_disponible|floatformat:2 }}
-                    </h2>
-
-                    <small class="text-muted">
-                        Particular + Coseguros
-                    </small>
-
-                </div>
-
-            </div>
-
-        </div>
-
-    </div>
 
 
     <!-- ================================================== -->
@@ -371,6 +397,155 @@
         </div>
 
     </div>
+
+    <!-- ================================================== -->
+<!-- COPAGOS COBRADOS -->
+<!-- ================================================== -->
+
+<div class="card mt-4 shadow-sm border-info">
+
+    <div class="card-header bg-info text-dark">
+
+        <div class="d-flex justify-content-between align-items-center">
+
+            <strong>
+                Copagos cobrados pendientes de liquidar
+            </strong>
+
+            <span class="badge bg-dark">
+                {{ copagos|length }}
+            </span>
+
+        </div>
+
+    </div>
+
+    <div class="card-body p-0">
+
+        {% if copagos %}
+
+            <div class="table-responsive">
+
+                <table class="table table-striped table-hover mb-0">
+
+                    <thead class="table-light">
+
+                        <tr>
+
+                            <th>Fecha</th>
+
+                            <th>Paciente</th>
+
+                            <th>Obra Social</th>
+
+                            <th>Prestación</th>
+
+                            <th class="text-end">
+                                Copago
+                            </th>
+
+                            <th>
+                                Estado
+                            </th>
+
+                        </tr>
+
+                    </thead>
+
+                    <tbody>
+
+                        {% for detalle in copagos %}
+
+                            <tr>
+
+                                <!-- FECHA -->
+
+                                <td>
+                                    {{ detalle.fecha_prestacion|date:"d/m/Y" }}
+                                </td>
+
+
+                                <!-- PACIENTE -->
+
+                                <td>
+                                    {{ detalle.movimiento.paciente }}
+                                </td>
+
+
+                                <!-- OBRA SOCIAL -->
+
+                                <td>
+                                    {{ detalle.prestacion_obra_social.obra_social }}
+                                </td>
+
+
+                                <!-- PRESTACIÓN -->
+
+                                <td>
+
+                                    {{ detalle.descripcion }}
+
+                                    <div>
+
+                                        <small class="text-muted">
+                                            Código {{ detalle.codigo }}
+                                        </small>
+
+                                    </div>
+
+                                </td>
+
+
+                                <!-- COPAGO -->
+
+                                <td class="text-end fw-bold text-info">
+
+                                    $ {{ detalle.importe_copago|floatformat:2 }}
+
+                                </td>
+
+
+                                <!-- ESTADO -->
+
+                                <td>
+
+                                    <span class="badge bg-info text-dark">
+                                        ✓ Cobrado
+                                    </span>
+
+                                    <div>
+
+                                        <small class="text-muted">
+                                            Pendiente de liquidar
+                                        </small>
+
+                                    </div>
+
+                                </td>
+
+                            </tr>
+
+                        {% endfor %}
+
+                    </tbody>
+
+                </table>
+
+            </div>
+
+        {% else %}
+
+            <div class="text-center text-muted p-4">
+
+                No existen copagos cobrados pendientes de liquidar.
+
+            </div>
+
+        {% endif %}
+
+    </div>
+
+</div>
 
 
     <!-- ================================================== -->
@@ -720,8 +895,8 @@
                 </h5>
 
                 <div class="text-muted">
-                    Incluye prestaciones particulares y
-                    coseguros efectivamente cobrados.
+                    Incluye prestaciones particulares, coseguros
+                    y copagos efectivamente cobrados.
                 </div>
 
             </div>
@@ -764,14 +939,17 @@
 
         <div class="mt-1">
 
-            Los particulares y los coseguros efectivamente cobrados
-            están disponibles para liquidar.
+    Los particulares, coseguros y copagos efectivamente
+    cobrados están disponibles para liquidar.
 
-            Las prestaciones correspondientes a Obras Sociales
-            permanecerán pendientes hasta que el consultorio
-            registre el cobro de la Obra Social.
+    Los copagos corresponden directamente al médico
+    y no modifican el importe pendiente de la Obra Social.
 
-        </div>
+    Las prestaciones correspondientes a Obras Sociales
+    permanecerán pendientes hasta que el consultorio
+    registre el cobro de la Obra Social.
+
+</div>
 
     </div>
 

@@ -728,6 +728,32 @@ class DetalleMovimientoCaja(models.Model):
         default=False,
         verbose_name="Coseguro liquidado"
     )
+    
+    # ==========================================
+    # COPAGO
+    # ==========================================
+
+    tiene_copago = models.BooleanField(
+        default=False,
+        verbose_name="Tiene copago"
+    )
+
+    importe_copago = models.DecimalField(
+        max_digits=12,
+        decimal_places=2,
+        default=0,
+        verbose_name="Importe copago"
+    )
+
+    copago_cobrado = models.BooleanField(
+        default=False,
+        verbose_name="Copago cobrado"
+    )
+
+    copago_liquidado = models.BooleanField(
+        default=False,
+        verbose_name="Copago liquidado"
+    )
 
     obra_social_cobrada = models.BooleanField(
         default=False,
@@ -1035,6 +1061,25 @@ class DetalleMovimientoCaja(models.Model):
 
             self.importe_coseguro = Decimal("0.00")
 
+        
+        # ===============================
+        # Copago
+        # ===============================
+
+        self.tiene_copago = (
+            prestacion.tiene_copago
+        )
+
+        if prestacion.tiene_copago:
+
+            self.importe_copago = (
+                Decimal(self.cantidad) *
+                prestacion.importe_copago
+            )
+
+        else:
+
+            self.importe_copago = Decimal("0.00")
         # ===============================
         # Importe Obra Social
         # ===============================
@@ -1077,6 +1122,13 @@ class DetalleMovimientoCaja(models.Model):
 
                 self.tiene_coseguro = False
                 self.importe_coseguro = Decimal("0.00")
+                
+                # ===============================
+                # Copago
+                # ===============================
+
+                self.tiene_copago = False
+                self.importe_copago = Decimal("0.00")
 
             # OBRA SOCIAL
             elif self.prestacion_obra_social:

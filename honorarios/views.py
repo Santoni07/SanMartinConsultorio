@@ -39,6 +39,7 @@ from honorarios.forms import (
     FiltroHistorialLiquidacionesForm,
 )
 
+
 @login_required
 def honorarios_medicos(request):
 
@@ -56,6 +57,7 @@ def honorarios_medicos(request):
 
     particulares = DetalleMovimientoCaja.objects.none()
     coseguros = DetalleMovimientoCaja.objects.none()
+    copagos = DetalleMovimientoCaja.objects.none()
     obras_sociales_pendientes = DetalleMovimientoCaja.objects.none()
 
     # ==========================================
@@ -65,6 +67,7 @@ def honorarios_medicos(request):
     resumen = {
         "total_particulares": Decimal("0.00"),
         "total_coseguros": Decimal("0.00"),
+        "total_copagos": Decimal("0.00"),
         "total_os_pendiente": Decimal("0.00"),
         "total_honorarios_os_pendiente": Decimal("0.00"),
         "total_disponible": Decimal("0.00"),
@@ -131,6 +134,36 @@ def honorarios_medicos(request):
         )
 
         # ==========================================
+        # COPAGOS COBRADOS
+        # PENDIENTES DE LIQUIDAR
+        # ==========================================
+        #
+        # IMPORTANTE:
+        #
+        # El copago va directamente al médico.
+        #
+        # NO se descuenta:
+        # - del valor de la prestación OS
+        # - del importe que debe pagar la OS
+        # - del honorario OS
+        #
+        # ==========================================
+
+        copagos = base.filter(
+            prestacion_obra_social__isnull=False,
+            copago_cobrado=True,
+            copago_liquidado=False,
+            importe_copago__gt=0,
+        )
+
+        total_copagos = (
+            copagos.aggregate(
+                total=Sum("importe_copago")
+            )["total"]
+            or Decimal("0.00")
+        )
+
+        # ==========================================
         # OBRAS SOCIALES PENDIENTES DE COBRO
         # ==========================================
 
@@ -139,9 +172,6 @@ def honorarios_medicos(request):
             obra_social_cobrada=False,
             honorario_os_liquidado=False,
         )
-
-        # IMPORTANTE:
-        # Inicializamos los acumuladores ANTES del for.
 
         total_os_pendiente = Decimal("0.00")
         total_honorarios_os_pendiente = Decimal("0.00")
@@ -155,16 +185,21 @@ def honorarios_medicos(request):
             # --------------------------------------
             # SALDO QUE DEBE PAGAR LA OBRA SOCIAL
             # --------------------------------------
+            #
+            # El coseguro sí se descuenta.
+            #
+            # El copago NO se descuenta.
+            # --------------------------------------
 
             saldo_os = (
-                detalle.importe
-                - detalle.importe_coseguro
+                (detalle.importe or Decimal("0.00"))
+                -
+                (detalle.importe_coseguro or Decimal("0.00"))
             )
 
-            if saldo_os < 0:
+            if saldo_os < Decimal("0.00"):
                 saldo_os = Decimal("0.00")
 
-            # Atributo temporal para mostrar en HTML
             detalle.saldo_os_calculado = saldo_os
 
             total_os_pendiente += saldo_os
@@ -172,16 +207,22 @@ def honorarios_medicos(request):
             # --------------------------------------
             # HONORARIO MÉDICO PENDIENTE DE LA OS
             # --------------------------------------
+            #
+            # El coseguro forma parte del honorario
+            # original y por eso se descuenta.
+            #
+            # El copago es adicional y NO se descuenta.
+            # --------------------------------------
 
             honorario_os = (
-                detalle.importe_medico
-                - detalle.importe_coseguro
+                (detalle.importe_medico or Decimal("0.00"))
+                -
+                (detalle.importe_coseguro or Decimal("0.00"))
             )
 
-            if honorario_os < 0:
+            if honorario_os < Decimal("0.00"):
                 honorario_os = Decimal("0.00")
 
-            # Atributo temporal para mostrar en HTML
             detalle.honorario_os_calculado = honorario_os
 
             total_honorarios_os_pendiente += honorario_os
@@ -191,11 +232,15 @@ def honorarios_medicos(request):
         # ==========================================
 
         resumen = {
+
             "total_particulares":
                 total_particulares,
 
             "total_coseguros":
                 total_coseguros,
+
+            "total_copagos":
+                total_copagos,
 
             "total_os_pendiente":
                 total_os_pendiente,
@@ -203,8 +248,11 @@ def honorarios_medicos(request):
             "total_honorarios_os_pendiente":
                 total_honorarios_os_pendiente,
 
+            # Disponible AHORA para liquidar
             "total_disponible":
-                total_particulares + total_coseguros,
+                total_particulares
+                + total_coseguros
+                + total_copagos,
         }
 
     # ==========================================
@@ -216,18 +264,20 @@ def honorarios_medicos(request):
         "honorarios/honorarios_medicos.html",
         {
             "medicos": medicos,
+
             "particulares": particulares,
             "coseguros": coseguros,
+            "copagos": copagos,
+
             "obras_sociales_pendientes":
                 obras_sociales_pendientes,
+
             "resumen": resumen,
             "medico_id": medico_id,
         },
     )
 
 
-
-    
 @login_required
 def previsualizar_liquidacion(request, medico_id):
 
@@ -279,6 +329,23 @@ def previsualizar_liquidacion(request, medico_id):
     )
 
     # ==========================================
+    # COPAGOS COBRADOS
+    # ==========================================
+    #
+    # El copago:
+    # - ya fue cobrado al paciente
+    # - corresponde directamente al médico
+    # - no modifica el saldo de la Obra Social
+    # ==========================================
+
+    copagos = base.filter(
+        prestacion_obra_social__isnull=False,
+        copago_cobrado=True,
+        copago_liquidado=False,
+        importe_copago__gt=0,
+    )
+
+    # ==========================================
     # TOTAL PARTICULARES
     # ==========================================
 
@@ -301,12 +368,24 @@ def previsualizar_liquidacion(request, medico_id):
     )
 
     # ==========================================
+    # TOTAL COPAGOS
+    # ==========================================
+
+    total_copagos = (
+        copagos.aggregate(
+            total=Sum("importe_copago")
+        )["total"]
+        or Decimal("0.00")
+    )
+
+    # ==========================================
     # TOTAL A LIQUIDAR
     # ==========================================
 
     total_honorarios = (
         total_particulares
         + total_coseguros
+        + total_copagos
     )
 
     # ==========================================
@@ -329,11 +408,27 @@ def previsualizar_liquidacion(request, medico_id):
     # ==========================================
 
     resumen = {
-        "total_particulares": total_particulares,
-        "total_coseguros": total_coseguros,
-        "total_honorarios": total_honorarios,
-        "cantidad_particulares": particulares.count(),
-        "cantidad_coseguros": coseguros.count(),
+
+        "total_particulares":
+            total_particulares,
+
+        "total_coseguros":
+            total_coseguros,
+
+        "total_copagos":
+            total_copagos,
+
+        "total_honorarios":
+            total_honorarios,
+
+        "cantidad_particulares":
+            particulares.count(),
+
+        "cantidad_coseguros":
+            coseguros.count(),
+
+        "cantidad_copagos":
+            copagos.count(),
     }
 
     # ==========================================
@@ -345,11 +440,21 @@ def previsualizar_liquidacion(request, medico_id):
         "honorarios/previsualizar_liquidacion.html",
         {
             "medico": medico,
-            "particulares": particulares,
-            "coseguros": coseguros,
-            "resumen": resumen,
+
+            "particulares":
+                particulares,
+
+            "coseguros":
+                coseguros,
+
+            "copagos":
+                copagos,
+
+            "resumen":
+                resumen,
         }
-    )
+    )  
+
 @login_required
 @transaction.atomic
 def registrar_pago_liquidacion(
@@ -686,10 +791,27 @@ def generar_liquidacion(request, medico_id):
     )
 
     # ==========================================
+    # COPAGOS COBRADOS PENDIENTES
+    # ==========================================
+
+    copagos = list(
+        base.filter(
+            prestacion_obra_social__isnull=False,
+            copago_cobrado=True,
+            copago_liquidado=False,
+            importe_copago__gt=0,
+        )
+    )
+
+    # ==========================================
     # VALIDAR QUE HAYA ALGO PARA LIQUIDAR
     # ==========================================
 
-    if not particulares and not coseguros:
+    if (
+        not particulares
+        and not coseguros
+        and not copagos
+    ):
 
         messages.warning(
             request,
@@ -701,7 +823,7 @@ def generar_liquidacion(request, medico_id):
         )
 
     # ==========================================
-    # TOTALES
+    # TOTAL PARTICULARES
     # ==========================================
 
     total_particulares = sum(
@@ -712,6 +834,10 @@ def generar_liquidacion(request, medico_id):
         Decimal("0.00")
     )
 
+    # ==========================================
+    # TOTAL COSEGUROS
+    # ==========================================
+
     total_coseguros = sum(
         (
             detalle.importe_coseguro
@@ -720,20 +846,40 @@ def generar_liquidacion(request, medico_id):
         Decimal("0.00")
     )
 
+    # ==========================================
+    # TOTAL COPAGOS
+    # ==========================================
+
+    total_copagos = sum(
+        (
+            detalle.importe_copago
+            for detalle in copagos
+        ),
+        Decimal("0.00")
+    )
+
+    # ==========================================
+    # TOTAL HONORARIOS
+    # ==========================================
+
     total_honorarios = (
         total_particulares
         + total_coseguros
+        + total_copagos
     )
 
     # ==========================================
     # DATOS FINANCIEROS DE PARTICULARES
     # ==========================================
     #
-    # Los valores de OS no entran todavía
-    # porque la Obra Social no fue cobrada.
+    # Solamente los particulares forman parte
+    # de estos totales financieros.
     #
-    # El coseguro solamente forma parte del
-    # honorario que estamos pagando ahora.
+    # Los valores de OS todavía no entran porque
+    # la Obra Social no fue cobrada.
+    #
+    # Coseguros y copagos solamente forman parte
+    # del honorario que liquidamos ahora.
     # ==========================================
 
     total_bruto = sum(
@@ -767,18 +913,31 @@ def generar_liquidacion(request, medico_id):
     # ==========================================
 
     liquidacion = LiquidacionMedica.objects.create(
+
         medico=medico,
+
         centro_medico=centro_medico,
 
+        cantidad_prestaciones=(
+            len(particulares)
+            + len(coseguros)
+            + len(copagos)
+        ),
+
         total_bruto=total_bruto,
+
         total_iva=total_iva,
+
         total_consultorio=total_consultorio,
 
         total_honorarios=total_honorarios,
+
         total_retenciones=total_retenciones,
 
         estado="PENDIENTE",
+
         generado_por=request.user,
+
         creado_por=request.user,
     )
 
@@ -789,9 +948,13 @@ def generar_liquidacion(request, medico_id):
     for detalle in particulares:
 
         DetalleLiquidacionMedica.objects.create(
+
             liquidacion=liquidacion,
+
             detalle_movimiento=detalle,
+
             tipo="PARTICULAR",
+
             importe=detalle.importe_medico,
         )
 
@@ -800,6 +963,7 @@ def generar_liquidacion(request, medico_id):
         # --------------------------------------
 
         detalle.liquidacion = liquidacion
+
         detalle.estado = "LIQUIDADO"
 
         detalle.save(
@@ -816,9 +980,13 @@ def generar_liquidacion(request, medico_id):
     for detalle in coseguros:
 
         DetalleLiquidacionMedica.objects.create(
+
             liquidacion=liquidacion,
+
             detalle_movimiento=detalle,
+
             tipo="COSEGURO",
+
             importe=detalle.importe_coseguro,
         )
 
@@ -826,15 +994,14 @@ def generar_liquidacion(request, medico_id):
         # SOLO LIQUIDAMOS EL COSEGURO
         # --------------------------------------
         #
-        # NO cambiamos:
+        # NO modificamos:
         #
         # detalle.estado
         # detalle.liquidacion
         # detalle.obra_social_cobrada
         # detalle.honorario_os_liquidado
         #
-        # La prestación OS debe continuar
-        # pendiente hasta que la OS pague.
+        # La prestación sigue pendiente de OS.
         # --------------------------------------
 
         detalle.coseguro_liquidado = True
@@ -842,6 +1009,49 @@ def generar_liquidacion(request, medico_id):
         detalle.save(
             update_fields=[
                 "coseguro_liquidado",
+            ]
+        )
+
+    # ==========================================
+    # CREAR ITEMS COPAGOS
+    # ==========================================
+
+    for detalle in copagos:
+
+        DetalleLiquidacionMedica.objects.create(
+
+            liquidacion=liquidacion,
+
+            detalle_movimiento=detalle,
+
+            tipo="COPAGO",
+
+            importe=detalle.importe_copago,
+        )
+
+        # --------------------------------------
+        # SOLO LIQUIDAMOS EL COPAGO
+        # --------------------------------------
+        #
+        # El copago pertenece directamente
+        # al médico.
+        #
+        # NO modificamos:
+        #
+        # detalle.estado
+        # detalle.liquidacion
+        # detalle.obra_social_cobrada
+        # detalle.honorario_os_liquidado
+        #
+        # La prestación continúa pendiente
+        # hasta que pague la Obra Social.
+        # --------------------------------------
+
+        detalle.copago_liquidado = True
+
+        detalle.save(
+            update_fields=[
+                "copago_liquidado",
             ]
         )
 
@@ -862,9 +1072,11 @@ def generar_liquidacion(request, medico_id):
     # ==========================================
 
     return redirect(
-    "detalle_liquidacion_medica",
-    liquidacion_id=liquidacion.id
-)
+        "detalle_liquidacion_medica",
+        liquidacion_id=liquidacion.id
+    )
+
+
 
 @login_required
 def liquidaciones_pendientes(request):
