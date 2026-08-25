@@ -50,6 +50,17 @@ function inicializarCobertura(){
         tipoCobertura.value = "";
 
 
+        // =====================================
+        // DESHABILITAR/ACTUALIZAR CONSTANCIA
+        // =====================================
+
+        if(
+            typeof actualizarBotonConstancia === "function"
+        ){
+            actualizarBotonConstancia();
+        }
+
+
         if(!this.value){
             return;
         }
@@ -111,6 +122,17 @@ function inicializarCobertura(){
 
             contenedor.classList.remove("d-none");
 
+
+            // =====================================
+            // ACTUALIZAR BOTÓN CONSTANCIA
+            // =====================================
+
+            if(
+                typeof actualizarBotonConstancia === "function"
+            ){
+                actualizarBotonConstancia();
+            }
+
         })
 
         .catch(error => {
@@ -119,6 +141,14 @@ function inicializarCobertura(){
                 "Error obteniendo cobertura:",
                 error
             );
+
+            tipoCobertura.value = "";
+
+            if(
+                typeof actualizarBotonConstancia === "function"
+            ){
+                actualizarBotonConstancia();
+            }
 
             mostrarError(
                 "Ocurrió un error al consultar la cobertura del paciente."

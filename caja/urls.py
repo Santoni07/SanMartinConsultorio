@@ -35,6 +35,11 @@ urlpatterns = [
     name="pdf_cierre_caja",
 ),
   path(
+    "constancia-prestacion/",
+    views.constancia_prestacion,
+    name="constancia_prestacion",
+),
+  path(
     "ajax/cobertura-turno/",
     views.ajax_cobertura_turno,
     name="ajax_cobertura_turno"

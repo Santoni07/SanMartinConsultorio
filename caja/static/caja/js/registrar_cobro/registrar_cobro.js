@@ -70,6 +70,7 @@ function inicializar(){
     inicializarPrestaciones();
     inicializarMediosPago();
     inicializarFormulario();
+    inicializarConstanciaPrestacion();
 
 }
 

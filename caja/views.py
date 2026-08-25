@@ -5,7 +5,7 @@ from .pdf.cierre_caja import generar_pdf_cierre
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.utils import timezone
-
+from django.http import HttpResponseBadRequest
 from honorarios.models import PagoLiquidacionMedica
 from django.db import transaction
 from django.db.models import Sum
@@ -2539,6 +2539,9 @@ def ajax_cobertura_turno(request):
 
         "plan": None,
     })
+
+
+
 @login_required
 def pdf_cierre_caja(request, caja_id):
 
@@ -2570,3 +2573,168 @@ def pdf_cierre_caja(request, caja_id):
     )
 
     return response
+
+
+@login_required
+def constancia_prestacion(request):
+
+    # ==========================================
+    # SOLO POST
+    # ==========================================
+
+    if request.method != "POST":
+
+        return HttpResponseBadRequest(
+            "Método no permitido."
+        )
+
+    # ==========================================
+    # DATOS RECIBIDOS
+    # ==========================================
+
+    turno_id = request.POST.get(
+    "turno"
+)
+
+    detalles_json = request.POST.get(
+        "detalles_json"
+    )
+
+    # ==========================================
+    # VALIDAR TURNO
+    # ==========================================
+
+    if not turno_id:
+
+        return HttpResponseBadRequest(
+            "No se recibió el turno."
+        )
+
+    # ==========================================
+    # OBTENER TURNO
+    # ==========================================
+
+    turno = get_object_or_404(
+        Turnos.objects.select_related(
+            "paciente",
+            "paciente__obrasocial",
+            "paciente__plan_obra_social",
+            "medico",
+        ),
+        pk=turno_id
+    )
+
+    paciente = turno.paciente
+
+    obra_social = paciente.obrasocial
+
+    plan = paciente.plan_obra_social
+
+    # ==========================================
+    # VALIDAR OBRA SOCIAL
+    # ==========================================
+
+    if obra_social.es_particular:
+
+        return HttpResponseBadRequest(
+            "La constancia de prestación está disponible únicamente para pacientes con Obra Social."
+        )
+
+    # ==========================================
+    # PROCESAR PRESTACIONES
+    # ==========================================
+
+    try:
+
+        prestaciones = json.loads(
+            detalles_json or "[]"
+        )
+
+    except json.JSONDecodeError:
+
+        return HttpResponseBadRequest(
+            "No se pudieron procesar las prestaciones."
+        )
+
+    if not prestaciones:
+
+        return HttpResponseBadRequest(
+            "Debe agregar al menos una prestación."
+        )
+
+    # ==========================================
+    # SEGURIDAD
+    # ==========================================
+    #
+    # Solo necesitamos código y descripción.
+    # No enviamos importes al comprobante.
+    # ==========================================
+
+    prestaciones_constancia = []
+
+    for item in prestaciones:
+
+        prestaciones_constancia.append({
+            "codigo": item.get(
+                "codigo",
+                ""
+            ),
+
+            "descripcion": item.get(
+                "descripcion",
+                ""
+            ),
+
+            "cantidad": item.get(
+                "cantidad",
+                1
+            ),
+        })
+
+    # ==========================================
+    # FECHA / HORA
+    # ==========================================
+
+    fecha = timezone.localtime()
+
+    dias = {
+        0: "Lunes",
+        1: "Martes",
+        2: "Miércoles",
+        3: "Jueves",
+        4: "Viernes",
+        5: "Sábado",
+        6: "Domingo",
+    }
+
+    dia = dias[
+        fecha.weekday()
+    ]
+
+    # ==========================================
+    # CENTRO
+    # ==========================================
+
+    centro_medico = obtener_centro_activo(
+        request
+    )
+
+    # ==========================================
+    # RENDER
+    # ==========================================
+
+    return render(
+        request,
+        "caja/constancia_prestacion.html",
+        {
+            "turno": turno,
+            "paciente": paciente,
+            "obra_social": obra_social,
+            "plan": plan,
+            "medico": turno.medico,
+            "centro_medico": centro_medico,
+            "prestaciones": prestaciones_constancia,
+            "fecha": fecha,
+            "dia": dia,
+        }
+    )

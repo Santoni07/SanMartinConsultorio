@@ -501,28 +501,58 @@
                     name="detalles_json"
                     id="detalles_json">
 
+                <div class="d-flex gap-2 flex-wrap">
 
-                <div class="d-flex gap-2">
+    <!-- ======================================= -->
+    <!-- IMPRIMIR CONSTANCIA OBRA SOCIAL -->
+    <!-- ======================================= -->
 
-                    <button
-                        type="submit"
-                        class="btn btn-success"
-                        id="btn_guardar_cobro"
-                        disabled>
+    <button
+        type="button"
+        class="btn btn-outline-primary"
+        id="btn_imprimir_constancia"
+        disabled
+    >
 
-                        Guardar Cobro
+        <i class="bi bi-printer me-1"></i>
 
-                    </button>
+        Imprimir Constancia
 
-                    <a
-                        href="{% url 'caja_home' %}"
-                        class="btn btn-secondary">
+    </button>
 
-                        Cancelar
 
-                    </a>
+    <!-- ======================================= -->
+    <!-- GUARDAR COBRO -->
+    <!-- ======================================= -->
 
-                </div>
+    <button
+        type="submit"
+        class="btn btn-success"
+        id="btn_guardar_cobro"
+        disabled
+    >
+
+        <i class="bi bi-check-circle me-1"></i>
+
+        Guardar Cobro
+
+    </button>
+
+
+    <!-- ======================================= -->
+    <!-- CANCELAR -->
+    <!-- ======================================= -->
+
+    <a
+        href="{% url 'caja_home' %}"
+        class="btn btn-secondary"
+    >
+
+        Cancelar
+
+    </a>
+
+</div>
 
             </form>
 
@@ -659,7 +689,7 @@
 
 {% load static %}
 
-{% load static %}
+
 
 <script src="{% static 'caja/js/registrar_cobro/utils.js' %}"></script>
 
@@ -676,6 +706,9 @@
 <script src="{% static 'caja/js/registrar_cobro/validaciones.js' %}"></script>
 <script src="{% static 'caja/js/registrar_cobro/cobertura.js' %}"></script>
 
+<script src="{% static 'caja/js/registrar_cobro/constancia.js' %}"></script>
+
 <script src="{% static 'caja/js/registrar_cobro/registrar_cobro.js' %}"></script>
+
 
 {% endblock %}

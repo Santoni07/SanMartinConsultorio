@@ -403,4 +403,14 @@ function renderPrestaciones(){
 
     actualizarResumen();
 
+    // =====================================
+    // ACTUALIZAR BOTÓN CONSTANCIA
+    // =====================================
+
+    if(
+        typeof actualizarBotonConstancia === "function"
+    ){
+        actualizarBotonConstancia();
+    }
+
 }
