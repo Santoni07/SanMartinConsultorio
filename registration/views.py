@@ -27,10 +27,16 @@ class SignUpView(CreateView):
 
 from django.views.decorators.cache import never_cache
 
+from django.views.decorators.cache import never_cache
+
+
 @never_cache
 def login_view(request):
 
-    # 🔒 Si ya está logueado, no puede volver al login
+    # ==================================================
+    # SI YA ESTÁ LOGUEADO
+    # ==================================================
+
     if request.user.is_authenticated:
 
         try:
@@ -38,25 +44,48 @@ def login_view(request):
             perfil = request.user.perfilusuario
 
             if perfil.rol == 'GERENCIA':
-                return redirect('gerencia:dashboard')
+
+                return redirect(
+                    'gerencia:dashboard'
+                )
 
         except Exception:
             pass
 
+
         if request.user.is_superuser or request.user.is_staff:
-            return redirect('core:IndexAdmin')
+
+            return redirect(
+                'core:IndexAdmin'
+            )
+
 
         if hasattr(request.user, 'medico'):
-            return redirect('core:medico')
 
-        return redirect('core:index')
+            return redirect(
+                'core:medico'
+            )
+
+
+        return redirect(
+            'core:index'
+        )
+
+
+    # ==================================================
+    # LOGIN
+    # ==================================================
 
     if request.method == "POST":
 
-        username = request.POST.get("username")
-        password = request.POST.get("password")
+        username = request.POST.get(
+            "username"
+        )
 
-        print("Intentando login con:", username)
+        password = request.POST.get(
+            "password"
+        )
+
 
         user = authenticate(
             request,
@@ -64,11 +93,46 @@ def login_view(request):
             password=password
         )
 
+
         if user is not None:
 
-            login(request, user)
+            # ==========================================
+            # INICIAR SESIÓN
+            # ==========================================
 
-            print("Login correcto")
+            login(
+                request,
+                user
+            )
+
+
+            # ==========================================
+            # CONFIGURAR DURACIÓN DE SESIÓN
+            # ==========================================
+            #
+            # MÉDICO:
+            # No vence por inactividad.
+            # Se cierra al cerrar el navegador.
+            #
+            # RESTO:
+            # Mantiene los 20 minutos configurados
+            # en settings.py.
+            # ==========================================
+
+            if hasattr(user, 'medico'):
+
+                request.session.set_expiry(0)
+
+            else:
+
+                request.session.set_expiry(
+                    20 * 60
+                )
+
+
+            # ==========================================
+            # ASIGNAR CENTRO
+            # ==========================================
 
             try:
 
@@ -76,40 +140,34 @@ def login_view(request):
 
                 if perfil.centro_principal:
 
-                    request.session['centro_id'] = (
-                        perfil.centro_principal.id
-                    )
-
-                    print(
-                        "🏥 Centro principal asignado:",
-                        perfil.centro_principal.nombre
-                    )
+                    request.session[
+                        'centro_id'
+                    ] = perfil.centro_principal.id
 
                 else:
 
-                    primer_centro = perfil.centros.first()
+                    primer_centro = (
+                        perfil.centros.first()
+                    )
 
                     if primer_centro:
 
-                        request.session['centro_id'] = (
-                            primer_centro.id
-                        )
+                        request.session[
+                            'centro_id'
+                        ] = primer_centro.id
 
-                        print(
-                            "🏥 Centro fallback asignado:",
-                            primer_centro.nombre
-                        )
 
             except Exception as e:
 
                 print(
-                    "❌ Error asignando centro:",
+                    "Error asignando centro:",
                     e
                 )
 
-            # ==================================================
-            # 🔥 REDIRECCIÓN POR ROL
-            # ==================================================
+
+            # ==========================================
+            # REDIRECCIÓN GERENCIA
+            # ==========================================
 
             try:
 
@@ -124,11 +182,24 @@ def login_view(request):
             except Exception:
                 pass
 
-            if user.is_superuser or user.is_staff:
+
+            # ==========================================
+            # ADMINISTRADOR
+            # ==========================================
+
+            if (
+                user.is_superuser or
+                user.is_staff
+            ):
 
                 return redirect(
                     'core:IndexAdmin'
                 )
+
+
+            # ==========================================
+            # MÉDICO
+            # ==========================================
 
             if hasattr(user, 'medico'):
 
@@ -136,9 +207,19 @@ def login_view(request):
                     'core:medico'
                 )
 
+
+            # ==========================================
+            # RESTO DE USUARIOS
+            # ==========================================
+
             return redirect(
                 'core:index'
             )
+
+
+        # ==========================================
+        # LOGIN INCORRECTO
+        # ==========================================
 
         else:
 
@@ -146,6 +227,7 @@ def login_view(request):
                 request,
                 "Usuario o contraseña incorrectos."
             )
+
 
     return render(
         request,
