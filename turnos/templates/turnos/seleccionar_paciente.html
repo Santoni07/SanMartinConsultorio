@@ -1,57 +1,264 @@
 {% extends 'core/base.html' %}
+
 {% block content %}
+
 <div class="container mt-5">
-  <h2 class="mb-4 text-primary"><i class="bi bi-search"></i> Buscar Paciente</h2>
 
-  <form method="post" class="mb-4 p-4 bg-light rounded shadow-sm">
-    {% csrf_token %}
-    <div class="mb-3">
-      <label for="dni" class="form-label fw-bold">DNI del paciente:</label>
-      <input type="text" class="form-control form-control-lg" name="dni" placeholder="Ej: 30123456" required>
-    </div>
-    <button type="submit" class="btn btn-primary btn-lg">
-      <i class="bi bi-search"></i> Buscar
-    </button>
-  </form>
+    <h2 class="mb-4 text-primary">
+        <i class="bi bi-search"></i>
+        Buscar Paciente
+    </h2>
 
-  
 
-  {% if paciente %}
-    <div class="card shadow-sm border-success">
-      <div class="card-body">
-        <h5 class="card-title text-success">
-          <i class="bi bi-person-fill"></i> {{ paciente.nombre }} {{ paciente.apellido }}
-        </h5>
-        <p class="card-text"><strong>DNI:</strong> {{ paciente.dni }}</p>
-        <a href="?seleccionar={{ paciente.id }}" class="btn btn-success">
-          <i class="bi bi-check-circle"></i> Seleccionar
+    <!-- ================================================== -->
+    <!-- BUSCADOR -->
+    <!-- ================================================== -->
+
+    <form method="post"
+          class="mb-4 p-4 bg-light rounded shadow-sm">
+
+        {% csrf_token %}
+
+        <div class="mb-3">
+
+            <label for="busqueda"
+                   class="form-label fw-bold">
+
+                Buscar paciente:
+
+            </label>
+
+            <input
+                type="text"
+                class="form-control form-control-lg"
+                id="busqueda"
+                name="busqueda"
+                value="{{ busqueda|default:'' }}"
+                placeholder="Ingrese DNI, nombre o apellido"
+                autocomplete="off"
+                required
+            >
+
+            <div class="form-text">
+                Puede buscar por DNI, nombre o apellido.
+            </div>
+
+        </div>
+
+        <button type="submit"
+                class="btn btn-primary btn-lg">
+
+            <i class="bi bi-search"></i>
+            Buscar
+
+        </button>
+
+    </form>
+
+
+    <!-- ================================================== -->
+    <!-- UN SOLO PACIENTE -->
+    <!-- ================================================== -->
+
+    {% if paciente %}
+
+        <div class="card shadow-sm border-success">
+
+            <div class="card-body">
+
+                <h5 class="card-title text-success">
+
+                    <i class="bi bi-person-fill"></i>
+
+                    {{ paciente.nombre }}
+                    {{ paciente.apellido }}
+
+                </h5>
+
+                <p class="card-text">
+
+                    <strong>DNI:</strong>
+                    {{ paciente.dni }}
+
+                </p>
+
+                <a href="?seleccionar={{ paciente.id }}"
+                   class="btn btn-success">
+
+                    <i class="bi bi-check-circle"></i>
+                    Seleccionar
+
+                </a>
+
+            </div>
+
+        </div>
+
+
+    <!-- ================================================== -->
+    <!-- VARIOS PACIENTES -->
+    <!-- ================================================== -->
+
+    {% elif pacientes %}
+
+        <div class="card shadow-sm border-0">
+
+            <div class="card-header bg-primary text-white">
+
+                <strong>
+                    <i class="bi bi-people"></i>
+                    Pacientes encontrados
+                </strong>
+
+                <span class="badge bg-light text-primary float-end">
+                    {{ pacientes|length }}
+                </span>
+
+            </div>
+
+            <div class="card-body p-0">
+
+                <div class="table-responsive">
+
+                    <table class="table table-hover align-middle mb-0">
+
+                        <thead class="table-light">
+
+                            <tr>
+
+                                <th>Apellido</th>
+                                <th>Nombre</th>
+                                <th>DNI</th>
+                                <th class="text-center">
+                                    Acción
+                                </th>
+
+                            </tr>
+
+                        </thead>
+
+                        <tbody>
+
+                            {% for p in pacientes %}
+
+                                <tr>
+
+                                    <td class="fw-semibold">
+                                        {{ p.apellido }}
+                                    </td>
+
+                                    <td>
+                                        {{ p.nombre }}
+                                    </td>
+
+                                    <td>
+                                        {{ p.dni }}
+                                    </td>
+
+                                    <td class="text-center">
+
+                                        <a href="?seleccionar={{ p.id }}"
+                                           class="btn btn-success btn-sm">
+
+                                            <i class="bi bi-check-circle"></i>
+                                            Seleccionar
+
+                                        </a>
+
+                                    </td>
+
+                                </tr>
+
+                            {% endfor %}
+
+                        </tbody>
+
+                    </table>
+
+                </div>
+
+            </div>
+
+        </div>
+
+
+    <!-- ================================================== -->
+    <!-- NO ENCONTRADO -->
+    <!-- ================================================== -->
+
+    {% elif busqueda_realizada %}
+
+        <div class="alert alert-warning">
+
+            <i class="bi bi-exclamation-triangle"></i>
+
+            No se encontraron pacientes con
+            <strong>{{ busqueda }}</strong>.
+
+        </div>
+
+        <a href="{% url 'paciente:create' %}"
+           class="btn btn-outline-success">
+
+            <i class="bi bi-person-plus"></i>
+            Crear nuevo paciente
+
         </a>
-      </div>
+
+
+    {% else %}
+
+        <a href="{% url 'paciente:create' %}"
+           class="btn btn-outline-success mt-4">
+
+            <i class="bi bi-person-plus"></i>
+            Crear nuevo paciente
+
+        </a>
+
+    {% endif %}
+
+
+    <!-- ================================================== -->
+    <!-- VOLVER -->
+    <!-- ================================================== -->
+
+    <div class="text-center mt-5">
+
+        {% if request.user.is_staff or request.user.is_superuser %}
+
+            <a href="{% url 'core:IndexAdmin' %}"
+               class="btn btn-primary btn-lg">
+
+                <i class="bi bi-arrow-left-circle"></i>
+                Volver
+
+            </a>
+
+        {% elif request.user.is_authenticated and request.user.medico %}
+
+            <a href="{% url 'core:medico' %}"
+               class="btn btn-primary btn-lg">
+
+                <i class="bi bi-arrow-left-circle"></i>
+                Volver
+
+            </a>
+
+        {% else %}
+
+            <a href="{% url 'home' %}"
+               class="btn btn-secondary btn-lg">
+
+                <i class="bi bi-arrow-left-circle"></i>
+                Volver
+
+            </a>
+
+        {% endif %}
+
     </div>
-  {% else %}
-    <a href="{% url 'paciente:create' %}" class="btn btn-outline-success mt-4">
-      <i class="bi bi-person-plus"></i> Crear nuevo paciente
-    </a>
-       <!-- BOTÓN VOLVER -->
-<div class="text-center mt-5">
-
-  {% if request.user.is_staff or request.user.is_superuser %}
-      <a href="{% url 'core:IndexAdmin' %}" class="btn btn-primary btn-lg">
-        <i class="bi bi-arrow-left-circle"></i> Volver 
-      </a>
-
-  {% elif request.user.is_authenticated and request.user.medico %}
-      <a href="{% url 'core:medico' %}" class="btn btn-primary btn-lg">
-        <i class="bi bi-arrow-left-circle"></i> Volver 
-      </a>
-
-  {% else %}
-      <a href="{% url 'home' %}" class="btn btn-secondary btn-lg">
-        <i class="bi bi-arrow-left-circle"></i> Volver 
-      </a>
-  {% endif %}
 
 </div>
-  {% endif %}
-</div>
+
 {% endblock %}

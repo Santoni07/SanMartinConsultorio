@@ -18,6 +18,7 @@ from turnos.utils.agenda   import obtener_agenda_dia
 from turnos.utils.utils_historial import registrar_historial_turno
 from collections import defaultdict   
 from core.models import CentroMedico
+from django.db.models import Q
 from core.utils import mostrar_exito, mostrar_error
 from core.utils import obtener_centro_activo
 def obtener_consultorio_disponible(
@@ -157,20 +158,152 @@ def obtener_consultorio_disponible(
 
 @login_required
 def seleccionar_paciente(request):
+
     paciente = None
-    if request.method == 'POST':
-        dni = request.POST.get('dni')
-        try:
-            paciente = Paciente.objects.get(dni=dni)
-        except Paciente.DoesNotExist:
-            messages.warning(request, f"No se encontró un paciente con DNI {dni}")
-    elif request.method == 'GET' and 'seleccionar' in request.GET:
+    pacientes = None
+    busqueda = ""
+    busqueda_realizada = False
+
+    # =====================================================
+    # SELECCIONAR PACIENTE
+    # =====================================================
+
+    if request.method == 'GET' and 'seleccionar' in request.GET:
+
         paciente_id = request.GET.get('seleccionar')
+
         request.session['paciente_id'] = paciente_id
-        return redirect('turnos:seleccionar_medico')
 
-    return render(request, 'turnos/seleccionar_paciente.html', {'paciente': paciente})
+        return redirect(
+            'turnos:seleccionar_medico'
+        )
 
+    # =====================================================
+    # BUSCAR PACIENTE
+    # =====================================================
+
+    if request.method == 'POST':
+
+        busqueda_realizada = True
+
+        busqueda = request.POST.get(
+            'busqueda',
+            ''
+        ).strip()
+
+        if not busqueda:
+
+            messages.warning(
+                request,
+                "Ingrese un DNI, nombre o apellido."
+            )
+
+        else:
+
+            # =================================================
+            # SEPARAR PALABRAS
+            # =================================================
+
+            palabras = busqueda.split()
+
+            # =================================================
+            # UNA SOLA PALABRA
+            #
+            # Ejemplos:
+            # 29715888
+            # Alejandro
+            # Santoni
+            # =================================================
+
+            if len(palabras) == 1:
+
+                resultados = Paciente.objects.filter(
+
+                    Q(dni__icontains=busqueda) |
+                    Q(nombre__icontains=busqueda) |
+                    Q(apellido__icontains=busqueda)
+
+                )
+
+            # =================================================
+            # VARIAS PALABRAS
+            #
+            # Ejemplos:
+            # Alejandro Santoni
+            # Santoni Alejandro
+            # Maria Belen Santoni
+            # =================================================
+
+            else:
+
+                consulta = Q()
+
+                for palabra in palabras:
+
+                    consulta &= (
+
+                        Q(nombre__icontains=palabra) |
+                        Q(apellido__icontains=palabra) |
+                        Q(dni__icontains=palabra)
+
+                    )
+
+                resultados = Paciente.objects.filter(
+                    consulta
+                )
+
+            # =================================================
+            # ORDENAR
+            # =================================================
+
+            resultados = resultados.order_by(
+                'apellido',
+                'nombre'
+            )
+
+            cantidad = resultados.count()
+
+            # =================================================
+            # UN SOLO RESULTADO
+            # =================================================
+
+            if cantidad == 1:
+
+                paciente = resultados.first()
+
+            # =================================================
+            # VARIOS RESULTADOS
+            # =================================================
+
+            elif cantidad > 1:
+
+                pacientes = resultados
+
+            # =================================================
+            # SIN RESULTADOS
+            # =================================================
+
+            else:
+
+                messages.warning(
+                    request,
+                    f'No se encontraron pacientes con "{busqueda}".'
+                )
+
+    # =====================================================
+    # RENDER
+    # =====================================================
+
+    return render(
+        request,
+        'turnos/seleccionar_paciente.html',
+        {
+            'paciente': paciente,
+            'pacientes': pacientes,
+            'busqueda': busqueda,
+            'busqueda_realizada': busqueda_realizada,
+        }
+    )
 @login_required
 def seleccionar_medico(request):
     if 'paciente_id' not in request.session:
