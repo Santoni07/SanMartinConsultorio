@@ -1,0 +1,594 @@
+{% extends 'core/base.html' %}
+
+{% block title %}
+Nuevo Master - {{ obra_social.nombre }}
+{% endblock %}
+
+{% block content %}
+
+<div class="container mt-4">
+
+    <!-- ================================================== -->
+    <!-- CABECERA -->
+    <!-- ================================================== -->
+
+    <div class="card shadow-sm border-0 mb-4">
+
+        <div class="card-header text-white py-4"
+             style="background:#5DADE2;">
+
+            <div class="d-flex justify-content-between align-items-center">
+
+                <div>
+
+                    <h3 class="mb-1">
+                        <i class="bi bi-file-earmark-medical me-2"></i>
+                        Nuevo Master
+                    </h3>
+
+                    <div class="opacity-75">
+                        {{ obra_social.nombre }}
+                    </div>
+
+                </div>
+
+                <a href="{% url 'obrasocial:master_obra_social_lista' obra_social.id %}"
+                   class="btn btn-light">
+
+                    <i class="bi bi-arrow-left me-1"></i>
+                    Volver
+
+                </a>
+
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <!-- ================================================== -->
+    <!-- PERÍODO -->
+    <!-- ================================================== -->
+
+    <div class="card shadow-sm mb-4">
+
+        <div class="card-header bg-light">
+            <strong>Seleccionar período</strong>
+        </div>
+
+        <div class="card-body">
+
+            <form method="get">
+
+                <div class="row g-3 align-items-end">
+
+                    <div class="col-md-4">
+
+                        <label class="form-label">
+                            Mes
+                        </label>
+
+                        <select name="mes"
+                                class="form-select"
+                                required>
+
+                            <option value="1" {% if mes == 1 %}selected{% endif %}>Enero</option>
+                            <option value="2" {% if mes == 2 %}selected{% endif %}>Febrero</option>
+                            <option value="3" {% if mes == 3 %}selected{% endif %}>Marzo</option>
+                            <option value="4" {% if mes == 4 %}selected{% endif %}>Abril</option>
+                            <option value="5" {% if mes == 5 %}selected{% endif %}>Mayo</option>
+                            <option value="6" {% if mes == 6 %}selected{% endif %}>Junio</option>
+                            <option value="7" {% if mes == 7 %}selected{% endif %}>Julio</option>
+                            <option value="8" {% if mes == 8 %}selected{% endif %}>Agosto</option>
+                            <option value="9" {% if mes == 9 %}selected{% endif %}>Septiembre</option>
+                            <option value="10" {% if mes == 10 %}selected{% endif %}>Octubre</option>
+                            <option value="11" {% if mes == 11 %}selected{% endif %}>Noviembre</option>
+                            <option value="12" {% if mes == 12 %}selected{% endif %}>Diciembre</option>
+
+                        </select>
+
+                    </div>
+
+
+                    <div class="col-md-4">
+
+                        <label class="form-label">
+                            Año
+                        </label>
+
+                        <input type="number"
+                               name="anio"
+                               value="{{ anio }}"
+                               class="form-control"
+                               min="2020"
+                               max="2100"
+                               required>
+
+                    </div>
+
+
+                    <div class="col-md-4">
+
+                        <button type="submit"
+                                class="btn btn-primary w-100">
+
+                            <i class="bi bi-search me-1"></i>
+                            Buscar prestaciones
+
+                        </button>
+
+                    </div>
+
+                </div>
+
+            </form>
+
+        </div>
+
+    </div>
+
+<!-- ================================================== -->
+<!-- PRESTACIONES -->
+<!-- ================================================== -->
+
+{% if prestaciones is not None %}
+
+<form method="post">
+
+    {% csrf_token %}
+
+    <input type="hidden"
+           name="mes"
+           value="{{ mes }}">
+
+    <input type="hidden"
+           name="anio"
+           value="{{ anio }}">
+
+
+    <div class="card shadow-sm">
+
+        <!-- ========================================== -->
+        <!-- CABECERA -->
+        <!-- ========================================== -->
+
+        <div class="card-header bg-light">
+
+            <div class="d-flex justify-content-between align-items-center">
+
+                <div>
+
+                    <strong>
+                        Prestaciones disponibles
+                    </strong>
+
+                    <span class="badge bg-primary ms-2">
+                        {{ prestaciones|length }}
+                    </span>
+
+                </div>
+
+                {% if prestaciones %}
+
+                <div>
+
+                    <button type="button"
+                            class="btn btn-sm btn-outline-primary"
+                            id="seleccionarTodo">
+
+                        Seleccionar todas
+
+                    </button>
+
+                </div>
+
+                {% endif %}
+
+            </div>
+
+        </div>
+
+
+        <!-- ========================================== -->
+        <!-- TABLA -->
+        <!-- ========================================== -->
+
+        <div class="card-body p-0">
+
+            <div class="table-responsive">
+
+                <table class="table table-hover align-middle mb-0">
+
+                    <thead class="table-light">
+
+                        <tr>
+
+                            <th class="text-center"
+                                style="width:50px;">
+
+                                <input type="checkbox"
+                                       id="checkTodos"
+                                       checked>
+
+                            </th>
+
+                            <th>Fecha</th>
+
+                            <th>Sede</th>
+
+                            <th>Paciente</th>
+
+                            <th>Código</th>
+
+                            <th>Prestación</th>
+
+                            <th>Plan</th>
+
+                            <th class="text-end">
+                                Importe OS
+                            </th>
+
+                        </tr>
+
+                    </thead>
+
+
+                    <tbody>
+
+                        {% for detalle in prestaciones %}
+
+                        <tr>
+
+                            <!-- CHECK -->
+
+                            <td class="text-center">
+
+                                <input type="checkbox"
+                                       class="form-check-input check-prestacion"
+                                       name="prestaciones"
+                                       value="{{ detalle.id }}"
+                                       data-importe="{{ detalle.importe }}"
+                                       checked>
+
+                            </td>
+
+
+                            <!-- FECHA -->
+
+                            <td>
+
+                                {{ detalle.fecha_prestacion|date:"d/m/Y" }}
+
+                            </td>
+
+
+                            <!-- SEDE -->
+
+                            <td>
+
+                                {{ detalle.movimiento.centro_medico.nombre }}
+
+                            </td>
+
+
+                            <!-- PACIENTE -->
+
+                            <td>
+
+                                {% if detalle.movimiento.paciente %}
+
+                                    {{ detalle.movimiento.paciente }}
+
+                                {% else %}
+
+                                    -
+
+                                {% endif %}
+
+                            </td>
+
+
+                            <!-- CÓDIGO -->
+
+                            <td>
+
+                                {{ detalle.codigo }}
+
+                            </td>
+
+
+                            <!-- PRESTACIÓN -->
+
+                            <td>
+
+                                {{ detalle.descripcion }}
+
+                            </td>
+
+
+                            <!-- PLAN -->
+
+                            <td>
+
+                                {% if detalle.prestacion_obra_social.plan %}
+
+                                    {{ detalle.prestacion_obra_social.plan.nombre }}
+
+                                {% else %}
+
+                                    -
+
+                                {% endif %}
+
+                            </td>
+
+
+                            <!-- IMPORTE -->
+
+                            <td class="text-end">
+
+                                <strong>
+
+                                    $ {{ detalle.importe|floatformat:2 }}
+
+                                </strong>
+
+                            </td>
+
+                        </tr>
+
+
+                        {% empty %}
+
+                        <tr>
+
+                            <td colspan="8"
+                                class="text-center py-5 text-muted">
+
+                                No hay prestaciones disponibles
+                                para este período.
+
+                            </td>
+
+                        </tr>
+
+                        {% endfor %}
+
+                    </tbody>
+
+                </table>
+
+            </div>
+
+        </div>
+
+
+        <!-- ========================================== -->
+        <!-- RESUMEN -->
+        <!-- ========================================== -->
+
+        {% if prestaciones %}
+
+        <div class="card-footer bg-white">
+
+            <div class="row align-items-center">
+
+                <div class="col-md-6">
+
+                    <div class="text-muted">
+
+                        Prestaciones seleccionadas:
+
+                        <strong id="cantidadSeleccionadas">
+                            0
+                        </strong>
+
+                    </div>
+
+                </div>
+
+
+                <div class="col-md-6 text-end">
+
+                    <span class="me-4">
+
+                        Total a presentar:
+
+                        <strong class="fs-5"
+                                id="totalSeleccionado">
+
+                            $ 0,00
+
+                        </strong>
+
+                    </span>
+
+
+                    <button type="submit"
+                            class="btn btn-success"
+                            id="btnGenerarMaster">
+
+                        <i class="bi bi-file-earmark-check me-1"></i>
+
+                        Generar Master
+
+                    </button>
+
+                </div>
+
+            </div>
+
+        </div>
+
+        {% endif %}
+
+    </div>
+
+</form>
+
+{% endif %}
+
+<script>
+
+document.addEventListener("DOMContentLoaded", function(){
+
+    const checks =
+        document.querySelectorAll(".check-prestacion");
+
+    const checkTodos =
+        document.getElementById("checkTodos");
+
+    const cantidad =
+        document.getElementById("cantidadSeleccionadas");
+
+    const total =
+        document.getElementById("totalSeleccionado");
+
+    const boton =
+        document.getElementById("btnGenerarMaster");
+
+    const seleccionarTodo =
+        document.getElementById("seleccionarTodo");
+
+
+    // ==============================================
+    // ACTUALIZAR RESUMEN
+    // ==============================================
+
+    function actualizarResumen(){
+
+        let cantidadSeleccionada = 0;
+
+        let totalSeleccionado = 0;
+
+
+        checks.forEach(function(check){
+
+            if(check.checked){
+
+                cantidadSeleccionada++;
+
+                let importe =
+                    parseFloat(check.dataset.importe) || 0;
+
+                totalSeleccionado += importe;
+
+            }
+
+        });
+
+
+        if(cantidad){
+
+            cantidad.textContent =
+                cantidadSeleccionada;
+
+        }
+
+
+        if(total){
+
+            total.textContent =
+                totalSeleccionado.toLocaleString(
+                    "es-AR",
+                    {
+                        style: "currency",
+                        currency: "ARS"
+                    }
+                );
+
+        }
+
+
+        if(boton){
+
+            boton.disabled =
+                cantidadSeleccionada === 0;
+
+        }
+
+
+        if(checkTodos){
+
+            checkTodos.checked =
+                cantidadSeleccionada === checks.length;
+
+        }
+
+    }
+
+
+    // ==============================================
+    // CHECK INDIVIDUAL
+    // ==============================================
+
+    checks.forEach(function(check){
+
+        check.addEventListener(
+            "change",
+            actualizarResumen
+        );
+
+    });
+
+
+    // ==============================================
+    // CHECK TODOS
+    // ==============================================
+
+    if(checkTodos){
+
+        checkTodos.addEventListener(
+            "change",
+            function(){
+
+                checks.forEach(function(check){
+
+                    check.checked =
+                        checkTodos.checked;
+
+                });
+
+                actualizarResumen();
+
+            }
+        );
+
+    }
+
+
+    // ==============================================
+    // BOTÓN SELECCIONAR TODAS
+    // ==============================================
+
+    if(seleccionarTodo){
+
+        seleccionarTodo.addEventListener(
+            "click",
+            function(){
+
+                checks.forEach(function(check){
+
+                    check.checked = true;
+
+                });
+
+                actualizarResumen();
+
+            }
+        );
+
+    }
+
+
+    // ==============================================
+    // PRIMER CÁLCULO
+    // ==============================================
+
+    actualizarResumen();
+
+});
+
+</script>
+{% endblock %}

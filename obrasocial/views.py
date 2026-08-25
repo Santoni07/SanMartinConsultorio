@@ -1,10 +1,11 @@
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import get_object_or_404, redirect, render
-
+from django.core.exceptions import PermissionDenied
 from .forms import ObraSocialForm,PlanObraSocialForm
 from .models import ObraSocial,PlanObraSocial
 
+from obrasocial.models import ObraSocial, MasterObraSocial
 
 # ==========================================================
 # LISTADO
@@ -425,3 +426,4 @@ def detalle_plan(request, pk):
         "obrasocial/planes/detalle.html",
         context
     )
+    

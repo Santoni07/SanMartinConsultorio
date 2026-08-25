@@ -327,15 +327,16 @@
 
             </a>
 
-
-            <a href="#liquidaciones"
-               class="list-group-item list-group-item-action"
-               data-bs-toggle="tab">
+            <a href="{% url 'obrasocial:master_obra_social_lista' obra_social.id %}"
+                class="list-group-item list-group-item-action">
 
                 <i class="bi bi-cash-stack"></i>
                 Liquidaciones
 
             </a>
+
+
+            
 
         {% endif %}
 
@@ -955,11 +956,7 @@
                     </div>
                 </div>
 
-                <div class="tab-pane fade" id="liquidaciones">
-                    <div class="alert alert-secondary">
-                        Próximamente.
-                    </div>
-                </div>
+                
 
             </div>
 

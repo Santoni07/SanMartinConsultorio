@@ -1,0 +1,211 @@
+{% extends 'core/base.html' %}
+
+{% block title %}
+Master - {{ obra_social.nombre }}
+{% endblock %}
+
+{% block content %}
+
+<div class="container mt-4">
+
+    <!-- ================================================== -->
+    <!-- CABECERA -->
+    <!-- ================================================== -->
+
+    <div class="card shadow-sm border-0 mb-4">
+
+        <div class="card-header text-white py-4"
+             style="background:#5DADE2;">
+
+            <div class="d-flex justify-content-between align-items-center">
+
+                <div>
+
+                    <h3 class="mb-1">
+
+                        <i class="bi bi-cash-stack me-2"></i>
+
+                        Liquidaciones
+
+                    </h3>
+
+                    <div class="opacity-75">
+                        {{ obra_social.nombre }}
+                    </div>
+
+                </div>
+
+                <a href="{% url 'obrasocial:detail' obra_social.id %}"
+                   class="btn btn-light">
+
+                    <i class="bi bi-arrow-left me-1"></i>
+                    Volver
+
+                </a>
+
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <!-- ================================================== -->
+    <!-- MASTER -->
+    <!-- ================================================== -->
+
+    <div class="card shadow-sm">
+
+        <div class="card-header bg-light py-3">
+
+            <div class="d-flex justify-content-between align-items-center">
+
+                <div>
+
+                    <h5 class="mb-1">
+                        Master de Obra Social
+                    </h5>
+
+                    <small class="text-muted">
+                        Presentaciones mensuales a {{ obra_social.nombre }}
+                    </small>
+
+                </div>
+
+                <a href="{% url 'obrasocial:master_obra_social_nuevo' obra_social.id %}"
+   class="btn btn-primary">
+
+    <i class="bi bi-plus-circle me-1"></i>
+    Nuevo Master
+
+</a>
+
+            </div>
+
+        </div>
+
+
+        <div class="card-body p-0">
+
+            <div class="table-responsive">
+
+                <table class="table table-hover align-middle mb-0">
+
+                    <thead class="table-light">
+
+                        <tr>
+                            <th>Período</th>
+                            <th>Estado</th>
+                            <th>Fecha presentación</th>
+                            <th>Factura</th>
+                            <th>Creado por</th>
+                            <th class="text-end">Acciones</th>
+                        </tr>
+
+                    </thead>
+
+                    <tbody>
+
+                        {% for master in masters %}
+
+                        <tr>
+
+                            <td>
+                                <strong>
+                                    {{ master.mes|stringformat:"02d" }}/{{ master.anio }}
+                                </strong>
+                            </td>
+
+                            <td>
+
+                                {% if master.estado == "BORRADOR" %}
+
+                                    <span class="badge bg-secondary">
+                                        Borrador
+                                    </span>
+
+                                {% elif master.estado == "PRESENTADO" %}
+
+                                    <span class="badge bg-primary">
+                                        Presentado
+                                    </span>
+
+                                {% elif master.estado == "COBRADO" %}
+
+                                    <span class="badge bg-success">
+                                        Cobrado
+                                    </span>
+
+                                {% elif master.estado == "ANULADO" %}
+
+                                    <span class="badge bg-danger">
+                                        Anulado
+                                    </span>
+
+                                {% endif %}
+
+                            </td>
+
+                            <td>
+                                {{ master.fecha_presentacion|date:"d/m/Y"|default:"-" }}
+                            </td>
+
+                            <td>
+                                {{ master.numero_factura|default:"-" }}
+                            </td>
+
+                            <td>
+                                {{ master.creado_por.username }}
+                            </td>
+
+                            <td class="text-end">
+
+                                <a href="{% url 'obrasocial:master_obra_social_detalle' obra_social.id master.id %}"
+                                    class="btn btn-sm btn-outline-primary">
+
+                                        <i class="bi bi-eye"></i>
+                                        Ver
+
+                                    </a>
+
+                            </td>
+
+                        </tr>
+
+                        {% empty %}
+
+                        <tr>
+
+                            <td colspan="6"
+                                class="text-center py-5">
+
+                                <i class="bi bi-inbox fs-1 text-muted"></i>
+
+                                <h5 class="mt-3">
+                                    No hay Masters generados
+                                </h5>
+
+                                <p class="text-muted mb-0">
+                                    Todavía no existen presentaciones para
+                                    {{ obra_social.nombre }}.
+                                </p>
+
+                            </td>
+
+                        </tr>
+
+                        {% endfor %}
+
+                    </tbody>
+
+                </table>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+{% endblock %}

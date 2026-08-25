@@ -1,0 +1,383 @@
+{% extends 'core/base.html' %}
+
+{% block title %}
+Master {{ master.mes|stringformat:"02d" }}/{{ master.anio }}
+{% endblock %}
+
+{% block content %}
+
+<div class="container mt-4">
+
+    <!-- ================================================== -->
+    <!-- CABECERA -->
+    <!-- ================================================== -->
+
+    <div class="card shadow-sm border-0 mb-4">
+
+        <div class="card-header text-white py-4"
+             style="background:#5DADE2;">
+
+            <div class="d-flex justify-content-between align-items-center">
+
+                <div>
+
+                    <h3 class="mb-1">
+
+                        <i class="bi bi-file-earmark-medical me-2"></i>
+
+                        Master
+                        {{ master.mes|stringformat:"02d" }}/{{ master.anio }}
+
+                    </h3>
+
+                    <div class="opacity-75">
+                        {{ obra_social.nombre }}
+                    </div>
+
+                </div>
+
+                <div>
+
+                        {% if master.estado == "BORRADOR" %}
+
+    <span class="badge bg-secondary fs-6 me-2">
+        Borrador
+    </span>
+
+    <a href="{% url 'obrasocial:master_obra_social_presentar' obra_social.id master.id %}"
+       class="btn btn-success me-2">
+
+        <i class="bi bi-send-check me-1"></i>
+        Presentar Master
+
+    </a>
+
+{% elif master.estado == "PRESENTADO" %}
+
+    <span class="badge bg-primary fs-6 me-2">
+        Presentado
+    </span>
+
+    <a href="{% url 'obrasocial:master_obra_social_registrar_pago' obra_social.id master.id %}"
+       class="btn btn-success me-2">
+
+        <i class="bi bi-cash-coin me-1"></i>
+        Registrar Pago
+
+    </a>
+
+{% elif master.estado == "COBRADO" %}
+
+    <span class="badge bg-success fs-6 me-2">
+        Cobrado
+    </span>
+
+{% elif master.estado == "ANULADO" %}
+
+    <span class="badge bg-danger fs-6 me-2">
+        Anulado
+    </span>
+
+{% endif %}
+
+
+                        <a href="{% url 'obrasocial:master_obra_social_lista' obra_social.id %}"
+                        class="btn btn-light">
+
+                            <i class="bi bi-arrow-left"></i>
+                            Volver
+
+                        </a>
+
+                    </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <!-- ================================================== -->
+    <!-- RESUMEN -->
+    <!-- ================================================== -->
+
+    <div class="row g-3 mb-4">
+
+        <div class="col-md-4">
+
+            <div class="card shadow-sm h-100">
+
+                <div class="card-body">
+
+                    <div class="text-muted">
+                        Casa Central
+                    </div>
+
+                    <h4 class="mb-1">
+                        $ {{ total_casa_central|floatformat:2 }}
+                    </h4>
+
+                    <small>
+                        {{ cantidad_casa_central }}
+                        prestación/es
+                    </small>
+
+                </div>
+
+            </div>
+
+        </div>
+
+
+        <div class="col-md-4">
+
+            <div class="card shadow-sm h-100">
+
+                <div class="card-body">
+
+                    <div class="text-muted">
+                        Agua de Oro
+                    </div>
+
+                    <h4 class="mb-1">
+                        $ {{ total_agua_de_oro|floatformat:2 }}
+                    </h4>
+
+                    <small>
+                        {{ cantidad_agua_de_oro }}
+                        prestación/es
+                    </small>
+
+                </div>
+
+            </div>
+
+        </div>
+
+
+        <div class="col-md-4">
+
+            <div class="card shadow-sm h-100">
+
+                <div class="card-body">
+
+                    <div class="text-muted">
+                        Total Master
+                    </div>
+
+                    <h4 class="mb-1">
+                        $ {{ total_master|floatformat:2 }}
+                    </h4>
+
+                    <small>
+                        {{ detalles|length }} prestación/es
+                    </small>
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+    {% if master.estado != "BORRADOR" %}
+
+<div class="card shadow-sm mb-4">
+
+    <div class="card-header bg-light">
+        <strong>
+            <i class="bi bi-send-check me-1"></i>
+            Datos de presentación
+        </strong>
+    </div>
+
+    <div class="card-body">
+
+        <div class="row g-3">
+
+            <div class="col-md-4">
+
+                <small class="text-muted d-block">
+                    Fecha de presentación
+                </small>
+
+                <strong>
+                    {{ master.fecha_presentacion|date:"d/m/Y"|default:"-" }}
+                </strong>
+
+            </div>
+
+            <div class="col-md-4">
+
+                <small class="text-muted d-block">
+                    N.º de presentación
+                </small>
+
+                <strong>
+                    {{ master.numero_presentacion|default:"-" }}
+                </strong>
+
+            </div>
+
+            <div class="col-md-4">
+
+                <small class="text-muted d-block">
+                    N.º de factura
+                </small>
+
+                <strong>
+                    {{ master.numero_factura|default:"-" }}
+                </strong>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+{% endif %}
+
+    <!-- ================================================== -->
+    <!-- DETALLE -->
+    <!-- ================================================== -->
+
+    <div class="card shadow-sm">
+
+        <div class="card-header bg-light">
+
+            <strong>
+                Prestaciones incluidas
+            </strong>
+
+        </div>
+
+
+        <div class="card-body p-0">
+
+            <div class="table-responsive">
+
+                <table class="table table-hover align-middle mb-0">
+
+                    <thead class="table-light">
+
+                        <tr>
+
+                            <th>Fecha</th>
+                            <th>Sede</th>
+                            <th>Paciente</th>
+                            <th>Médico</th>
+                            <th>Código</th>
+                            <th>Prestación</th>
+                            <th>Plan</th>
+                            <th class="text-end">
+                                Importe OS
+                            </th>
+
+                        </tr>
+
+                    </thead>
+
+
+                    <tbody>
+
+                        {% for item in detalles %}
+
+                        {% with detalle=item.detalle_movimiento %}
+
+                        <tr>
+
+                            <td>
+                                {{ detalle.fecha_prestacion|date:"d/m/Y" }}
+                            </td>
+
+                            <td>
+
+                                <span class="badge bg-light text-dark border">
+
+                                    {{ detalle.movimiento.centro_medico.nombre }}
+
+                                </span>
+
+                            </td>
+
+                            <td>
+
+                                {% if detalle.movimiento.paciente %}
+
+                                    {{ detalle.movimiento.paciente }}
+
+                                {% else %}
+
+                                    -
+
+                                {% endif %}
+
+                            </td>
+                            <td>
+                                {% if detalle.movimiento.turno and detalle.movimiento.turno.medico %}
+
+                                    {{ detalle.movimiento.turno.medico.nombre }}
+                                    {{ detalle.movimiento.turno.medico.apellido }}
+
+                                    {% if detalle.movimiento.turno.medico.matricula %}
+                                        <span class="text-muted">
+                                            MP {{ detalle.movimiento.turno.medico.matricula }}
+                                        </span>
+                                    {% endif %}
+
+                                {% else %}
+                                    -
+                                {% endif %}
+                            </td>
+                            <td>
+                                {{ detalle.codigo }}
+                            </td>
+
+                            <td>
+                                {{ detalle.descripcion }}
+                            </td>
+
+                            <td>
+
+                                {% if detalle.prestacion_obra_social.plan %}
+
+                                    {{ detalle.prestacion_obra_social.plan.nombre }}
+
+                                {% else %}
+
+                                    -
+
+                                {% endif %}
+
+                            </td>
+
+                            <td class="text-end">
+
+                                <strong>
+                                    $ {{ detalle.importe|floatformat:2 }}
+                                </strong>
+
+                            </td>
+
+                        </tr>
+
+                        {% endwith %}
+
+                        {% endfor %}
+
+                    </tbody>
+
+                </table>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+{% endblock %}

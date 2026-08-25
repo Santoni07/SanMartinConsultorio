@@ -126,4 +126,34 @@ path(
     views.resultado_importacion_prestaciones,
     name='resultado_importacion_prestaciones'
 ),
+
+path(
+    "<int:obra_social_id>/master/",
+    views.master_obra_social_lista,
+    name="master_obra_social_lista"
+),
+
+path(
+    "<int:obra_social_id>/master/nuevo/",
+    views.master_obra_social_nuevo,
+    name="master_obra_social_nuevo"
+),
+
+path(
+    "<int:obra_social_id>/master/<int:master_id>/",
+    views.master_obra_social_detalle,
+    name="master_obra_social_detalle"
+),
+
+path(
+    "<int:obra_social_id>/master/<int:master_id>/presentar/",
+    views.master_obra_social_presentar,
+    name="master_obra_social_presentar"
+),
+
+path(
+    "<int:obra_social_id>/master/<int:master_id>/pago/",
+    views.master_obra_social_registrar_pago,
+    name="master_obra_social_registrar_pago"
+),
 ], 'obrasocial')

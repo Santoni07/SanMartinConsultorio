@@ -440,4 +440,265 @@ class PrestacionPlanValor(models.Model):
         ordering = [
             "-vigente_desde"
         ]
-    
+ 
+ 
+# ==========================================================
+# MASTER DE OBRA SOCIAL
+# ==========================================================
+
+class MasterObraSocial(models.Model):
+
+    # ======================================================
+    # ESTADOS
+    # ======================================================
+
+    ESTADOS = [
+        ("BORRADOR", "Borrador"),
+        ("PRESENTADO", "Presentado"),
+        ("COBRADO", "Cobrado"),
+        ("ANULADO", "Anulado"),
+    ]
+
+    # ======================================================
+    # OBRA SOCIAL / PERÍODO
+    # ======================================================
+
+    obra_social = models.ForeignKey(
+        ObraSocial,
+        on_delete=models.PROTECT,
+        related_name="masters",
+        verbose_name="Obra Social"
+    )
+
+    anio = models.PositiveIntegerField(
+        "Año"
+    )
+
+    mes = models.PositiveSmallIntegerField(
+        "Mes"
+    )
+
+    # ======================================================
+    # ESTADO DEL MASTER
+    # ======================================================
+
+    estado = models.CharField(
+        "Estado",
+        max_length=15,
+        choices=ESTADOS,
+        default="BORRADOR"
+    )
+
+    # ======================================================
+    # PRESENTACIÓN
+    # ======================================================
+
+    fecha_presentacion = models.DateField(
+        "Fecha de presentación",
+        null=True,
+        blank=True
+    )
+
+    numero_presentacion = models.CharField(
+        "Número de presentación",
+        max_length=50,
+        blank=True
+    )
+
+    numero_factura = models.CharField(
+        "Número de factura",
+        max_length=50,
+        blank=True
+    )
+
+    # ======================================================
+    # COBRO
+    # ======================================================
+
+    fecha_cobro = models.DateField(
+        "Fecha de cobro",
+        null=True,
+        blank=True
+    )
+
+    # ======================================================
+    # OBSERVACIONES
+    # ======================================================
+
+    observaciones = models.TextField(
+        "Observaciones",
+        blank=True
+    )
+
+    # ======================================================
+    # AUDITORÍA
+    # ======================================================
+
+    creado_por = models.ForeignKey(
+        "auth.User",
+        on_delete=models.PROTECT,
+        related_name="masters_obra_social_creados",
+        verbose_name="Creado por"
+    )
+
+    fecha_creacion = models.DateTimeField(
+        "Fecha de creación",
+        auto_now_add=True
+    )
+
+    fecha_modificacion = models.DateTimeField(
+        "Última modificación",
+        auto_now=True
+    )
+
+    # ======================================================
+    # CONFIGURACIÓN
+    # ======================================================
+
+    class Meta:
+
+        verbose_name = "Master de Obra Social"
+
+        verbose_name_plural = "Masters de Obras Sociales"
+
+        ordering = [
+            "-anio",
+            "-mes",
+            "obra_social__nombre"
+        ]
+
+        constraints = [
+
+            # Una OS solamente puede tener
+            # un Master por mes/año.
+            models.UniqueConstraint(
+                fields=[
+                    "obra_social",
+                    "anio",
+                    "mes"
+                ],
+                name="master_unico_por_os_periodo"
+            ),
+
+            # Mes válido: 1 a 12.
+            models.CheckConstraint(
+            check=models.Q(
+                mes__gte=1,
+                mes__lte=12
+            ),
+            name="master_mes_valido"
+        ),
+
+        ]
+
+    # ======================================================
+    # REPRESENTACIÓN
+    # ======================================================
+
+    def __str__(self):
+
+        return (
+            f"{self.obra_social.nombre} - "
+            f"{self.mes:02d}/{self.anio}"
+        )
+        
+# ==========================================================
+# DETALLE MASTER DE OBRA SOCIAL
+# ==========================================================
+
+class DetalleMasterObraSocial(models.Model):
+
+    ESTADOS = [
+        ("PENDIENTE", "Pendiente"),
+        ("PAGADO", "Pagado"),
+        ("DEBITADO", "Debitado"),
+        ("RECHAZADO", "Rechazado"),
+    ]
+
+    # ======================================================
+    # MASTER
+    # ======================================================
+
+    master = models.ForeignKey(
+        MasterObraSocial,
+        on_delete=models.CASCADE,
+        related_name="detalles",
+        verbose_name="Master"
+    )
+
+    # ======================================================
+    # PRESTACIÓN REALIZADA
+    # ======================================================
+
+    detalle_movimiento = models.OneToOneField(
+        "caja.DetalleMovimientoCaja",
+        on_delete=models.PROTECT,
+        related_name="detalle_master_obra_social",
+        verbose_name="Prestación"
+    )
+
+    # ======================================================
+    # ESTADO DE COBRO
+    # ======================================================
+
+    estado = models.CharField(
+        "Estado",
+        max_length=15,
+        choices=ESTADOS,
+        default="PENDIENTE"
+    )
+
+    # ======================================================
+    # IMPORTE RECONOCIDO POR LA OBRA SOCIAL
+    # ======================================================
+
+    importe_reconocido = models.DecimalField(
+        "Importe reconocido",
+        max_digits=12,
+        decimal_places=2,
+        null=True,
+        blank=True
+    )
+
+    # ======================================================
+    # OBSERVACIONES
+    # ======================================================
+
+    observaciones = models.TextField(
+        "Observaciones",
+        blank=True
+    )
+
+    # ======================================================
+    # AUDITORÍA
+    # ======================================================
+
+    fecha_incorporacion = models.DateTimeField(
+        "Fecha de incorporación",
+        auto_now_add=True
+    )
+
+    fecha_resolucion = models.DateField(
+        "Fecha de resolución",
+        null=True,
+        blank=True
+    )
+
+    class Meta:
+
+        verbose_name = "Detalle Master de Obra Social"
+
+        verbose_name_plural = "Detalles Master de Obra Social"
+
+        ordering = [
+            "detalle_movimiento__fecha_prestacion",
+            "id"
+        ]
+
+    def __str__(self):
+
+        return (
+            f"{self.master} - "
+            f"{self.detalle_movimiento.codigo} - "
+            f"{self.detalle_movimiento.descripcion}"
+        )
