@@ -19,7 +19,7 @@ from turnos.utils.utils_historial import registrar_historial_turno
 from collections import defaultdict   
 from core.models import CentroMedico
 from core.utils import mostrar_exito, mostrar_error
-
+from core.utils import obtener_centro_activo
 def obtener_consultorio_disponible(
     fecha,
     hora_inicio,
@@ -1349,8 +1349,21 @@ from django.utils import timezone
 @login_required
 def marcar_ausente(request, turno_id):
 
-    # 🔵 SEDE ACTIVA
-    centro_activo = request.centro_activo
+    # ==========================================
+    # ORIGEN DE LA ACCIÓN
+    # ==========================================
+
+    origen = request.GET.get("origen")
+
+    # ==========================================
+    # SEDE ACTIVA
+    # ==========================================
+
+    centro_activo = obtener_centro_activo(request)
+
+    # ==========================================
+    # BUSCAR TURNO NORMAL
+    # ==========================================
 
     turno = Turnos.objects.filter(
         id=turno_id,
@@ -1359,7 +1372,10 @@ def marcar_ausente(request, turno_id):
 
     es_sobreturno = False
 
-    # 🔵 BUSCAR SOBRETURNO
+    # ==========================================
+    # SI NO ES TURNO, BUSCAR SOBRETURNO
+    # ==========================================
+
     if not turno:
 
         turno = Sobreturno.objects.filter(
@@ -1369,7 +1385,10 @@ def marcar_ausente(request, turno_id):
 
         es_sobreturno = True
 
-    # 🔴 NO EXISTE
+    # ==========================================
+    # NO EXISTE
+    # ==========================================
+
     if not turno:
 
         messages.error(
@@ -1377,23 +1396,68 @@ def marcar_ausente(request, turno_id):
             "El turno no existe en esta sede."
         )
 
-        return redirect('turnos:ver_disponibilidad')
+        if origen == "mis_turnos":
 
-    # 🔥 TRAZABILIDAD
-    turno.estado = 'CANCELADO'
+            return redirect(
+                "turnos:mis_turnos_medico"
+            )
+
+        return redirect(
+            "turnos:ver_disponibilidad"
+        )
+
+    # ==========================================
+    # VALIDAR ESTADO
+    # ==========================================
+
+    if turno.estado != "PENDIENTE":
+
+        messages.warning(
+            request,
+            "El turno ya no se encuentra pendiente."
+        )
+
+        if origen == "mis_turnos":
+
+            return redirect(
+                "turnos:mis_turnos_medico"
+            )
+
+        return redirect(
+            "turnos:ver_disponibilidad"
+        )
+
+    # ==========================================
+    # MARCAR AUSENTE
+    # ==========================================
+
+    turno.estado = "AUSENTE"
+
+    # ==========================================
+    # TRAZABILIDAD
+    # ==========================================
 
     turno.cancelado_por = request.user
 
     turno.fecha_cancelacion = timezone.now()
 
-    # 🔵 DESDE QUÉ SEDE SE OPERÓ
-    if hasattr(turno, 'sede_operacion'):
+    # ==========================================
+    # SEDE DESDE DONDE SE REALIZÓ LA ACCIÓN
+    # ==========================================
+
+    if hasattr(
+        turno,
+        "sede_operacion"
+    ):
 
         turno.sede_operacion = centro_activo
 
     turno.save()
 
-    # 🔵 MENSAJES
+    # ==========================================
+    # MENSAJE
+    # ==========================================
+
     if es_sobreturno:
 
         messages.warning(
@@ -1408,7 +1472,24 @@ def marcar_ausente(request, turno_id):
             "Turno marcado como ausente."
         )
 
-    return redirect('turnos:ver_disponibilidad')    
+    # ==========================================
+    # VOLVER A MIS TURNOS
+    # ==========================================
+
+    if origen == "mis_turnos":
+
+        return redirect(
+            "turnos:mis_turnos_medico"
+        )
+
+    # ==========================================
+    # FLUJO ORIGINAL
+    # ==========================================
+
+    return redirect(
+        "turnos:ver_disponibilidad"
+    )
+
 
 def generar_horarios(disponibilidad):
     horarios = []

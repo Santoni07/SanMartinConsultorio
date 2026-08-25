@@ -1,43 +1,66 @@
 {% extends 'core/base.html' %}
+
 {% block content %}
 
 <div class="container mt-5">
 
+    <!-- ================================================== -->
     <!-- ENCABEZADO -->
+    <!-- ================================================== -->
+
     <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap">
 
         <h2 class="fw-bold mb-2 mb-md-0">
+
             <i class="bi bi-calendar-week text-primary"></i>
+
             Mis Turnos
+
         </h2>
 
         <span class="badge bg-success fs-6">
+
             Hoy: {{ turnos_hoy_count }} turnos
+
         </span>
 
     </div>
 
+
+    <!-- ================================================== -->
     <!-- BOTONES RÁPIDOS -->
+    <!-- ================================================== -->
+
     <div class="mb-4 d-flex gap-2 flex-wrap">
 
         <a href="?filtro=hoy"
            class="btn btn-outline-primary">
+
             📅 Hoy
+
         </a>
 
         <a href="?filtro=manana"
            class="btn btn-outline-secondary">
+
             🌤 Mañana
+
         </a>
 
         <a href="?filtro=semana"
            class="btn btn-outline-dark">
+
             🗓 Esta Semana
+
         </a>
 
     </div>
 
+
+    <!-- ================================================== -->
     <!-- FILTROS -->
+    <!-- ================================================== -->
+
     <div class="card shadow-sm border-0 mb-4">
 
         <div class="card-body">
@@ -45,51 +68,76 @@
             <form method="get"
                   class="row g-3 align-items-end">
 
+                <!-- FECHA -->
+
                 <div class="col-lg-3 col-md-6">
 
                     <label class="form-label fw-semibold">
+
                         Filtrar por día
+
                     </label>
 
-                    <input type="date"
-                           name="fecha"
-                           value="{{ request.GET.fecha }}"
-                           class="form-control">
+                    <input
+                        type="date"
+                        name="fecha"
+                        value="{{ request.GET.fecha }}"
+                        class="form-control"
+                    >
 
                 </div>
+
+
+                <!-- MES -->
 
                 <div class="col-lg-3 col-md-6">
 
                     <label class="form-label fw-semibold">
+
                         Filtrar por mes
+
                     </label>
 
-                    <input type="month"
-                           name="mes"
-                           value="{{ request.GET.mes }}"
-                           class="form-control">
+                    <input
+                        type="month"
+                        name="mes"
+                        value="{{ request.GET.mes }}"
+                        class="form-control"
+                    >
 
                 </div>
+
+
+                <!-- SUCURSAL -->
 
                 <div class="col-lg-3 col-md-6">
 
                     <label class="form-label fw-semibold">
+
                         Filtrar por sucursal
+
                     </label>
 
-                    <select name="sede"
-                            class="form-select">
+                    <select
+                        name="sede"
+                        class="form-select"
+                    >
 
                         <option value="">
+
                             Todas las sucursales
+
                         </option>
 
                         {% for centro in centros %}
 
-                            <option value="{{ centro.id }}"
+                            <option
+                                value="{{ centro.id }}"
+
                                 {% if request.GET.sede == centro.id|stringformat:"s" %}
                                     selected
-                                {% endif %}>
+                                {% endif %}
+                            >
 
                                 {{ centro.nombre }}
 
@@ -101,9 +149,15 @@
 
                 </div>
 
+
+                <!-- BOTÓN FILTRAR -->
+
                 <div class="col-lg-3 col-md-6">
 
-                    <button class="btn btn-primary w-100">
+                    <button
+                        type="submit"
+                        class="btn btn-primary w-100"
+                    >
 
                         <i class="bi bi-search"></i>
 
@@ -119,7 +173,11 @@
 
     </div>
 
+
+    <!-- ================================================== -->
     <!-- TABLA -->
+    <!-- ================================================== -->
+
     <div class="card shadow-sm border-0">
 
         <div class="card-body">
@@ -142,7 +200,7 @@
 
                             <th>Paciente</th>
 
-                            <th>Dni</th>
+                            <th>DNI</th>
 
                             <th>Estado</th>
 
@@ -150,115 +208,223 @@
 
                             <th>Creado Por</th>
 
-                            
+                            <!-- NUEVA COLUMNA -->
+
+                            <th class="text-center">
+
+                                Acciones
+
+                            </th>
 
                         </tr>
 
                     </thead>
 
+
                     <tbody>
 
                         {% for turno in turnos %}
 
-                        {% if turno.fecha == hoy and turno.hora <= ahora %}
-                            <tr class="table-warning">
-                        {% else %}
-                            <tr>
-                        {% endif %}
 
-                            <td class="fw-semibold">
+                            <!-- ========================================== -->
+                            <!-- COLOR DE FILA -->
+                            <!-- ========================================== -->
 
-                                {{ turno.fecha }}
+                            {% if turno.fecha == hoy and turno.hora <= ahora %}
 
-                            </td>
+                                <tr class="table-warning">
 
-                            <td>
+                            {% else %}
 
-                                {{ turno.hora }}
+                                <tr>
 
-                            </td>
+                            {% endif %}
 
-                            <td>
 
-                                <span class="badge bg-info text-dark">
+                                <!-- FECHA -->
 
-                                    {{ turno.sede_nombre }}
+                                <td class="fw-semibold">
 
-                                </span>
+                                    {{ turno.fecha|date:"d/m/Y" }}
 
-                            </td>
+                                </td>
 
-                            <td>
 
-                                {% if turno.tipo == "Sobreturno" %}
+                                <!-- HORA -->
 
-                                    <span class="badge bg-warning text-dark">
+                                <td>
 
-                                        ⚡ Sobreturno
+                                    {{ turno.hora }}
 
-                                    </span>
+                                </td>
 
-                                {% else %}
 
-                                    <span class="badge bg-primary">
+                                <!-- SEDE -->
 
-                                        ✔ Turno
+                                <td>
+
+                                    <span class="badge bg-info text-dark">
+
+                                        {{ turno.sede_nombre }}
 
                                     </span>
 
-                                {% endif %}
-
-                            </td>
-
-                            <td>
-
-                                {{ turno.paciente }}
-
-                            </td>
-
-                            <td>
-
-                                {{ turno.paciente.dni }}
-
-                            </td>
-
-                            <td>
-
-                                <span class="badge bg-{{ turno.estado_color }}">
-
-                                    {{ turno.estado }}
-
-                                </span>
-
-                            </td>
-
-                            <td>
-
-                                {{ turno.observaciones|default:"-" }}
-
-                            </td>
-
-                            <td>
-
-                                {{ turno.usuario_creador }}
-
-                            </td>
+                                </td>
 
 
-                        </tr>
+                                <!-- TIPO -->
+
+                                <td>
+
+                                    {% if turno.tipo == "Sobreturno" %}
+
+                                        <span class="badge bg-warning text-dark">
+
+                                            ⚡ Sobreturno
+
+                                        </span>
+
+                                    {% else %}
+
+                                        <span class="badge bg-primary">
+
+                                            ✔ Turno
+
+                                        </span>
+
+                                    {% endif %}
+
+                                </td>
+
+
+                                <!-- PACIENTE -->
+
+                                <td>
+
+                                    {{ turno.paciente }}
+
+                                </td>
+
+
+                                <!-- DNI -->
+
+                                <td>
+
+                                    {{ turno.paciente.dni }}
+
+                                </td>
+
+
+                                <!-- ESTADO -->
+
+                                <td>
+
+                                    <span class="badge bg-{{ turno.estado_color }}">
+
+                                        {{ turno.estado }}
+
+                                    </span>
+
+                                </td>
+
+
+                                <!-- OBSERVACIONES -->
+
+                                <td>
+
+                                    {{ turno.observaciones|default:"-" }}
+
+                                </td>
+
+
+                                <!-- CREADO POR -->
+
+                                <td>
+
+                                    {{ turno.usuario_creador }}
+
+                                </td>
+
+
+                                <!-- ========================================== -->
+                                <!-- ACCIONES -->
+                                <!-- ========================================== -->
+
+                                <td class="text-center text-nowrap">
+
+                                    {% if turno.tipo == "Turno" %}
+
+                                        {% if turno.estado == "PENDIENTE" %}
+
+                                            <!-- ATENDER -->
+
+                                            <a
+                                                href="{% url 'cargar_consulta_paciente' turno.id %}"
+                                                class="btn btn-success btn-sm"
+                                                title="Atender paciente"
+                                            >
+
+                                                <i class="bi bi-check-circle"></i>
+
+                                                Atender
+
+                                            </a>
+
+
+                                            <!-- AUSENTE -->
+
+                                            <a
+                                                href="{% url 'turnos:marcar_ausente' turno.id %}?origen=mis_turnos"
+                                                class="btn btn-danger btn-sm ms-1"
+                                                title="Marcar paciente como ausente"
+                                            >
+
+                                                <i class="bi bi-x-circle"></i>
+
+                                                Ausente
+
+                                            </a>
+
+                                        {% endif %}
+
+
+                                    {% elif turno.tipo == "Sobreturno" %}
+
+                                        <!--
+                                            Por ahora no enviamos el ID del
+                                            sobreturno a las vistas de Turnos.
+                                        -->
+
+                                        <span
+                                            class="badge bg-warning text-dark"
+                                            title="Acciones de sobreturno pendientes de configurar"
+                                        >
+
+                                            ⚡ Sobreturno
+
+                                        </span>
+
+                                    {% endif %}
+
+                                </td>
+
+                            </tr>
+
 
                         {% empty %}
 
-                        <tr>
+                            <tr>
 
-                            <td colspan="9"
-                                class="text-center text-muted py-4">
+                                <td
+                                    colspan="10"
+                                    class="text-center text-muted py-4"
+                                >
 
-                                No hay turnos registrados.
+                                    No hay turnos registrados.
 
-                            </td>
+                                </td>
 
-                        </tr>
+                            </tr>
 
                         {% endfor %}
 
@@ -272,12 +438,17 @@
 
     </div>
 
+
+    <!-- ================================================== -->
     <!-- BOTÓN VOLVER -->
+    <!-- ================================================== -->
 
     <div class="text-center mt-4">
 
-        <a href="{% url 'core:medico' %}"
-           class="btn btn-outline-primary btn-lg px-4">
+        <a
+            href="{% url 'core:medico' %}"
+            class="btn btn-outline-primary btn-lg px-4"
+        >
 
             <i class="bi bi-arrow-left-circle"></i>
 
