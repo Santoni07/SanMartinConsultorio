@@ -738,7 +738,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
         botonAceptar.addEventListener("click", function () {
 
-            window.location.href = "/medico/";
+            window.location.href = "{% url 'turnos:mis_turnos_medico' %}";
 
         });
 
