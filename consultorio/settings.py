@@ -57,7 +57,7 @@ else:
 # ==========================================================
 
 # 20 minutos
-SESSION_COOKIE_AGE = 20 * 60
+SESSION_COOKIE_AGE = 2 * 60 * 60
 
 # Cada request reinicia el contador
 SESSION_SAVE_EVERY_REQUEST = True
