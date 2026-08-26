@@ -169,7 +169,7 @@
                         </h2>
 
                         <small class="text-muted">
-                            Particular + Coseguros + Copagos
+                            Particular + Coseguros + Copagos + OS cobradas
                         </small>
 
                     </div>
@@ -879,44 +879,557 @@
         </div>
 
     </div>
-
-{% if resumen.total_disponible > 0 %}
+<!-- ================================================== -->
+<!-- OBRAS SOCIALES COBRADAS -->
+<!-- PENDIENTES DE LIQUIDAR -->
+<!-- ================================================== -->
 
 <div class="card mt-4 shadow-sm border-success">
+
+    <div class="card-header bg-success text-white">
+
+        <div class="d-flex justify-content-between align-items-center">
+
+            <strong>
+                <i class="bi bi-check-circle me-1"></i>
+                Obras Sociales cobradas pendientes de liquidar
+            </strong>
+
+            <span class="badge bg-light text-success">
+                {{ obras_sociales_cobradas|length }}
+            </span>
+
+        </div>
+
+    </div>
+
+
+    <div class="card-body">
+
+        <!-- ============================================== -->
+        <!-- RESUMEN OS COBRADAS -->
+        <!-- ============================================== -->
+
+        <div class="row g-3 mb-4">
+
+            <div class="col-md-6">
+
+                <div class="border rounded p-3 h-100">
+
+                    <div class="text-muted">
+                        Importe correspondiente a Obras Sociales cobradas
+                    </div>
+
+                    <h3 class="mt-2 mb-0 text-success">
+
+                        $ {{ resumen.total_os_cobrado|floatformat:2 }}
+
+                    </h3>
+
+                </div>
+
+            </div>
+
+
+            <div class="col-md-6">
+
+                <div class="border rounded p-3 h-100">
+
+                    <div class="text-muted">
+                        Honorarios OS disponibles para liquidar
+                    </div>
+
+                    <h3 class="mt-2 mb-0 text-success">
+
+                        $ {{ resumen.total_honorarios_os_disponible|floatformat:2 }}
+
+                    </h3>
+
+                </div>
+
+            </div>
+
+        </div>
+
+
+        <!-- ============================================== -->
+        <!-- TABLA -->
+        <!-- ============================================== -->
+
+        {% if obras_sociales_cobradas %}
+
+        <div class="table-responsive">
+
+            <table class="table table-hover align-middle mb-0">
+
+                <thead class="table-light">
+
+                    <tr>
+
+                        <th style="width:13%;">
+                            Fecha / Paciente
+                        </th>
+
+                        <th style="width:12%;">
+                            Sede
+                        </th>
+
+                        <th style="width:13%;">
+                            Obra Social
+                        </th>
+
+                        <th>
+                            Prestación
+                        </th>
+
+                        <th style="width:18%;">
+                            Importe OS
+                        </th>
+
+                        <th style="width:18%;">
+                            Honorario médico
+                        </th>
+
+                        <th style="width:12%;">
+                            Estado
+                        </th>
+
+                    </tr>
+
+                </thead>
+
+
+                <tbody>
+
+                    {% for detalle in obras_sociales_cobradas %}
+
+                    <tr>
+
+                        <!-- ================================== -->
+                        <!-- FECHA / PACIENTE -->
+                        <!-- ================================== -->
+
+                        <td>
+
+                            <div class="fw-bold">
+
+                                {{ detalle.fecha_prestacion|date:"d/m/Y" }}
+
+                            </div>
+
+                            <div class="mt-1">
+
+                                {{ detalle.movimiento.paciente }}
+
+                            </div>
+
+                        </td>
+
+
+                        <!-- ================================== -->
+                        <!-- SEDE -->
+                        <!-- ================================== -->
+
+                        <td>
+
+                            <span class="badge bg-light text-dark border">
+
+                                {{ detalle.movimiento.centro_medico.nombre }}
+
+                            </span>
+
+                        </td>
+
+
+                        <!-- ================================== -->
+                        <!-- OBRA SOCIAL -->
+                        <!-- ================================== -->
+
+                        <td>
+
+                            <div class="fw-semibold">
+
+                                {{ detalle.prestacion_obra_social.obra_social }}
+
+                            </div>
+
+                            {% if detalle.prestacion_obra_social.plan %}
+
+                                <div class="mt-1">
+
+                                    <small class="text-muted">
+
+                                        {{ detalle.prestacion_obra_social.plan.nombre }}
+
+                                    </small>
+
+                                </div>
+
+                            {% endif %}
+
+                        </td>
+
+
+                        <!-- ================================== -->
+                        <!-- PRESTACIÓN -->
+                        <!-- ================================== -->
+
+                        <td>
+
+                            <div>
+
+                                {{ detalle.descripcion }}
+
+                            </div>
+
+                            <div class="mt-1">
+
+                                <small class="text-muted">
+
+                                    Código {{ detalle.codigo }}
+
+                                </small>
+
+                            </div>
+
+                        </td>
+
+
+                        <!-- ================================== -->
+                        <!-- IMPORTE OS -->
+                        <!-- ================================== -->
+
+                        <td>
+
+                            <div class="d-flex justify-content-between">
+
+                                <span class="text-muted">
+                                    Valor:
+                                </span>
+
+                                <strong>
+
+                                    $ {{ detalle.importe|floatformat:2 }}
+
+                                </strong>
+
+                            </div>
+
+
+                            {% if detalle.importe_coseguro > 0 %}
+
+                                <div class="d-flex justify-content-between mt-1">
+
+                                    <span class="text-muted">
+                                        Coseguro:
+                                    </span>
+
+                                    <strong class="text-success">
+
+                                        - $ {{ detalle.importe_coseguro|floatformat:2 }}
+
+                                    </strong>
+
+                                </div>
+
+                            {% endif %}
+
+
+                            <hr class="my-2">
+
+
+                            <div class="d-flex justify-content-between">
+
+                                <span class="fw-bold">
+                                    Cobrado OS:
+                                </span>
+
+                                <strong class="text-success">
+
+                                    $ {{ detalle.importe_os_cobrado_calculado|floatformat:2 }}
+
+                                </strong>
+
+                            </div>
+
+                        </td>
+
+
+                        <!-- ================================== -->
+                        <!-- HONORARIO MÉDICO -->
+                        <!-- ================================== -->
+
+                        <td>
+
+                            <div class="d-flex justify-content-between">
+
+                                <span class="text-muted">
+                                    Honorario total:
+                                </span>
+
+                                <strong>
+
+                                    $ {{ detalle.importe_medico|floatformat:2 }}
+
+                                </strong>
+
+                            </div>
+
+
+                            {% if detalle.importe_coseguro > 0 %}
+
+                                <div class="d-flex justify-content-between mt-1">
+
+                                    <span class="text-success">
+                                        Coseguro:
+                                    </span>
+
+                                    <strong class="text-success">
+
+                                        - $ {{ detalle.importe_coseguro|floatformat:2 }}
+
+                                    </strong>
+
+                                </div>
+
+                            {% endif %}
+
+
+                            {% if detalle.importe_copago > 0 %}
+
+                                <div class="d-flex justify-content-between mt-1">
+
+                                    <span class="text-info">
+                                        Copago:
+                                    </span>
+
+                                    <strong class="text-info">
+
+                                        $ {{ detalle.importe_copago|floatformat:2 }}
+
+                                    </strong>
+
+                                </div>
+
+                                <small class="text-muted d-block text-end">
+                                    Liquidación independiente
+                                </small>
+
+                            {% endif %}
+
+
+                            <hr class="my-2">
+
+
+                            <div class="d-flex justify-content-between">
+
+                                <span class="fw-bold">
+                                    Disponible OS:
+                                </span>
+
+                                <strong class="text-success">
+
+                                    $ {{ detalle.honorario_os_calculado|floatformat:2 }}
+
+                                </strong>
+
+                            </div>
+
+                        </td>
+
+
+                        <!-- ================================== -->
+                        <!-- ESTADO -->
+                        <!-- ================================== -->
+
+                        <td>
+
+                            <span class="badge bg-success">
+
+                                <i class="bi bi-check-circle me-1"></i>
+                                OS cobrada
+
+                            </span>
+
+
+                            <div class="mt-2">
+
+                                <small class="text-success fw-bold">
+
+                                    Disponible para liquidar
+
+                                </small>
+
+                            </div>
+
+
+                            {% if detalle.fecha_cobro_obra_social %}
+
+                                <div class="mt-1">
+
+                                    <small class="text-muted">
+
+                                        Cobrado:
+                                        {{ detalle.fecha_cobro_obra_social|date:"d/m/Y" }}
+
+                                    </small>
+
+                                </div>
+
+                            {% endif %}
+
+                        </td>
+
+                    </tr>
+
+                    {% endfor %}
+
+                </tbody>
+
+            </table>
+
+        </div>
+
+
+        {% else %}
+
+        <div class="text-center text-muted py-4">
+
+            No existen prestaciones de Obras Sociales
+            cobradas pendientes de liquidar.
+
+        </div>
+
+        {% endif %}
+
+    </div>
+
+</div>
+{% if resumen.total_disponible > 0 %}
+
+<div class="card mt-4 shadow-sm">
 
     <div class="card-body">
 
         <div class="row align-items-center">
 
-            <div class="col-md-8">
+            <div class="col-md-6">
 
                 <h5 class="mb-1">
-                    Honorarios disponibles para liquidar
+                    Preparar liquidación
                 </h5>
 
                 <div class="text-muted">
-                    Incluye prestaciones particulares, coseguros
-                    y copagos efectivamente cobrados.
+                    Seleccione qué tipo de honorarios desea liquidar.
                 </div>
 
             </div>
 
-            <div class="col-md-4 text-end">
 
-                <div class="mb-2">
+            <div class="col-md-6">
 
-                    <strong class="fs-4 text-success">
-                        $ {{ resumen.total_disponible|floatformat:2 }}
-                    </strong>
+                <div class="d-grid gap-2">
+
+
+                    <!-- ====================================== -->
+                    <!-- PARTICULAR / COSEGURO / COPAGO -->
+                    <!-- ====================================== -->
+
+                    {% if resumen.total_disponible_directo > 0 %}
+
+                    <a
+                        href="{% url 'previsualizar_liquidacion' medico_id %}"
+                        class="btn btn-success"
+                    >
+
+                        <div class="d-flex justify-content-between align-items-center">
+
+                            <span>
+
+                                <i class="bi bi-person-check me-1"></i>
+
+                                Particular + Coseguros + Copagos
+
+                            </span>
+
+                            <strong>
+                                $ {{ resumen.total_disponible_directo|floatformat:2 }}
+                            </strong>
+
+                        </div>
+
+                    </a>
+
+                    {% else %}
+
+                    <button
+                        type="button"
+                        class="btn btn-outline-secondary"
+                        disabled
+                    >
+
+                        Particular + Coseguros + Copagos
+
+                        <strong class="ms-2">
+                            $ 0,00
+                        </strong>
+
+                    </button>
+
+                    {% endif %}
+
+
+                    <!-- ====================================== -->
+                    <!-- OBRAS SOCIALES COBRADAS -->
+                    <!-- ====================================== -->
+
+                    {% if resumen.total_honorarios_os_disponible > 0 %}
+
+                    <a
+                        href="{% url 'previsualizar_liquidacion_os' medico_id %}"
+                        class="btn btn-primary"
+                    >
+
+                        <div class="d-flex justify-content-between align-items-center">
+
+                            <span>
+
+                                <i class="bi bi-hospital me-1"></i>
+
+                                Obras Sociales cobradas
+
+                            </span>
+
+                            <strong>
+
+                                $ {{ resumen.total_honorarios_os_disponible|floatformat:2 }}
+
+                            </strong>
+
+                        </div>
+
+                    </a>
+
+                    {% else %}
+
+                    <button
+                        type="button"
+                        class="btn btn-outline-secondary"
+                        disabled
+                    >
+
+                        Obras Sociales cobradas
+
+                        <strong class="ms-2">
+                            $ 0,00
+                        </strong>
+
+                    </button>
+
+                    {% endif %}
+
 
                 </div>
-
-                <a
-                    href="{% url 'previsualizar_liquidacion' medico_id %}"
-                    class="btn btn-success"
-                >
-                    Preparar liquidación
-                </a>
 
             </div>
 

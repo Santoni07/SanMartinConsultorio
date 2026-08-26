@@ -5,6 +5,7 @@ from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.db import transaction
 from django.db.models import Sum
+from django.urls import reverse
 from django.shortcuts import (
     render,
     redirect,
@@ -58,19 +59,42 @@ def honorarios_medicos(request):
     particulares = DetalleMovimientoCaja.objects.none()
     coseguros = DetalleMovimientoCaja.objects.none()
     copagos = DetalleMovimientoCaja.objects.none()
+
     obras_sociales_pendientes = DetalleMovimientoCaja.objects.none()
+    obras_sociales_cobradas = DetalleMovimientoCaja.objects.none()
 
     # ==========================================
     # RESUMEN INICIAL
     # ==========================================
 
     resumen = {
-        "total_particulares": Decimal("0.00"),
-        "total_coseguros": Decimal("0.00"),
-        "total_copagos": Decimal("0.00"),
-        "total_os_pendiente": Decimal("0.00"),
-        "total_honorarios_os_pendiente": Decimal("0.00"),
-        "total_disponible": Decimal("0.00"),
+
+        "total_particulares":
+            Decimal("0.00"),
+
+        "total_coseguros":
+            Decimal("0.00"),
+
+        "total_copagos":
+            Decimal("0.00"),
+
+        # OS todavía no cobradas
+        "total_os_pendiente":
+            Decimal("0.00"),
+
+        "total_honorarios_os_pendiente":
+            Decimal("0.00"),
+
+        # OS ya cobradas
+        "total_os_cobrado":
+            Decimal("0.00"),
+
+        "total_honorarios_os_disponible":
+            Decimal("0.00"),
+
+        # Total disponible para liquidar
+        "total_disponible":
+            Decimal("0.00"),
     }
 
     # ==========================================
@@ -83,18 +107,25 @@ def honorarios_medicos(request):
         # BASE COMÚN
         # ==========================================
 
-        base = DetalleMovimientoCaja.objects.filter(
-            movimiento__turno__medico_id=medico_id,
-            movimiento__centro_medico=centro_medico,
-            movimiento__tipo="INGRESO",
-            movimiento__estado="ACTIVO",
-            estado="PENDIENTE",
-        ).select_related(
-            "movimiento",
-            "movimiento__paciente",
-            "movimiento__turno",
-            "prestacion_obra_social",
-            "prestacion_obra_social__obra_social",
+        base = (
+            DetalleMovimientoCaja.objects
+            .filter(
+                movimiento__turno__medico_id=medico_id,
+                movimiento__centro_medico=centro_medico,
+                movimiento__tipo="INGRESO",
+                movimiento__estado="ACTIVO",
+                estado="PENDIENTE",
+            )
+            .select_related(
+                "movimiento",
+                "movimiento__centro_medico",
+                "movimiento__paciente",
+                "movimiento__turno",
+                "movimiento__turno__medico",
+                "prestacion_obra_social",
+                "prestacion_obra_social__obra_social",
+                "prestacion_obra_social__plan",
+            )
         )
 
         # ==========================================
@@ -138,15 +169,14 @@ def honorarios_medicos(request):
         # PENDIENTES DE LIQUIDAR
         # ==========================================
         #
-        # IMPORTANTE:
-        #
         # El copago va directamente al médico.
         #
         # NO se descuenta:
-        # - del valor de la prestación OS
-        # - del importe que debe pagar la OS
-        # - del honorario OS
         #
+        # - del importe que debe pagar la OS
+        # - del honorario correspondiente a la OS
+        #
+        # Tiene su propio circuito de liquidación.
         # ==========================================
 
         copagos = base.filter(
@@ -166,6 +196,13 @@ def honorarios_medicos(request):
         # ==========================================
         # OBRAS SOCIALES PENDIENTES DE COBRO
         # ==========================================
+        #
+        # Son prestaciones que todavía NO fueron
+        # pagadas por la Obra Social.
+        #
+        # No están disponibles para liquidar el
+        # componente OS del honorario médico.
+        # ==========================================
 
         obras_sociales_pendientes = base.filter(
             prestacion_obra_social__isnull=False,
@@ -174,10 +211,11 @@ def honorarios_medicos(request):
         )
 
         total_os_pendiente = Decimal("0.00")
+
         total_honorarios_os_pendiente = Decimal("0.00")
 
         # ==========================================
-        # CALCULAR CADA PRESTACIÓN OS
+        # CALCULAR PRESTACIONES OS PENDIENTES
         # ==========================================
 
         for detalle in obras_sociales_pendientes:
@@ -186,9 +224,11 @@ def honorarios_medicos(request):
             # SALDO QUE DEBE PAGAR LA OBRA SOCIAL
             # --------------------------------------
             #
-            # El coseguro sí se descuenta.
+            # COSEGURO:
+            # se descuenta del importe OS.
             #
-            # El copago NO se descuenta.
+            # COPAGO:
+            # NO se descuenta.
             # --------------------------------------
 
             saldo_os = (
@@ -205,13 +245,15 @@ def honorarios_medicos(request):
             total_os_pendiente += saldo_os
 
             # --------------------------------------
-            # HONORARIO MÉDICO PENDIENTE DE LA OS
+            # HONORARIO MÉDICO CORRESPONDIENTE
+            # A LA PARTE DE LA OBRA SOCIAL
             # --------------------------------------
             #
             # El coseguro forma parte del honorario
-            # original y por eso se descuenta.
+            # original, por eso se descuenta.
             #
-            # El copago es adicional y NO se descuenta.
+            # El copago es adicional y NO se
+            # descuenta.
             # --------------------------------------
 
             honorario_os = (
@@ -228,19 +270,119 @@ def honorarios_medicos(request):
             total_honorarios_os_pendiente += honorario_os
 
         # ==========================================
+        # OBRAS SOCIALES YA COBRADAS
+        # PENDIENTES DE LIQUIDAR AL MÉDICO
+        # ==========================================
+        #
+        # Estas son las que fueron habilitadas
+        # cuando se registró el pago desde el Master.
+        #
+        # obra_social_cobrada = True
+        #
+        # pero todavía:
+        #
+        # honorario_os_liquidado = False
+        # ==========================================
+
+        obras_sociales_cobradas = base.filter(
+            prestacion_obra_social__isnull=False,
+            obra_social_cobrada=True,
+            honorario_os_liquidado=False,
+        )
+
+        total_os_cobrado = Decimal("0.00")
+
+        total_honorarios_os_disponible = Decimal("0.00")
+
+        # ==========================================
+        # CALCULAR OS COBRADAS
+        # ==========================================
+
+        for detalle in obras_sociales_cobradas:
+
+            # --------------------------------------
+            # IMPORTE CORRESPONDIENTE A LA OS
+            # --------------------------------------
+            #
+            # El coseguro se descuenta.
+            #
+            # El copago NO se descuenta.
+            # --------------------------------------
+
+            importe_os = (
+                (detalle.importe or Decimal("0.00"))
+                -
+                (detalle.importe_coseguro or Decimal("0.00"))
+            )
+
+            if importe_os < Decimal("0.00"):
+                importe_os = Decimal("0.00")
+
+            detalle.importe_os_cobrado_calculado = (
+                importe_os
+            )
+
+            total_os_cobrado += importe_os
+
+            # --------------------------------------
+            # HONORARIO OS DISPONIBLE
+            # --------------------------------------
+            #
+            # Si hubo coseguro, ese importe tiene
+            # su propio circuito y no debemos
+            # volver a pagarlo.
+            #
+            # El copago también tiene su propio
+            # circuito y NO afecta este cálculo.
+            # --------------------------------------
+
+            honorario_os = (
+                (detalle.importe_medico or Decimal("0.00"))
+                -
+                (detalle.importe_coseguro or Decimal("0.00"))
+            )
+
+            if honorario_os < Decimal("0.00"):
+                honorario_os = Decimal("0.00")
+
+            detalle.honorario_os_calculado = (
+                honorario_os
+            )
+
+            total_honorarios_os_disponible += (
+                honorario_os
+            )
+
+        # ==========================================
         # RESUMEN FINAL
         # ==========================================
 
         resumen = {
 
+            # --------------------------------------
+            # PARTICULAR
+            # --------------------------------------
+
             "total_particulares":
                 total_particulares,
+
+            # --------------------------------------
+            # COSEGURO
+            # --------------------------------------
 
             "total_coseguros":
                 total_coseguros,
 
+            # --------------------------------------
+            # COPAGO
+            # --------------------------------------
+
             "total_copagos":
                 total_copagos,
+
+            # --------------------------------------
+            # OS PENDIENTES DE COBRO
+            # --------------------------------------
 
             "total_os_pendiente":
                 total_os_pendiente,
@@ -248,11 +390,38 @@ def honorarios_medicos(request):
             "total_honorarios_os_pendiente":
                 total_honorarios_os_pendiente,
 
-            # Disponible AHORA para liquidar
+            # --------------------------------------
+            # OS COBRADAS
+            # --------------------------------------
+
+            "total_os_cobrado":
+                total_os_cobrado,
+
+            "total_honorarios_os_disponible":
+                total_honorarios_os_disponible,
+
+            # --------------------------------------
+            # TOTAL DISPONIBLE PARA LIQUIDAR
+            # --------------------------------------
+            #
+            # Ahora incluye:
+            #
+            # Particular
+            # + Coseguros cobrados
+            # + Copagos cobrados
+            # + Honorarios OS ya cobrados
+            # --------------------------------------
+
             "total_disponible":
-                total_particulares
-                + total_coseguros
-                + total_copagos,
+                (
+                    total_particulares
+                    +
+                    total_coseguros
+                    +
+                    total_copagos
+                    +
+                    total_honorarios_os_disponible
+                ),
         }
 
     # ==========================================
@@ -265,18 +434,28 @@ def honorarios_medicos(request):
         {
             "medicos": medicos,
 
-            "particulares": particulares,
-            "coseguros": coseguros,
-            "copagos": copagos,
+            "particulares":
+                particulares,
+
+            "coseguros":
+                coseguros,
+
+            "copagos":
+                copagos,
 
             "obras_sociales_pendientes":
                 obras_sociales_pendientes,
 
-            "resumen": resumen,
-            "medico_id": medico_id,
+            "obras_sociales_cobradas":
+                obras_sociales_cobradas,
+
+            "resumen":
+                resumen,
+
+            "medico_id":
+                medico_id,
         },
     )
-
 
 @login_required
 def previsualizar_liquidacion(request, medico_id):
@@ -398,10 +577,13 @@ def previsualizar_liquidacion(request, medico_id):
             request,
             "No existen honorarios disponibles para liquidar."
         )
+        url = reverse("honorarios_medicos")
 
         return redirect(
-            "honorarios_medicos"
+            f"{url}?medico={medico.id}"
         )
+
+        
 
     # ==========================================
     # RESUMEN
@@ -454,6 +636,178 @@ def previsualizar_liquidacion(request, medico_id):
                 resumen,
         }
     )  
+
+@login_required
+def previsualizar_liquidacion_os(request, medico_id):
+
+    centro_medico = obtener_centro_activo(request)
+
+    medico = get_object_or_404(
+        Medico,
+        pk=medico_id
+    )
+
+    # ======================================================
+    # BASE
+    # ======================================================
+
+    base = (
+        DetalleMovimientoCaja.objects
+        .filter(
+            movimiento__turno__medico=medico,
+            movimiento__centro_medico=centro_medico,
+            movimiento__tipo="INGRESO",
+            movimiento__estado="ACTIVO",
+            estado="PENDIENTE",
+
+            # ==============================================
+            # SOLO OBRAS SOCIALES
+            # ==============================================
+
+            prestacion_obra_social__isnull=False,
+
+            # ==============================================
+            # LA OS YA PAGÓ
+            # ==============================================
+
+            obra_social_cobrada=True,
+
+            # ==============================================
+            # TODAVÍA NO SE LIQUIDÓ AL MÉDICO
+            # ==============================================
+
+            honorario_os_liquidado=False,
+        )
+        .select_related(
+            "movimiento",
+            "movimiento__centro_medico",
+            "movimiento__paciente",
+            "movimiento__turno",
+            "movimiento__turno__medico",
+            "prestacion_obra_social",
+            "prestacion_obra_social__obra_social",
+            "prestacion_obra_social__plan",
+        )
+        .order_by(
+            "prestacion_obra_social__obra_social__nombre",
+            "fecha_prestacion",
+            "id",
+        )
+    )
+
+    # ======================================================
+    # TOTALES
+    # ======================================================
+
+    total_importe_os = Decimal("0.00")
+    total_honorarios_os = Decimal("0.00")
+
+    # ======================================================
+    # CALCULAR CADA PRESTACIÓN
+    # ======================================================
+
+    for detalle in base:
+
+        # --------------------------------------------------
+        # IMPORTE CORRESPONDIENTE A LA OBRA SOCIAL
+        # --------------------------------------------------
+        #
+        # COSEGURO:
+        # se descuenta porque fue abonado por el paciente.
+        #
+        # COPAGO:
+        # NO se descuenta.
+        # --------------------------------------------------
+
+        importe_os = (
+            (detalle.importe or Decimal("0.00"))
+            -
+            (detalle.importe_coseguro or Decimal("0.00"))
+        )
+
+        if importe_os < Decimal("0.00"):
+            importe_os = Decimal("0.00")
+
+        detalle.importe_os_calculado = importe_os
+
+        total_importe_os += importe_os
+
+        # --------------------------------------------------
+        # HONORARIO MÉDICO CORRESPONDIENTE A LA OS
+        # --------------------------------------------------
+        #
+        # importe_medico contiene el honorario original.
+        #
+        # Si hubo coseguro, esa parte se liquida por su
+        # circuito independiente.
+        #
+        # El copago también tiene circuito independiente
+        # pero NO reduce el honorario OS.
+        # --------------------------------------------------
+
+        honorario_os = (
+            (detalle.importe_medico or Decimal("0.00"))
+            -
+            (detalle.importe_coseguro or Decimal("0.00"))
+        )
+
+        if honorario_os < Decimal("0.00"):
+            honorario_os = Decimal("0.00")
+
+        detalle.honorario_os_calculado = honorario_os
+
+        total_honorarios_os += honorario_os
+
+    # ======================================================
+    # VALIDAR
+    # ======================================================
+
+    if not base.exists():
+
+        messages.warning(
+            request,
+            "No existen honorarios de Obras Sociales "
+            "cobradas disponibles para liquidar."
+        )
+
+        return redirect(
+            f"{reverse('honorarios_medicos')}?medico={medico.id}"
+        )
+
+    # ======================================================
+    # RESUMEN
+    # ======================================================
+
+    resumen = {
+
+        "cantidad":
+            base.count(),
+
+        "total_importe_os":
+            total_importe_os,
+
+        "total_honorarios_os":
+            total_honorarios_os,
+    }
+
+    # ======================================================
+    # RENDER
+    # ======================================================
+
+    return render(
+        request,
+        "honorarios/previsualizar_liquidacion_os.html",
+        {
+            "medico":
+                medico,
+
+            "prestaciones_os":
+                base,
+
+            "resumen":
+                resumen,
+        }
+    )
 
 @login_required
 @transaction.atomic
@@ -1077,7 +1431,292 @@ def generar_liquidacion(request, medico_id):
     )
 
 
+@login_required
+@transaction.atomic
+def generar_liquidacion_os(request, medico_id):
 
+    # ==========================================
+    # SOLO POST
+    # ==========================================
+
+    if request.method != "POST":
+
+        return redirect(
+            "previsualizar_liquidacion_os",
+            medico_id=medico_id
+        )
+
+    # ==========================================
+    # CENTRO Y MÉDICO
+    # ==========================================
+
+    centro_medico = obtener_centro_activo(request)
+
+    medico = get_object_or_404(
+        Medico,
+        pk=medico_id
+    )
+
+    # ==========================================
+    # OBRAS SOCIALES COBRADAS
+    # PENDIENTES DE LIQUIDAR AL MÉDICO
+    # ==========================================
+
+    prestaciones_os = list(
+
+        DetalleMovimientoCaja.objects.filter(
+
+            movimiento__turno__medico=medico,
+
+            movimiento__centro_medico=centro_medico,
+
+            movimiento__tipo="INGRESO",
+
+            movimiento__estado="ACTIVO",
+
+            estado="PENDIENTE",
+
+            prestacion_obra_social__isnull=False,
+
+            # La OS ya pagó
+            obra_social_cobrada=True,
+
+            # Todavía no pagamos este componente al médico
+            honorario_os_liquidado=False,
+
+        ).select_related(
+
+            "movimiento",
+
+            "movimiento__paciente",
+
+            "movimiento__turno",
+
+            "prestacion_obra_social",
+
+            "prestacion_obra_social__obra_social",
+
+            "prestacion_obra_social__plan",
+
+        )
+    )
+
+    # ==========================================
+    # VALIDAR
+    # ==========================================
+
+    if not prestaciones_os:
+
+        messages.warning(
+            request,
+            "No existen honorarios de Obras Sociales "
+            "cobradas disponibles para liquidar."
+        )
+
+        return redirect(
+            "previsualizar_liquidacion_os",
+            medico_id=medico.id
+        )
+
+    # ==========================================
+    # CALCULAR HONORARIOS OS
+    # ==========================================
+
+    items_liquidacion = []
+
+    total_honorarios_os = Decimal("0.00")
+
+    for detalle in prestaciones_os:
+
+        # --------------------------------------
+        # HONORARIO CORRESPONDIENTE A LA OS
+        # --------------------------------------
+        #
+        # El coseguro tiene circuito separado.
+        #
+        # El copago es adicional al honorario OS
+        # y también tiene circuito separado.
+        # --------------------------------------
+
+        honorario_os = (
+            (detalle.importe_medico or Decimal("0.00"))
+            -
+            (detalle.importe_coseguro or Decimal("0.00"))
+        )
+
+        if honorario_os < Decimal("0.00"):
+            honorario_os = Decimal("0.00")
+
+        items_liquidacion.append(
+            {
+                "detalle": detalle,
+                "importe": honorario_os,
+            }
+        )
+
+        total_honorarios_os += honorario_os
+
+    # ==========================================
+    # VALIDAR TOTAL
+    # ==========================================
+
+    if total_honorarios_os <= Decimal("0.00"):
+
+        messages.warning(
+            request,
+            "Las prestaciones cobradas no poseen "
+            "honorarios de Obra Social para liquidar."
+        )
+
+        return redirect(
+            "previsualizar_liquidacion_os",
+            medico_id=medico.id
+        )
+
+    # ==========================================
+    # DATOS FINANCIEROS
+    # ==========================================
+    #
+    # En esta liquidación:
+    #
+    # total_bruto:
+    # importe efectivamente correspondiente
+    # a la Obra Social.
+    #
+    # El coseguro se resta.
+    # El copago NO.
+    # ==========================================
+
+    total_bruto = Decimal("0.00")
+
+    for detalle in prestaciones_os:
+
+        importe_os = (
+            (detalle.importe or Decimal("0.00"))
+            -
+            (detalle.importe_coseguro or Decimal("0.00"))
+        )
+
+        if importe_os < Decimal("0.00"):
+            importe_os = Decimal("0.00")
+
+        total_bruto += importe_os
+
+    # ==========================================
+    # IVA / CONSULTORIO
+    # ==========================================
+    #
+    # Por ahora NO recalculamos estos valores.
+    #
+    # El objetivo de esta liquidación es liberar
+    # únicamente el honorario médico que quedó
+    # habilitado después del cobro del Master.
+    # ==========================================
+
+    total_iva = Decimal("0.00")
+    total_consultorio = Decimal("0.00")
+    total_retenciones = Decimal("0.00")
+
+    # ==========================================
+    # CREAR LIQUIDACIÓN MÉDICA
+    # ==========================================
+
+    liquidacion = LiquidacionMedica.objects.create(
+
+        medico=medico,
+
+        centro_medico=centro_medico,
+
+        cantidad_prestaciones=len(prestaciones_os),
+
+        total_bruto=total_bruto,
+
+        total_iva=total_iva,
+
+        total_consultorio=total_consultorio,
+
+        total_honorarios=total_honorarios_os,
+
+        total_retenciones=total_retenciones,
+
+        estado="PENDIENTE",
+
+        generado_por=request.user,
+
+        creado_por=request.user,
+    )
+
+    # ==========================================
+    # CREAR ITEMS
+    # ==========================================
+
+    for item in items_liquidacion:
+
+        detalle = item["detalle"]
+        honorario_os = item["importe"]
+
+        # --------------------------------------
+        # CREAR DETALLE DE LA LIQUIDACIÓN
+        # --------------------------------------
+
+        DetalleLiquidacionMedica.objects.create(
+
+            liquidacion=liquidacion,
+
+            detalle_movimiento=detalle,
+
+            tipo="OBRA_SOCIAL",
+
+            importe=honorario_os,
+        )
+
+        # --------------------------------------
+        # MARCAR SOLAMENTE EL HONORARIO OS
+        # COMO LIQUIDADO
+        # --------------------------------------
+        #
+        # NO modificamos:
+        #
+        # detalle.estado
+        # detalle.liquidacion
+        # detalle.coseguro_liquidado
+        # detalle.copago_liquidado
+        # detalle.obra_social_cobrada
+        #
+        # Esto evita interferir con los otros
+        # componentes de la misma prestación.
+        # --------------------------------------
+
+        detalle.honorario_os_liquidado = True
+
+        detalle.save(
+            update_fields=[
+                "honorario_os_liquidado",
+            ]
+        )
+
+    # ==========================================
+    # MENSAJE
+    # ==========================================
+
+    messages.success(
+        request,
+        (
+            f"Liquidación OS #{liquidacion.id} "
+            f"generada correctamente. "
+            f"Total honorarios: "
+            f"${total_honorarios_os:,.2f}"
+        )
+    )
+
+    # ==========================================
+    # IR AL DETALLE
+    # ==========================================
+
+    return redirect(
+        "detalle_liquidacion_medica",
+        liquidacion_id=liquidacion.id
+    )
 @login_required
 def liquidaciones_pendientes(request):
 

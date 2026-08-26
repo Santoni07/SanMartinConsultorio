@@ -24,6 +24,11 @@ path(
     views.generar_liquidacion_obra_social,
     name="generar_liquidacion_obra_social",
 ),
+path(
+    "previsualizar-os/<int:medico_id>/",
+    views.previsualizar_liquidacion_os,
+    name="previsualizar_liquidacion_os",
+),
  path(
     'pendientes/',
     views.liquidaciones_pendientes,
@@ -54,5 +59,11 @@ path(
     "detalle/<int:liquidacion_id>/",
     views.detalle_liquidacion_medica,
     name="detalle_liquidacion_medica",
+),
+
+path(
+    "generar-liquidacion-os/<int:medico_id>/",
+    views.generar_liquidacion_os,
+    name="generar_liquidacion_os",
 ),
 ]
