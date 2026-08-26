@@ -156,4 +156,9 @@ path(
     views.master_obra_social_registrar_pago,
     name="master_obra_social_registrar_pago"
 ),
+path(
+    "<int:obra_social_id>/master/<int:master_id>/imprimir/",
+    views.master_obra_social_imprimir,
+    name="master_obra_social_imprimir"
+),
 ], 'obrasocial')

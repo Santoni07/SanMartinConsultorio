@@ -559,6 +559,7 @@ def master_obra_social_lista(request, obra_social_id):
 # NUEVO MASTER
 # ==========================================================
 
+
 @login_required
 def master_obra_social_nuevo(request, obra_social_id):
 
@@ -727,7 +728,26 @@ def master_obra_social_nuevo(request, obra_social_id):
                 )
 
                 # ==========================================
-                # CREAR DETALLES
+                # CREAR DETALLES DEL MASTER
+                # ==========================================
+                #
+                # IMPORTANTE:
+                #
+                # El DetalleMasterObraSocial sigue
+                # vinculándose al DetalleMovimientoCaja.
+                #
+                # No modificamos detalle.importe.
+                #
+                # detalle.importe conserva el valor original
+                # de la prestación.
+                #
+                # El importe correspondiente a la OS será:
+                #
+                # prestación - coseguro cobrado
+                #
+                # Ese cálculo se utiliza al mostrar el Master.
+                #
+                # El COPAGO NO se descuenta.
                 # ==========================================
 
                 DetalleMasterObraSocial.objects.bulk_create(
@@ -842,6 +862,7 @@ def master_obra_social_nuevo(request, obra_social_id):
                     "movimiento__centro_medico",
                     "movimiento__paciente",
                     "movimiento__turno",
+                    "movimiento__turno__medico",
                     "prestacion_obra_social",
                     "prestacion_obra_social__plan",
                 )
@@ -851,6 +872,64 @@ def master_obra_social_nuevo(request, obra_social_id):
                     "id"
                 )
             )
+
+            # ==================================================
+            # CALCULAR IMPORTE A PRESENTAR A LA OS
+            # ==================================================
+            #
+            # REGLA:
+            #
+            # IMPORTE OS =
+            # VALOR PRESTACIÓN
+            # -
+            # COSEGURO COBRADO AL PACIENTE
+            #
+            # El copago NO se descuenta.
+            # ==================================================
+
+            for detalle in prestaciones:
+
+                importe_base = (
+                    detalle.importe
+                    or Decimal("0.00")
+                )
+
+                coseguro = Decimal("0.00")
+
+                # ------------------------------------------
+                # SOLAMENTE DESCONTAMOS EL COSEGURO
+                # SI EFECTIVAMENTE FUE COBRADO
+                # ------------------------------------------
+
+                if detalle.coseguro_cobrado:
+
+                    coseguro = (
+                        detalle.importe_coseguro
+                        or Decimal("0.00")
+                    )
+
+                # ------------------------------------------
+                # IMPORTE A PRESENTAR
+                # ------------------------------------------
+
+                importe_os = (
+                    importe_base
+                    -
+                    coseguro
+                )
+
+                # ------------------------------------------
+                # SEGURIDAD
+                # ------------------------------------------
+
+                if importe_os < Decimal("0.00"):
+                    importe_os = Decimal("0.00")
+
+                # ------------------------------------------
+                # VARIABLE TEMPORAL PARA EL TEMPLATE
+                # ------------------------------------------
+
+                detalle.importe_os_calculado = importe_os
 
     # ======================================================
     # TEMPLATE
@@ -866,6 +945,7 @@ def master_obra_social_nuevo(request, obra_social_id):
             "anio": anio or hoy.year,
         }
     )
+
     
 @login_required
 def master_obra_social_detalle(request, obra_social_id, master_id):
@@ -1401,5 +1481,122 @@ def master_obra_social_registrar_pago(
             "master": master,
             "detalles": detalles,
             "hoy": date.today(),
+        }
+    )
+    
+@login_required
+def master_obra_social_imprimir(request, obra_social_id, master_id):
+
+    # ======================================================
+    # ACCESO EXCLUSIVO CINTIA
+    # ======================================================
+
+    if request.user.username.lower() != "cintia":
+        raise PermissionDenied(
+            "No tiene permisos para imprimir el Master."
+        )
+
+    # ======================================================
+    # OBRA SOCIAL
+    # ======================================================
+
+    obra_social = get_object_or_404(
+        ObraSocial,
+        pk=obra_social_id,
+        es_particular=False
+    )
+
+    # ======================================================
+    # MASTER
+    # ======================================================
+
+    master = get_object_or_404(
+        MasterObraSocial,
+        pk=master_id,
+        obra_social=obra_social
+    )
+
+    # ======================================================
+    # DETALLES
+    # ======================================================
+
+    detalles = (
+        master.detalles
+        .select_related(
+            "detalle_movimiento",
+            "detalle_movimiento__movimiento",
+            "detalle_movimiento__movimiento__centro_medico",
+            "detalle_movimiento__movimiento__paciente",
+            "detalle_movimiento__movimiento__turno",
+            "detalle_movimiento__movimiento__turno__medico",
+            "detalle_movimiento__prestacion_obra_social",
+            "detalle_movimiento__prestacion_obra_social__plan",
+        )
+        .order_by(
+            "detalle_movimiento__movimiento__centro_medico__nombre",
+            "detalle_movimiento__fecha_prestacion",
+            "id"
+        )
+    )
+
+    # ======================================================
+    # TOTALES
+    # ======================================================
+
+    total_master = Decimal("0.00")
+
+    total_casa_central = Decimal("0.00")
+    total_agua_de_oro = Decimal("0.00")
+
+    cantidad_casa_central = 0
+    cantidad_agua_de_oro = 0
+
+    for item in detalles:
+
+        detalle = item.detalle_movimiento
+
+        importe = (
+            detalle.importe
+            or Decimal("0.00")
+        )
+
+        total_master += importe
+
+        centro = detalle.movimiento.centro_medico
+
+        nombre_centro = centro.nombre.lower()
+
+        if "agua de oro" in nombre_centro:
+
+            total_agua_de_oro += importe
+            cantidad_agua_de_oro += 1
+
+        else:
+
+            total_casa_central += importe
+            cantidad_casa_central += 1
+
+    # ======================================================
+    # RENDER
+    # ======================================================
+
+    return render(
+        request,
+        "obrasocial/master/imprimir.html",
+        {
+            "obra_social": obra_social,
+            "master": master,
+            "detalles": detalles,
+
+            "total_master": total_master,
+
+            "total_casa_central": total_casa_central,
+            "total_agua_de_oro": total_agua_de_oro,
+
+            "cantidad_casa_central":
+                cantidad_casa_central,
+
+            "cantidad_agua_de_oro":
+                cantidad_agua_de_oro,
         }
     )

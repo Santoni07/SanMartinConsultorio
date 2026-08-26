@@ -79,7 +79,17 @@ Master {{ master.mes|stringformat:"02d" }}/{{ master.anio }}
     </span>
 
 {% endif %}
+<a
+    href="{% url 'obrasocial:master_obra_social_imprimir' obra_social.id master.id %}"
+    class="btn btn-outline-dark"
+    target="_blank"
+>
 
+    <i class="bi bi-printer me-1"></i>
+
+    Imprimir Master
+
+</a>
 
                         <a href="{% url 'obrasocial:master_obra_social_lista' obra_social.id %}"
                         class="btn btn-light">

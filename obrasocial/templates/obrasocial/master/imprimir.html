@@ -1,0 +1,856 @@
+{% load static %}
+
+<!DOCTYPE html>
+
+<html lang="es">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <title>
+        Master {{ obra_social.nombre }}
+        {{ master.mes|stringformat:"02d" }}/{{ master.anio }}
+    </title>
+
+    <style>
+
+        /* ==================================================
+           CONFIGURACIÓN DE IMPRESIÓN
+        ================================================== */
+
+        @page {
+            size: A4 landscape;
+            margin: 10mm;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+
+            font-family: Arial, Helvetica, sans-serif;
+
+            font-size: 10px;
+
+            color: #222;
+
+            background: white;
+        }
+
+
+        /* ==================================================
+           CONTENEDOR
+        ================================================== */
+
+        .documento {
+            width: 100%;
+        }
+
+
+        /* ==================================================
+           CABECERA
+        ================================================== */
+
+        .cabecera {
+
+            border-bottom: 2px solid #333;
+
+            padding-bottom: 8px;
+
+            margin-bottom: 10px;
+
+            display: flex;
+
+            justify-content: space-between;
+
+            align-items: flex-start;
+        }
+
+        .titulo-principal {
+
+            font-size: 20px;
+
+            font-weight: bold;
+
+            margin-bottom: 4px;
+        }
+
+        .subtitulo {
+
+            font-size: 13px;
+
+            font-weight: bold;
+
+            margin-bottom: 3px;
+        }
+
+        .periodo {
+
+            font-size: 12px;
+        }
+
+        .estado {
+
+            border: 1px solid #333;
+
+            border-radius: 4px;
+
+            padding: 5px 10px;
+
+            font-weight: bold;
+
+            font-size: 11px;
+        }
+
+
+        /* ==================================================
+           DATOS DEL MASTER
+        ================================================== */
+
+        .datos-master {
+
+            width: 100%;
+
+            border-collapse: collapse;
+
+            margin-bottom: 10px;
+        }
+
+        .datos-master td {
+
+            border: 1px solid #aaa;
+
+            padding: 5px 7px;
+
+            vertical-align: top;
+        }
+
+        .etiqueta {
+
+            font-size: 9px;
+
+            color: #666;
+
+            display: block;
+
+            margin-bottom: 2px;
+        }
+
+        .valor {
+
+            font-size: 11px;
+
+            font-weight: bold;
+        }
+
+
+        /* ==================================================
+           RESUMEN POR SEDE
+        ================================================== */
+
+        .resumen {
+
+            width: 100%;
+
+            border-collapse: collapse;
+
+            margin-bottom: 12px;
+        }
+
+        .resumen th {
+
+            background: #eeeeee;
+
+            border: 1px solid #888;
+
+            padding: 5px;
+
+            text-align: center;
+        }
+
+        .resumen td {
+
+            border: 1px solid #aaa;
+
+            padding: 6px;
+
+            text-align: center;
+        }
+
+        .resumen .importe {
+
+            font-size: 12px;
+
+            font-weight: bold;
+        }
+
+
+        /* ==================================================
+           TABLA PRESTACIONES
+        ================================================== */
+
+        .prestaciones {
+
+            width: 100%;
+
+            border-collapse: collapse;
+
+            table-layout: fixed;
+        }
+
+        .prestaciones thead {
+
+            display: table-header-group;
+        }
+
+        .prestaciones th {
+
+            background: #e9ecef;
+
+            border: 1px solid #666;
+
+            padding: 4px;
+
+            font-size: 9px;
+
+            text-align: left;
+        }
+
+        .prestaciones td {
+
+            border: 1px solid #999;
+
+            padding: 4px;
+
+            font-size: 9px;
+
+            vertical-align: top;
+
+            overflow-wrap: break-word;
+        }
+
+        .prestaciones tr {
+            page-break-inside: avoid;
+        }
+
+
+        /* ==================================================
+           ANCHOS
+        ================================================== */
+
+        .col-fecha {
+            width: 7%;
+        }
+
+        .col-sede {
+            width: 10%;
+        }
+
+        .col-paciente {
+            width: 14%;
+        }
+
+        .col-medico {
+            width: 15%;
+        }
+
+        .col-codigo {
+            width: 8%;
+        }
+
+        .col-prestacion {
+            width: 25%;
+        }
+
+        .col-plan {
+            width: 10%;
+        }
+
+        .col-importe {
+            width: 11%;
+        }
+
+
+        /* ==================================================
+           IMPORTE
+        ================================================== */
+
+        .text-right {
+            text-align: right !important;
+        }
+
+        .text-center {
+            text-align: center !important;
+        }
+
+
+        /* ==================================================
+           TOTAL FINAL
+        ================================================== */
+
+        .total-final {
+
+            margin-top: 12px;
+
+            margin-left: auto;
+
+            width: 38%;
+
+            border-collapse: collapse;
+        }
+
+        .total-final td {
+
+            border: 1px solid #666;
+
+            padding: 7px;
+        }
+
+        .total-final .titulo {
+
+            background: #eeeeee;
+
+            font-weight: bold;
+        }
+
+        .total-final .importe {
+
+            font-size: 14px;
+
+            font-weight: bold;
+
+            text-align: right;
+        }
+
+
+        /* ==================================================
+           BOTONES
+        ================================================== */
+
+        .acciones {
+
+            margin-bottom: 15px;
+
+            display: flex;
+
+            gap: 8px;
+        }
+
+        .btn {
+
+            display: inline-block;
+
+            padding: 8px 14px;
+
+            border-radius: 4px;
+
+            text-decoration: none;
+
+            font-family: Arial, sans-serif;
+
+            font-size: 13px;
+
+            cursor: pointer;
+
+            border: 1px solid #555;
+        }
+
+        .btn-imprimir {
+
+            background: #198754;
+
+            color: white;
+
+            border-color: #198754;
+        }
+
+        .btn-volver {
+
+            background: #6c757d;
+
+            color: white;
+
+            border-color: #6c757d;
+        }
+
+
+        /* ==================================================
+           IMPRESIÓN
+        ================================================== */
+
+        @media print {
+
+            .no-print {
+                display: none !important;
+            }
+
+            body {
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+            }
+
+        }
+
+    </style>
+
+</head>
+
+
+<body>
+
+
+<div class="documento">
+
+
+    <!-- ================================================== -->
+    <!-- BOTONES -->
+    <!-- ================================================== -->
+
+    <div class="acciones no-print">
+
+        <button
+            type="button"
+            class="btn btn-imprimir"
+            onclick="window.print();"
+        >
+            Imprimir Master
+        </button>
+
+
+        <a
+            href="{% url 'obrasocial:master_obra_social_detalle' obra_social.id master.id %}"
+            class="btn btn-volver"
+        >
+            Volver
+        </a>
+
+    </div>
+
+
+    <!-- ================================================== -->
+    <!-- CABECERA -->
+    <!-- ================================================== -->
+
+    <div class="cabecera">
+
+        <div>
+
+            <div class="titulo-principal">
+                CENTRO MÉDICO SAN MARTÍN
+            </div>
+
+            <div class="subtitulo">
+
+                Master de Obra Social
+
+            </div>
+
+            <div class="periodo">
+
+                {{ obra_social.nombre }}
+
+                &nbsp; | &nbsp;
+
+                Período:
+                {{ master.mes|stringformat:"02d" }}/{{ master.anio }}
+
+            </div>
+
+        </div>
+
+
+        <div class="estado">
+
+            {{ master.get_estado_display|upper }}
+
+        </div>
+
+    </div>
+
+
+    <!-- ================================================== -->
+    <!-- DATOS MASTER -->
+    <!-- ================================================== -->
+
+    <table class="datos-master">
+
+        <tr>
+
+            <td>
+
+                <span class="etiqueta">
+                    Obra Social
+                </span>
+
+                <span class="valor">
+                    {{ obra_social.nombre }}
+                </span>
+
+            </td>
+
+
+            <td>
+
+                <span class="etiqueta">
+                    Período
+                </span>
+
+                <span class="valor">
+                    {{ master.mes|stringformat:"02d" }}/{{ master.anio }}
+                </span>
+
+            </td>
+
+
+            <td>
+
+                <span class="etiqueta">
+                    Fecha presentación
+                </span>
+
+                <span class="valor">
+
+                    {% if master.fecha_presentacion %}
+
+                        {{ master.fecha_presentacion|date:"d/m/Y" }}
+
+                    {% else %}
+
+                        -
+
+                    {% endif %}
+
+                </span>
+
+            </td>
+
+
+            <td>
+
+                <span class="etiqueta">
+                    N.º Presentación
+                </span>
+
+                <span class="valor">
+                    {{ master.numero_presentacion|default:"-" }}
+                </span>
+
+            </td>
+
+
+            <td>
+
+                <span class="etiqueta">
+                    N.º Factura
+                </span>
+
+                <span class="valor">
+                    {{ master.numero_factura|default:"-" }}
+                </span>
+
+            </td>
+
+        </tr>
+
+    </table>
+
+
+    <!-- ================================================== -->
+    <!-- RESUMEN -->
+    <!-- ================================================== -->
+
+    <table class="resumen">
+
+        <thead>
+
+            <tr>
+
+                <th>
+                    Sede
+                </th>
+
+                <th>
+                    Cantidad Prestaciones
+                </th>
+
+                <th>
+                    Importe
+                </th>
+
+            </tr>
+
+        </thead>
+
+
+        <tbody>
+
+            <tr>
+
+                <td>
+                    Casa Central
+                </td>
+
+                <td>
+                    {{ cantidad_casa_central }}
+                </td>
+
+                <td class="importe">
+                    $ {{ total_casa_central|floatformat:2 }}
+                </td>
+
+            </tr>
+
+
+            <tr>
+
+                <td>
+                    Agua de Oro
+                </td>
+
+                <td>
+                    {{ cantidad_agua_de_oro }}
+                </td>
+
+                <td class="importe">
+                    $ {{ total_agua_de_oro|floatformat:2 }}
+                </td>
+
+            </tr>
+
+
+            <tr>
+
+                <td>
+                    <strong>TOTAL MASTER</strong>
+                </td>
+
+                <td>
+                    <strong>
+                        {{ detalles|length }}
+                    </strong>
+                </td>
+
+                <td class="importe">
+                    $ {{ total_master|floatformat:2 }}
+                </td>
+
+            </tr>
+
+        </tbody>
+
+    </table>
+
+
+    <!-- ================================================== -->
+    <!-- PRESTACIONES -->
+    <!-- ================================================== -->
+
+    <table class="prestaciones">
+
+        <thead>
+
+            <tr>
+
+                <th class="col-fecha">
+                    Fecha
+                </th>
+
+                <th class="col-sede">
+                    Sede
+                </th>
+
+                <th class="col-paciente">
+                    Paciente
+                </th>
+
+                <th class="col-medico">
+                    Médico
+                </th>
+
+                <th class="col-codigo">
+                    Código
+                </th>
+
+                <th class="col-prestacion">
+                    Prestación
+                </th>
+
+                <th class="col-plan">
+                    Plan
+                </th>
+
+                <th class="col-importe text-right">
+                    Importe
+                </th>
+
+            </tr>
+
+        </thead>
+
+
+        <tbody>
+
+            {% for item in detalles %}
+
+            {% with detalle=item.detalle_movimiento %}
+
+            <tr>
+
+                <!-- FECHA -->
+
+                <td>
+                    {{ detalle.fecha_prestacion|date:"d/m/Y" }}
+                </td>
+
+
+                <!-- SEDE -->
+
+                <td>
+                    {{ detalle.movimiento.centro_medico.nombre }}
+                </td>
+
+
+                <!-- PACIENTE -->
+
+                <td>
+                    {{ detalle.movimiento.paciente }}
+                </td>
+
+
+                <!-- MÉDICO -->
+
+                <td>
+
+                    {% if detalle.movimiento.turno.medico %}
+
+                        {{ detalle.movimiento.turno.medico.nombre }}
+                        {{ detalle.movimiento.turno.medico.apellido }}
+
+                        {% if detalle.movimiento.turno.medico.matricula %}
+
+                            <br>
+
+                            <strong>
+                                MP {{ detalle.movimiento.turno.medico.matricula }}
+                            </strong>
+
+                        {% endif %}
+
+                    {% else %}
+
+                        -
+
+                    {% endif %}
+
+                </td>
+
+
+                <!-- CÓDIGO -->
+
+                <td>
+                    {{ detalle.codigo }}
+                </td>
+
+
+                <!-- PRESTACIÓN -->
+
+                <td>
+                    {{ detalle.descripcion }}
+                </td>
+
+
+                <!-- PLAN -->
+
+                <td>
+
+                    {% if detalle.prestacion_obra_social.plan %}
+
+                        {{ detalle.prestacion_obra_social.plan.nombre }}
+
+                    {% else %}
+
+                        -
+
+                    {% endif %}
+
+                </td>
+
+
+                <!-- IMPORTE -->
+
+                <td class="text-right">
+
+                    <strong>
+                        $ {{ detalle.importe|floatformat:2 }}
+                    </strong>
+
+                </td>
+
+            </tr>
+
+            {% endwith %}
+
+            {% empty %}
+
+            <tr>
+
+                <td
+                    colspan="8"
+                    class="text-center"
+                >
+                    No existen prestaciones en este Master.
+                </td>
+
+            </tr>
+
+            {% endfor %}
+
+        </tbody>
+
+    </table>
+
+
+    <!-- ================================================== -->
+    <!-- TOTAL -->
+    <!-- ================================================== -->
+
+    <table class="total-final">
+
+        <tr>
+
+            <td class="titulo">
+                Cantidad de prestaciones
+            </td>
+
+            <td class="text-right">
+                {{ detalles|length }}
+            </td>
+
+        </tr>
+
+
+        <tr>
+
+            <td class="titulo">
+                TOTAL MASTER
+            </td>
+
+            <td class="importe">
+                $ {{ total_master|floatformat:2 }}
+            </td>
+
+        </tr>
+
+    </table>
+
+
+</div>
+
+
+</body>
+
+</html>
