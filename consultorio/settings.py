@@ -56,7 +56,7 @@ else:
 # SEGURIDAD DE SESIONES
 # ==========================================================
 
-# 20 minutos
+# 1 hora  
 SESSION_COOKIE_AGE = 2 * 60 * 60
 
 # Cada request reinicia el contador
