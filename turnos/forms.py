@@ -100,17 +100,33 @@ class AgendaMedicoForm(forms.Form):
     )
 
 
-# 🔥 Generador de horarios
-def generar_horas():
+# ==========================================================
+# GENERADOR DE HORARIOS
+# ==========================================================
+
+def generar_horas(intervalo=20):
     horas = []
-    for h in range(8, 22):  # 07:00 a 20:40
-        for m in [0, 20, 40]:
-            hora = f"{h:02d}:{m:02d}"
-            horas.append((hora, hora))
+
+    minutos_inicio = 8 * 60       # 08:00
+    minutos_fin = 22 * 60         # 22:00
+
+    actual = minutos_inicio
+
+    while actual <= minutos_fin:
+
+        hora = actual // 60
+        minuto = actual % 60
+
+        texto = f"{hora:02d}:{minuto:02d}"
+
+        horas.append((texto, texto))
+
+        actual += intervalo
+
     return horas
 
 
-HORAS = generar_horas()
+HORAS = generar_horas(20)
 
 
 class ConfiguracionAgendaForm(forms.Form):

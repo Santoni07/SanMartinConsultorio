@@ -408,4 +408,155 @@
   </div>
 </div>
 
+
+
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+
+    // ==========================================================
+    // CAMPOS DE HORARIOS
+    // ==========================================================
+
+    const camposHorarios = [
+        "id_lunes_inicio",
+        "id_lunes_fin",
+
+        "id_martes_inicio",
+        "id_martes_fin",
+
+        "id_miercoles_inicio",
+        "id_miercoles_fin",
+
+        "id_jueves_inicio",
+        "id_jueves_fin",
+
+        "id_viernes_inicio",
+        "id_viernes_fin",
+
+        "id_sabado_inicio",
+        "id_sabado_fin"
+    ];
+
+
+    // ==========================================================
+    // GENERAR HORARIOS SEGÚN DURACIÓN
+    // ==========================================================
+
+    function generarHorarios(intervalo) {
+
+        const horarios = [];
+
+        const inicio = 8 * 60;   // 08:00
+        const fin = 22 * 60;     // 22:00
+
+        for (let minutos = inicio; minutos <= fin; minutos += intervalo) {
+
+            const hora = Math.floor(minutos / 60);
+            const minuto = minutos % 60;
+
+            const texto =
+                String(hora).padStart(2, "0") +
+                ":" +
+                String(minuto).padStart(2, "0");
+
+            horarios.push(texto);
+        }
+
+        return horarios;
+    }
+
+
+    // ==========================================================
+    // ACTUALIZAR TODOS LOS SELECT
+    // ==========================================================
+
+    function actualizarHorarios(intervalo) {
+
+        const horarios = generarHorarios(intervalo);
+
+        camposHorarios.forEach(function (idCampo) {
+
+            const select = document.getElementById(idCampo);
+
+            if (!select) {
+                return;
+            }
+
+            // Guardamos el valor actual
+            const valorActual = select.value;
+
+            // Limpiamos
+            select.innerHTML = "";
+
+            // Agregamos horarios nuevos
+            horarios.forEach(function (hora) {
+
+                const option = document.createElement("option");
+
+                option.value = hora;
+                option.textContent = hora;
+
+                select.appendChild(option);
+            });
+
+
+            // Intentamos conservar el horario seleccionado
+            if (horarios.includes(valorActual)) {
+
+                select.value = valorActual;
+
+            } else {
+
+                // Si el horario anterior ya no existe,
+                // seleccionamos el primero
+                select.selectedIndex = 0;
+            }
+
+        });
+
+    }
+
+
+    // ==========================================================
+    // ESCUCHAR CAMBIO DE DURACIÓN
+    // ==========================================================
+
+    const radiosDuracion = document.querySelectorAll(
+        'input[name="duracion_turno"]'
+    );
+
+    radiosDuracion.forEach(function (radio) {
+
+        radio.addEventListener("change", function () {
+
+            if (this.checked) {
+
+                const intervalo = parseInt(this.value);
+
+                actualizarHorarios(intervalo);
+            }
+
+        });
+
+    });
+
+
+    // ==========================================================
+    // CARGA INICIAL
+    // ==========================================================
+
+    const seleccionado = document.querySelector(
+        'input[name="duracion_turno"]:checked'
+    );
+
+    if (seleccionado) {
+
+        actualizarHorarios(
+            parseInt(seleccionado.value)
+        );
+
+    }
+
+});
+</script>
 {% endblock %}
