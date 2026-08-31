@@ -152,6 +152,12 @@ path(
 ),
 
 path(
+    "<int:obra_social_id>/master/<int:master_id>/liquidacion/",
+    views.master_obra_social_cargar_liquidacion,
+    name="master_obra_social_cargar_liquidacion"
+),
+
+path(
     "<int:obra_social_id>/master/<int:master_id>/pago/",
     views.master_obra_social_registrar_pago,
     name="master_obra_social_registrar_pago"

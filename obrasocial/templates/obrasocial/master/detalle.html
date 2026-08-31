@@ -36,70 +36,103 @@ Master {{ master.mes|stringformat:"02d" }}/{{ master.anio }}
 
                 </div>
 
+
                 <div>
 
-                        {% if master.estado == "BORRADOR" %}
+                    {% if master.estado == "BORRADOR" %}
 
-    <span class="badge bg-secondary fs-6 me-2">
-        Borrador
-    </span>
+                        <span class="badge bg-secondary fs-6 me-2">
+                            Borrador
+                        </span>
 
-    <a href="{% url 'obrasocial:master_obra_social_presentar' obra_social.id master.id %}"
-       class="btn btn-success me-2">
-
-        <i class="bi bi-send-check me-1"></i>
-        Presentar Master
-
-    </a>
-
-{% elif master.estado == "PRESENTADO" %}
-
-    <span class="badge bg-primary fs-6 me-2">
-        Presentado
-    </span>
-
-    <a href="{% url 'obrasocial:master_obra_social_registrar_pago' obra_social.id master.id %}"
-       class="btn btn-success me-2">
-
-        <i class="bi bi-cash-coin me-1"></i>
-        Registrar Pago
-
-    </a>
-
-{% elif master.estado == "COBRADO" %}
-
-    <span class="badge bg-success fs-6 me-2">
-        Cobrado
-    </span>
-
-{% elif master.estado == "ANULADO" %}
-
-    <span class="badge bg-danger fs-6 me-2">
-        Anulado
-    </span>
-
-{% endif %}
-<a
-    href="{% url 'obrasocial:master_obra_social_imprimir' obra_social.id master.id %}"
-    class="btn btn-outline-dark"
-    target="_blank"
->
-
-    <i class="bi bi-printer me-1"></i>
-
-    Imprimir Master
-
-</a>
-
-                        <a href="{% url 'obrasocial:master_obra_social_lista' obra_social.id %}"
-                        class="btn btn-light">
-
-                            <i class="bi bi-arrow-left"></i>
-                            Volver
-
+                        <a
+                            href="{% url 'obrasocial:master_obra_social_presentar' obra_social.id master.id %}"
+                            class="btn btn-success me-2"
+                        >
+                            <i class="bi bi-send-check me-1"></i>
+                            Presentar Master
                         </a>
 
-                    </div>
+                        {% elif master.estado == "PRESENTADO" %}
+
+                            <span class="badge bg-primary fs-6 me-2">
+                                Presentado
+                            </span>
+
+                            {% if liquidacion_cargada %}
+
+                                <span class="badge bg-success fs-6 me-2">
+                                    <i class="bi bi-check-circle me-1"></i>
+                                    Liquidación cargada
+                                </span>
+
+                                <a
+                                    href="{% url 'obrasocial:master_obra_social_cargar_liquidacion' obra_social.id master.id %}"
+                                    class="btn btn-outline-primary me-2"
+                                >
+                                    <i class="bi bi-pencil-square me-1"></i>
+                                    Ver / Modificar Liquidación
+                                </a>
+
+                                <a
+                                    href="{% url 'obrasocial:master_obra_social_registrar_pago' obra_social.id master.id %}"
+                                    class="btn btn-success me-2"
+                                >
+                                    <i class="bi bi-cash-coin me-1"></i>
+                                    Registrar Cobro
+                                </a>
+
+                            {% else %}
+
+                                <a
+                                    href="{% url 'obrasocial:master_obra_social_cargar_liquidacion' obra_social.id master.id %}"
+                                    class="btn btn-warning me-2"
+                                >
+                                    <i class="bi bi-clipboard-check me-1"></i>
+                                    Cargar Liquidación OS
+                                </a>
+
+                            {% endif %}
+                    
+                        {% elif master.estado == "COBRADO" %}
+
+                        <span class="badge bg-success fs-6 me-2">
+                            Cobrado
+                        </span>
+
+
+                    {% elif master.estado == "ANULADO" %}
+
+                        <span class="badge bg-danger fs-6 me-2">
+                            Anulado
+                        </span>
+
+                    {% endif %}
+
+
+                    <a
+                        href="{% url 'obrasocial:master_obra_social_imprimir' obra_social.id master.id %}"
+                        class="btn btn-outline-dark"
+                        target="_blank"
+                    >
+
+                        <i class="bi bi-printer me-1"></i>
+                        Imprimir Master
+
+                    </a>
+
+
+                    <a
+                        href="{% url 'obrasocial:master_obra_social_lista' obra_social.id %}"
+                        class="btn btn-light"
+                    >
+
+                        <i class="bi bi-arrow-left"></i>
+                        Volver
+
+                    </a>
+
+                </div>
 
             </div>
 
@@ -109,7 +142,7 @@ Master {{ master.mes|stringformat:"02d" }}/{{ master.anio }}
 
 
     <!-- ================================================== -->
-    <!-- RESUMEN -->
+    <!-- RESUMEN DEL MASTER -->
     <!-- ================================================== -->
 
     <div class="row g-3 mb-4">
@@ -173,7 +206,7 @@ Master {{ master.mes|stringformat:"02d" }}/{{ master.anio }}
                 <div class="card-body">
 
                     <div class="text-muted">
-                        Total Master
+                        Total presentado
                     </div>
 
                     <h4 class="mb-1">
@@ -181,7 +214,8 @@ Master {{ master.mes|stringformat:"02d" }}/{{ master.anio }}
                     </h4>
 
                     <small>
-                        {{ detalles|length }} prestación/es
+                        {{ detalles|length }}
+                        prestación/es
                     </small>
 
                 </div>
@@ -191,54 +225,107 @@ Master {{ master.mes|stringformat:"02d" }}/{{ master.anio }}
         </div>
 
     </div>
-    {% if master.estado != "BORRADOR" %}
 
-<div class="card shadow-sm mb-4">
 
-    <div class="card-header bg-light">
-        <strong>
-            <i class="bi bi-send-check me-1"></i>
-            Datos de presentación
-        </strong>
-    </div>
+    <!-- ================================================== -->
+    <!-- RESULTADO DEL COBRO -->
+    <!-- SOLO CUANDO EL MASTER YA FUE COBRADO -->
+    <!-- ================================================== -->
 
-    <div class="card-body">
+    {% if liquidacion_cargada %}
 
-        <div class="row g-3">
+    <div class="card shadow-sm mb-4 border-success">
 
-            <div class="col-md-4">
+        <div class="card-header bg-success text-white">
 
-                <small class="text-muted d-block">
-                    Fecha de presentación
-                </small>
+            <strong>
+                <i class="bi bi-cash-coin me-1"></i>
+                Resultado informado por la Obra Social
+            </strong>
 
-                <strong>
-                    {{ master.fecha_presentacion|date:"d/m/Y"|default:"-" }}
-                </strong>
+        </div>
+
+        <div class="card-body">
+
+            <div class="row g-3">
+
+                <!-- TOTAL PRESENTADO -->
+
+                <div class="col-md-4">
+
+                    <div class="border rounded p-3 h-100">
+
+                        <small class="text-muted d-block">
+                            Total presentado
+                        </small>
+
+                        <h4 class="mb-0">
+                            $ {{ total_master|floatformat:2 }}
+                        </h4>
+
+                    </div>
+
+                </div>
+
+
+                <!-- TOTAL RECONOCIDO -->
+
+                <div class="col-md-4">
+
+                    <div class="border border-success rounded p-3 h-100">
+
+                        <small class="text-muted d-block">
+                            Total reconocido
+                        </small>
+
+                        <h4 class="text-success mb-0">
+                            $ {{ total_reconocido|floatformat:2 }}
+                        </h4>
+
+                    </div>
+
+                </div>
+
+
+                <!-- DIFERENCIA -->
+
+                <div class="col-md-4">
+
+                    <div class="border border-danger rounded p-3 h-100">
+
+                        <small class="text-muted d-block">
+                            Diferencia
+                        </small>
+
+                        <h4 class="text-danger mb-0">
+                            $ {{ total_diferencia|floatformat:2 }}
+                        </h4>
+
+                    </div>
+
+                </div>
 
             </div>
 
-            <div class="col-md-4">
 
-                <small class="text-muted d-block">
-                    N.º de presentación
-                </small>
+            <!-- CONTADORES -->
 
-                <strong>
-                    {{ master.numero_presentacion|default:"-" }}
-                </strong>
+            <div class="mt-3">
 
-            </div>
+                <span class="badge bg-success me-2">
+                    Pagadas:
+                    {{ cantidad_pagadas }}
+                </span>
 
-            <div class="col-md-4">
+                <span class="badge bg-warning text-dark me-2">
+                    Debitadas:
+                    {{ cantidad_debitadas }}
+                </span>
 
-                <small class="text-muted d-block">
-                    N.º de factura
-                </small>
-
-                <strong>
-                    {{ master.numero_factura|default:"-" }}
-                </strong>
+                <span class="badge bg-danger">
+                    Rechazadas:
+                    {{ cantidad_rechazadas }}
+                </span>
 
             </div>
 
@@ -246,12 +333,82 @@ Master {{ master.mes|stringformat:"02d" }}/{{ master.anio }}
 
     </div>
 
-</div>
+    {% endif %}
 
-{% endif %}
 
     <!-- ================================================== -->
-    <!-- DETALLE -->
+    <!-- DATOS DE PRESENTACIÓN -->
+    <!-- ================================================== -->
+
+    {% if master.estado != "BORRADOR" %}
+
+    <div class="card shadow-sm mb-4">
+
+        <div class="card-header bg-light">
+
+            <strong>
+
+                <i class="bi bi-send-check me-1"></i>
+                Datos de presentación
+
+            </strong>
+
+        </div>
+
+
+        <div class="card-body">
+
+            <div class="row g-3">
+
+                <div class="col-md-4">
+
+                    <small class="text-muted d-block">
+                        Fecha de presentación
+                    </small>
+
+                    <strong>
+                        {{ master.fecha_presentacion|date:"d/m/Y"|default:"-" }}
+                    </strong>
+
+                </div>
+
+
+                <div class="col-md-4">
+
+                    <small class="text-muted d-block">
+                        N.º de presentación
+                    </small>
+
+                    <strong>
+                        {{ master.numero_presentacion|default:"-" }}
+                    </strong>
+
+                </div>
+
+
+                <div class="col-md-4">
+
+                    <small class="text-muted d-block">
+                        N.º de factura
+                    </small>
+
+                    <strong>
+                        {{ master.numero_factura|default:"-" }}
+                    </strong>
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+    {% endif %}
+
+
+    <!-- ================================================== -->
+    <!-- DETALLE DE PRESTACIONES -->
     <!-- ================================================== -->
 
     <div class="card shadow-sm">
@@ -276,15 +433,39 @@ Master {{ master.mes|stringformat:"02d" }}/{{ master.anio }}
                         <tr>
 
                             <th>Fecha</th>
+
                             <th>Sede</th>
+
                             <th>Paciente</th>
+
                             <th>Médico</th>
+
                             <th>Código</th>
+
                             <th>Prestación</th>
+
                             <th>Plan</th>
+
                             <th class="text-end">
-                                Importe OS
+                                Presentado
                             </th>
+
+
+                           {% if liquidacion_cargada %}
+
+                                <th class="text-center">
+                                    Resultado
+                                </th>
+
+                                <th class="text-end">
+                                    Reconocido
+                                </th>
+
+                                <th class="text-end">
+                                    Diferencia
+                                </th>
+
+                            {% endif %}
 
                         </tr>
 
@@ -299,9 +480,16 @@ Master {{ master.mes|stringformat:"02d" }}/{{ master.anio }}
 
                         <tr>
 
+                            <!-- FECHA -->
+
                             <td>
+
                                 {{ detalle.fecha_prestacion|date:"d/m/Y" }}
+
                             </td>
+
+
+                            <!-- SEDE -->
 
                             <td>
 
@@ -312,6 +500,9 @@ Master {{ master.mes|stringformat:"02d" }}/{{ master.anio }}
                                 </span>
 
                             </td>
+
+
+                            <!-- PACIENTE -->
 
                             <td>
 
@@ -326,29 +517,67 @@ Master {{ master.mes|stringformat:"02d" }}/{{ master.anio }}
                                 {% endif %}
 
                             </td>
+
+
+                            <!-- MÉDICO -->
+
                             <td>
+
                                 {% if detalle.movimiento.turno and detalle.movimiento.turno.medico %}
 
                                     {{ detalle.movimiento.turno.medico.nombre }}
                                     {{ detalle.movimiento.turno.medico.apellido }}
 
                                     {% if detalle.movimiento.turno.medico.matricula %}
-                                        <span class="text-muted">
-                                            MP {{ detalle.movimiento.turno.medico.matricula }}
-                                        </span>
+
+                                        <div class="text-muted small">
+
+                                            MP
+                                            {{ detalle.movimiento.turno.medico.matricula }}
+
+                                        </div>
+
                                     {% endif %}
 
                                 {% else %}
+
                                     -
+
                                 {% endif %}
-                            </td>
-                            <td>
-                                {{ detalle.codigo }}
+
                             </td>
 
+
+                            <!-- CÓDIGO -->
+
                             <td>
-                                {{ detalle.descripcion }}
+
+                                {{ detalle.codigo }}
+
                             </td>
+
+
+                            <!-- PRESTACIÓN -->
+
+                            <td>
+
+                                {{ detalle.descripcion }}
+
+                                {% if detalle.coseguro_master > 0 %}
+
+                                    <div class="small text-info">
+
+                                        Coseguro cobrado:
+                                        $ {{ detalle.coseguro_master|floatformat:2 }}
+
+                                    </div>
+
+                                {% endif %}
+
+                            </td>
+
+
+                            <!-- PLAN -->
 
                             <td>
 
@@ -364,13 +593,79 @@ Master {{ master.mes|stringformat:"02d" }}/{{ master.anio }}
 
                             </td>
 
+
+                            <!-- IMPORTE PRESENTADO -->
+
                             <td class="text-end">
 
                                 <strong>
-                                    $ {{ detalle.importe|floatformat:2 }}
+
+                                    $
+                                    {{ detalle.importe_os_calculado|floatformat:2 }}
+
                                 </strong>
 
                             </td>
+
+
+                            <!-- ======================================== -->
+                            <!-- DATOS DEL RESULTADO -->
+                            <!-- ======================================== -->
+
+                            {% if liquidacion_cargada %}
+
+
+                             
+
+
+                                <!-- IMPORTE RECONOCIDO -->
+
+                                <!-- IMPORTE RECONOCIDO -->
+
+<td class="text-end">
+
+    {% if item.importe_reconocido %}
+
+        <strong class="text-success">
+            $ {{ item.importe_reconocido|floatformat:2 }}
+        </strong>
+
+    {% else %}
+
+        <span class="text-muted">
+            $ 0,00
+        </span>
+
+    {% endif %}
+
+</td>
+
+                                <!-- DIFERENCIA -->
+
+                                <td class="text-end">
+
+                                    {% if item.diferencia_calculada > 0 %}
+
+                                        <strong class="text-danger">
+
+                                            $
+                                            {{ item.diferencia_calculada|floatformat:2 }}
+
+                                        </strong>
+
+                                    {% else %}
+
+                                        <span class="text-muted">
+
+                                            $ 0,00
+
+                                        </span>
+
+                                    {% endif %}
+
+                                </td>
+
+                            {% endif %}
 
                         </tr>
 

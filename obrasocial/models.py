@@ -608,11 +608,27 @@ class MasterObraSocial(models.Model):
 
 class DetalleMasterObraSocial(models.Model):
 
+    # ======================================================
+    # ESTADO DE AUDITORÍA DE LA PRESTACIÓN
+    # ======================================================
+
     ESTADOS = [
-        ("PENDIENTE", "Pendiente"),
-        ("PAGADO", "Pagado"),
-        ("DEBITADO", "Debitado"),
+        ("PENDIENTE", "Pendiente de auditoría"),
+        ("ACEPTADO", "Aceptado"),
+        ("DEBITO_PARCIAL", "Débito parcial"),
         ("RECHAZADO", "Rechazado"),
+    ]
+
+    # ======================================================
+    # ESTADO DE REFACTURACIÓN
+    # ======================================================
+
+    ESTADOS_REFACTURACION = [
+        ("NO_APLICA", "No aplica"),
+        ("PENDIENTE", "Pendiente de refacturación"),
+        ("PRESENTADA", "Refacturación presentada"),
+        ("ACEPTADA", "Refacturación aceptada"),
+        ("RECHAZADA", "Refacturación rechazada"),
     ]
 
     # ======================================================
@@ -638,18 +654,38 @@ class DetalleMasterObraSocial(models.Model):
     )
 
     # ======================================================
-    # ESTADO DE COBRO
+    # ESTADO DE AUDITORÍA
     # ======================================================
 
     estado = models.CharField(
         "Estado",
-        max_length=15,
+        max_length=20,
         choices=ESTADOS,
         default="PENDIENTE"
     )
 
     # ======================================================
-    # IMPORTE RECONOCIDO POR LA OBRA SOCIAL
+    # IMPORTE PRESENTADO
+    #
+    # Se guarda el importe histórico que fue presentado
+    # a la Obra Social.
+    #
+    # No debemos depender del valor actual del nomenclador
+    # porque los aranceles pueden cambiar posteriormente.
+    # ======================================================
+
+    importe_presentado = models.DecimalField(
+        "Importe presentado",
+        max_digits=12,
+        decimal_places=2,
+        default=0
+    )
+
+    # ======================================================
+    # IMPORTE RECONOCIDO
+    #
+    # Importe que la Obra Social reconoce luego de realizar
+    # la auditoría.
     # ======================================================
 
     importe_reconocido = models.DecimalField(
@@ -661,7 +697,77 @@ class DetalleMasterObraSocial(models.Model):
     )
 
     # ======================================================
-    # OBSERVACIONES
+    # IMPORTE DEBITADO
+    #
+    # Diferencia entre lo presentado y lo reconocido.
+    #
+    # Ejemplo:
+    #
+    # Presentado:  $30.000
+    # Reconocido:  $20.000
+    # Debitado:    $10.000
+    # ======================================================
+
+    importe_debitado = models.DecimalField(
+        "Importe debitado",
+        max_digits=12,
+        decimal_places=2,
+        default=0
+    )
+
+    # ======================================================
+    # MOTIVO DEL DÉBITO / RECHAZO
+    # ======================================================
+
+    motivo_debito = models.TextField(
+        "Motivo del débito / rechazo",
+        blank=True
+    )
+
+    # ======================================================
+    # REFACTURABLE
+    #
+    # Indica si la prestación debitada o rechazada puede
+    # volver a presentarse ante la Obra Social.
+    # ======================================================
+
+    refacturable = models.BooleanField(
+        "¿Es refacturable?",
+        default=False
+    )
+
+    # ======================================================
+    # ESTADO DE REFACTURACIÓN
+    # ======================================================
+
+    estado_refacturacion = models.CharField(
+        "Estado de refacturación",
+        max_length=20,
+        choices=ESTADOS_REFACTURACION,
+        default="NO_APLICA"
+    )
+
+    # ======================================================
+    # FECHA DE REFACTURACIÓN
+    # ======================================================
+
+    fecha_refacturacion = models.DateField(
+        "Fecha de refacturación",
+        null=True,
+        blank=True
+    )
+
+    # ======================================================
+    # OBSERVACIONES DE REFACTURACIÓN
+    # ======================================================
+
+    observacion_refacturacion = models.TextField(
+        "Observación de refacturación",
+        blank=True
+    )
+
+    # ======================================================
+    # OBSERVACIONES GENERALES
     # ======================================================
 
     observaciones = models.TextField(
@@ -670,7 +776,7 @@ class DetalleMasterObraSocial(models.Model):
     )
 
     # ======================================================
-    # AUDITORÍA
+    # AUDITORÍA / TRAZABILIDAD
     # ======================================================
 
     fecha_incorporacion = models.DateTimeField(
@@ -684,6 +790,10 @@ class DetalleMasterObraSocial(models.Model):
         blank=True
     )
 
+    # ======================================================
+    # CONFIGURACIÓN
+    # ======================================================
+
     class Meta:
 
         verbose_name = "Detalle Master de Obra Social"
@@ -694,6 +804,10 @@ class DetalleMasterObraSocial(models.Model):
             "detalle_movimiento__fecha_prestacion",
             "id"
         ]
+
+    # ======================================================
+    # REPRESENTACIÓN
+    # ======================================================
 
     def __str__(self):
 

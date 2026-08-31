@@ -1,0 +1,843 @@
+{% extends 'core/base.html' %}
+
+{% block title %}
+Liquidación Obra Social - {{ obra_social.nombre }}
+{% endblock %}
+
+{% block content %}
+
+<div class="container-fluid mt-4 px-4">
+
+    <!-- ================================================== -->
+    <!-- CABECERA -->
+    <!-- ================================================== -->
+
+    <div class="card shadow-sm border-0 mb-4">
+
+        <div class="card-header text-white py-4"
+             style="background:#5DADE2;">
+
+            <div class="d-flex justify-content-between align-items-center">
+
+                <div>
+
+                    <h3 class="mb-1">
+
+                        <i class="bi bi-clipboard-check me-2"></i>
+
+                        Cargar Liquidación de Obra Social
+
+                    </h3>
+
+                    <div class="opacity-75">
+
+                        {{ obra_social.nombre }}
+                        -
+                        Master
+                        {{ master.mes|stringformat:"02d" }}/{{ master.anio }}
+
+                    </div>
+
+                </div>
+
+                <a href="{% url 'obrasocial:master_obra_social_detalle' obra_social.id master.id %}"
+                   class="btn btn-light">
+
+                    <i class="bi bi-arrow-left"></i>
+                    Volver
+
+                </a>
+
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <!-- ================================================== -->
+    <!-- INFORMACIÓN -->
+    <!-- ================================================== -->
+
+    <div class="alert alert-info">
+
+        <i class="bi bi-info-circle me-1"></i>
+
+        Registrá el resultado de la auditoría informada por la
+        Obra Social para cada prestación.
+
+        <strong>
+            Esta operación no registra todavía el cobro.
+        </strong>
+
+    </div>
+
+
+    <!-- ================================================== -->
+    <!-- RESUMEN -->
+    <!-- ================================================== -->
+
+    <div class="row mb-4">
+
+        <div class="col-md-4">
+
+            <div class="card shadow-sm border-0">
+
+                <div class="card-body">
+
+                    <small class="text-muted">
+                        Total presentado
+                    </small>
+
+                    <h4 class="mb-0">
+                        $ {{ total_presentado|floatformat:2 }}
+                    </h4>
+
+                </div>
+
+            </div>
+
+        </div>
+
+        <div class="col-md-4">
+
+            <div class="card shadow-sm border-0">
+
+                <div class="card-body">
+
+                    <small class="text-muted">
+                        Total reconocido
+                    </small>
+
+                    <h4 class="mb-0 text-success"
+                        id="totalReconocido">
+                        $ 0.00
+                    </h4>
+
+                </div>
+
+            </div>
+
+        </div>
+
+        <div class="col-md-4">
+
+            <div class="card shadow-sm border-0">
+
+                <div class="card-body">
+
+                    <small class="text-muted">
+                        Total debitado
+                    </small>
+
+                    <h4 class="mb-0 text-danger"
+                        id="totalDebitado">
+                        $ 0.00
+                    </h4>
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <!-- ================================================== -->
+    <!-- FORMULARIO -->
+    <!-- ================================================== -->
+
+    <form method="post" id="formLiquidacion">
+
+        {% csrf_token %}
+
+
+        <!-- ============================================== -->
+        <!-- FECHA RESOLUCIÓN -->
+        <!-- ============================================== -->
+
+        <div class="card shadow-sm mb-4">
+
+            <div class="card-body">
+
+                <div class="row">
+
+                    <div class="col-md-4">
+
+                        <label class="form-label">
+                            Fecha de liquidación / resolución *
+                        </label>
+
+                        <input
+                            type="date"
+                            name="fecha_resolucion"
+                            value="{{ hoy|date:'Y-m-d' }}"
+                            class="form-control"
+                            required>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+        </div>
+
+
+        <!-- ============================================== -->
+        <!-- PRESTACIONES -->
+        <!-- ============================================== -->
+
+        <div class="card shadow-sm">
+
+            <div class="card-header bg-light">
+
+                <strong>
+                    Prestaciones presentadas
+                </strong>
+
+            </div>
+
+
+            <div class="card-body p-0">
+
+                <div class="table-responsive">
+
+                    <table class="table table-hover align-middle mb-0">
+
+                        <thead class="table-light">
+
+                            <tr>
+
+                                <th>Fecha</th>
+
+                                <th>Sede</th>
+
+                                <th>Paciente</th>
+
+                                <th>Médico</th>
+
+                                <th>Código</th>
+
+                                <th>Prestación</th>
+
+                                <th class="text-end">
+                                    Presentado
+                                </th>
+
+                                <th style="min-width:180px;">
+                                    Resultado
+                                </th>
+
+                                <th style="min-width:160px;">
+                                    Reconocido
+                                </th>
+
+                                <th style="min-width:130px;">
+                                    Débito
+                                </th>
+
+                                <th style="min-width:220px;">
+                                    Motivo
+                                </th>
+
+                                <th class="text-center"
+                                    style="min-width:110px;">
+                                    Refacturable
+                                </th>
+
+                            </tr>
+
+                        </thead>
+
+
+                        <tbody>
+
+                            {% for item in detalles %}
+
+                            {% with detalle=item.detalle_movimiento %}
+
+                            <tr>
+
+                                <!-- FECHA -->
+
+                                <td>
+                                    {{ detalle.fecha_prestacion|date:"d/m/Y" }}
+                                </td>
+
+
+                                <!-- SEDE -->
+
+                                <td>
+                                    {{ detalle.movimiento.centro_medico.nombre }}
+                                </td>
+
+
+                                <!-- PACIENTE -->
+
+                                <td>
+
+                                    {% if detalle.movimiento.paciente %}
+
+                                        {{ detalle.movimiento.paciente }}
+
+                                    {% else %}
+
+                                        -
+
+                                    {% endif %}
+
+                                </td>
+
+
+                                <!-- MÉDICO -->
+
+                                <td>
+
+                                    {% if detalle.movimiento.turno and detalle.movimiento.turno.medico %}
+
+                                        {{ detalle.movimiento.turno.medico.nombre }}
+                                        {{ detalle.movimiento.turno.medico.apellido }}
+
+                                        {% if detalle.movimiento.turno.medico.matricula %}
+
+                                            <small class="text-muted d-block">
+                                                MP {{ detalle.movimiento.turno.medico.matricula }}
+                                            </small>
+
+                                        {% endif %}
+
+                                    {% else %}
+
+                                        -
+
+                                    {% endif %}
+
+                                </td>
+
+
+                                <!-- CÓDIGO -->
+
+                                <td>
+                                    {{ detalle.codigo }}
+                                </td>
+
+
+                                <!-- PRESTACIÓN -->
+
+                                <td>
+                                    {{ detalle.descripcion }}
+                                </td>
+
+
+                                <!-- PRESENTADO -->
+
+                                <td class="text-end">
+
+                                    <strong>
+                                        $ {{ item.importe_presentado|floatformat:2 }}
+                                    </strong>
+
+                                </td>
+
+
+                                <!-- RESULTADO -->
+
+                                <td>
+
+                                    <select
+                                        name="estado_{{ item.id }}"
+                                        id="estado_{{ item.id }}"
+                                        class="form-select form-select-sm estado-auditoria"
+                                        data-id="{{ item.id }}"
+                                        data-presentado="{{ item.importe_presentado }}"
+                                        required>
+
+                                        <option value="">
+                                            Seleccionar
+                                        </option>
+
+                                        <option value="ACEPTADO">
+                                            Aceptado
+                                        </option>
+
+                                        <option value="DEBITO_PARCIAL">
+                                            Débito parcial
+                                        </option>
+
+                                        <option value="RECHAZADO">
+                                            Rechazado
+                                        </option>
+
+                                    </select>
+
+                                </td>
+
+
+                                <!-- RECONOCIDO -->
+
+                                <td>
+
+                                    <input
+                                        type="number"
+                                        name="importe_{{ item.id }}"
+                                        id="importe_{{ item.id }}"
+                                        class="form-control form-control-sm importe-reconocido"
+                                        data-id="{{ item.id }}"
+                                        data-presentado="{{ item.importe_presentado }}"
+                                        step="0.01"
+                                        min="0"
+                                        max="{{ item.importe_presentado }}"
+                                        value="0.00"
+                                        required>
+
+                                </td>
+
+
+                                <!-- DÉBITO -->
+
+                                <td class="text-end">
+
+                                    <strong
+                                        id="debito_{{ item.id }}"
+                                        class="text-danger">
+
+                                        $ 0.00
+
+                                    </strong>
+
+                                </td>
+
+
+                                <!-- MOTIVO -->
+
+                                <td>
+
+                                    <input
+                                        type="text"
+                                        name="motivo_{{ item.id }}"
+                                        id="motivo_{{ item.id }}"
+                                        class="form-control form-control-sm"
+                                        placeholder="Motivo del débito"
+                                        disabled>
+
+                                </td>
+
+
+                                <!-- REFACTURABLE -->
+
+                                <td class="text-center">
+
+                                    <div class="form-check d-flex justify-content-center">
+
+                                        <input
+                                            class="form-check-input"
+                                            type="checkbox"
+                                            name="refacturable_{{ item.id }}"
+                                            id="refacturable_{{ item.id }}"
+                                            value="1"
+                                            disabled>
+
+                                    </div>
+
+                                </td>
+
+                            </tr>
+
+                            {% endwith %}
+
+                            {% endfor %}
+
+                        </tbody>
+
+                    </table>
+
+                </div>
+
+            </div>
+
+
+            <!-- ========================================== -->
+            <!-- PIE -->
+            <!-- ========================================== -->
+
+            <div class="card-footer bg-white">
+
+                <div class="d-flex justify-content-between align-items-center">
+
+                    <div class="text-muted">
+
+                        <i class="bi bi-info-circle me-1"></i>
+
+                        Los débitos y rechazos requieren indicar
+                        un motivo.
+
+                    </div>
+
+
+                    <div class="d-flex gap-2">
+
+                        <a href="{% url 'obrasocial:master_obra_social_detalle' obra_social.id master.id %}"
+                           class="btn btn-secondary">
+
+                            Cancelar
+
+                        </a>
+
+
+                        <button
+                            type="submit"
+                            class="btn btn-success"
+                            onclick="return confirm('¿Confirma la liquidación informada por la Obra Social?');">
+
+                            <i class="bi bi-check-circle me-1"></i>
+
+                            Guardar Liquidación
+
+                        </button>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </form>
+
+</div>
+
+
+<!-- ====================================================== -->
+<!-- JAVASCRIPT -->
+<!-- ====================================================== -->
+
+<script>
+
+document.addEventListener("DOMContentLoaded", function(){
+
+    const estados =
+        document.querySelectorAll(".estado-auditoria");
+
+    const importes =
+        document.querySelectorAll(".importe-reconocido");
+
+
+    // =====================================================
+    // CONVERTIR VALOR A NÚMERO
+    // =====================================================
+
+    function numero(valor){
+
+        if(valor === null || valor === undefined){
+            return 0;
+        }
+
+        return (
+            parseFloat(
+                String(valor).replace(",", ".")
+            ) || 0
+        );
+
+    }
+
+
+    // =====================================================
+    // ACTUALIZAR FILA
+    // =====================================================
+
+    function actualizarFila(id){
+
+        const estado =
+            document.getElementById(
+                "estado_" + id
+            );
+
+        const importe =
+            document.getElementById(
+                "importe_" + id
+            );
+
+        const debito =
+            document.getElementById(
+                "debito_" + id
+            );
+
+        const motivo =
+            document.getElementById(
+                "motivo_" + id
+            );
+
+        const refacturable =
+            document.getElementById(
+                "refacturable_" + id
+            );
+
+        const presentado =
+            numero(estado.dataset.presentado);
+
+
+        // ==============================================
+        // ACEPTADO
+        // ==============================================
+
+        if(estado.value === "ACEPTADO"){
+
+            importe.value =
+                presentado.toFixed(2);
+
+            importe.readOnly = true;
+
+            motivo.value = "";
+            motivo.disabled = true;
+            motivo.required = false;
+
+            refacturable.checked = false;
+            refacturable.disabled = true;
+
+        }
+
+
+        // ==============================================
+        // DÉBITO PARCIAL
+        // ==============================================
+
+        else if(
+            estado.value === "DEBITO_PARCIAL"
+        ){
+
+            importe.readOnly = false;
+
+            if(
+                numero(importe.value) <= 0 ||
+                numero(importe.value) >= presentado
+            ){
+
+                importe.value =
+                    presentado.toFixed(2);
+
+            }
+
+            motivo.disabled = false;
+            motivo.required = true;
+
+            refacturable.disabled = false;
+
+        }
+
+
+        // ==============================================
+        // RECHAZADO
+        // ==============================================
+
+        else if(
+            estado.value === "RECHAZADO"
+        ){
+
+            importe.value = "0.00";
+
+            importe.readOnly = true;
+
+            motivo.disabled = false;
+            motivo.required = true;
+
+            refacturable.disabled = false;
+
+        }
+
+
+        // ==============================================
+        // SIN SELECCIÓN
+        // ==============================================
+
+        else{
+
+            importe.value = "0.00";
+
+            importe.readOnly = true;
+
+            motivo.value = "";
+            motivo.disabled = true;
+            motivo.required = false;
+
+            refacturable.checked = false;
+            refacturable.disabled = true;
+
+        }
+
+
+        // ==============================================
+        // CALCULAR DÉBITO
+        // ==============================================
+
+        let reconocido =
+            numero(importe.value);
+
+        let diferencia =
+            presentado - reconocido;
+
+        if(diferencia < 0){
+            diferencia = 0;
+        }
+
+        debito.textContent =
+            "$ " + diferencia.toFixed(2);
+
+
+        actualizarTotales();
+
+    }
+
+
+    // =====================================================
+    // TOTALES GENERALES
+    // =====================================================
+
+    function actualizarTotales(){
+
+        let reconocidoTotal = 0;
+        let debitadoTotal = 0;
+
+        estados.forEach(function(estado){
+
+            const id =
+                estado.dataset.id;
+
+            const presentado =
+                numero(
+                    estado.dataset.presentado
+                );
+
+            const importe =
+                document.getElementById(
+                    "importe_" + id
+                );
+
+            const reconocido =
+                numero(importe.value);
+
+            reconocidoTotal += reconocido;
+
+            let diferencia =
+                presentado - reconocido;
+
+            if(diferencia < 0){
+                diferencia = 0;
+            }
+
+            debitadoTotal += diferencia;
+
+        });
+
+
+        document.getElementById(
+            "totalReconocido"
+        ).textContent =
+            "$ " + reconocidoTotal.toFixed(2);
+
+
+        document.getElementById(
+            "totalDebitado"
+        ).textContent =
+            "$ " + debitadoTotal.toFixed(2);
+
+    }
+
+
+    // =====================================================
+    // CAMBIO DE ESTADO
+    // =====================================================
+
+    estados.forEach(function(select){
+
+        select.addEventListener(
+            "change",
+            function(){
+
+                actualizarFila(
+                    this.dataset.id
+                );
+
+            }
+        );
+
+    });
+
+
+    // =====================================================
+    // CAMBIO DE IMPORTE
+    // =====================================================
+
+    importes.forEach(function(input){
+
+        input.addEventListener(
+            "input",
+            function(){
+
+                const id =
+                    this.dataset.id;
+
+                const estado =
+                    document.getElementById(
+                        "estado_" + id
+                    );
+
+                const presentado =
+                    numero(
+                        this.dataset.presentado
+                    );
+
+                let reconocido =
+                    numero(this.value);
+
+                if(reconocido > presentado){
+
+                    reconocido = presentado;
+
+                    this.value =
+                        presentado.toFixed(2);
+
+                }
+
+                const debito =
+                    document.getElementById(
+                        "debito_" + id
+                    );
+
+                let diferencia =
+                    presentado - reconocido;
+
+                if(diferencia < 0){
+                    diferencia = 0;
+                }
+
+                debito.textContent =
+                    "$ " + diferencia.toFixed(2);
+
+                actualizarTotales();
+
+            }
+        );
+
+    });
+
+
+    // =====================================================
+    // INICIALIZAR
+    // =====================================================
+
+    estados.forEach(function(select){
+
+        actualizarFila(
+            select.dataset.id
+        );
+
+    });
+
+});
+
+</script>
+
+{% endblock %}

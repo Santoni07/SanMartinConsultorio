@@ -1,7 +1,7 @@
 {% extends 'core/base.html' %}
 
 {% block title %}
-Registrar Pago - {{ obra_social.nombre }}
+Registrar Cobro - {{ obra_social.nombre }}
 {% endblock %}
 
 {% block content %}
@@ -25,7 +25,7 @@ Registrar Pago - {{ obra_social.nombre }}
 
                         <i class="bi bi-cash-coin me-2"></i>
 
-                        Registrar Pago
+                        Registrar Cobro
 
                     </h3>
 
@@ -39,7 +39,6 @@ Registrar Pago - {{ obra_social.nombre }}
                     </div>
 
                 </div>
-
 
                 <a href="{% url 'obrasocial:master_obra_social_detalle' obra_social.id master.id %}"
                    class="btn btn-light">
@@ -64,13 +63,141 @@ Registrar Pago - {{ obra_social.nombre }}
 
         <i class="bi bi-info-circle me-1"></i>
 
-        Indicá el resultado informado por la Obra Social
-        para cada prestación.
+        La liquidación de la Obra Social ya fue cargada.
 
-        Solamente las prestaciones marcadas como
-        <strong>Pagado</strong>
-        quedarán habilitadas para la liquidación
-        de honorarios médicos.
+        En esta pantalla solamente se confirma el
+
+        <strong>cobro efectivo del importe reconocido</strong>.
+
+        Las prestaciones rechazadas no generan cobro
+        ni habilitan honorarios médicos.
+
+    </div>
+
+
+    <!-- ================================================== -->
+    <!-- RESUMEN -->
+    <!-- ================================================== -->
+
+    <div class="row g-3 mb-4">
+
+        <!-- PRESENTADO -->
+
+        <div class="col-md-4">
+
+            <div class="card shadow-sm h-100">
+
+                <div class="card-body">
+
+                    <div class="text-muted mb-1">
+                        Total presentado
+                    </div>
+
+                    <h3 class="mb-0">
+
+                        $ {{ total_presentado|floatformat:2 }}
+
+                    </h3>
+
+                </div>
+
+            </div>
+
+        </div>
+
+
+        <!-- RECONOCIDO -->
+
+        <div class="col-md-4">
+
+            <div class="card shadow-sm border-success h-100">
+
+                <div class="card-body">
+
+                    <div class="text-muted mb-1">
+                        Total a cobrar
+                    </div>
+
+                    <h3 class="text-success mb-0">
+
+                        $ {{ total_reconocido|floatformat:2 }}
+
+                    </h3>
+
+                    <small class="text-muted">
+                        Importe reconocido por la Obra Social
+                    </small>
+
+                </div>
+
+            </div>
+
+        </div>
+
+
+        <!-- DIFERENCIA -->
+
+        <div class="col-md-4">
+
+            <div class="card shadow-sm border-danger h-100">
+
+                <div class="card-body">
+
+                    <div class="text-muted mb-1">
+                        Débitos / Rechazos
+                    </div>
+
+                    <h3 class="text-danger mb-0">
+
+                        $ {{ total_debitado|floatformat:2 }}
+
+                    </h3>
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <!-- ================================================== -->
+    <!-- CONTADORES -->
+    <!-- ================================================== -->
+
+    <div class="card shadow-sm mb-4">
+
+        <div class="card-body py-3">
+
+            <span class="badge bg-success me-2">
+
+                <i class="bi bi-check-circle me-1"></i>
+
+                Pagadas:
+                {{ cantidad_pagadas }}
+
+            </span>
+
+            <span class="badge bg-warning text-dark me-2">
+
+                <i class="bi bi-dash-circle me-1"></i>
+
+                Debitadas:
+                {{ cantidad_debitadas }}
+
+            </span>
+
+            <span class="badge bg-danger">
+
+                <i class="bi bi-x-circle me-1"></i>
+
+                Rechazadas:
+                {{ cantidad_rechazadas }}
+
+            </span>
+
+        </div>
 
     </div>
 
@@ -85,7 +212,7 @@ Registrar Pago - {{ obra_social.nombre }}
 
 
         <!-- ============================================== -->
-        <!-- FECHA COBRO -->
+        <!-- FECHA DE COBRO -->
         <!-- ============================================== -->
 
         <div class="card shadow-sm mb-4">
@@ -97,7 +224,9 @@ Registrar Pago - {{ obra_social.nombre }}
                     <div class="col-md-4">
 
                         <label class="form-label">
+
                             Fecha de cobro *
+
                         </label>
 
                         <input type="date"
@@ -124,7 +253,11 @@ Registrar Pago - {{ obra_social.nombre }}
             <div class="card-header bg-light">
 
                 <strong>
-                    Prestaciones del Master
+
+                    <i class="bi bi-list-check me-1"></i>
+
+                    Resultado de la liquidación
+
                 </strong>
 
             </div>
@@ -141,22 +274,31 @@ Registrar Pago - {{ obra_social.nombre }}
                             <tr>
 
                                 <th>Fecha</th>
+
                                 <th>Sede</th>
+
                                 <th>Paciente</th>
+
                                 <th>Médico</th>
+
                                 <th>Código</th>
+
                                 <th>Prestación</th>
 
                                 <th class="text-end">
                                     Presentado
                                 </th>
 
-                                <th style="width:160px;">
+                                <th class="text-center">
                                     Resultado
                                 </th>
 
-                                <th style="width:170px;">
-                                    Importe reconocido
+                                <th class="text-end">
+                                    Reconocido
+                                </th>
+
+                                <th class="text-end">
+                                    Diferencia
                                 </th>
 
                             </tr>
@@ -172,15 +314,29 @@ Registrar Pago - {{ obra_social.nombre }}
 
                             <tr>
 
+                                <!-- FECHA -->
+
                                 <td>
+
                                     {{ detalle.fecha_prestacion|date:"d/m/Y" }}
+
                                 </td>
 
+
+                                <!-- SEDE -->
 
                                 <td>
-                                    {{ detalle.movimiento.centro_medico.nombre }}
+
+                                    <span class="badge bg-light text-dark border">
+
+                                        {{ detalle.movimiento.centro_medico.nombre }}
+
+                                    </span>
+
                                 </td>
 
+
+                                <!-- PACIENTE -->
 
                                 <td>
 
@@ -197,6 +353,8 @@ Registrar Pago - {{ obra_social.nombre }}
                                 </td>
 
 
+                                <!-- MÉDICO -->
+
                                 <td>
 
                                     {% if detalle.movimiento.turno and detalle.movimiento.turno.medico %}
@@ -206,9 +364,12 @@ Registrar Pago - {{ obra_social.nombre }}
 
                                         {% if detalle.movimiento.turno.medico.matricula %}
 
-                                            <small class="text-muted">
-                                                MP {{ detalle.movimiento.turno.medico.matricula }}
-                                            </small>
+                                            <div class="small text-muted">
+
+                                                MP
+                                                {{ detalle.movimiento.turno.medico.matricula }}
+
+                                            </div>
 
                                         {% endif %}
 
@@ -221,20 +382,45 @@ Registrar Pago - {{ obra_social.nombre }}
                                 </td>
 
 
+                                <!-- CÓDIGO -->
+
                                 <td>
+
                                     {{ detalle.codigo }}
+
                                 </td>
 
+
+                                <!-- PRESTACIÓN -->
 
                                 <td>
+
                                     {{ detalle.descripcion }}
+
+                                    {% if detalle.coseguro_cobrado %}
+
+                                        <div class="small text-info">
+
+                                            Coseguro cobrado:
+                                            $
+                                            {{ detalle.importe_coseguro|floatformat:2 }}
+
+                                        </div>
+
+                                    {% endif %}
+
                                 </td>
 
+
+                                <!-- PRESENTADO -->
 
                                 <td class="text-end">
 
                                     <strong>
-                                        $ {{ detalle.importe|floatformat:2 }}
+
+                                        $
+                                        {{ item.importe_presentado_calculado|floatformat:2 }}
+
                                     </strong>
 
                                 </td>
@@ -242,48 +428,99 @@ Registrar Pago - {{ obra_social.nombre }}
 
                                 <!-- RESULTADO -->
 
-                                <td>
+                                <td class="text-center">
 
-                                    <select
-                                        name="estado_{{ item.id }}"
-                                        class="form-select form-select-sm estado-pago"
-                                        data-id="{{ item.id }}"
-                                        data-importe="{{ detalle.importe }}"
-                                        required>
+                                    {% if item.estado == "PAGADO" %}
 
-                                        <option value="">
-                                            Seleccionar
-                                        </option>
+                                        <span class="badge bg-success">
 
-                                        <option value="PAGADO">
-                                            Pagado
-                                        </option>
+                                            <i class="bi bi-check-circle me-1"></i>
 
-                                        <option value="DEBITADO">
-                                            Debitado
-                                        </option>
+                                            Aceptado
 
-                                        <option value="RECHAZADO">
+                                        </span>
+
+                                    {% elif item.estado == "DEBITADO" %}
+
+                                        <span class="badge bg-warning text-dark">
+
+                                            <i class="bi bi-dash-circle me-1"></i>
+
+                                            Débito parcial
+
+                                        </span>
+
+                                    {% elif item.estado == "RECHAZADO" %}
+
+                                        <span class="badge bg-danger">
+
+                                            <i class="bi bi-x-circle me-1"></i>
+
                                             Rechazado
-                                        </option>
 
-                                    </select>
+                                        </span>
+
+                                    {% else %}
+
+                                        <span class="badge bg-secondary">
+
+                                            Sin resolver
+
+                                        </span>
+
+                                    {% endif %}
 
                                 </td>
 
 
-                                <!-- IMPORTE RECONOCIDO -->
+                                <!-- RECONOCIDO -->
 
-                                <td>
+                                <td class="text-end">
 
-                                    <input
-                                        type="number"
-                                        name="importe_{{ item.id }}"
-                                        id="importe_{{ item.id }}"
-                                        class="form-control form-control-sm importe-reconocido"
-                                        step="0.01"
-                                        min="0"
-                                        value="0">
+                                    {% if item.importe_reconocido_calculado > 0 %}
+
+                                        <strong class="text-success">
+
+                                            $
+                                            {{ item.importe_reconocido_calculado|floatformat:2 }}
+
+                                        </strong>
+
+                                    {% else %}
+
+                                        <span class="text-muted">
+
+                                            $ 0,00
+
+                                        </span>
+
+                                    {% endif %}
+
+                                </td>
+
+
+                                <!-- DIFERENCIA -->
+
+                                <td class="text-end">
+
+                                    {% if item.diferencia_calculada > 0 %}
+
+                                        <strong class="text-danger">
+
+                                            $
+                                            {{ item.diferencia_calculada|floatformat:2 }}
+
+                                        </strong>
+
+                                    {% else %}
+
+                                        <span class="text-muted">
+
+                                            $ 0,00
+
+                                        </span>
+
+                                    {% endif %}
 
                                 </td>
 
@@ -291,9 +528,65 @@ Registrar Pago - {{ obra_social.nombre }}
 
                             {% endwith %}
 
+                            {% empty %}
+
+                            <tr>
+
+                                <td colspan="10"
+                                    class="text-center text-muted py-4">
+
+                                    No existen prestaciones en este Master.
+
+                                </td>
+
+                            </tr>
+
                             {% endfor %}
 
                         </tbody>
+
+
+                        <!-- ================================== -->
+                        <!-- TOTALES -->
+                        <!-- ================================== -->
+
+                        <tfoot class="table-light">
+
+                            <tr>
+
+                                <th colspan="6"
+                                    class="text-end">
+
+                                    Totales
+
+                                </th>
+
+                                <th class="text-end">
+
+                                    $
+                                    {{ total_presentado|floatformat:2 }}
+
+                                </th>
+
+                                <th></th>
+
+                                <th class="text-end text-success">
+
+                                    $
+                                    {{ total_reconocido|floatformat:2 }}
+
+                                </th>
+
+                                <th class="text-end text-danger">
+
+                                    $
+                                    {{ total_debitado|floatformat:2 }}
+
+                                </th>
+
+                            </tr>
+
+                        </tfoot>
 
                     </table>
 
@@ -303,30 +596,59 @@ Registrar Pago - {{ obra_social.nombre }}
 
 
             <!-- ========================================== -->
-            <!-- PIE -->
+            <!-- CONFIRMACIÓN -->
             <!-- ========================================== -->
 
             <div class="card-footer bg-white">
 
-                <div class="d-flex justify-content-end gap-2">
+                <div class="row align-items-center">
 
-                    <a href="{% url 'obrasocial:master_obra_social_detalle' obra_social.id master.id %}"
-                       class="btn btn-secondary">
+                    <div class="col-md-7">
 
-                        Cancelar
+                        <div class="text-muted">
 
-                    </a>
+                            <i class="bi bi-info-circle me-1"></i>
+
+                            Al confirmar, el Master quedará como
+
+                            <strong>COBRADO</strong>
+
+                            y se habilitarán para honorarios
+                            únicamente los importes efectivamente
+                            reconocidos por la Obra Social.
+
+                        </div>
+
+                    </div>
 
 
-                    <button type="submit"
-                            class="btn btn-success"
-                            onclick="return confirm('¿Confirma el resultado del pago informado por la Obra Social?');">
+                    <div class="col-md-5">
 
-                        <i class="bi bi-check-circle me-1"></i>
+                        <div class="d-flex justify-content-end gap-2">
 
-                        Confirmar Pago
+                            <a href="{% url 'obrasocial:master_obra_social_detalle' obra_social.id master.id %}"
+                               class="btn btn-secondary">
 
-                    </button>
+                                Cancelar
+
+                            </a>
+
+
+                            <button type="submit"
+                                    class="btn btn-success"
+                                    onclick="return confirm(
+                                        '¿Confirma el cobro de $ {{ total_reconocido|floatformat:2 }} informado por la Obra Social?'
+                                    );">
+
+                                <i class="bi bi-cash-coin me-1"></i>
+
+                                Confirmar Cobro
+
+                            </button>
+
+                        </div>
+
+                    </div>
 
                 </div>
 
@@ -337,81 +659,5 @@ Registrar Pago - {{ obra_social.nombre }}
     </form>
 
 </div>
-
-
-<!-- ====================================================== -->
-<!-- JAVASCRIPT -->
-<!-- ====================================================== -->
-
-<script>
-
-document.addEventListener("DOMContentLoaded", function(){
-
-    const estados =
-        document.querySelectorAll(".estado-pago");
-
-
-    estados.forEach(function(select){
-
-        select.addEventListener(
-            "change",
-            function(){
-
-                const id =
-                    this.dataset.id;
-
-                const importePresentado =
-                    parseFloat(this.dataset.importe) || 0;
-
-                const inputImporte =
-                    document.getElementById(
-                        "importe_" + id
-                    );
-
-
-                // ==========================================
-                // PAGADO
-                // ==========================================
-
-                if(this.value === "PAGADO"){
-
-                    inputImporte.value =
-                        importePresentado.toFixed(2);
-
-                }
-
-
-                // ==========================================
-                // DEBITADO / RECHAZADO
-                // ==========================================
-
-                else if(
-                    this.value === "DEBITADO" ||
-                    this.value === "RECHAZADO"
-                ){
-
-                    inputImporte.value = "0.00";
-
-                }
-
-
-                // ==========================================
-                // SIN SELECCIÓN
-                // ==========================================
-
-                else{
-
-                    inputImporte.value = "0.00";
-
-                }
-
-            }
-        );
-
-    });
-
-});
-
-</script>
 
 {% endblock %}

@@ -326,15 +326,27 @@ Nuevo Master - {{ obra_social.nombre }}
 
                             <!-- IMPORTE -->
 
-                            <td class="text-end">
+                           <td class="text-end">
 
-                                <strong>
+    <strong>
+        $ {{ detalle.importe_os_calculado|floatformat:2 }}
+    </strong>
 
-                                    $ {{ detalle.importe|floatformat:2 }}
+    {% if detalle.coseguro_cobrado and detalle.importe_coseguro > 0 %}
 
-                                </strong>
+        <div class="small text-muted">
+            Valor prestación:
+            $ {{ detalle.importe|floatformat:2 }}
+        </div>
 
-                            </td>
+        <div class="small text-info">
+            Coseguro cobrado:
+            - $ {{ detalle.importe_coseguro|floatformat:2 }}
+        </div>
+
+    {% endif %}
+
+</td>
 
                         </tr>
 
