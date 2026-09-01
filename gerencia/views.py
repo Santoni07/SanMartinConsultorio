@@ -923,7 +923,7 @@ def facturacion(request):
         movimientos_activos.filter(
             tipo="EGRESO"
         ).aggregate(
-            total=Sum("importe_bruto")
+            total=Sum("importe")
         )["total"] or 0
     )
 
@@ -1347,7 +1347,7 @@ def facturacion_sede(request, centro_id):
     total_egresos = movimientos.filter(
         tipo='EGRESO'
     ).aggregate(
-        total=Sum('importe_bruto')
+        total=Sum('importe')
     )['total'] or 0
 
     saldo_neto = total_ingresos - total_egresos
