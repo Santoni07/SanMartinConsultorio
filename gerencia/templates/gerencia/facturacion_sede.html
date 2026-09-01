@@ -172,13 +172,17 @@
 
                     <div class="card-body text-center">
 
-                        <div class="fw-bold text-primary text-uppercase mb-2">
-                            Neto
+                        <div class="fw-bold text-success text-uppercase mb-2">
+                            Ganancia del Período
                         </div>
 
-                        <div class="display-6 fw-bold">
-                            ${{ saldo_neto|floatformat:0 }}
+                        <div class="display-6 fw-bold text-success">
+                            ${{ ganancia|floatformat:0 }}
                         </div>
+
+                        <small class="text-muted">
+                            Ingresos menos todos los egresos registrados
+                        </small>
 
                     </div>
 
@@ -208,6 +212,101 @@
 
         </div>
 
+
+
+
+        <!-- ================================================== -->
+<!-- DESGLOSE DE EGRESOS -->
+<!-- ================================================== -->
+
+<div class="card shadow mb-4">
+
+    <div class="card-header bg-white">
+        <h5 class="mb-0 fw-bold">
+            📤 Desglose de Egresos
+        </h5>
+        <small class="text-muted">
+            Composición de las salidas de dinero del período seleccionado
+        </small>
+    </div>
+
+    <div class="card-body">
+
+        <div class="row">
+
+            <!-- HONORARIOS -->
+            <div class="col-lg-3 col-md-6 mb-3">
+                <div class="card border-start border-primary border-4 h-100">
+                    <div class="card-body text-center">
+
+                        <div class="text-muted mb-2">
+                            Honorarios Médicos
+                        </div>
+
+                        <h3 class="fw-bold">
+                            ${{ egresos_honorarios|floatformat:0 }}
+                        </h3>
+
+                    </div>
+                </div>
+            </div>
+
+            <!-- DEPILACION -->
+            <div class="col-lg-3 col-md-6 mb-3">
+                <div class="card border-start border-info border-4 h-100">
+                    <div class="card-body text-center">
+
+                        <div class="text-muted mb-2">
+                            Gastos Depilación
+                        </div>
+
+                        <h3 class="fw-bold">
+                            ${{ egresos_depilacion|floatformat:0 }}
+                        </h3>
+
+                    </div>
+                </div>
+            </div>
+
+            <!-- OTROS -->
+            <div class="col-lg-3 col-md-6 mb-3">
+                <div class="card border-start border-warning border-4 h-100">
+                    <div class="card-body text-center">
+
+                        <div class="text-muted mb-2">
+                            Otros Egresos
+                        </div>
+
+                        <h3 class="fw-bold">
+                            ${{ otros_egresos|floatformat:0 }}
+                        </h3>
+
+                    </div>
+                </div>
+            </div>
+
+            <!-- TOTAL -->
+            <div class="col-lg-3 col-md-6 mb-3">
+                <div class="card border-start border-danger border-4 h-100">
+                    <div class="card-body text-center">
+
+                        <div class="fw-bold text-danger mb-2">
+                            Total Egresos
+                        </div>
+
+                        <h3 class="fw-bold text-danger">
+                            ${{ total_egresos|floatformat:0 }}
+                        </h3>
+
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
         <!-- KPI EJECUTIVOS -->
 
         <div class="row mb-4">
@@ -394,7 +493,7 @@
 
                 <small class="text-muted">
 
-                    Honorarios
+                    Honorarios Medicos
 
                 </small>
 
@@ -433,6 +532,20 @@
         </div>
 
     </div>
+
+      <div class="col-xl-3 col-md-6 mb-3">
+        <div class="card border-start border-success border-4 shadow h-100">
+            <div class="card-body text-center">
+                <small class="fw-bold text-success">
+                    Consultorio + IVA
+                </small>
+                <h4 class="fw-bold text-success">
+                    ${{ total_consultorio_iva|floatformat:0 }}
+                </h4>
+            </div>
+        </div>
+    </div>
+
 
     <div class="col-lg-2 mb-3">
 

@@ -19,7 +19,7 @@ from caja.models import CajaDiaria, MovimientoCaja
 from paciente.models import Paciente
 from medicos.models import Medico
 from core.models import CentroMedico
-
+from decimal import Decimal
 @login_required
 def dashboard_gerencia(request):
 
@@ -930,6 +930,39 @@ def facturacion(request):
 
 
     saldo_neto = total_ingresos - total_egresos
+    ganancia = saldo_neto
+    
+    
+    # =====================================================
+    # DESGLOSE DE EGRESOS - CONSOLIDADO
+    # =====================================================
+
+    # Honorarios médicos pagados mediante liquidaciones
+    egresos_honorarios = (
+        movimientos_activos.filter(
+            tipo="EGRESO",
+            concepto__istartswith="Pago Honorarios Médicos -"
+        ).aggregate(
+            total=Sum("importe")
+        )["total"] or Decimal("0.00")
+    )
+
+    # Egresos correspondientes a Depilación
+    egresos_depilacion = (
+        movimientos_activos.filter(
+            tipo="EGRESO",
+            es_depilacion=True
+        ).aggregate(
+            total=Sum("importe")
+        )["total"] or Decimal("0.00")
+    )
+
+    # Resto de los egresos
+    otros_egresos = (
+        total_egresos
+        - egresos_honorarios
+        - egresos_depilacion
+    )
 
    # =====================================================
     # EFECTIVO
@@ -1198,6 +1231,11 @@ def facturacion(request):
         'total_ingresos': total_ingresos,
         'total_egresos': total_egresos,
         'saldo_neto': saldo_neto,
+        'ganancia': ganancia,
+        
+        'egresos_honorarios': egresos_honorarios,
+        'egresos_depilacion': egresos_depilacion,
+        'otros_egresos': otros_egresos,
 
         # =====================================================
         # NUEVOS KPI FINANCIEROS
@@ -1351,6 +1389,44 @@ def facturacion_sede(request, centro_id):
     )['total'] or 0
 
     saldo_neto = total_ingresos - total_egresos
+    ganancia = saldo_neto
+    
+    # =====================================================
+    # DESGLOSE DE EGRESOS
+    # =====================================================
+
+    # Honorarios médicos pagados mediante liquidaciones
+    egresos_honorarios = (
+        movimientos.filter(
+            tipo="EGRESO",
+            concepto__istartswith="Pago Honorarios Médicos -"
+        ).aggregate(
+            total=Sum("importe")
+        )["total"] or Decimal("0.00")
+    )
+
+    # Egresos propios de Depilación Definitiva
+    egresos_depilacion = (
+        movimientos.filter(
+            tipo="EGRESO",
+            es_depilacion=True
+        ).aggregate(
+            total=Sum("importe")
+        )["total"] or Decimal("0.00")
+    )
+
+    # Todo lo que no corresponde a las dos categorías anteriores
+    otros_egresos = (
+        total_egresos
+        - egresos_honorarios
+        - egresos_depilacion
+    )
+    
+    
+    
+    
+    
+    
     
     total_bruto = total_ingresos
 
@@ -1384,6 +1460,10 @@ def facturacion_sede(request, centro_id):
         ).aggregate(
             total=Sum("importe_consultorio")
         )["total"] or 0
+    )
+    
+    total_consultorio_iva = (
+        total_consultorio + total_iva
     )
 
     total_retenciones = (
@@ -1605,6 +1685,7 @@ def facturacion_sede(request, centro_id):
         'total_bruto': total_bruto,
         'total_iva': total_iva,
         'total_neto': total_neto,
+        'ganancia': ganancia,
         'total_honorarios': total_honorarios,
         'total_consultorio': total_consultorio,
         'total_retenciones': total_retenciones,
@@ -1613,6 +1694,10 @@ def facturacion_sede(request, centro_id):
         'cantidad_cajas': cantidad_cajas,
         'cantidad_movimientos': cantidad_movimientos,
         
+        # DESGLOSE EGRESOS
+        'egresos_honorarios': egresos_honorarios,
+        'egresos_depilacion': egresos_depilacion,
+        'otros_egresos': otros_egresos,
         'efectivo': efectivo,
         'bancarizado': bancarizado,
 
@@ -1621,6 +1706,7 @@ def facturacion_sede(request, centro_id):
 
         'mejor_dia': mejor_dia,
         'peor_dia': peor_dia,
+        'total_consultorio_iva': total_consultorio_iva,
 
         'turno_top': turno_top,
         'secretaria_top': secretaria_top,
@@ -1640,6 +1726,7 @@ def facturacion_sede(request, centro_id):
         context
     )
     
+
 @login_required
 def detalle_caja(request, caja_id):
 
