@@ -353,6 +353,34 @@ def honorarios_medicos(request):
                 honorario_os
             )
 
+        total_disponible_directo = (
+            total_particulares
+            + total_coseguros
+            + total_copagos
+        )
+        
+        # ==========================================
+        # RESUMEN FINAL
+        # ==========================================
+
+        # ==========================================
+        # TOTAL DIRECTO DISPONIBLE
+        # ==========================================
+        # Incluye dinero que ya está disponible
+        # para pagar al médico:
+        #
+        # - Particulares
+        # - Coseguros cobrados
+        # - Copagos cobrados
+        # ==========================================
+
+        total_disponible_directo = (
+            total_particulares
+            + total_coseguros
+            + total_copagos
+        )
+
+
         # ==========================================
         # RESUMEN FINAL
         # ==========================================
@@ -401,26 +429,21 @@ def honorarios_medicos(request):
                 total_honorarios_os_disponible,
 
             # --------------------------------------
-            # TOTAL DISPONIBLE PARA LIQUIDAR
+            # DISPONIBLE DIRECTO
+            # Particular + Coseguro + Copago
             # --------------------------------------
-            #
-            # Ahora incluye:
-            #
-            # Particular
-            # + Coseguros cobrados
-            # + Copagos cobrados
-            # + Honorarios OS ya cobrados
+
+            "total_disponible_directo":
+                total_disponible_directo,
+
+            # --------------------------------------
+            # TOTAL GENERAL DISPONIBLE
             # --------------------------------------
 
             "total_disponible":
                 (
-                    total_particulares
-                    +
-                    total_coseguros
-                    +
-                    total_copagos
-                    +
-                    total_honorarios_os_disponible
+                    total_disponible_directo
+                    + total_honorarios_os_disponible
                 ),
         }
 

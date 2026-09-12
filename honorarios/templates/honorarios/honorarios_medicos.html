@@ -66,6 +66,8 @@
 
     {% if medico_id %}
 
+
+
     <!-- ================================================== -->
     <!-- RESUMEN DISPONIBLE -->
     <!-- ================================================== -->
@@ -622,6 +624,9 @@
         <thead class="table-light">
 
             <tr>
+                  <th style="width: 6%;">
+                ID
+            </th>
                 <th style="width: 13%;">
                     Fecha / Paciente
                 </th>
@@ -654,10 +659,18 @@
             {% for detalle in obras_sociales_pendientes %}
 
             <tr>
+                 <!-- ID DETALLE -->
+    <td>
+        <span class="badge bg-dark">
+            {{ detalle.id }}
+        </span>
+    </td>
 
                 <!-- FECHA / PACIENTE -->
 
                 <td>
+                    
+                    
 
                     <div class="fw-bold">
                         {{ detalle.fecha_prestacion|date:"d/m/Y" }}

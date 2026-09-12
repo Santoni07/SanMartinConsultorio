@@ -34,7 +34,12 @@ class Paciente(models.Model):
         ObraSocial,
         on_delete=models.CASCADE
     )
-    
+    numero_afiliado = models.CharField(
+        max_length=30,
+        blank=True,
+        null=True,
+        verbose_name="Número de afiliado"
+    )
     plan_obra_social = models.ForeignKey(
         'obrasocial.PlanObraSocial',
         on_delete=models.SET_NULL,

@@ -6,62 +6,168 @@
 {% block extra_css %}
 <style>
 
-.btn-custom {
-    padding: 10px 22px;
-    font-size: 1.1rem;
-    border-radius: .5rem;
-}
+    .patient-page {
+        max-width: 1100px;
+        margin: 0 auto;
+    }
 
-.card {
-    border-left: 6px solid #0d6efd;
-}
+    .page-header {
+        background: linear-gradient(135deg, #0d6efd, #4dabf7);
+        color: white;
+        border-radius: 14px;
+        padding: 28px;
+        box-shadow: 0 10px 30px rgba(13, 110, 253, .20);
+    }
 
-.card:hover {
-    box-shadow: 0 12px 25px rgba(0,0,0,0.1);
-    transition: .2s ease;
-}
+    .page-header-icon {
+        width: 58px;
+        height: 58px;
+        display: inline-flex;
+        justify-content: center;
+        align-items: center;
+        background: rgba(255, 255, 255, .18);
+        border-radius: 50%;
+        font-size: 1.8rem;
+    }
 
-.form-label {
-    margin-bottom: .3rem;
-}
+    .form-card {
+        border: 0;
+        border-radius: 14px;
+        overflow: hidden;
+        box-shadow: 0 8px 25px rgba(0, 0, 0, .08);
+    }
+
+    .section-title {
+        color: #0d6efd;
+        font-size: 1rem;
+        font-weight: 700;
+        border-bottom: 1px solid #e9ecef;
+        padding-bottom: 10px;
+        margin-bottom: 20px;
+    }
+
+    .section-title i {
+        margin-right: 7px;
+    }
+
+    .form-label {
+        font-weight: 600;
+        color: #344054;
+        margin-bottom: 6px;
+    }
+
+    .form-control,
+    .form-select {
+        min-height: 44px;
+        border-radius: 8px;
+        border-color: #ced4da;
+    }
+
+    textarea.form-control {
+        min-height: auto;
+    }
+
+    .form-control:focus,
+    .form-select:focus {
+        border-color: #86b7fe;
+        box-shadow: 0 0 0 .2rem rgba(13, 110, 253, .15);
+    }
+
+    .coverage-box {
+        background: #f3f8ff;
+        border: 1px solid #d7e7ff;
+        border-radius: 12px;
+        padding: 20px;
+    }
+
+    .required {
+        color: #dc3545;
+    }
+
+    .field-help {
+        color: #6c757d;
+        font-size: .82rem;
+        margin-top: 5px;
+    }
+
+    .field-error {
+        color: #dc3545;
+        font-size: .82rem;
+        margin-top: 5px;
+    }
+
+    .btn-custom {
+        padding: 10px 22px;
+        font-size: 1rem;
+        border-radius: 8px;
+        font-weight: 600;
+    }
+
+    @media (max-width: 767px) {
+
+        .page-header {
+            padding: 22px 18px;
+        }
+
+        .form-card .card-body {
+            padding: 20px !important;
+        }
+
+        .form-actions {
+            flex-direction: column-reverse;
+            gap: 12px;
+        }
+
+        .form-actions .btn,
+        .form-actions a {
+            width: 100%;
+        }
+    }
 
 </style>
 {% endblock %}
 
 {% block content %}
 
-<div class="container mt-5">
+<div class="container py-5">
 
-    <div class="text-center mb-4">
+    <div class="patient-page">
 
-        <h2 class="fw-bold text-primary">
+        <!-- CABECERA -->
 
-            <i class="bi bi-person-plus-fill"></i>
-            Nuevo Paciente
+        <div class="page-header mb-4">
 
-        </h2>
+            <div class="d-flex align-items-center">
 
-        <p class="text-muted">
+                <div class="page-header-icon me-3">
+                    <i class="bi bi-person-plus-fill"></i>
+                </div>
 
-            Complete los datos del paciente
+                <div>
 
-        </p>
+                    <h2 class="fw-bold mb-1">
+                        Nuevo paciente
+                    </h2>
 
-    </div>
+                    <div class="opacity-75">
+                        Complete los datos personales y de cobertura médica.
+                    </div>
 
-    <div class="card shadow border-0">
+                </div>
 
-        <div class="card-body p-4">
+            </div>
 
-            <!-- ERRORES -->
+        </div>
 
-            {% if form.errors %}
+        <!-- ERRORES GENERALES -->
 
-            <div class="alert alert-danger">
+        {% if form.errors %}
 
-                <h5>
+            <div class="alert alert-danger shadow-sm border-0 mb-4">
 
-                    <i class="bi bi-exclamation-triangle-fill"></i>
+                <h5 class="alert-heading">
+
+                    <i class="bi bi-exclamation-triangle-fill me-1"></i>
                     Debe corregir los siguientes errores
 
                 </h5>
@@ -75,13 +181,8 @@
                         {% for error in field.errors %}
 
                             <li>
-
-                                <strong>
-                                    {{ field.label }}
-                                </strong>
-
-                                : {{ error }}
-
+                                <strong>{{ field.label }}:</strong>
+                                {{ error }}
                             </li>
 
                         {% endfor %}
@@ -98,275 +199,274 @@
 
             </div>
 
-            {% endif %}
+        {% endif %}
 
-            <form method="post">
+        <div class="card form-card">
 
-                {% csrf_token %}
+            <div class="card-body p-4 p-lg-5">
 
-                <div class="row">
+                <form method="post" id="pacienteForm">
 
-                    <!-- DNI -->
+                    {% csrf_token %}
 
-                    <div class="col-md-4 mb-3">
+                    <!-- DATOS PERSONALES -->
 
-                        <label class="form-label fw-bold">
+                    <div class="section-title">
 
-                            DNI
-                            <span class="text-danger">*</span>
-
-                        </label>
-
-                        {{ form.dni }}
+                        <i class="bi bi-person-vcard"></i>
+                        Datos personales
 
                     </div>
 
-                    <!-- NOMBRE -->
+                    <div class="row">
 
-                    <div class="col-md-4 mb-3">
+                        <!-- DNI -->
 
-                        <label class="form-label fw-bold">
+                        <div class="col-md-4 mb-3">
 
-                            Nombre
-                            <span class="text-danger">*</span>
+                            <label
+                                for="{{ form.dni.id_for_label }}"
+                                class="form-label"
+                            >
+                                DNI
+                                <span class="required">*</span>
+                            </label>
 
-                        </label>
+                            {{ form.dni }}
 
-                        {{ form.nombre }}
+                            {% for error in form.dni.errors %}
+                                <div class="field-error">
+                                    {{ error }}
+                                </div>
+                            {% endfor %}
 
-                    </div>
+                        </div>
 
-                    <!-- APELLIDO -->
+                        <!-- APELLIDO -->
 
-                    <div class="col-md-4 mb-3">
+                        <div class="col-md-4 mb-3">
 
-                        <label class="form-label fw-bold">
+                            <label
+                                for="{{ form.apellido.id_for_label }}"
+                                class="form-label"
+                            >
+                                Apellido
+                                <span class="required">*</span>
+                            </label>
 
-                            Apellido
-                            <span class="text-danger">*</span>
+                            {{ form.apellido }}
 
-                        </label>
+                            {% for error in form.apellido.errors %}
+                                <div class="field-error">
+                                    {{ error }}
+                                </div>
+                            {% endfor %}
 
-                        {{ form.apellido }}
+                        </div>
 
-                    </div>
+                        <!-- NOMBRE -->
 
-                    <!-- SEXO -->
+                        <div class="col-md-4 mb-3">
 
-                    <div class="col-md-4 mb-3">
+                            <label
+                                for="{{ form.nombre.id_for_label }}"
+                                class="form-label"
+                            >
+                                Nombre
+                                <span class="required">*</span>
+                            </label>
 
-                        <label class="form-label fw-bold">
+                            {{ form.nombre }}
 
-                            Sexo
-                            <span class="text-danger">*</span>
+                            {% for error in form.nombre.errors %}
+                                <div class="field-error">
+                                    {{ error }}
+                                </div>
+                            {% endfor %}
 
-                        </label>
+                        </div>
 
-                        {{ form.sexo }}
+                        <!-- FECHA DE NACIMIENTO -->
 
-                    </div>
+                        <div class="col-md-4 mb-3">
 
-                    <!-- FECHA NACIMIENTO -->
+                            <label
+                                for="{{ form.fecha_nacimiento.id_for_label }}"
+                                class="form-label"
+                            >
+                                Fecha de nacimiento
+                                <span class="required">*</span>
+                            </label>
 
-                    <div class="col-md-4 mb-3">
+                            {{ form.fecha_nacimiento }}
 
-                        <label class="form-label fw-bold">
+                            {% for error in form.fecha_nacimiento.errors %}
+                                <div class="field-error">
+                                    {{ error }}
+                                </div>
+                            {% endfor %}
 
-                            Fecha de Nacimiento
-                            <span class="text-danger">*</span>
+                        </div>
 
-                        </label>
+                        <!-- SEXO -->
 
-                        {{ form.fecha_nacimiento }}
+                        <div class="col-md-4 mb-3">
 
-                    </div>
+                            <label
+                                for="{{ form.sexo.id_for_label }}"
+                                class="form-label"
+                            >
+                                Sexo
+                            </label>
 
-                    <!-- TELEFONO -->
+                            {{ form.sexo }}
 
-                    <div class="col-md-4 mb-3">
+                            {% for error in form.sexo.errors %}
+                                <div class="field-error">
+                                    {{ error }}
+                                </div>
+                            {% endfor %}
 
-                        <label class="form-label fw-bold">
-
-                            Teléfono
-                            <span class="text-danger">*</span>
-
-                        </label>
-
-                        {{ form.telefono }}
-
-                    </div>
-
-                    <!-- EMAIL -->
-
-                    <div class="col-md-4 mb-3">
-
-                        <label class="form-label fw-bold">
-
-                            Email
-                            <span class="text-danger">*</span>
-
-                        </label>
-
-                        {{ form.email }}
-
-                    </div>
-
-                    <!-- DIRECCION -->
-
-                    <div class="col-md-8 mb-3">
-
-                        <label class="form-label fw-bold">
-
-                            Dirección
-                            <span class="text-danger">*</span>
-
-                        </label>
-
-                        {{ form.direccion }}
-
-                    </div>
-
-                    <!-- OBRA SOCIAL -->
-
-                    <div class="col-md-6 mb-3">
-
-                        <label class="form-label fw-bold">
-
-                            Obra Social
-                            <span class="text-danger">*</span>
-
-                        </label>
-
-                        {{ form.obrasocial }}
+                        </div>
 
                     </div>
 
-                    <!-- OBSERVACIONES -->
+                    <!-- CONTACTO -->
 
-                    <div class="col-12 mb-3">
+                    <div class="section-title mt-4">
 
-                        <label class="form-label fw-bold">
-
-                            Observaciones
-
-                        </label>
-
-                        {{ form.observaciones }}
+                        <i class="bi bi-telephone"></i>
+                        Datos de contacto
 
                     </div>
 
-                </div>
+                    <div class="row">
 
-                <!-- BOTONES -->
+                        <!-- TELÉFONO -->
 
-                <div class="d-flex justify-content-between mt-4">
+                        <div class="col-md-4 mb-3">
 
-                    <div>
+                            <label
+                                for="{{ form.telefono.id_for_label }}"
+                                class="form-label"
+                            >
+                                Teléfono
+                                <span class="required">*</span>
+                            </label>
 
-                        {% if request.user.is_staff or request.user.is_superuser %}
+                            {{ form.telefono }}
 
-                            <a href="{% url 'core:IndexAdmin' %}"
-                               class="btn btn-primary btn-custom">
+                            {% for error in form.telefono.errors %}
+                                <div class="field-error">
+                                    {{ error }}
+                                </div>
+                            {% endfor %}
 
-                                <i class="bi bi-arrow-left-circle"></i>
-                                Volver
+                        </div>
 
-                            </a>
+                        <!-- EMAIL -->
 
-                        {% elif request.user.is_authenticated and request.user.medico %}
+                        <div class="col-md-4 mb-3">
 
-                            <a href="{% url 'core:medico' %}"
-                               class="btn btn-primary btn-custom">
+                            <label
+                                for="{{ form.email.id_for_label }}"
+                                class="form-label"
+                            >
+                                Email
+                                <span class="required">*</span>
+                            </label>
 
-                                <i class="bi bi-arrow-left-circle"></i>
-                                Volver
+                            {{ form.email }}
 
-                            </a>
+                            {% for error in form.email.errors %}
+                                <div class="field-error">
+                                    {{ error }}
+                                </div>
+                            {% endfor %}
 
-                        {% else %}
+                        </div>
 
-                            <a href="{% url 'home' %}"
-                               class="btn btn-primary btn-custom">
+                        <!-- DIRECCIÓN -->
 
-                                <i class="bi bi-arrow-left-circle"></i>
-                                Volver
+                        <div class="col-md-4 mb-3">
 
-                            </a>
+                            <label
+                                for="{{ form.direccion.id_for_label }}"
+                                class="form-label"
+                            >
+                                Dirección
+                                <span class="required">*</span>
+                            </label>
 
-                        {% endif %}
+                            {{ form.direccion }}
+
+                            {% for error in form.direccion.errors %}
+                                <div class="field-error">
+                                    {{ error }}
+                                </div>
+                            {% endfor %}
+
+                        </div>
 
                     </div>
 
-                    <button type="button"
-                            class="btn btn-success btn-custom"
-                            data-bs-toggle="modal"
-                            data-bs-target="#confirmarModal">
+                    <!-- COBERTURA MÉDICA -->
 
-                        <i class="bi bi-save"></i>
-                        Guardar Paciente
+                    <div class="section-title mt-4">
 
-                    </button>
+                        <i class="bi bi-heart-pulse"></i>
+                        Cobertura médica
 
-                </div>
+                    </div>
 
-                <!-- MODAL -->
+                    <div class="coverage-box">
 
-                <div class="modal fade"
-                     id="confirmarModal"
-                     tabindex="-1">
+                        <div class="row">
 
-                    <div class="modal-dialog modal-dialog-centered">
+                            <!-- OBRA SOCIAL -->
 
-                        <div class="modal-content shadow-lg border-0">
+                            <div class="col-md-6 mb-3">
 
-                            <div class="modal-header bg-success text-white">
+                                <label
+                                    for="{{ form.obrasocial.id_for_label }}"
+                                    class="form-label"
+                                >
+                                    Obra social
+                                    <span class="required">*</span>
+                                </label>
 
-                                <h5 class="modal-title">
+                                {{ form.obrasocial }}
 
-                                    <i class="bi bi-check-circle-fill"></i>
-                                    Confirmar Registro
-
-                                </h5>
-
-                                <button type="button"
-                                        class="btn-close btn-close-white"
-                                        data-bs-dismiss="modal">
-                                </button>
+                                {% for error in form.obrasocial.errors %}
+                                    <div class="field-error">
+                                        {{ error }}
+                                    </div>
+                                {% endfor %}
 
                             </div>
 
-                            <div class="modal-body text-center">
+                            <!-- NÚMERO DE AFILIADO -->
 
-                                <p class="fs-5">
+                            <div class="col-md-6 mb-3">
 
-                                    ¿Está seguro que desea guardar este paciente?
+                                <label
+                                    for="{{ form.numero_afiliado.id_for_label }}"
+                                    class="form-label"
+                                >
+                                    Número de afiliado
+                                </label>
 
-                                </p>
+                                {{ form.numero_afiliado }}
 
-                                <p class="text-muted small">
+                                <div class="field-help">
+                                    Ingrese el número tal como figura en la credencial.
+                                </div>
 
-                                    Verifique que los datos sean correctos antes de continuar.
-
-                                </p>
-
-                            </div>
-
-                            <div class="modal-footer justify-content-center">
-
-                                <button type="button"
-                                        class="btn btn-outline-secondary btn-lg"
-                                        data-bs-dismiss="modal">
-
-                                    Cancelar
-
-                                </button>
-
-                                <button type="submit"
-                                        class="btn btn-success btn-lg">
-
-                                    Confirmar y Guardar
-
-                                </button>
+                                {% for error in form.numero_afiliado.errors %}
+                                    <div class="field-error">
+                                        {{ error }}
+                                    </div>
+                                {% endfor %}
 
                             </div>
 
@@ -374,14 +474,202 @@
 
                     </div>
 
-                </div>
+                    <!-- OBSERVACIONES -->
 
-            </form>
+                    <div class="section-title mt-4">
+
+                        <i class="bi bi-journal-text"></i>
+                        Observaciones
+
+                    </div>
+
+                    <div class="row">
+
+                        <div class="col-12 mb-3">
+
+                            <label
+                                for="{{ form.observaciones.id_for_label }}"
+                                class="form-label"
+                            >
+                                Observaciones del paciente
+                            </label>
+
+                            {{ form.observaciones }}
+
+                            {% for error in form.observaciones.errors %}
+                                <div class="field-error">
+                                    {{ error }}
+                                </div>
+                            {% endfor %}
+
+                        </div>
+
+                    </div>
+
+                    <!-- BOTONES -->
+
+                    <div class="d-flex justify-content-between align-items-center mt-4 form-actions">
+
+                        <div>
+
+                            {% if request.user.is_staff or request.user.is_superuser %}
+
+                                <a
+                                    href="{% url 'core:IndexAdmin' %}"
+                                    class="btn btn-outline-secondary btn-custom"
+                                >
+                                    <i class="bi bi-arrow-left-circle me-1"></i>
+                                    Volver
+                                </a>
+
+                            {% elif request.user.is_authenticated and request.user.medico %}
+
+                                <a
+                                    href="{% url 'core:medico' %}"
+                                    class="btn btn-outline-secondary btn-custom"
+                                >
+                                    <i class="bi bi-arrow-left-circle me-1"></i>
+                                    Volver
+                                </a>
+
+                            {% else %}
+
+                                <a
+                                    href="{% url 'home' %}"
+                                    class="btn btn-outline-secondary btn-custom"
+                                >
+                                    <i class="bi bi-arrow-left-circle me-1"></i>
+                                    Volver
+                                </a>
+
+                            {% endif %}
+
+                        </div>
+
+                        <button
+                            type="button"
+                            class="btn btn-success btn-custom"
+                            id="abrirConfirmacion"
+                        >
+                            <i class="bi bi-save me-1"></i>
+                            Guardar paciente
+                        </button>
+
+                    </div>
+
+                    <!-- MODAL DE CONFIRMACIÓN -->
+
+                    <div
+                        class="modal fade"
+                        id="confirmarModal"
+                        tabindex="-1"
+                        aria-labelledby="confirmarModalLabel"
+                        aria-hidden="true"
+                    >
+
+                        <div class="modal-dialog modal-dialog-centered">
+
+                            <div class="modal-content shadow-lg border-0">
+
+                                <div class="modal-header bg-success text-white">
+
+                                    <h5
+                                        class="modal-title"
+                                        id="confirmarModalLabel"
+                                    >
+                                        <i class="bi bi-check-circle-fill me-1"></i>
+                                        Confirmar registro
+                                    </h5>
+
+                                    <button
+                                        type="button"
+                                        class="btn-close btn-close-white"
+                                        data-bs-dismiss="modal"
+                                        aria-label="Cerrar"
+                                    ></button>
+
+                                </div>
+
+                                <div class="modal-body text-center py-4">
+
+                                    <div class="display-5 text-success mb-3">
+                                        <i class="bi bi-person-check-fill"></i>
+                                    </div>
+
+                                    <p class="fs-5 mb-2">
+                                        ¿Está seguro de guardar este paciente?
+                                    </p>
+
+                                    <p class="text-muted small mb-0">
+                                        Verifique los datos personales y el número
+                                        de afiliado antes de continuar.
+                                    </p>
+
+                                </div>
+
+                                <div class="modal-footer justify-content-center">
+
+                                    <button
+                                        type="button"
+                                        class="btn btn-outline-secondary btn-lg"
+                                        data-bs-dismiss="modal"
+                                    >
+                                        Cancelar
+                                    </button>
+
+                                    <button
+                                        type="submit"
+                                        class="btn btn-success btn-lg"
+                                    >
+                                        <i class="bi bi-check-circle me-1"></i>
+                                        Confirmar y guardar
+                                    </button>
+
+                                </div>
+
+                            </div>
+
+                        </div>
+
+                    </div>
+
+                </form>
+
+            </div>
 
         </div>
 
     </div>
 
 </div>
+
+<script>
+
+    document.addEventListener('DOMContentLoaded', function () {
+
+        const formulario = document.getElementById('pacienteForm');
+        const botonConfirmar = document.getElementById('abrirConfirmacion');
+        const modalElemento = document.getElementById('confirmarModal');
+
+        botonConfirmar.addEventListener('click', function () {
+
+            if (!formulario.checkValidity()) {
+
+                formulario.reportValidity();
+                return;
+
+            }
+
+            const modal = bootstrap.Modal.getOrCreateInstance(
+                modalElemento
+            );
+
+            modal.show();
+
+        });
+
+    });
+
+</script>
 
 {% endblock %}

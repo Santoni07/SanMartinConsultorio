@@ -34,13 +34,18 @@ class BuscarPacienteView(LoginRequiredMixin,TemplateView):
             return self.render_to_response({'form': form})
 
    
-class PacienteUpdateView(LoginRequiredMixin,UpdateView):
-    model=Paciente
-    fields = [ 'telefono','email',  'direccion', 'observaciones', 'obrasocial']
-    success_url = reverse_lazy('IndexAdmin.html')
+class PacienteUpdateView(LoginRequiredMixin, UpdateView):
+
+    model = Paciente
+    form_class = PacienteForm
+
     template_name_suffix = '_update_form'
+
     def get_success_url(self):
-      return reverse_lazy('paciente:update', args=[self.object.id]) + '?ok'
+        return reverse_lazy(
+            'paciente:update',
+            args=[self.object.id]
+        ) + '?ok'
 
 class PacienteDeleteView(LoginRequiredMixin,DeleteView):
     model=Paciente

@@ -1,11 +1,11 @@
 from django import forms
 from paciente.models import Paciente
 
-
 class PacienteForm(forms.ModelForm):
 
     class Meta:
         model = Paciente
+
         fields = [
             'dni',
             'nombre',
@@ -16,25 +16,57 @@ class PacienteForm(forms.ModelForm):
             'email',
             'direccion',
             'observaciones',
-            'obrasocial'
+            'obrasocial',
+            'numero_afiliado',
         ]
 
         widgets = {
-            'dni': forms.TextInput(attrs={'class': 'form-control'}),
-            'nombre': forms.TextInput(attrs={'class': 'form-control'}),
-            'apellido': forms.TextInput(attrs={'class': 'form-control'}),
+            'dni': forms.TextInput(attrs={
+                'class': 'form-control'
+            }),
+
+            'nombre': forms.TextInput(attrs={
+                'class': 'form-control'
+            }),
+
+            'apellido': forms.TextInput(attrs={
+                'class': 'form-control'
+            }),
+
             'fecha_nacimiento': forms.DateInput(attrs={
                 'class': 'form-control',
                 'type': 'date'
             }),
-             'sexo': forms.Select(attrs={
-        'class': 'form-select'
-    }),
-            'telefono': forms.TextInput(attrs={'class': 'form-control'}),
-            'email': forms.EmailInput(attrs={'class': 'form-control'}),
-            'direccion': forms.TextInput(attrs={'class': 'form-control'}),
-            'observaciones': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
-            'obrasocial': forms.Select(attrs={'class': 'form-select'})
+
+            'sexo': forms.Select(attrs={
+                'class': 'form-select'
+            }),
+
+            'telefono': forms.TextInput(attrs={
+                'class': 'form-control'
+            }),
+
+            'email': forms.EmailInput(attrs={
+                'class': 'form-control'
+            }),
+
+            'direccion': forms.TextInput(attrs={
+                'class': 'form-control'
+            }),
+
+            'observaciones': forms.Textarea(attrs={
+                'class': 'form-control',
+                'rows': 3
+            }),
+
+            'obrasocial': forms.Select(attrs={
+                'class': 'form-select'
+            }),
+
+            'numero_afiliado': forms.TextInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'Ingrese el número de afiliado'
+            }),
         }
 
 class BusquedaPacienteForm(forms.Form):

@@ -666,6 +666,12 @@
                 <th class="col-paciente">
                     Paciente
                 </th>
+                <th class="col-paciente">
+                    DNI
+                </th>
+                <th class="col-paciente">
+                    Numero de Afiliado
+                </th>
 
                 <th class="col-medico">
                     Médico
@@ -718,6 +724,14 @@
 
                 <td>
                     {{ detalle.movimiento.paciente }}
+                </td>
+
+                 <td>
+                    {{ detalle.movimiento.paciente.dni }}
+                </td>
+
+                 <td>
+                    {{ detalle.movimiento.paciente.numero_afiliado }}
                 </td>
 
 

@@ -431,7 +431,7 @@ Master {{ master.mes|stringformat:"02d" }}/{{ master.anio }}
                     <thead class="table-light">
 
                         <tr>
-
+                            <th>ID</th>
                             <th>Fecha</th>
 
                             <th>Sede</th>
@@ -452,6 +452,7 @@ Master {{ master.mes|stringformat:"02d" }}/{{ master.anio }}
 
 
                            {% if liquidacion_cargada %}
+                                
 
                                 <th class="text-center">
                                     Resultado
@@ -479,6 +480,12 @@ Master {{ master.mes|stringformat:"02d" }}/{{ master.anio }}
                         {% with detalle=item.detalle_movimiento %}
 
                         <tr>
+                            <!-- ID DETALLE -->
+    <td>
+        <span class="badge bg-dark">
+            {{ detalle.id }}
+        </span>
+    </td>
 
                             <!-- FECHA -->
 
