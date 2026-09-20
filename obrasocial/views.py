@@ -5,7 +5,7 @@ from django.core.exceptions import PermissionDenied
 from .forms import ObraSocialForm,PlanObraSocialForm
 from .models import ObraSocial,PlanObraSocial
 
-from obrasocial.models import ObraSocial, MasterObraSocial
+from obrasocial.models import ObraSocial, MasterObraSocial,  DetalleMasterObraSocial
 
 # ==========================================================
 # LISTADO

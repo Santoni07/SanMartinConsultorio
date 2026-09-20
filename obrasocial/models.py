@@ -1,5 +1,6 @@
 from django.db import models
 from nomenclador.models import NomencladorGeneral
+from django.conf import settings
 
 # Create your models here.
 
@@ -629,6 +630,7 @@ class DetalleMasterObraSocial(models.Model):
         ("PRESENTADA", "Refacturación presentada"),
         ("ACEPTADA", "Refacturación aceptada"),
         ("RECHAZADA", "Refacturación rechazada"),
+        ("CANCELADA", "Cancelada / no refacturar"),
     ]
 
     # ======================================================
@@ -646,10 +648,10 @@ class DetalleMasterObraSocial(models.Model):
     # PRESTACIÓN REALIZADA
     # ======================================================
 
-    detalle_movimiento = models.OneToOneField(
+    detalle_movimiento = models.ForeignKey(
         "caja.DetalleMovimientoCaja",
         on_delete=models.PROTECT,
-        related_name="detalle_master_obra_social",
+        related_name="detalles_master_obra_social",
         verbose_name="Prestación"
     )
 
@@ -788,6 +790,58 @@ class DetalleMasterObraSocial(models.Model):
         "Fecha de resolución",
         null=True,
         blank=True
+    )
+    
+    # ======================================================
+    # USUARIO QUE RESOLVIÓ
+    # ======================================================
+
+    resuelto_por = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+        related_name="detalles_master_os_resueltos",
+        verbose_name="Resuelto por"
+    )
+
+
+    # ======================================================
+    # ÚLTIMA GESTIÓN
+    # ======================================================
+
+    fecha_ultima_gestion = models.DateTimeField(
+        "Última gestión",
+        null=True,
+        blank=True
+    )
+
+
+    # ======================================================
+    # ORIGEN DE REFACTURACIÓN
+    # ======================================================
+    #
+    # Si este registro corresponde a una refacturación,
+    # apunta al detalle del Master original.
+    #
+    # Ejemplo:
+    #
+    # Master Agosto - Detalle #50
+    #       ↓
+    # rechazado
+    #       ↓
+    # Master Septiembre - Detalle #72
+    # detalle_origen = #50
+    #
+    # ======================================================
+
+    detalle_origen = models.ForeignKey(
+        "self",
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+        related_name="refacturaciones",
+        verbose_name="Detalle de origen"
     )
 
     # ======================================================

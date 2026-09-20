@@ -167,4 +167,20 @@ path(
     views.master_obra_social_imprimir,
     name="master_obra_social_imprimir"
 ),
+
+path(
+    "liquidaciones/<int:obra_social_id>/observadas/",
+    views.prestaciones_observadas,
+    name="prestaciones_observadas",
+),
+path(
+    "liquidaciones/observadas/<int:detalle_id>/gestionar/",
+    views.gestionar_prestacion_observada,
+    name="gestionar_prestacion_observada",
+),
+path(
+    "liquidaciones/observadas/<int:detalle_id>/aceptar-reconocido/",
+    views.aceptar_importe_reconocido,
+    name="aceptar_importe_reconocido",
+),
 ], 'obrasocial')

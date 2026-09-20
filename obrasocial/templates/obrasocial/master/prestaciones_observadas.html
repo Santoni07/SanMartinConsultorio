@@ -1,0 +1,538 @@
+{% extends 'core/base.html' %}
+
+{% block title %}
+Débitos y Rechazos - {{ obra_social.nombre }}
+{% endblock %}
+
+{% block content %}
+
+<div class="container-fluid mt-4 mb-5">
+
+    <!-- ====================================================== -->
+    <!-- ENCABEZADO -->
+    <!-- ====================================================== -->
+
+    <div class="d-flex justify-content-between align-items-center mb-4">
+
+        <div>
+            <h2 class="mb-1">
+                Gestión de Débitos y Rechazos
+            </h2>
+
+            <div class="text-muted">
+                {{ obra_social.nombre }}
+            </div>
+        </div>
+
+        <div>
+            <a href="javascript:history.back()"
+               class="btn btn-outline-secondary">
+                ← Volver
+            </a>
+        </div>
+
+    </div>
+
+
+    <!-- ====================================================== -->
+    <!-- TARJETAS -->
+    <!-- ====================================================== -->
+
+    <div class="row g-3 mb-4">
+
+        <!-- RECHAZADAS -->
+
+        <div class="col-md-3">
+
+            <div class="card shadow-sm border-danger h-100">
+
+                <div class="card-body">
+
+                    <div class="text-muted small">
+                        Prestaciones rechazadas
+                    </div>
+
+                    <div class="fs-3 fw-bold text-danger">
+                        {{ total_rechazados }}
+                    </div>
+
+                </div>
+
+            </div>
+
+        </div>
+
+
+        <!-- DEBITOS -->
+
+        <div class="col-md-3">
+
+            <div class="card shadow-sm border-warning h-100">
+
+                <div class="card-body">
+
+                    <div class="text-muted small">
+                        Débitos parciales
+                    </div>
+
+                    <div class="fs-3 fw-bold text-warning">
+                        {{ total_debitos }}
+                    </div>
+
+                </div>
+
+            </div>
+
+        </div>
+
+
+        <!-- REFACTURAR -->
+
+        <div class="col-md-3">
+
+            <div class="card shadow-sm border-primary h-100">
+
+                <div class="card-body">
+
+                    <div class="text-muted small">
+                        Para refacturar
+                    </div>
+
+                    <div class="fs-3 fw-bold text-primary">
+                        {{ total_refacturar }}
+                    </div>
+
+                </div>
+
+            </div>
+
+        </div>
+
+
+        <!-- CANCELADAS -->
+
+        <div class="col-md-3">
+
+            <div class="card shadow-sm border-secondary h-100">
+
+                <div class="card-body">
+
+                    <div class="text-muted small">
+                        Canceladas
+                    </div>
+
+                    <div class="fs-3 fw-bold">
+                        {{ total_cancelados }}
+                    </div>
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <!-- ====================================================== -->
+    <!-- FILTROS -->
+    <!-- ====================================================== -->
+
+    <div class="card shadow-sm mb-4">
+
+        <div class="card-header bg-light">
+            <strong>Filtros</strong>
+        </div>
+
+        <div class="card-body">
+
+            <form method="get">
+
+                <div class="row g-3 align-items-end">
+
+                    <!-- ESTADO -->
+
+                    <div class="col-md-4">
+
+                        <label class="form-label">
+                            Estado
+                        </label>
+
+                        <select name="estado"
+                                class="form-select">
+
+                            <option value="">
+                                Todos
+                            </option>
+
+                            <option value="RECHAZADO"
+                                {% if estado_filtro == "RECHAZADO" %}
+                                    selected
+                                {% endif %}>
+                                Rechazadas
+                            </option>
+
+                            <option value="DEBITO_PARCIAL"
+                                {% if estado_filtro == "DEBITO_PARCIAL" %}
+                                    selected
+                                {% endif %}>
+                                Débitos parciales
+                            </option>
+
+                        </select>
+
+                    </div>
+
+
+                    <!-- PERIODO -->
+
+                    <div class="col-md-4">
+
+                        <label class="form-label">
+                            Período del Master
+                        </label>
+
+                        <input type="month"
+                               name="periodo"
+                               value="{{ periodo_filtro }}"
+                               class="form-control">
+
+                    </div>
+
+
+                    <!-- BOTONES -->
+
+                    <div class="col-md-4">
+
+                        <button type="submit"
+                                class="btn btn-primary">
+                            Filtrar
+                        </button>
+
+                        <a href="{% url 'obrasocial:prestaciones_observadas' obra_social.id %}"
+                           class="btn btn-outline-secondary">
+                            Limpiar
+                        </a>
+
+                    </div>
+
+                </div>
+
+            </form>
+
+        </div>
+
+    </div>
+
+
+    <!-- ====================================================== -->
+    <!-- TABLA -->
+    <!-- ====================================================== -->
+
+    <div class="card shadow-sm">
+
+        <div class="card-header">
+
+            <strong>
+                Prestaciones observadas
+            </strong>
+
+        </div>
+
+
+        <div class="card-body p-0">
+
+            <div class="table-responsive">
+
+                <table class="table table-hover table-striped align-middle mb-0">
+
+                    <thead class="table-dark">
+
+                        <tr>
+
+                            <th>ID</th>
+
+                            <th>
+                                Período
+                            </th>
+
+                            <th>
+                                Paciente
+                            </th>
+
+                            <th>
+                                Prestación
+                            </th>
+
+                            <th class="text-end">
+                                Presentado
+                            </th>
+
+                            <th class="text-end">
+                                Reconocido
+                            </th>
+
+                            <th class="text-end">
+                                Débito
+                            </th>
+
+                            <th>
+                                Estado
+                            </th>
+
+                            <th>
+                                Refacturación
+                            </th>
+
+                            <th class="text-center">
+                                Acciones
+                            </th>
+
+                        </tr>
+
+                    </thead>
+
+
+                    <tbody>
+
+                        {% for detalle in detalles %}
+
+                        <tr>
+
+                            <!-- ID -->
+
+                            <td>
+
+                                <span class="badge bg-dark">
+                                    #{{ detalle.id }}
+                                </span>
+
+                            </td>
+
+
+                            <!-- PERIODO -->
+
+                            <td>
+
+                                {{ detalle.master.mes|stringformat:"02d" }}/{{ detalle.master.anio }}
+
+                            </td>
+
+
+                            <!-- PACIENTE -->
+
+                            <td>
+
+                                {% if detalle.detalle_movimiento.movimiento.paciente %}
+
+                                    <strong>
+                                        {{ detalle.detalle_movimiento.movimiento.paciente.apellido }},
+                                        {{ detalle.detalle_movimiento.movimiento.paciente.nombre }}
+                                    </strong>
+
+                                    <div class="small text-muted">
+                                        DNI:
+                                        {{ detalle.detalle_movimiento.movimiento.paciente.dni }}
+                                    </div>
+
+                                {% else %}
+
+                                    <span class="text-muted">
+                                        Sin paciente
+                                    </span>
+
+                                {% endif %}
+
+                            </td>
+
+
+                            <!-- PRESTACION -->
+
+                            <td>
+
+                                <strong>
+                                    {{ detalle.detalle_movimiento.descripcion }}
+                                </strong>
+
+                                {% if detalle.detalle_movimiento.codigo %}
+
+                                    <div class="small text-muted">
+                                        Código:
+                                        {{ detalle.detalle_movimiento.codigo }}
+                                    </div>
+
+                                {% endif %}
+
+                                <div class="small text-muted">
+                                    Movimiento #{{ detalle.detalle_movimiento.id }}
+                                </div>
+
+                            </td>
+
+
+                            <!-- PRESENTADO -->
+
+                            <td class="text-end">
+
+                                $ {{ detalle.importe_presentado|floatformat:2 }}
+
+                            </td>
+
+
+                            <!-- RECONOCIDO -->
+
+                            <td class="text-end">
+
+                                {% if detalle.importe_reconocido != None %}
+
+                                    $ {{ detalle.importe_reconocido|floatformat:2 }}
+
+                                {% else %}
+
+                                    <span class="text-muted">
+                                        -
+                                    </span>
+
+                                {% endif %}
+
+                            </td>
+
+
+                            <!-- DEBITO -->
+
+                            <td class="text-end">
+
+                                {% if detalle.importe_debitado > 0 %}
+
+                                    <strong class="text-danger">
+                                        $ {{ detalle.importe_debitado|floatformat:2 }}
+                                    </strong>
+
+                                {% else %}
+
+                                    $ 0,00
+
+                                {% endif %}
+
+                            </td>
+
+
+                            <!-- ESTADO -->
+
+                            <td>
+
+                                {% if detalle.estado == "RECHAZADO" %}
+
+                                    <span class="badge bg-danger">
+                                        Rechazada
+                                    </span>
+
+                                {% elif detalle.estado == "DEBITO_PARCIAL" %}
+
+                                    <span class="badge bg-warning text-dark">
+                                        Débito parcial
+                                    </span>
+
+                                {% else %}
+
+                                    <span class="badge bg-secondary">
+                                        {{ detalle.get_estado_display }}
+                                    </span>
+
+                                {% endif %}
+
+                            </td>
+
+
+                            <!-- REFACTURACION -->
+
+                            <td>
+
+                                {% if detalle.estado_refacturacion == "PENDIENTE" %}
+
+                                    <span class="badge bg-primary">
+                                        Pendiente
+                                    </span>
+
+                                {% elif detalle.estado_refacturacion == "PRESENTADA" %}
+
+                                    <span class="badge bg-info text-dark">
+                                        Presentada
+                                    </span>
+
+                                {% elif detalle.estado_refacturacion == "ACEPTADA" %}
+
+                                    <span class="badge bg-success">
+                                        Aceptada
+                                    </span>
+
+                                {% elif detalle.estado_refacturacion == "RECHAZADA" %}
+
+                                    <span class="badge bg-danger">
+                                        Rechazada
+                                    </span>
+
+                                {% elif detalle.estado_refacturacion == "CANCELADA" %}
+
+                                    <span class="badge bg-secondary">
+                                        Cancelada
+                                    </span>
+
+                                {% else %}
+
+                                    <span class="text-muted">
+                                        No aplica
+                                    </span>
+
+                                {% endif %}
+
+                            </td>
+
+
+                            <!-- ACCIONES -->
+
+                            <td class="text-center">
+
+                               <a href="{% url 'obrasocial:gestionar_prestacion_observada' detalle.id %}"
+                                class="btn btn-sm btn-outline-primary">
+                                    Gestionar
+                                </a>
+
+                            </td>
+
+                        </tr>
+
+
+                        {% empty %}
+
+                        <tr>
+
+                            <td colspan="10"
+                                class="text-center py-5">
+
+                                <div class="text-muted">
+
+                                    No hay prestaciones rechazadas
+                                    ni con débitos parciales.
+
+                                </div>
+
+                            </td>
+
+                        </tr>
+
+                        {% endfor %}
+
+                    </tbody>
+
+                </table>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+{% endblock %}

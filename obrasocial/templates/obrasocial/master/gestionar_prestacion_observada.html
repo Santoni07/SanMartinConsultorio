@@ -1,0 +1,609 @@
+{% extends 'core/base.html' %}
+
+{% block title %}
+Gestionar prestación observada
+{% endblock %}
+
+{% block content %}
+
+<div class="container mt-4 mb-5">
+
+    <!-- ====================================================== -->
+    <!-- ENCABEZADO -->
+    <!-- ====================================================== -->
+
+    <div class="d-flex justify-content-between align-items-center mb-4">
+
+        <div>
+            <h2 class="mb-1">
+                Gestión de prestación observada
+            </h2>
+
+            <div class="text-muted">
+                {{ obra_social.nombre }}
+                · Master {{ master.mes|stringformat:"02d" }}/{{ master.anio }}
+                · Detalle #{{ detalle.id }}
+            </div>
+        </div>
+
+        <a href="{% url 'obrasocial:prestaciones_observadas' obra_social.id %}"
+           class="btn btn-outline-secondary">
+            ← Volver
+        </a>
+
+    </div>
+
+
+    <!-- ====================================================== -->
+    <!-- ESTADO -->
+    <!-- ====================================================== -->
+
+    <div class="card shadow-sm mb-4">
+
+        <div class="card-body">
+
+            <div class="row">
+
+                <div class="col-md-4">
+
+                    <div class="text-muted small">
+                        Estado de auditoría
+                    </div>
+
+                    {% if detalle.estado == "DEBITO_PARCIAL" %}
+
+                        <span class="badge bg-warning text-dark fs-6">
+                            Débito parcial
+                        </span>
+
+                    {% elif detalle.estado == "RECHAZADO" %}
+
+                        <span class="badge bg-danger fs-6">
+                            Rechazada
+                        </span>
+
+                    {% endif %}
+
+                </div>
+
+
+                <div class="col-md-4">
+
+                    <div class="text-muted small">
+                        Estado de refacturación
+                    </div>
+
+                    <strong>
+                        {{ detalle.get_estado_refacturacion_display }}
+                    </strong>
+
+                </div>
+
+
+                <div class="col-md-4">
+
+                    <div class="text-muted small">
+                        Período original
+                    </div>
+
+                    <strong>
+                        {{ master.mes|stringformat:"02d" }}/{{ master.anio }}
+                    </strong>
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <!-- ====================================================== -->
+    <!-- PACIENTE / PRESTACION -->
+    <!-- ====================================================== -->
+
+    <div class="card shadow-sm mb-4">
+
+        <div class="card-header">
+            <strong>Prestación</strong>
+        </div>
+
+        <div class="card-body">
+
+            <div class="row g-4">
+
+                <div class="col-md-4">
+
+                    <div class="text-muted small">
+                        Paciente
+                    </div>
+
+                    {% if detalle.detalle_movimiento.movimiento.paciente %}
+
+                        <strong>
+                            {{ detalle.detalle_movimiento.movimiento.paciente.apellido }},
+                            {{ detalle.detalle_movimiento.movimiento.paciente.nombre }}
+                        </strong>
+
+                        <div class="text-muted">
+                            DNI:
+                            {{ detalle.detalle_movimiento.movimiento.paciente.dni }}
+                        </div>
+
+                    {% else %}
+
+                        <span class="text-muted">
+                            Sin paciente
+                        </span>
+
+                    {% endif %}
+
+                </div>
+
+
+                <div class="col-md-6">
+
+                    <div class="text-muted small">
+                        Prestación
+                    </div>
+
+                    <strong>
+                        {{ detalle.detalle_movimiento.descripcion }}
+                    </strong>
+
+                    <div class="text-muted">
+                        Código:
+                        {{ detalle.detalle_movimiento.codigo }}
+                    </div>
+
+                </div>
+
+
+                <div class="col-md-2">
+
+                    <div class="text-muted small">
+                        Movimiento
+                    </div>
+
+                    <strong>
+                        #{{ detalle.detalle_movimiento.id }}
+                    </strong>
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <!-- ====================================================== -->
+    <!-- IMPORTES -->
+    <!-- ====================================================== -->
+
+    <div class="row g-3 mb-4">
+
+        <div class="col-md-4">
+
+            <div class="card shadow-sm h-100">
+
+                <div class="card-body">
+
+                    <div class="text-muted">
+                        Importe presentado
+                    </div>
+
+                    <div class="fs-3 fw-bold">
+                        $ {{ detalle.importe_presentado|floatformat:2 }}
+                    </div>
+
+                </div>
+
+            </div>
+
+        </div>
+
+
+        <div class="col-md-4">
+
+            <div class="card shadow-sm h-100 border-success">
+
+                <div class="card-body">
+
+                    <div class="text-muted">
+                        Importe reconocido
+                    </div>
+
+                    <div class="fs-3 fw-bold text-success">
+
+                        {% if detalle.importe_reconocido != None %}
+
+                            $ {{ detalle.importe_reconocido|floatformat:2 }}
+
+                        {% else %}
+
+                            -
+
+                        {% endif %}
+
+                    </div>
+
+                </div>
+
+            </div>
+
+        </div>
+
+
+        <div class="col-md-4">
+
+            <div class="card shadow-sm h-100 border-danger">
+
+                <div class="card-body">
+
+                    <div class="text-muted">
+                        Importe debitado / rechazado
+                    </div>
+
+                    <div class="fs-3 fw-bold text-danger">
+                        $ {{ detalle.importe_debitado|floatformat:2 }}
+                    </div>
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <!-- ====================================================== -->
+    <!-- MOTIVO -->
+    <!-- ====================================================== -->
+
+    <div class="card shadow-sm mb-4">
+
+        <div class="card-header">
+            <strong>Observación de la Obra Social</strong>
+        </div>
+
+        <div class="card-body">
+
+            {% if detalle.motivo_debito %}
+
+                {{ detalle.motivo_debito|linebreaks }}
+
+            {% else %}
+
+                <span class="text-muted">
+                    No se registró un motivo de débito o rechazo.
+                </span>
+
+            {% endif %}
+
+        </div>
+
+    </div>
+
+
+        <!-- ====================================================== -->
+        <!-- ACCIONES -->
+        <!-- ====================================================== -->
+
+        {% if detalle.estado_refacturacion == "CANCELADA" %}
+
+        <!-- ===================================================== -->
+        <!-- PRESTACIÓN YA RESUELTA                                -->
+        <!-- ===================================================== -->
+
+        <div class="card shadow-sm border-success">
+
+            <div class="card-header bg-success text-white">
+                <strong>✓ Prestación resuelta</strong>
+            </div>
+
+            <div class="card-body">
+
+                <div class="alert alert-success">
+                    Esta prestación ya fue gestionada.
+                    Se aceptó el importe reconocido por la Obra Social
+                    y el débito quedó cerrado definitivamente.
+                </div>
+
+                <div class="row g-3">
+
+                    <!-- IMPORTE RECONOCIDO -->
+                    <div class="col-md-4">
+
+                        <div class="border rounded p-3 h-100">
+
+                            <small class="text-muted">
+                                Importe reconocido aceptado
+                            </small>
+
+                            <div class="fs-4 fw-bold text-success mt-1">
+                                $ {{ detalle.importe_reconocido|floatformat:2 }}
+                            </div>
+
+                        </div>
+
+                    </div>
+
+
+                    <!-- DÉBITO DEFINITIVO -->
+                    <div class="col-md-4">
+
+                        <div class="border rounded p-3 h-100">
+
+                            <small class="text-muted">
+                                Débito definitivo
+                            </small>
+
+                            <div class="fs-4 fw-bold text-danger mt-1">
+                                $ {{ detalle.importe_debitado|floatformat:2 }}
+                            </div>
+
+                        </div>
+
+                    </div>
+
+
+                    <!-- RESOLUCIÓN -->
+                    <div class="col-md-4">
+
+                        <div class="border rounded p-3 h-100">
+
+                            <small class="text-muted">
+                                Resuelto por
+                            </small>
+
+                            <div class="fw-bold mt-1">
+
+                                {% if detalle.resuelto_por %}
+
+                                    {% if detalle.resuelto_por.get_full_name %}
+                                        {{ detalle.resuelto_por.get_full_name }}
+                                    {% else %}
+                                        {{ detalle.resuelto_por.username }}
+                                    {% endif %}
+
+                                {% else %}
+                                    -
+                                {% endif %}
+
+                            </div>
+
+                            {% if detalle.fecha_ultima_gestion %}
+
+                                <small class="text-muted">
+                                    {{ detalle.fecha_ultima_gestion|date:"d/m/Y H:i" }}
+                                </small>
+
+                            {% endif %}
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+                <div class="mt-3 text-muted">
+                    Esta prestación no será enviada nuevamente a refacturación.
+                </div>
+
+            </div>
+
+        </div>
+
+
+    {% else %}
+
+        <!-- ===================================================== -->
+        <!-- PRESTACIÓN PENDIENTE DE GESTIÓN                       -->
+        <!-- ===================================================== -->
+
+        <div class="card shadow-sm">
+
+            <div class="card-header">
+                <strong>¿Qué desea hacer con esta prestación?</strong>
+            </div>
+
+            <div class="card-body">
+
+                <div class="d-flex flex-wrap gap-2">
+
+
+                    {% if detalle.estado == "DEBITO_PARCIAL" %}
+
+                        <button type="button"
+                                class="btn btn-success"
+                                data-bs-toggle="modal"
+                                data-bs-target="#modalAceptarReconocido">
+
+                            ✓ Aceptar importe reconocido
+
+                        </button>
+
+
+                        <button type="button"
+                                class="btn btn-primary"
+                                disabled>
+
+                            ↻ Refacturar débito
+
+                        </button>
+
+                    {% endif %}
+
+
+                    {% if detalle.estado == "RECHAZADO" %}
+
+                        <button type="button"
+                                class="btn btn-primary"
+                                disabled>
+
+                            ↻ Refacturar prestación
+
+                        </button>
+
+                    {% endif %}
+
+
+                    <button type="button"
+                            class="btn btn-warning"
+                            disabled>
+
+                        ✎ Modificar importe
+
+                    </button>
+
+
+                    <button type="button"
+                            class="btn btn-outline-danger"
+                            disabled>
+
+                        ✕ Cancelar / dar de baja
+
+                    </button>
+
+                </div>
+
+
+                <div class="alert alert-info mt-4 mb-0">
+
+                    Seleccione la acción que desea realizar sobre
+                    esta prestación observada.
+
+                </div>
+
+            </div>
+
+        </div>
+
+    {% endif %}
+
+</div>
+<!-- ===================================================== -->
+<!-- MODAL ACEPTAR IMPORTE RECONOCIDO                      -->
+<!-- ===================================================== -->
+
+<div class="modal fade"
+     id="modalAceptarReconocido"
+     tabindex="-1"
+     aria-labelledby="modalAceptarReconocidoLabel"
+     aria-hidden="true">
+
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content shadow-lg border-0">
+
+            <!-- CABECERA -->
+            <div class="modal-header bg-success text-white">
+
+                <h5 class="modal-title"
+                    id="modalAceptarReconocidoLabel">
+                    Confirmar importe reconocido
+                </h5>
+
+                <button type="button"
+                        class="btn-close btn-close-white"
+                        data-bs-dismiss="modal"
+                        aria-label="Cerrar">
+                </button>
+
+            </div>
+
+            <!-- CUERPO -->
+            <div class="modal-body p-4">
+
+                <p class="mb-3">
+                    ¿Confirmás que querés aceptar el importe
+                    reconocido por la Obra Social?
+                </p>
+
+                <!-- IMPORTES -->
+                <div class="card border-0 bg-light mb-3">
+
+                    <div class="card-body">
+
+                        <div class="d-flex justify-content-between mb-2">
+                            <span class="text-muted">
+                                Importe presentado
+                            </span>
+
+                            <strong>
+                                ${{ detalle.importe_presentado|floatformat:2 }}
+                            </strong>
+                        </div>
+
+                        <div class="d-flex justify-content-between mb-2">
+                            <span class="text-muted">
+                                Importe reconocido
+                            </span>
+
+                            <strong class="text-success">
+                                ${{ detalle.importe_reconocido|floatformat:2 }}
+                            </strong>
+                        </div>
+
+                        <hr>
+
+                        <div class="d-flex justify-content-between">
+                            <span>
+                                Débito definitivo
+                            </span>
+
+                            <strong class="text-danger">
+                                ${{ detalle.importe_debitado|floatformat:2 }}
+                            </strong>
+                        </div>
+
+                    </div>
+
+                </div>
+
+                <div class="alert alert-warning mb-0">
+
+                    <strong>Importante:</strong>
+
+                    al confirmar, la diferencia quedará registrada
+                    como débito definitivo y no será enviada a
+                    refacturación.
+
+                </div>
+
+            </div>
+
+            <!-- PIE -->
+            <div class="modal-footer">
+
+                <button type="button"
+                        class="btn btn-outline-secondary"
+                        data-bs-dismiss="modal">
+
+                    Volver
+
+                </button>
+
+                <form method="post"
+                      action="{% url 'obrasocial:aceptar_importe_reconocido' detalle.id %}">
+
+                    {% csrf_token %}
+
+                    <button type="submit"
+                            class="btn btn-success">
+
+                        ✓ Sí, aceptar importe
+
+                    </button>
+
+                </form>
+
+            </div>
+
+        </div>
+    </div>
+</div>
+{% endblock %}
