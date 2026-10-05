@@ -183,4 +183,20 @@ path(
     views.aceptar_importe_reconocido,
     name="aceptar_importe_reconocido",
 ),
+path(
+    "liquidaciones/observadas/<int:detalle_id>/refacturar/",
+    views.marcar_para_refacturar,
+    name="marcar_para_refacturar",
+),
+path(
+    "liquidaciones/<int:obra_social_id>/refacturacion/pendientes/",
+    views.pendientes_refacturacion,
+    name="pendientes_refacturacion",
+),
+
+path(
+    "liquidaciones/<int:obra_social_id>/refacturacion/generar/",
+    views.generar_master_refacturacion,
+    name="generar_master_refacturacion",
+),
 ], 'obrasocial')

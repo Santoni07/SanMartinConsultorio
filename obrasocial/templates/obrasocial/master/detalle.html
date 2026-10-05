@@ -21,14 +21,38 @@ Master {{ master.mes|stringformat:"02d" }}/{{ master.anio }}
 
                 <div>
 
-                    <h3 class="mb-1">
+                    <div class="d-flex align-items-center gap-2 flex-wrap mb-1">
 
-                        <i class="bi bi-file-earmark-medical me-2"></i>
+                        <h3 class="mb-0">
 
-                        Master
-                        {{ master.mes|stringformat:"02d" }}/{{ master.anio }}
+                            <i class="bi bi-file-earmark-medical me-2"></i>
 
-                    </h3>
+                            Master
+                            {{ master.mes|stringformat:"02d" }}/{{ master.anio }}
+
+                        </h3>
+
+                        {% if master.tipo == "REFACTURACION" %}
+
+                            <span class="badge bg-warning text-dark fs-6">
+
+                                <i class="bi bi-arrow-repeat me-1"></i>
+                                REFACTURACIÓN
+
+                            </span>
+
+                        {% else %}
+
+                            <span class="badge bg-light text-dark fs-6">
+
+                                <i class="bi bi-file-earmark-text me-1"></i>
+                                PRESENTACIÓN NORMAL
+
+                            </span>
+
+                        {% endif %}
+
+                    </div>
 
                     <div class="opacity-75">
                         {{ obra_social.nombre }}
@@ -53,48 +77,52 @@ Master {{ master.mes|stringformat:"02d" }}/{{ master.anio }}
                             Presentar Master
                         </a>
 
-                        {% elif master.estado == "PRESENTADO" %}
 
-                            <span class="badge bg-primary fs-6 me-2">
-                                Presentado
+                    {% elif master.estado == "PRESENTADO" %}
+
+                        <span class="badge bg-primary fs-6 me-2">
+                            Presentado
+                        </span>
+
+                        {% if liquidacion_cargada %}
+
+                            <span class="badge bg-success fs-6 me-2">
+
+                                <i class="bi bi-check-circle me-1"></i>
+                                Liquidación cargada
+
                             </span>
 
-                            {% if liquidacion_cargada %}
+                            <a
+                                href="{% url 'obrasocial:master_obra_social_cargar_liquidacion' obra_social.id master.id %}"
+                                class="btn btn-outline-primary me-2"
+                            >
+                                <i class="bi bi-pencil-square me-1"></i>
+                                Ver / Modificar Liquidación
+                            </a>
 
-                                <span class="badge bg-success fs-6 me-2">
-                                    <i class="bi bi-check-circle me-1"></i>
-                                    Liquidación cargada
-                                </span>
+                            <a
+                                href="{% url 'obrasocial:master_obra_social_registrar_pago' obra_social.id master.id %}"
+                                class="btn btn-success me-2"
+                            >
+                                <i class="bi bi-cash-coin me-1"></i>
+                                Registrar Cobro
+                            </a>
 
-                                <a
-                                    href="{% url 'obrasocial:master_obra_social_cargar_liquidacion' obra_social.id master.id %}"
-                                    class="btn btn-outline-primary me-2"
-                                >
-                                    <i class="bi bi-pencil-square me-1"></i>
-                                    Ver / Modificar Liquidación
-                                </a>
+                        {% else %}
 
-                                <a
-                                    href="{% url 'obrasocial:master_obra_social_registrar_pago' obra_social.id master.id %}"
-                                    class="btn btn-success me-2"
-                                >
-                                    <i class="bi bi-cash-coin me-1"></i>
-                                    Registrar Cobro
-                                </a>
+                            <a
+                                href="{% url 'obrasocial:master_obra_social_cargar_liquidacion' obra_social.id master.id %}"
+                                class="btn btn-warning me-2"
+                            >
+                                <i class="bi bi-clipboard-check me-1"></i>
+                                Cargar Liquidación OS
+                            </a>
 
-                            {% else %}
+                        {% endif %}
 
-                                <a
-                                    href="{% url 'obrasocial:master_obra_social_cargar_liquidacion' obra_social.id master.id %}"
-                                    class="btn btn-warning me-2"
-                                >
-                                    <i class="bi bi-clipboard-check me-1"></i>
-                                    Cargar Liquidación OS
-                                </a>
 
-                            {% endif %}
-                    
-                        {% elif master.estado == "COBRADO" %}
+                    {% elif master.estado == "COBRADO" %}
 
                         <span class="badge bg-success fs-6 me-2">
                             Cobrado
@@ -229,7 +257,6 @@ Master {{ master.mes|stringformat:"02d" }}/{{ master.anio }}
 
     <!-- ================================================== -->
     <!-- RESULTADO DEL COBRO -->
-    <!-- SOLO CUANDO EL MASTER YA FUE COBRADO -->
     <!-- ================================================== -->
 
     {% if liquidacion_cargada %}
@@ -431,7 +458,9 @@ Master {{ master.mes|stringformat:"02d" }}/{{ master.anio }}
                     <thead class="table-light">
 
                         <tr>
+
                             <th>ID</th>
+
                             <th>Fecha</th>
 
                             <th>Sede</th>
@@ -446,13 +475,15 @@ Master {{ master.mes|stringformat:"02d" }}/{{ master.anio }}
 
                             <th>Plan</th>
 
+                            <!-- NUEVA COLUMNA -->
+                            <th>Origen</th>
+
                             <th class="text-end">
                                 Presentado
                             </th>
 
 
-                           {% if liquidacion_cargada %}
-                                
+                            {% if liquidacion_cargada %}
 
                                 <th class="text-center">
                                     Resultado
@@ -480,12 +511,17 @@ Master {{ master.mes|stringformat:"02d" }}/{{ master.anio }}
                         {% with detalle=item.detalle_movimiento %}
 
                         <tr>
+
                             <!-- ID DETALLE -->
-    <td>
-        <span class="badge bg-dark">
-            {{ detalle.id }}
-        </span>
-    </td>
+
+                            <td>
+
+                                <span class="badge bg-dark">
+                                    {{ detalle.id }}
+                                </span>
+
+                            </td>
+
 
                             <!-- FECHA -->
 
@@ -601,6 +637,52 @@ Master {{ master.mes|stringformat:"02d" }}/{{ master.anio }}
                             </td>
 
 
+                            <!-- ======================================== -->
+                            <!-- ORIGEN -->
+                            <!-- ======================================== -->
+
+                            <td>
+
+                                {% if item.detalle_origen %}
+
+                                    <span class="badge bg-warning text-dark">
+
+                                        <i class="bi bi-arrow-repeat me-1"></i>
+                                        Refacturación
+
+                                    </span>
+
+                                    <div class="small text-muted mt-1">
+
+                                        Master original:
+
+                                        <strong>
+                                            {{ item.detalle_origen.master.mes|stringformat:"02d" }}/{{ item.detalle_origen.master.anio }}
+                                        </strong>
+
+                                    </div>
+
+                                    <div class="small text-muted">
+
+                                        Detalle Master
+                                        #{{ item.detalle_origen.id }}
+
+                                    </div>
+
+                                {% else %}
+
+                                    <span class="badge bg-light text-dark border">
+
+                                        <i class="bi bi-file-earmark-text me-1"></i>
+                                        Original
+
+                                    </span>
+
+                                {% endif %}
+
+                            </td>
+
+
                             <!-- IMPORTE PRESENTADO -->
 
                             <td class="text-end">
@@ -622,30 +704,59 @@ Master {{ master.mes|stringformat:"02d" }}/{{ master.anio }}
                             {% if liquidacion_cargada %}
 
 
-                             
+                                <!-- RESULTADO -->
+
+                                <td class="text-center">
+
+                                    {% if item.estado == "ACEPTADO" %}
+
+                                        <span class="badge bg-success">
+                                            Aceptada
+                                        </span>
+
+                                    {% elif item.estado == "DEBITO_PARCIAL" %}
+
+                                        <span class="badge bg-warning text-dark">
+                                            Débito parcial
+                                        </span>
+
+                                    {% elif item.estado == "RECHAZADO" %}
+
+                                        <span class="badge bg-danger">
+                                            Rechazada
+                                        </span>
+
+                                    {% else %}
+
+                                        <span class="badge bg-secondary">
+                                            Pendiente
+                                        </span>
+
+                                    {% endif %}
+
+                                </td>
 
 
                                 <!-- IMPORTE RECONOCIDO -->
 
-                                <!-- IMPORTE RECONOCIDO -->
+                                <td class="text-end">
 
-<td class="text-end">
+                                    {% if item.importe_reconocido %}
 
-    {% if item.importe_reconocido %}
+                                        <strong class="text-success">
+                                            $ {{ item.importe_reconocido|floatformat:2 }}
+                                        </strong>
 
-        <strong class="text-success">
-            $ {{ item.importe_reconocido|floatformat:2 }}
-        </strong>
+                                    {% else %}
 
-    {% else %}
+                                        <span class="text-muted">
+                                            $ 0,00
+                                        </span>
 
-        <span class="text-muted">
-            $ 0,00
-        </span>
+                                    {% endif %}
 
-    {% endif %}
+                                </td>
 
-</td>
 
                                 <!-- DIFERENCIA -->
 

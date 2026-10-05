@@ -1,4 +1,5 @@
 from django.contrib import messages
+from django.utils import timezone
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import get_object_or_404, redirect, render
 from django.core.exceptions import PermissionDenied
@@ -569,6 +570,15 @@ def master_obra_social_lista(request, obra_social_id):
     )
 
     # ======================================================
+    # FILTROS
+    # ======================================================
+
+    mes = request.GET.get("mes")
+    anio = request.GET.get("anio")
+
+    buscando = False
+
+    # ======================================================
     # MASTERS DE ESTA OBRA SOCIAL
     # ======================================================
 
@@ -582,10 +592,52 @@ def master_obra_social_lista(request, obra_social_id):
             "creado_por"
         )
         .order_by(
-            "-anio",
-            "-mes"
+            "-fecha_creacion"
         )
     )
+
+    # ======================================================
+    # BÚSQUEDA POR MES / AÑO
+    # ======================================================
+
+    if mes and anio:
+
+        try:
+
+            mes = int(mes)
+            anio = int(anio)
+
+            if 1 <= mes <= 12:
+
+                masters = masters.filter(
+                    mes=mes,
+                    anio=anio
+                )
+
+                buscando = True
+
+            else:
+
+                mes = None
+                anio = None
+
+        except (TypeError, ValueError):
+
+            mes = None
+            anio = None
+
+    # ======================================================
+    # SIN BÚSQUEDA
+    # MOSTRAR SOLAMENTE LOS ÚLTIMOS 5
+    # ======================================================
+
+    if not buscando:
+
+        masters = masters[:5]
+
+    # ======================================================
+    # TEMPLATE
+    # ======================================================
 
     return render(
         request,
@@ -593,9 +645,13 @@ def master_obra_social_lista(request, obra_social_id):
         {
             "obra_social": obra_social,
             "masters": masters,
+
+            "mes_seleccionado": mes,
+            "anio_seleccionado": anio,
+
+            "buscando": buscando,
         }
     )
-    
 # ==========================================================
 # MASTER DE OBRA SOCIAL
 # NUEVO MASTER
@@ -645,7 +701,6 @@ def master_obra_social_nuevo(request, obra_social_id):
         # ==================================================
 
         try:
-
             mes = int(mes)
             anio = int(anio)
 
@@ -688,27 +743,7 @@ def master_obra_social_nuevo(request, obra_social_id):
                 f"{request.path}?mes={mes}&anio={anio}"
             )
 
-        # ==================================================
-        # VERIFICAR QUE NO EXISTA EL MASTER
-        # ==================================================
-
-        if MasterObraSocial.objects.filter(
-            obra_social=obra_social,
-            mes=mes,
-            anio=anio
-        ).exists():
-
-            messages.error(
-                request,
-                "Ya existe un Master para esta Obra Social "
-                "en el período seleccionado."
-            )
-
-            return redirect(
-                "obrasocial:master_obra_social_lista",
-                obra_social_id=obra_social.id
-            )
-
+        
         # ==================================================
         # TRANSACCIÓN
         # ==================================================
@@ -719,6 +754,23 @@ def master_obra_social_nuevo(request, obra_social_id):
 
                 # ==========================================
                 # VOLVER A CONSULTAR LAS PRESTACIONES
+                # ==========================================
+                #
+                # IMPORTANTE:
+                #
+                # Desde que DetalleMasterObraSocial usa
+                # ForeignKey hacia DetalleMovimientoCaja,
+                # el related_name es:
+                #
+                # detalles_master_obra_social
+                #
+                # Por eso utilizamos:
+                #
+                # detalles_master_obra_social__isnull=True
+                #
+                # Esto impide incorporar accidentalmente
+                # como "nueva" una prestación que ya estuvo
+                # incluida en algún Master.
                 # ==========================================
 
                 detalles = (
@@ -740,7 +792,7 @@ def master_obra_social_nuevo(request, obra_social_id):
 
                         obra_social_cobrada=False,
 
-                        detalle_master_obra_social__isnull=True,
+                        detalles_master_obra_social__isnull=True,
                     )
                 )
 
@@ -816,27 +868,28 @@ def master_obra_social_nuevo(request, obra_social_id):
 
                             estado="PENDIENTE",
 
-                            # ==============================================
+                            # ==================================
                             # CONGELAR IMPORTE PRESENTADO
-                            # ==============================================
+                            # ==================================
                             #
-                            # Este importe representa exactamente lo que
-                            # estamos presentando a la Obra Social.
-                            #
-                            # Queda guardado históricamente en el Master.
+                            # Representa exactamente el importe
+                            # presentado a la Obra Social.
                             #
                             # Prestación
                             # -
                             # coseguro cobrado
                             #
                             # El copago NO se descuenta.
-                            # ==============================================
+                            # ==================================
 
                             importe_presentado=(
-                                calcular_importe_obra_social(detalle)
+                                calcular_importe_obra_social(
+                                    detalle
+                                )
                             ),
 
-                            # Todavía no existe resolución de la OS.
+                            # Todavía no existe resolución
+                            # de la Obra Social.
 
                             importe_reconocido=None,
 
@@ -930,6 +983,19 @@ def master_obra_social_nuevo(request, obra_social_id):
             # ==================================================
             # PRESTACIONES DISPONIBLES
             # ==================================================
+            #
+            # Solamente mostramos prestaciones:
+            #
+            # - De esta Obra Social
+            # - Del período seleccionado
+            # - Con movimiento activo
+            # - Pendientes
+            # - No cobradas por OS
+            # - Que nunca hayan sido incorporadas a un Master
+            #
+            # La futura REFACTURACIÓN tendrá un circuito
+            # separado y NO pasará por este filtro.
+            # ==================================================
 
             prestaciones = (
 
@@ -949,7 +1015,7 @@ def master_obra_social_nuevo(request, obra_social_id):
 
                     obra_social_cobrada=False,
 
-                    detalle_master_obra_social__isnull=True,
+                    detalles_master_obra_social__isnull=True,
                 )
 
                 .select_related(
@@ -982,11 +1048,6 @@ def master_obra_social_nuevo(request, obra_social_id):
             # ==================================================
             # CALCULAR IMPORTE REAL A PRESENTAR A LA OS
             # ==================================================
-            #
-            # Acá utilizamos la función central.
-            #
-            # De esta manera no repetimos la fórmula.
-            # ==================================================
 
             for detalle in prestaciones:
 
@@ -1014,8 +1075,7 @@ def master_obra_social_nuevo(request, obra_social_id):
         }
     )
 
-
-    
+  
 @login_required
 def master_obra_social_detalle(request, obra_social_id, master_id):
 
@@ -1274,6 +1334,7 @@ def master_obra_social_detalle(request, obra_social_id, master_id):
         }
     )
 
+
 @login_required
 def master_obra_social_presentar(request, obra_social_id, master_id):
 
@@ -1351,13 +1412,17 @@ def master_obra_social_presentar(request, obra_social_id, master_id):
         )
 
         numero_presentacion = (
-            request.POST.get("numero_presentacion", "")
-            .strip()
+            request.POST.get(
+                "numero_presentacion",
+                ""
+            ).strip()
         )
 
         numero_factura = (
-            request.POST.get("numero_factura", "")
-            .strip()
+            request.POST.get(
+                "numero_factura",
+                ""
+            ).strip()
         )
 
         # ==================================================
@@ -1373,32 +1438,155 @@ def master_obra_social_presentar(request, obra_social_id, master_id):
 
         else:
 
+            try:
+
+                with transaction.atomic():
+
+                    # ======================================
+                    # BLOQUEAR MASTER
+                    # ======================================
+
+                    master_bloqueado = (
+                        MasterObraSocial.objects
+                        .select_for_update()
+                        .get(
+                            pk=master.id,
+                            estado="BORRADOR",
+                        )
+                    )
+
+                    # ======================================
+                    # ACTUALIZAR MASTER
+                    # ======================================
+
+                    master_bloqueado.fecha_presentacion = (
+                        fecha_presentacion
+                    )
+
+                    master_bloqueado.numero_presentacion = (
+                        numero_presentacion
+                    )
+
+                    master_bloqueado.numero_factura = (
+                        numero_factura
+                    )
+
+                    master_bloqueado.estado = "PRESENTADO"
+
+                    master_bloqueado.save(
+                        update_fields=[
+                            "fecha_presentacion",
+                            "numero_presentacion",
+                            "numero_factura",
+                            "estado",
+                            "fecha_modificacion",
+                        ]
+                    )
+
+                    # ======================================
+                    # SI ES REFACTURACIÓN
+                    # ======================================
+                    #
+                    # No tocamos:
+                    #
+                    # - MovimientoCaja
+                    # - coseguro
+                    # - copago
+                    # - importe original
+                    # - honorarios
+                    #
+                    # Solamente actualizamos la trazabilidad
+                    # del detalle original.
+                    # ======================================
+
+                    if master_bloqueado.tipo == "REFACTURACION":
+
+                        detalles_refacturados = (
+                            DetalleMasterObraSocial.objects
+                            .select_for_update()
+                            .select_related(
+                                "detalle_origen"
+                            )
+                            .filter(
+                                master=master_bloqueado,
+                                detalle_origen__isnull=False,
+                            )
+                        )
+
+                        for nuevo_detalle in detalles_refacturados:
+
+                            origen = (
+                                nuevo_detalle.detalle_origen
+                            )
+
+                            origen.estado_refacturacion = (
+                                "PRESENTADA"
+                            )
+
+                            origen.fecha_refacturacion = (
+                                fecha_presentacion
+                            )
+
+                            origen.fecha_ultima_gestion = (
+                                timezone.now()
+                            )
+
+                            origen.resuelto_por = (
+                                request.user
+                            )
+
+                            origen.observacion_refacturacion = (
+                                f"Refacturación presentada en "
+                                f"Master #{master_bloqueado.id}. "
+                                f"Fecha de presentación: "
+                                f"{fecha_presentacion}. "
+                                f"Usuario: "
+                                f"{request.user.get_username()}."
+                            )
+
+                            origen.save(
+                                update_fields=[
+                                    "estado_refacturacion",
+                                    "fecha_refacturacion",
+                                    "fecha_ultima_gestion",
+                                    "resuelto_por",
+                                    "observacion_refacturacion",
+                                ]
+                            )
+
+            except MasterObraSocial.DoesNotExist:
+
+                messages.error(
+                    request,
+                    "El Master ya fue presentado "
+                    "o cambió de estado."
+                )
+
+                return redirect(
+                    "obrasocial:master_obra_social_detalle",
+                    obra_social_id=obra_social.id,
+                    master_id=master.id
+                )
+
             # ==============================================
-            # ACTUALIZAR MASTER
+            # MENSAJE
             # ==============================================
 
-            master.fecha_presentacion = fecha_presentacion
+            if master.tipo == "REFACTURACION":
 
-            master.numero_presentacion = numero_presentacion
+                messages.success(
+                    request,
+                    "El Master de refacturación fue "
+                    "marcado como PRESENTADO correctamente."
+                )
 
-            master.numero_factura = numero_factura
+            else:
 
-            master.estado = "PRESENTADO"
-
-            master.save(
-                update_fields=[
-                    "fecha_presentacion",
-                    "numero_presentacion",
-                    "numero_factura",
-                    "estado",
-                    "fecha_modificacion",
-                ]
-            )
-
-            messages.success(
-                request,
-                "El Master fue marcado como PRESENTADO correctamente."
-            )
+                messages.success(
+                    request,
+                    "El Master fue marcado como "
+                    "PRESENTADO correctamente."
+                )
 
             return redirect(
                 "obrasocial:master_obra_social_detalle",
@@ -1418,12 +1606,12 @@ def master_obra_social_presentar(request, obra_social_id, master_id):
             "master": master,
             "hoy": date.today(),
         }
-    )
-    
+    )    
 # ==========================================================
 # MASTER DE OBRA SOCIAL
 # REGISTRAR PAGO
 # ==========================================================
+
 @login_required
 def master_obra_social_registrar_pago(
     request,
@@ -1436,7 +1624,6 @@ def master_obra_social_registrar_pago(
     # ======================================================
 
     if request.user.username.lower() != "cintia":
-
         raise PermissionDenied(
             "No tiene permisos para registrar cobros de Masters."
         )
@@ -1494,6 +1681,7 @@ def master_obra_social_registrar_pago(
             "detalle_movimiento__movimiento__turno__medico",
             "detalle_movimiento__prestacion_obra_social",
             "detalle_movimiento__prestacion_obra_social__plan",
+            "detalle_origen",
         )
         .order_by(
             "detalle_movimiento__fecha_prestacion",
@@ -1558,36 +1746,20 @@ def master_obra_social_registrar_pago(
 
     for item in detalles:
 
-        # --------------------------------------------------
-        # PRESENTADO
-        # --------------------------------------------------
-
         importe_presentado = (
             item.importe_presentado
             or Decimal("0.00")
         )
-
-        # --------------------------------------------------
-        # RECONOCIDO
-        # --------------------------------------------------
 
         importe_reconocido = (
             item.importe_reconocido
             or Decimal("0.00")
         )
 
-        # --------------------------------------------------
-        # DEBITADO
-        # --------------------------------------------------
-
         importe_debitado = (
             item.importe_debitado
             or Decimal("0.00")
         )
-
-        # --------------------------------------------------
-        # VARIABLES PARA TEMPLATE
-        # --------------------------------------------------
 
         item.importe_presentado_calculado = (
             importe_presentado
@@ -1601,28 +1773,17 @@ def master_obra_social_registrar_pago(
             importe_debitado
         )
 
-        # --------------------------------------------------
-        # TOTALES
-        # --------------------------------------------------
-
         total_presentado += importe_presentado
         total_reconocido += importe_reconocido
         total_debitado += importe_debitado
 
-        # --------------------------------------------------
-        # CANTIDADES
-        # --------------------------------------------------
-
         if item.estado == "ACEPTADO":
-
             cantidad_aceptadas += 1
 
         elif item.estado == "DEBITO_PARCIAL":
-
             cantidad_debitadas += 1
 
         elif item.estado == "RECHAZADO":
-
             cantidad_rechazadas += 1
 
     # ======================================================
@@ -1670,14 +1831,16 @@ def master_obra_social_registrar_pago(
                 )
 
                 # ==========================================
-                # VOLVER A OBTENER LOS DETALLES BLOQUEADOS
+                # DETALLES BLOQUEADOS
                 # ==========================================
 
                 detalles_bloqueados = (
                     DetalleMasterObraSocial.objects
                     .select_for_update()
                     .select_related(
-                        "detalle_movimiento"
+                        "detalle_movimiento",
+                        "detalle_movimiento__prestacion_obra_social",
+                        "detalle_origen",
                     )
                     .filter(
                         master=master_bloqueado
@@ -1690,28 +1853,254 @@ def master_obra_social_registrar_pago(
 
                 for item in detalles_bloqueados:
 
-                    detalle = (
-                        item.detalle_movimiento
-                    )
+                    detalle = item.detalle_movimiento
 
                     importe_reconocido = (
                         item.importe_reconocido
                         or Decimal("0.00")
                     )
 
+                    honorario_os = Decimal("0.00")
+
                     # ======================================
-                    # ACEPTADO
+                    # ACEPTADO / DÉBITO PARCIAL
                     # ======================================
                     #
-                    # La Obra Social reconoció el importe
-                    # y ahora confirmamos que ese dinero
-                    # fue efectivamente cobrado.
+                    # Solamente genera honorarios el importe
+                    # efectivamente reconocido por la OS.
+                    #
+                    # Si posteriormente se recupera un débito,
+                    # esa nueva cobranza genera solamente el
+                    # honorario incremental correspondiente.
                     # ======================================
 
                     if (
-                        item.estado == "ACEPTADO"
+                        item.estado in [
+                            "ACEPTADO",
+                            "DEBITO_PARCIAL",
+                        ]
                         and importe_reconocido > Decimal("0.00")
                     ):
+
+                        prestacion = (
+                            detalle.prestacion_obra_social
+                        )
+
+                        if prestacion is None:
+                            raise ValueError(
+                                "La prestación no posee configuración "
+                                "de Obra Social."
+                            )
+
+                        # ==================================
+                        # COSEGURO
+                        # ==================================
+
+                        coseguro = (
+                            detalle.importe_coseguro
+                            or Decimal("0.00")
+                        )
+
+                        # ==================================
+                        # RECONOCIMIENTOS ANTERIORES
+                        # ==================================
+                        #
+                        # Buscamos todos los Masters COBRADOS
+                        # anteriores correspondientes al mismo
+                        # DetalleMovimientoCaja.
+                        #
+                        # Cada DetalleMaster guarda su propio
+                        # importe reconocido y su propio
+                        # honorario reconocido.
+                        # ==================================
+
+                        detalles_anteriores = (
+                            DetalleMasterObraSocial.objects
+                            .filter(
+                                detalle_movimiento=detalle,
+                                master__estado="COBRADO",
+                            )
+                            .exclude(
+                                pk=item.pk
+                            )
+                        )
+
+                        importe_os_reconocido_anterior = (
+                            Decimal("0.00")
+                        )
+
+                        honorario_os_generado_anterior = (
+                            Decimal("0.00")
+                        )
+
+                        for anterior in detalles_anteriores:
+
+                            importe_os_reconocido_anterior += (
+                                anterior.importe_reconocido
+                                or Decimal("0.00")
+                            )
+
+                            honorario_os_generado_anterior += (
+                                anterior.honorario_medico_reconocido
+                                or Decimal("0.00")
+                            )
+
+                        # ==================================
+                        # TOTAL RECONOCIDO ACUMULADO POR OS
+                        # ==================================
+
+                        importe_os_reconocido_acumulado = (
+                            importe_os_reconocido_anterior
+                            + importe_reconocido
+                        )
+
+                        # ==================================
+                        # TOTAL ECONÓMICO RECUPERADO
+                        # ==================================
+                        #
+                        # El coseguro pertenece a la prestación
+                        # una sola vez.
+                        #
+                        # Lo sumamos para reconstruir el valor
+                        # total económico sobre el que se
+                        # calculan IVA/proveedor/distribución.
+                        # ==================================
+
+                        importe_total_recuperado = (
+                            importe_os_reconocido_acumulado
+                            + coseguro
+                        )
+
+                        # ==================================
+                        # IVA
+                        # ==================================
+
+                        porcentaje_iva = (
+                            prestacion.porcentaje_iva
+                            or Decimal("0.00")
+                        )
+
+                        importe_iva_total = (
+                            importe_total_recuperado
+                            * porcentaje_iva
+                            / Decimal("100")
+                        )
+
+                        # ==================================
+                        # PROVEEDOR
+                        # ==================================
+                        #
+                        # Al calcular acumulativamente, el
+                        # proveedor se descuenta una sola vez
+                        # sobre el total recuperado.
+                        # ==================================
+
+                        importe_proveedor = (
+                            prestacion.importe_proveedor
+                            or Decimal("0.00")
+                        )
+
+                        base_distribuible_total = (
+                            importe_total_recuperado
+                            - importe_iva_total
+                            - importe_proveedor
+                        )
+
+                        if (
+                            base_distribuible_total
+                            < Decimal("0.00")
+                        ):
+                            base_distribuible_total = (
+                                Decimal("0.00")
+                            )
+
+                        # ==================================
+                        # HONORARIO TOTAL ACUMULADO
+                        # ==================================
+
+                        if (
+                            prestacion.tipo_calculo
+                            == "FIJO_MEDICO"
+                        ):
+
+                            honorario_total_acumulado = (
+                                prestacion.honorario_fijo_medico
+                                or Decimal("0.00")
+                            )
+
+                        else:
+
+                            porcentaje_medico = (
+                                prestacion.porcentaje_medico
+                                or Decimal("0.00")
+                            )
+
+                            honorario_total_acumulado = (
+                                base_distribuible_total
+                                * porcentaje_medico
+                                / Decimal("100")
+                            )
+
+                        # ==================================
+                        # COMPONENTE TOTAL OBRA SOCIAL
+                        # ==================================
+                        #
+                        # El coseguro tiene su propio circuito
+                        # de liquidación médica.
+                        # ==================================
+
+                        honorario_os_acumulado = (
+                            honorario_total_acumulado
+                            - coseguro
+                        )
+
+                        if (
+                            honorario_os_acumulado
+                            < Decimal("0.00")
+                        ):
+                            honorario_os_acumulado = (
+                                Decimal("0.00")
+                            )
+
+                        # ==================================
+                        # HONORARIO DE ESTA COBRANZA
+                        # ==================================
+                        #
+                        # Total que correspondería hasta hoy
+                        # menos lo ya generado anteriormente.
+                        # ==================================
+
+                        honorario_os = (
+                            honorario_os_acumulado
+                            - honorario_os_generado_anterior
+                        )
+
+                        if honorario_os < Decimal("0.00"):
+                            honorario_os = Decimal("0.00")
+
+                        # ==================================
+                        # SNAPSHOT DEL DETALLE DEL MASTER
+                        # ==================================
+
+                        item.honorario_medico_reconocido = (
+                            honorario_os
+                        )
+
+                        item.honorario_medico_liquidado = False
+
+                        item.fecha_liquidacion_honorario = None
+
+                        item.save(
+                            update_fields=[
+                                "honorario_medico_reconocido",
+                                "honorario_medico_liquidado",
+                                "fecha_liquidacion_honorario",
+                            ]
+                        )
+
+                        # ==================================
+                        # COMPATIBILIDAD CON SISTEMA ACTUAL
+                        # ==================================
 
                         detalle.obra_social_cobrada = True
 
@@ -1719,56 +2108,148 @@ def master_obra_social_registrar_pago(
                             fecha_cobro
                         )
 
-                    # ======================================
-                    # DÉBITO PARCIAL
-                    # ======================================
-                    #
-                    # También existe un cobro real.
-                    #
-                    # Ejemplo:
-                    #
-                    # Presentado:  $275.000
-                    # Reconocido:  $250.000
-                    # Debitado:     $25.000
-                    #
-                    # Se habilita el componente OS porque
-                    # hubo un importe efectivamente cobrado.
-                    # ======================================
+                        detalle.importe_reconocido_obra_social = (
+                            importe_reconocido
+                        )
 
-                    elif (
-                        item.estado == "DEBITO_PARCIAL"
-                        and importe_reconocido > Decimal("0.00")
-                    ):
-
-                        detalle.obra_social_cobrada = True
-
-                        detalle.fecha_cobro_obra_social = (
-                            fecha_cobro
+                        detalle.honorario_reconocido_obra_social = (
+                            honorario_os
                         )
 
                     # ======================================
-                    # RECHAZADO
-                    # ======================================
-                    #
-                    # No existe importe reconocido.
-                    # No hubo cobro de esta prestación.
-                    # No se habilita para honorarios OS.
+                    # RECHAZADO / RECONOCIDO EN CERO
                     # ======================================
 
                     else:
 
-                        detalle.obra_social_cobrada = False
+                        # ==================================
+                        # ESTE MASTER NO GENERA HONORARIO
+                        # ==================================
 
-                        detalle.fecha_cobro_obra_social = None
+                        item.honorario_medico_reconocido = (
+                            Decimal("0.00")
+                        )
+
+                        item.honorario_medico_liquidado = False
+
+                        item.fecha_liquidacion_honorario = None
+
+                        item.save(
+                            update_fields=[
+                                "honorario_medico_reconocido",
+                                "honorario_medico_liquidado",
+                                "fecha_liquidacion_honorario",
+                            ]
+                        )
+
+                        # ==================================
+                        # ¿HUBO ALGÚN COBRO ANTERIOR?
+                        # ==================================
+                        #
+                        # Esto es fundamental para una
+                        # refacturación rechazada.
+                        #
+                        # Ejemplo:
+                        #
+                        # Original:
+                        #   reconocido $250.000
+                        #
+                        # Refacturación:
+                        #   rechazado $25.000
+                        #
+                        # El rechazo de los $25.000 NO puede
+                        # borrar que anteriormente cobramos
+                        # los $250.000.
+                        # ==================================
+
+                        cobro_anterior = (
+                            DetalleMasterObraSocial.objects
+                            .filter(
+                                detalle_movimiento=detalle,
+                                master__estado="COBRADO",
+                                importe_reconocido__gt=0,
+                            )
+                            .exclude(
+                                pk=item.pk
+                            )
+                            .order_by(
+                                "-master__fecha_cobro",
+                                "-id"
+                            )
+                            .first()
+                        )
+
+                        if cobro_anterior:
+
+                            # ------------------------------
+                            # CONSERVAR EL MOVIMIENTO COMO
+                            # COBRADO PORQUE EXISTE UN PAGO
+                            # ANTERIOR REAL.
+                            # ------------------------------
+
+                            detalle.obra_social_cobrada = True
+
+                            # No pisamos la fecha de un cobro
+                            # anterior con None.
+
+                            if (
+                                detalle.fecha_cobro_obra_social
+                                is None
+                            ):
+                                detalle.fecha_cobro_obra_social = (
+                                    cobro_anterior.master.fecha_cobro
+                                )
+
+                            # --------------------------------
+                            # COMPATIBILIDAD
+                            # --------------------------------
+                            #
+                            # Dejamos en el movimiento el último
+                            # reconocimiento anterior conocido.
+                            #
+                            # La fuente real para el nuevo sistema
+                            # son los DetalleMasterObraSocial.
+                            # --------------------------------
+
+                            detalle.importe_reconocido_obra_social = (
+                                cobro_anterior.importe_reconocido
+                                or Decimal("0.00")
+                            )
+
+                            detalle.honorario_reconocido_obra_social = (
+                                cobro_anterior.honorario_medico_reconocido
+                                or Decimal("0.00")
+                            )
+
+                        else:
+
+                            # ------------------------------
+                            # NUNCA HUBO COBRO DE ESTA
+                            # PRESTACIÓN
+                            # ------------------------------
+
+                            detalle.obra_social_cobrada = False
+
+                            detalle.fecha_cobro_obra_social = None
+
+                            detalle.importe_reconocido_obra_social = (
+                                Decimal("0.00")
+                            )
+
+                            detalle.honorario_reconocido_obra_social = (
+                                Decimal("0.00")
+                            )
 
                     # ======================================
-                    # GUARDAR PRESTACIÓN
+                    # GUARDAR DETALLE MOVIMIENTO
                     # ======================================
 
                     detalle.save(
                         update_fields=[
                             "obra_social_cobrada",
                             "fecha_cobro_obra_social",
+                            "importe_reconocido_obra_social",
+                            "honorario_reconocido_obra_social",
                         ]
                     )
 
@@ -1839,9 +2320,6 @@ def master_obra_social_registrar_pago(
             "total_reconocido": total_reconocido,
             "total_debitado": total_debitado,
 
-            # Conservamos este nombre temporalmente porque
-            # registrar_pago.html posiblemente todavía usa
-            # cantidad_pagadas.
             "cantidad_pagadas": cantidad_aceptadas,
 
             "cantidad_aceptadas": cantidad_aceptadas,
@@ -1851,7 +2329,6 @@ def master_obra_social_registrar_pago(
             "hoy": date.today(),
         }
     )
-
 
 
 # ==========================================================
@@ -2123,31 +2600,71 @@ def master_obra_social_cargar_liquidacion(
                         )
 
                     # ======================================
-                    # MOTIVO DEL DÉBITO / RECHAZO
+                    # MOTIVO NORMALIZADO
+                    # DÉBITO / RECHAZO
                     # ======================================
 
-                    motivo_debito = (
+                    motivo_observacion = (
                         request.POST.get(
-                            f"motivo_{item.id}",
+                            f"motivo_observacion_{item.id}",
                             ""
                         )
                         .strip()
                     )
 
-                    # Si existe débito debe existir motivo.
-
-                    if (
-                        estado in [
-                            "DEBITO_PARCIAL",
-                            "RECHAZADO",
-                        ]
-                        and not motivo_debito
-                    ):
-
-                        raise ValueError(
-                            "Debe indicar el motivo de todos "
-                            "los débitos y rechazos."
+                    detalle_observacion = (
+                        request.POST.get(
+                            f"detalle_observacion_{item.id}",
+                            ""
                         )
+                        .strip()
+                    )
+
+                    # ======================================
+                    # ACEPTADO
+                    # No necesita motivo
+                    # ======================================
+
+                    if estado == "ACEPTADO":
+
+                        motivo_observacion = ""
+                        detalle_observacion = ""
+
+                    # ======================================
+                    # DÉBITO / RECHAZO
+                    # El motivo es obligatorio
+                    # ======================================
+
+                    else:
+
+                        motivos_validos = dict(
+                            DetalleMasterObraSocial.MOTIVOS_OBSERVACION
+                        )
+
+                        if not motivo_observacion:
+
+                            raise ValueError(
+                                "Debe seleccionar el motivo de todos "
+                                "los débitos y rechazos."
+                            )
+
+                        if motivo_observacion not in motivos_validos:
+
+                            raise ValueError(
+                                "El motivo seleccionado no es válido."
+                            )
+
+                        # Si selecciona OTRO necesitamos explicación.
+
+                        if (
+                            motivo_observacion == "OTRO"
+                            and not detalle_observacion
+                        ):
+
+                            raise ValueError(
+                                "Debe indicar una explicación cuando "
+                                "selecciona 'Otro motivo'."
+                            )
 
                     # ======================================
                     # REFACTURABLE
@@ -2190,8 +2707,18 @@ def master_obra_social_cargar_liquidacion(
                         importe_debitado
                     )
 
+                    item.motivo_observacion = (
+                        motivo_observacion
+                    )
+
+                    item.detalle_observacion = (
+                        detalle_observacion
+                    )
+
+                    # Conservamos motivo_debito por compatibilidad
+                    # con registros históricos.
                     item.motivo_debito = (
-                        motivo_debito
+                        detalle_observacion
                     )
 
                     item.refacturable = (
@@ -2214,6 +2741,9 @@ def master_obra_social_cargar_liquidacion(
                             "motivo_debito",
                             "refacturable",
                             "estado_refacturacion",
+                            "motivo_observacion",
+                            "detalle_observacion",
+                            "motivo_debito",
                             "fecha_resolucion",
                         ]
                     )

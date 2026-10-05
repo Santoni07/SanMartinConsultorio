@@ -459,7 +459,12 @@ class MasterObraSocial(models.Model):
         ("COBRADO", "Cobrado"),
         ("ANULADO", "Anulado"),
     ]
+    TIPOS_MASTER = [
+        ("NORMAL", "Presentación normal"),
+        ("REFACTURACION", "Refacturación"),
+    ]
 
+    
     # ======================================================
     # OBRA SOCIAL / PERÍODO
     # ======================================================
@@ -478,6 +483,13 @@ class MasterObraSocial(models.Model):
     mes = models.PositiveSmallIntegerField(
         "Mes"
     )
+    
+    tipo = models.CharField(
+            "Tipo de Master",
+            max_length=20,
+            choices=TIPOS_MASTER,
+            default="NORMAL",
+        )
 
     # ======================================================
     # ESTADO DEL MASTER
@@ -570,27 +582,16 @@ class MasterObraSocial(models.Model):
 
         constraints = [
 
-            # Una OS solamente puede tener
-            # un Master por mes/año.
-            models.UniqueConstraint(
-                fields=[
-                    "obra_social",
-                    "anio",
-                    "mes"
-                ],
-                name="master_unico_por_os_periodo"
-            ),
-
             # Mes válido: 1 a 12.
             models.CheckConstraint(
-            check=models.Q(
-                mes__gte=1,
-                mes__lte=12
+                check=models.Q(
+                    mes__gte=1,
+                    mes__lte=12
+                ),
+                name="master_mes_valido"
             ),
-            name="master_mes_valido"
-        ),
 
-        ]
+    ]
 
     # ======================================================
     # REPRESENTACIÓN
@@ -632,7 +633,24 @@ class DetalleMasterObraSocial(models.Model):
         ("RECHAZADA", "Refacturación rechazada"),
         ("CANCELADA", "Cancelada / no refacturar"),
     ]
-
+    MOTIVOS_OBSERVACION = [
+        ("SIN_COBERTURA", "Afiliado sin cobertura"),
+        ("PLAN_INCORRECTO", "Plan incorrecto / prestación no cubierta"),
+        ("SIN_AUTORIZACION", "Falta de autorización"),
+        ("AUTORIZACION_INVALIDA", "Autorización inválida o vencida"),
+        ("FALTA_DOCUMENTACION", "Falta de documentación"),
+        ("CODIGO_INCORRECTO", "Código de prestación incorrecto"),
+        ("FUERA_CONVENIO", "Prestación fuera de convenio"),
+        ("DIFERENCIA_ARANCEL", "Diferencia de arancel"),
+        ("DUPLICADA", "Prestación duplicada"),
+        ("FUERA_DE_TERMINO", "Presentación fuera de término"),
+        ("FRECUENCIA_EXCEDIDA", "Frecuencia / cantidad excedida"),
+        ("DATOS_AFILIADO", "Datos del afiliado incorrectos"),
+        ("PROFESIONAL_NO_HABILITADO", "Profesional no habilitado para la prestación"),
+        ("AUDITORIA_MEDICA", "Observación de auditoría médica"),
+        ("ERROR_FACTURACION", "Error de facturación"),
+        ("OTRO", "Otro motivo"),
+    ]
     # ======================================================
     # MASTER
     # ======================================================
@@ -654,7 +672,19 @@ class DetalleMasterObraSocial(models.Model):
         related_name="detalles_master_obra_social",
         verbose_name="Prestación"
     )
+    motivo_observacion = models.CharField(
+        "Motivo de la observación",
+        max_length=40,
+        choices=MOTIVOS_OBSERVACION,
+        blank=True,
+        default="",
+    )
 
+    detalle_observacion = models.TextField(
+        "Detalle de la observación",
+        blank=True,
+        default="",
+    )
     # ======================================================
     # ESTADO DE AUDITORÍA
     # ======================================================
@@ -843,7 +873,52 @@ class DetalleMasterObraSocial(models.Model):
         related_name="refacturaciones",
         verbose_name="Detalle de origen"
     )
+    # ======================================================
+    # HONORARIO MÉDICO RECONOCIDO POR ESTE DETALLE DEL MASTER
+    # ======================================================
+    #
+    # Guarda el honorario correspondiente específicamente
+    # al importe reconocido en ESTA presentación.
+    #
+    # Esto permite que una misma prestación pueda tener:
+    #
+    # Master original
+    #     -> honorario reconocido
+    #
+    # Refacturación
+    #     -> otro honorario reconocido
+    #
+    # sin mezclar ambos importes.
+    # ======================================================
 
+    honorario_medico_reconocido = models.DecimalField(
+        "Honorario médico reconocido",
+        max_digits=12,
+        decimal_places=2,
+        null=True,
+        blank=True,
+    )
+
+
+    # ======================================================
+    # HONORARIO YA ENVIADO A LIQUIDACIÓN MÉDICA
+    # ======================================================
+
+    honorario_medico_liquidado = models.BooleanField(
+        "Honorario médico liquidado",
+        default=False,
+    )
+
+
+    # ======================================================
+    # FECHA EN QUE SE INCORPORÓ A LIQUIDACIÓN
+    # ======================================================
+
+    fecha_liquidacion_honorario = models.DateTimeField(
+        "Fecha de liquidación del honorario",
+        null=True,
+        blank=True,
+    )
     # ======================================================
     # CONFIGURACIÓN
     # ======================================================

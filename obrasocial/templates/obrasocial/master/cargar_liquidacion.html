@@ -238,8 +238,12 @@ Liquidación Obra Social - {{ obra_social.nombre }}
                                     Débito
                                 </th>
 
-                                <th style="min-width:220px;">
+                                <th style="min-width:240px;">
                                     Motivo
+                                </th>
+
+                                <th style="min-width:280px;">
+                                    Detalle / observación
                                 </th>
 
                                 <th class="text-center"
@@ -410,19 +414,55 @@ Liquidación Obra Social - {{ obra_social.nombre }}
                                 </td>
 
 
-                                <!-- MOTIVO -->
+                                <!-- MOTIVO NORMALIZADO -->
 
                                 <td>
 
-                                    <input
-                                        type="text"
-                                        name="motivo_{{ item.id }}"
-                                        id="motivo_{{ item.id }}"
-                                        class="form-control form-control-sm"
-                                        placeholder="Motivo del débito"
+                                    <select
+                                        name="motivo_observacion_{{ item.id }}"
+                                        id="motivo_observacion_{{ item.id }}"
+                                        class="form-select form-select-sm motivo-observacion"
+                                        data-id="{{ item.id }}"
                                         disabled>
 
+                                        <option value="">
+                                            Seleccionar motivo
+                                        </option>
+
+                                        {% for codigo, descripcion in item.MOTIVOS_OBSERVACION %}
+
+                                            <option value="{{ codigo }}">
+                                                {{ descripcion }}
+                                            </option>
+
+                                        {% endfor %}
+
+                                    </select>
+
                                 </td>
+
+
+<!-- DETALLE / OBSERVACIÓN -->
+
+<td>
+
+    <textarea
+        name="detalle_observacion_{{ item.id }}"
+        id="detalle_observacion_{{ item.id }}"
+        class="form-control form-control-sm"
+        rows="2"
+        placeholder="Detalle adicional..."
+        disabled></textarea>
+
+    <small
+        id="ayuda_detalle_{{ item.id }}"
+        class="text-muted d-none">
+
+        Obligatorio cuando selecciona "Otro motivo".
+
+    </small>
+
+</td>
 
 
                                 <!-- REFACTURABLE -->
@@ -567,7 +607,17 @@ document.addEventListener("DOMContentLoaded", function(){
 
         const motivo =
             document.getElementById(
-                "motivo_" + id
+                "motivo_observacion_" + id
+            );
+
+        const detalleObservacion =
+            document.getElementById(
+                "detalle_observacion_" + id
+            );
+
+        const ayudaDetalle =
+            document.getElementById(
+                "ayuda_detalle_" + id
             );
 
         const refacturable =
@@ -582,7 +632,6 @@ document.addEventListener("DOMContentLoaded", function(){
         // ==============================================
         // ACEPTADO
         // ==============================================
-
         if(estado.value === "ACEPTADO"){
 
             importe.value =
@@ -594,10 +643,16 @@ document.addEventListener("DOMContentLoaded", function(){
             motivo.disabled = true;
             motivo.required = false;
 
+            detalleObservacion.value = "";
+            detalleObservacion.disabled = true;
+            detalleObservacion.required = false;
+
+            ayudaDetalle.classList.add("d-none");
+
             refacturable.checked = false;
             refacturable.disabled = true;
-
         }
+
 
 
         // ==============================================
@@ -623,6 +678,16 @@ document.addEventListener("DOMContentLoaded", function(){
             motivo.disabled = false;
             motivo.required = true;
 
+            detalleObservacion.disabled = false;
+            detalleObservacion.required =
+                motivo.value === "OTRO";
+
+            if(motivo.value === "OTRO"){
+                ayudaDetalle.classList.remove("d-none");
+            }else{
+                ayudaDetalle.classList.add("d-none");
+            }
+
             refacturable.disabled = false;
 
         }
@@ -639,9 +704,20 @@ document.addEventListener("DOMContentLoaded", function(){
             importe.value = "0.00";
 
             importe.readOnly = true;
-
             motivo.disabled = false;
             motivo.required = true;
+
+            detalleObservacion.disabled = false;
+            detalleObservacion.required =
+                motivo.value === "OTRO";
+
+            if(motivo.value === "OTRO"){
+                ayudaDetalle.classList.remove("d-none");
+            }else{
+                ayudaDetalle.classList.add("d-none");
+            }
+
+            
 
             refacturable.disabled = false;
 
@@ -651,20 +727,23 @@ document.addEventListener("DOMContentLoaded", function(){
         // ==============================================
         // SIN SELECCIÓN
         // ==============================================
-
         else{
 
             importe.value = "0.00";
-
             importe.readOnly = true;
 
             motivo.value = "";
             motivo.disabled = true;
             motivo.required = false;
 
+            detalleObservacion.value = "";
+            detalleObservacion.disabled = true;
+            detalleObservacion.required = false;
+
+            ayudaDetalle.classList.add("d-none");
+
             refacturable.checked = false;
             refacturable.disabled = true;
-
         }
 
 
@@ -823,7 +902,52 @@ document.addEventListener("DOMContentLoaded", function(){
 
     });
 
+    // =====================================================
+    // CAMBIO DE MOTIVO
+    // =====================================================
 
+    const motivos =
+        document.querySelectorAll(".motivo-observacion");
+
+    motivos.forEach(function(select){
+
+        select.addEventListener(
+            "change",
+            function(){
+
+                const id = this.dataset.id;
+
+                const detalleObservacion =
+                    document.getElementById(
+                        "detalle_observacion_" + id
+                    );
+
+                const ayudaDetalle =
+                    document.getElementById(
+                        "ayuda_detalle_" + id
+                    );
+
+                if(this.value === "OTRO"){
+
+                    detalleObservacion.required = true;
+
+                    ayudaDetalle.classList.remove(
+                        "d-none"
+                    );
+
+                    detalleObservacion.focus();
+
+                }else{
+
+                    detalleObservacion.required = false;
+
+                    ayudaDetalle.classList.add(
+                        "d-none"
+                    );
+                }
+            }
+        );
+    });
     // =====================================================
     // INICIALIZAR
     // =====================================================

@@ -1,0 +1,715 @@
+{% extends 'core/base.html' %}
+
+{% block title %}
+Pendientes de refacturación
+{% endblock %}
+
+{% block content %}
+
+<div class="container mt-4 mb-5">
+
+    <!-- ====================================================== -->
+    <!-- ENCABEZADO -->
+    <!-- ====================================================== -->
+
+    <div class="d-flex justify-content-between align-items-center mb-4">
+
+        <div>
+
+            <h2 class="mb-1">
+                ♻ Pendientes de refacturación
+            </h2>
+
+            <div class="text-muted">
+                {{ obra_social.nombre }}
+            </div>
+
+        </div>
+
+
+        <a href="{% url 'obrasocial:prestaciones_observadas' obra_social.id %}"
+           class="btn btn-outline-secondary">
+
+            ← Volver a Débitos / Rechazos
+
+        </a>
+
+    </div>
+
+
+    <!-- ====================================================== -->
+    <!-- RESUMEN -->
+    <!-- ====================================================== -->
+
+    <div class="row g-3 mb-4">
+
+        <div class="col-md-4">
+
+            <div class="card shadow-sm h-100">
+
+                <div class="card-body">
+
+                    <div class="text-muted">
+                        Prestaciones pendientes
+                    </div>
+
+                    <div class="fs-2 fw-bold">
+                        {{ detalles|length }}
+                    </div>
+
+                </div>
+
+            </div>
+
+        </div>
+
+
+        <div class="col-md-4">
+
+            <div class="card shadow-sm h-100 border-warning">
+
+                <div class="card-body">
+
+                    <div class="text-muted">
+                        Total a refacturar
+                    </div>
+
+                    <div class="fs-2 fw-bold text-danger">
+                        $ {{ total_refacturar|floatformat:2 }}
+                    </div>
+
+                </div>
+
+            </div>
+
+        </div>
+
+
+        <div class="col-md-4">
+
+            <div class="card shadow-sm h-100 border-primary">
+
+                <div class="card-body">
+
+                    <div class="text-muted">
+                        Estado
+                    </div>
+
+                    <div class="mt-2">
+
+                        {% if detalles %}
+
+                            <span class="badge bg-warning text-dark fs-6">
+                                Pendientes de presentación
+                            </span>
+
+                        {% else %}
+
+                            <span class="badge bg-success fs-6">
+                                Sin pendientes
+                            </span>
+
+                        {% endif %}
+
+                    </div>
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <!-- ====================================================== -->
+    <!-- INFORMACIÓN -->
+    <!-- ====================================================== -->
+
+    <div class="alert alert-info">
+
+        <strong>Refacturación de Obra Social</strong>
+
+        <div class="mt-2">
+
+            En esta bandeja aparecen únicamente prestaciones
+            debitadas o rechazadas que fueron marcadas para
+            volver a presentarse.
+
+        </div>
+
+        <div class="mt-2">
+
+            La refacturación utiliza la prestación original.
+            No genera un nuevo movimiento de caja y no vuelve
+            a cobrar coseguro ni copago al paciente.
+
+        </div>
+
+    </div>
+
+
+    <!-- ====================================================== -->
+    <!-- TABLA -->
+    <!-- ====================================================== -->
+
+    <div class="card shadow-sm">
+
+        <div class="card-header d-flex justify-content-between align-items-center">
+
+            <strong>
+                Prestaciones disponibles
+            </strong>
+
+            {% if detalles %}
+
+                <span class="badge bg-secondary">
+                    {{ detalles|length }}
+                </span>
+
+            {% endif %}
+
+        </div>
+
+
+        <div class="card-body p-0">
+
+            {% if detalles %}
+
+                <form method="post"
+                        action="{% url 'obrasocial:generar_master_refacturacion' obra_social.id %}"
+      id="formRefacturacion">
+
+                    {% csrf_token %}
+
+
+                    <div class="table-responsive">
+
+                        <table class="table table-hover align-middle mb-0">
+
+                            <thead class="table-light">
+
+                                <tr>
+
+                                    <th class="text-center"
+                                        style="width: 50px;">
+
+                                        <input type="checkbox"
+                                               class="form-check-input"
+                                               id="seleccionarTodos">
+
+                                    </th>
+
+                                    <th>
+                                        ID
+                                    </th>
+
+                                    <th>
+                                        Período original
+                                    </th>
+
+                                    <th>
+                                        Fecha
+                                    </th>
+
+                                    <th>
+                                        Paciente
+                                    </th>
+
+                                    <th>
+                                        Prestación
+                                    </th>
+
+                                    <th>
+                                        Estado original
+                                    </th>
+
+                                    <th class="text-end">
+                                        Presentado
+                                    </th>
+
+                                    <th class="text-end">
+                                        Reconocido
+                                    </th>
+
+                                    <th class="text-end">
+                                        A refacturar
+                                    </th>
+
+                                    <th class="text-center">
+                                        Acción
+                                    </th>
+
+                                </tr>
+
+                            </thead>
+
+
+                            <tbody>
+
+                                {% for detalle in detalles %}
+
+                                    <tr>
+
+                                        <!-- CHECKBOX -->
+
+                                        <td class="text-center">
+
+                                            <input type="checkbox"
+                                                   class="form-check-input checkbox-prestacion"
+                                                   name="detalles"
+                                                   value="{{ detalle.id }}"
+                                                   data-importe="{{ detalle.importe_refacturar_calculado }}">
+
+                                        </td>
+
+
+                                        <!-- ID -->
+
+                                        <td>
+
+                                            <strong>
+                                                #{{ detalle.id }}
+                                            </strong>
+
+                                        </td>
+
+
+                                        <!-- PERÍODO -->
+
+                                        <td>
+
+                                            {{ detalle.master.mes|stringformat:"02d" }}/{{ detalle.master.anio }}
+
+                                        </td>
+
+
+                                        <!-- FECHA PRESTACIÓN -->
+
+                                        <td>
+
+                                            {% if detalle.detalle_movimiento.fecha_prestacion %}
+
+                                                {{ detalle.detalle_movimiento.fecha_prestacion|date:"d/m/Y" }}
+
+                                            {% else %}
+
+                                                -
+
+                                            {% endif %}
+
+                                        </td>
+
+
+                                        <!-- PACIENTE -->
+
+                                        <td>
+
+                                            {% if detalle.detalle_movimiento.movimiento.paciente %}
+
+                                                <strong>
+                                                    {{ detalle.detalle_movimiento.movimiento.paciente.apellido }},
+                                                    {{ detalle.detalle_movimiento.movimiento.paciente.nombre }}
+                                                </strong>
+
+                                                <div class="small text-muted">
+
+                                                    DNI
+                                                    {{ detalle.detalle_movimiento.movimiento.paciente.dni }}
+
+                                                </div>
+
+                                            {% else %}
+
+                                                <span class="text-muted">
+                                                    Sin paciente
+                                                </span>
+
+                                            {% endif %}
+
+                                        </td>
+
+
+                                        <!-- PRESTACIÓN -->
+
+                                        <td>
+
+                                            <strong>
+                                                {{ detalle.detalle_movimiento.codigo }}
+                                            </strong>
+
+                                            <div class="small text-muted">
+
+                                                {{ detalle.detalle_movimiento.descripcion }}
+
+                                            </div>
+
+                                        </td>
+
+
+                                        <!-- ESTADO ORIGINAL -->
+
+                                        <td>
+
+                                            {% if detalle.estado == "DEBITO_PARCIAL" %}
+
+                                                <span class="badge bg-warning text-dark">
+                                                    Débito parcial
+                                                </span>
+
+                                            {% elif detalle.estado == "RECHAZADO" %}
+
+                                                <span class="badge bg-danger">
+                                                    Rechazada
+                                                </span>
+
+                                            {% endif %}
+
+                                        </td>
+
+
+                                        <!-- PRESENTADO -->
+
+                                        <td class="text-end">
+
+                                            $ {{ detalle.importe_presentado|floatformat:2 }}
+
+                                        </td>
+
+
+                                        <!-- RECONOCIDO -->
+
+                                        <td class="text-end">
+
+                                            {% if detalle.importe_reconocido != None %}
+
+                                                <span class="text-success">
+
+                                                    $ {{ detalle.importe_reconocido|floatformat:2 }}
+
+                                                </span>
+
+                                            {% else %}
+
+                                                -
+
+                                            {% endif %}
+
+                                        </td>
+
+
+                                        <!-- A REFACTURAR -->
+
+                                        <td class="text-end">
+
+                                            <strong class="text-danger">
+
+                                                $ {{ detalle.importe_refacturar_calculado|floatformat:2 }}
+
+                                            </strong>
+
+                                        </td>
+
+
+                                        <!-- ACCIÓN -->
+
+                                        <td class="text-center">
+
+                                            <a href="{% url 'obrasocial:gestionar_prestacion_observada' detalle.id %}"
+                                               class="btn btn-sm btn-outline-primary">
+
+                                                Ver
+
+                                            </a>
+
+                                        </td>
+
+                                    </tr>
+
+                                {% endfor %}
+
+                            </tbody>
+
+                        </table>
+
+                    </div>
+
+
+                    <!-- ================================================== -->
+                    <!-- PIE / SELECCIÓN -->
+                    <!-- ================================================== -->
+
+                    <div class="border-top p-3">
+
+                        <div class="row align-items-center g-3">
+
+
+                            <div class="col-md-6">
+
+                                <div class="text-muted small">
+                                    Seleccionadas
+                                </div>
+
+                                <div class="fs-5 fw-bold">
+
+                                    <span id="cantidadSeleccionadas">
+                                        0
+                                    </span>
+
+                                    prestación/es
+
+                                </div>
+
+                            </div>
+
+
+                            <div class="col-md-3">
+
+                                <div class="text-muted small">
+                                    Total seleccionado
+                                </div>
+
+                                <div class="fs-5 fw-bold text-danger">
+
+                                    $ <span id="totalSeleccionado">
+                                        0,00
+                                    </span>
+
+                                </div>
+
+                            </div>
+
+
+                            <div class="col-md-3 text-md-end">
+
+                                <!--
+                                    TODAVÍA NO ENVIAMOS EL FORMULARIO.
+
+                                    Primero vamos a crear la vista segura
+                                    que genera el Master de refacturación.
+                                -->
+
+                                <button type="submit"
+        class="btn btn-primary"
+        id="btnGenerarMaster"
+        disabled>
+
+    ♻ Generar Master
+
+</button>
+
+                            </div>
+
+                        </div>
+
+                    </div>
+
+                </form>
+
+
+            {% else %}
+
+                <!-- ============================================== -->
+                <!-- SIN PENDIENTES -->
+                <!-- ============================================== -->
+
+                <div class="text-center p-5">
+
+                    <div class="fs-1 mb-3">
+                        ✓
+                    </div>
+
+                    <h5>
+                        No hay prestaciones pendientes de refacturación
+                    </h5>
+
+                    <p class="text-muted mb-4">
+
+                        Las prestaciones que marques para refacturar
+                        aparecerán automáticamente en esta bandeja.
+
+                    </p>
+
+
+                    <a href="{% url 'obrasocial:prestaciones_observadas' obra_social.id %}"
+                       class="btn btn-outline-primary">
+
+                        Ver Débitos / Rechazos
+
+                    </a>
+
+                </div>
+
+            {% endif %}
+
+        </div>
+
+    </div>
+
+</div>
+
+
+<!-- ====================================================== -->
+<!-- JAVASCRIPT -->
+<!-- ====================================================== -->
+
+<script>
+
+document.addEventListener("DOMContentLoaded", function () {
+
+    const seleccionarTodos =
+        document.getElementById("seleccionarTodos");
+
+    const checkboxes =
+        document.querySelectorAll(".checkbox-prestacion");
+
+    const cantidadSeleccionadas =
+        document.getElementById("cantidadSeleccionadas");
+
+    const totalSeleccionado =
+        document.getElementById("totalSeleccionado");
+
+    const btnGenerarMaster =
+        document.getElementById("btnGenerarMaster");
+
+
+    // ======================================================
+    // ACTUALIZAR RESUMEN
+    // ======================================================
+
+    function actualizarResumen() {
+
+        let cantidad = 0;
+        let total = 0;
+
+
+        checkboxes.forEach(function (checkbox) {
+
+            if (checkbox.checked) {
+
+                cantidad++;
+
+                let importe =
+                    parseFloat(
+                        checkbox.dataset.importe || "0"
+                    );
+
+                if (!isNaN(importe)) {
+                    total += importe;
+                }
+
+            }
+
+        });
+
+
+        if (cantidadSeleccionadas) {
+
+            cantidadSeleccionadas.textContent =
+                cantidad;
+
+        }
+
+
+        if (totalSeleccionado) {
+
+            totalSeleccionado.textContent =
+                total.toLocaleString(
+                    "es-AR",
+                    {
+                        minimumFractionDigits: 2,
+                        maximumFractionDigits: 2
+                    }
+                );
+
+        }
+
+
+        if (btnGenerarMaster) {
+
+            btnGenerarMaster.disabled =
+                cantidad === 0;
+
+        }
+
+
+        // --------------------------------------------------
+        // ESTADO DEL CHECKBOX "TODOS"
+        // --------------------------------------------------
+
+        if (seleccionarTodos) {
+
+            seleccionarTodos.checked =
+                checkboxes.length > 0 &&
+                cantidad === checkboxes.length;
+
+            seleccionarTodos.indeterminate =
+                cantidad > 0 &&
+                cantidad < checkboxes.length;
+
+        }
+
+    }
+
+
+    // ======================================================
+    // SELECCIONAR TODOS
+    // ======================================================
+
+    if (seleccionarTodos) {
+
+        seleccionarTodos.addEventListener(
+            "change",
+            function () {
+
+                checkboxes.forEach(
+                    function (checkbox) {
+
+                        checkbox.checked =
+                            seleccionarTodos.checked;
+
+                    }
+                );
+
+                actualizarResumen();
+
+            }
+        );
+
+    }
+
+
+    // ======================================================
+    // CHECKBOX INDIVIDUAL
+    // ======================================================
+
+    checkboxes.forEach(
+        function (checkbox) {
+
+            checkbox.addEventListener(
+                "change",
+                actualizarResumen
+            );
+
+        }
+    );
+
+
+    // ======================================================
+    // BOTÓN GENERAR MASTER
+    // ======================================================
+    //
+    // Por seguridad todavía NO genera nada.
+    //
+    // En el siguiente paso conectamos este botón
+    // con la vista que creará el Master.
+    // ======================================================
+
+
+    actualizarResumen();
+
+});
+
+</script>
+
+{% endblock %}

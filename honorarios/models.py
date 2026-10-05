@@ -163,6 +163,14 @@ class DetalleLiquidacionMedica(models.Model):
     fecha_creacion = models.DateTimeField(
         auto_now_add=True
     )
+    detalle_master_obra_social = models.ForeignKey(
+        "obrasocial.DetalleMasterObraSocial",
+        on_delete=models.PROTECT,
+        related_name="items_liquidacion_medica",
+        null=True,
+        blank=True,
+        verbose_name="Detalle Master Obra Social",
+    )
 
     class Meta:
         verbose_name = "Detalle de liquidación médica"

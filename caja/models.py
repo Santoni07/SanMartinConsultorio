@@ -850,6 +850,23 @@ class DetalleMovimientoCaja(models.Model):
         related_name="detalles",
         verbose_name="Liquidación Proveedor"
     )
+    # Snapshot del resultado reconocido por la obra social 
+    
+    importe_reconocido_obra_social = models.DecimalField(
+        max_digits=12,
+        decimal_places=2,
+        null=True,
+        blank=True,
+        verbose_name="Importe reconocido por Obra Social"
+    )
+
+    honorario_reconocido_obra_social = models.DecimalField(
+        max_digits=12,
+        decimal_places=2,
+        null=True,
+        blank=True,
+        verbose_name="Honorario médico reconocido por Obra Social"
+    )
     class Meta:
 
         verbose_name = "Detalle de Movimiento"
