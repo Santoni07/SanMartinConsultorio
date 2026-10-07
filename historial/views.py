@@ -64,59 +64,188 @@ def ver_historia_clinica(request, paciente_id):
 @login_required
 def buscar_paciente_consulta(request):
 
-    query = request.GET.get('q')
+    # ======================================================
+    # PARÁMETROS DE BÚSQUEDA
+    # ======================================================
+
+    query = request.GET.get('q', '').strip()
+    tipo = request.GET.get('tipo', '').strip()
+
     turnos = []
+
+
+    # ======================================================
+    # BUSCAR PACIENTES
+    # ======================================================
 
     if query:
 
-        pacientes = Paciente.objects.filter(
-            Q(nombre__icontains=query) |
-            Q(apellido__icontains=query) |
-            Q(dni__icontains=query)
-        )
+        # --------------------------------------------------
+        # BÚSQUEDA POR DNI
+        # --------------------------------------------------
+
+        if tipo == 'dni':
+
+            pacientes = Paciente.objects.filter(
+                dni__icontains=query
+            )
+
+
+        # --------------------------------------------------
+        # BÚSQUEDA POR NOMBRE
+        # --------------------------------------------------
+
+        elif tipo == 'nombre':
+
+            pacientes = Paciente.objects.filter(
+                nombre__icontains=query
+            )
+
+
+        # --------------------------------------------------
+        # BÚSQUEDA POR APELLIDO
+        # --------------------------------------------------
+
+        elif tipo == 'apellido':
+
+            pacientes = Paciente.objects.filter(
+                apellido__icontains=query
+            )
+
+
+        # --------------------------------------------------
+        # COMPATIBILIDAD CON BÚSQUEDA ANTERIOR
+        # --------------------------------------------------
+        # Si por algún motivo no viene "tipo",
+        # busca en los tres campos como hacía antes.
+
+        else:
+
+            pacientes = Paciente.objects.filter(
+                Q(nombre__icontains=query) |
+                Q(apellido__icontains=query) |
+                Q(dni__icontains=query)
+            )
+
+
+        # ==================================================
+        # FECHA Y HORA ACTUAL
+        # ==================================================
 
         hoy = date.today()
         ahora = datetime.now().time()
 
+
+        # ==================================================
+        # TURNOS NORMALES
+        # ==================================================
+
         turnos_normales = Turnos.objects.filter(
             paciente__in=pacientes,
             fecha=hoy
-        ).select_related('paciente').order_by('hora')
+        ).select_related(
+            'paciente'
+        ).order_by(
+            'hora'
+        )
+
+
+        # ==================================================
+        # SOBRETURNOS
+        # ==================================================
 
         sobreturnos = Sobreturno.objects.filter(
             paciente__in=pacientes,
             fecha=hoy
-        ).select_related('paciente').order_by('hora')
+        ).select_related(
+            'paciente'
+        ).order_by(
+            'hora'
+        )
 
-        # Identificar tipo
+
+        # ==================================================
+        # IDENTIFICAR TIPO DE TURNO
+        # ==================================================
+
         for turno in turnos_normales:
             turno.tipo_turno = 'NORMAL'
+
 
         for sobreturno in sobreturnos:
             sobreturno.tipo_turno = 'SOBRETURNO'
 
-        # Unificamos
-        turnos = list(turnos_normales) + list(sobreturnos)
 
-        # Ordenamos por hora
-        turnos.sort(key=lambda x: x.hora)
+        # ==================================================
+        # UNIFICAR TURNOS
+        # ==================================================
 
-        # Detectar próximo turno
+        turnos = (
+            list(turnos_normales)
+            +
+            list(sobreturnos)
+        )
+
+
+        # ==================================================
+        # ORDENAR POR HORA
+        # ==================================================
+
+        turnos.sort(
+            key=lambda x: x.hora
+        )
+
+
+        # ==================================================
+        # DETECTAR PRÓXIMO TURNO PENDIENTE
+        # ==================================================
+
         turnos_futuros = [
-            t for t in turnos
-            if t.hora >= ahora and t.estado == 'PENDIENTE'
+
+            turno
+
+            for turno in turnos
+
+            if (
+                turno.hora >= ahora
+                and
+                turno.estado == 'PENDIENTE'
+            )
+
         ]
 
-        turno_proximo = turnos_futuros[0] if turnos_futuros else None
+
+        turno_proximo = (
+            turnos_futuros[0]
+            if turnos_futuros
+            else None
+        )
+
+
+        # ==================================================
+        # MARCAR TURNO ACTUAL
+        # ==================================================
 
         for turno in turnos:
-            turno.es_actual = (turno == turno_proximo)
 
-    return render(request, 'historial/buscar_paciente_consulta.html', {
-        'turnos': turnos
-    })
+            turno.es_actual = (
+                turno == turno_proximo
+            )
 
 
+    # ======================================================
+    # RENDER
+    # ======================================================
+
+    return render(
+        request,
+        'historial/buscar_paciente_consulta.html',
+        {
+            'turnos': turnos,
+            'query': query,
+            'tipo': tipo,
+        }
+    )
 
 @login_required
 def cargar_consulta_paciente(request, turno_id):
@@ -289,65 +418,205 @@ def cargar_consulta_paciente(request, turno_id):
     
 @login_required
 def buscar_historia_por_dni(request):
-    dni = request.GET.get('dni')
+
+    # ======================================================
+    # PARÁMETROS DE BÚSQUEDA
+    # ======================================================
+
+    tipo = request.GET.get('tipo', 'dni')
+    q = request.GET.get('q', '').strip()
+
     mes = request.GET.get('mes')
     anio = request.GET.get('anio')
 
     paciente = None
+    pacientes_encontrados = None
     historia = None
     consultas = []
     estudios_generales = []
 
-    if dni:
-        try:
-            paciente = Paciente.objects.get(dni=dni)
-            historia = HistoriaClinica.objects.filter(paciente=paciente).first()
 
-            if historia:
-                consultas = historia.consultas.prefetch_related('estudios')
+    # ======================================================
+    # BUSCAR PACIENTE
+    # ======================================================
 
-                # 🔥 FILTRO
-                if mes:
-                    consultas = consultas.filter(fecha__month=mes)
+    if q:
 
-                if anio:
-                    consultas = consultas.filter(fecha__year=anio)
+        # --------------------------------------------------
+        # BÚSQUEDA POR DNI
+        # --------------------------------------------------
 
-                consultas = consultas.order_by('-fecha')
+        if tipo == 'dni':
 
-                for consulta in consultas:
-                    estudios_fk = consulta.estudios.all()
+            try:
+                paciente = Paciente.objects.get(dni=q)
 
-                    estudios_por_fecha = Estudio.objects.filter(
-                        paciente=paciente,
-                        consulta__isnull=True,
-                        fecha=consulta.fecha
-                    )
+            except Paciente.DoesNotExist:
+                paciente = None
 
-                    consulta.estudios_combinados = list(estudios_fk) + list(estudios_por_fecha)
 
-                fechas_consultas = [c.fecha for c in consultas]
+        # --------------------------------------------------
+        # BÚSQUEDA POR NOMBRE
+        # --------------------------------------------------
 
-                estudios_generales = Estudio.objects.filter(
-                    paciente=paciente,
-                    consulta__isnull=True
-                ).exclude(
-                    fecha__in=fechas_consultas
+        elif tipo == 'nombre':
+
+            pacientes = Paciente.objects.filter(
+                nombre__icontains=q
+            ).order_by(
+                'apellido',
+                'nombre'
+            )
+
+            cantidad = pacientes.count()
+
+            if cantidad == 1:
+
+                paciente = pacientes.first()
+
+            elif cantidad > 1:
+
+                pacientes_encontrados = pacientes
+
+
+        # --------------------------------------------------
+        # BÚSQUEDA POR APELLIDO
+        # --------------------------------------------------
+
+        elif tipo == 'apellido':
+
+            pacientes = Paciente.objects.filter(
+                apellido__icontains=q
+            ).order_by(
+                'apellido',
+                'nombre'
+            )
+
+            cantidad = pacientes.count()
+
+            if cantidad == 1:
+
+                paciente = pacientes.first()
+
+            elif cantidad > 1:
+
+                pacientes_encontrados = pacientes
+
+
+    # ======================================================
+    # SI ENCONTRAMOS UN PACIENTE
+    # ======================================================
+
+    if paciente:
+
+        historia = HistoriaClinica.objects.filter(
+            paciente=paciente
+        ).first()
+
+
+        # ==================================================
+        # CONSULTAS
+        # ==================================================
+
+        if historia:
+
+            consultas = historia.consultas.prefetch_related(
+                'estudios'
+            )
+
+
+            # ----------------------------------------------
+            # FILTRO POR MES
+            # ----------------------------------------------
+
+            if mes:
+
+                consultas = consultas.filter(
+                    fecha__month=mes
                 )
 
-        except Paciente.DoesNotExist:
-            paciente = None
 
-    return render(request, 'historial/buscar_historia_dni.html', {
-        'dni': dni,
-        'paciente': paciente,
-        'historia': historia,
-        'consultas': consultas,
-        'estudios_generales': estudios_generales,
-        'mes': mes,
-        'anio': anio,
-    })
-    
+            # ----------------------------------------------
+            # FILTRO POR AÑO
+            # ----------------------------------------------
+
+            if anio:
+
+                consultas = consultas.filter(
+                    fecha__year=anio
+                )
+
+
+            consultas = consultas.order_by(
+                '-fecha'
+            )
+
+
+            # ==================================================
+            # ESTUDIOS ASOCIADOS A CADA CONSULTA
+            # ==================================================
+
+            for consulta in consultas:
+
+                estudios_fk = consulta.estudios.all()
+
+                estudios_por_fecha = Estudio.objects.filter(
+                    paciente=paciente,
+                    consulta__isnull=True,
+                    fecha=consulta.fecha
+                )
+
+                consulta.estudios_combinados = (
+                    list(estudios_fk)
+                    +
+                    list(estudios_por_fecha)
+                )
+
+
+            # ==================================================
+            # ESTUDIOS GENERALES
+            # ==================================================
+
+            fechas_consultas = [
+                c.fecha
+                for c in consultas
+            ]
+
+
+            estudios_generales = Estudio.objects.filter(
+                paciente=paciente,
+                consulta__isnull=True
+            ).exclude(
+                fecha__in=fechas_consultas
+            )
+
+
+    # ======================================================
+    # RENDER
+    # ======================================================
+
+    return render(
+        request,
+        'historial/buscar_historia_dni.html',
+        {
+            'tipo': tipo,
+            'q': q,
+
+            # Lo dejamos también por compatibilidad
+            # con partes antiguas del template
+            'dni': paciente.dni if paciente else None,
+
+            'paciente': paciente,
+            'pacientes_encontrados': pacientes_encontrados,
+
+            'historia': historia,
+            'consultas': consultas,
+            'estudios_generales': estudios_generales,
+
+            'mes': mes,
+            'anio': anio,
+        }
+    )
     
 @login_required
 def detalle_consulta(request, consulta_id):

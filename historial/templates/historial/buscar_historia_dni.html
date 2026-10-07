@@ -2,99 +2,414 @@
 {% load static %}
 
 {% block content %}
+
 <div class="container mt-5">
 
     <!-- TÍTULO -->
     <div class="text-center mb-5">
-        <h2 class="fw-bold text-primary">Historia Clínica</h2>
-        <p class="text-muted">Búsqueda por DNI</p>
+        <h2 class="fw-bold text-primary">
+            Historia Clínica
+        </h2>
+        <p class="text-muted">
+            Búsqueda por DNI, nombre o apellido
+        </p>
     </div>
 
-<!-- FORM DNI + VOLVER EN MISMA LÍNEA -->
-<div class="row align-items-center mb-4">
 
-    <!-- FORMULARIO -->
-    <div class="{% if paciente %}col-md-8{% else %}col-md-12{% endif %}">
-        <div class="card shadow border-0">
-            <div class="card-body">
-                <form method="get">
-                    <div class="row g-2">
-                        <div class="col-md-8">
-                            <input type="text" name="dni"
-                                   class="form-control form-control-lg"
-                                   placeholder="Ingrese DNI"
-                                   value="{{ dni|default_if_none:'' }}">
+    <!-- ===================================================== -->
+    <!-- BUSCADOR + VOLVER -->
+    <!-- ===================================================== -->
+
+    <div class="row align-items-center mb-4">
+
+        <!-- FORMULARIO -->
+        <div class="{% if paciente %}col-md-8{% else %}col-md-12{% endif %}">
+
+            <div class="card shadow border-0">
+
+                <div class="card-body">
+
+                    <form method="get">
+
+                        <!-- TIPO DE BÚSQUEDA -->
+                        <div class="mb-3">
+
+                            <label class="form-label fw-bold">
+                                Buscar por:
+                            </label>
+
+                            <div class="row g-2">
+
+                                <!-- DNI -->
+                                <div class="col-md-4">
+
+                                    <input
+                                        type="radio"
+                                        class="btn-check"
+                                        name="tipo"
+                                        id="tipo_dni"
+                                        value="dni"
+                                        autocomplete="off"
+                                        {% if request.GET.tipo == 'dni' or not request.GET.tipo %}checked{% endif %}
+                                    >
+
+                                    <label
+                                        class="btn btn-outline-primary w-100"
+                                        for="tipo_dni"
+                                    >
+                                        <i class="bi bi-card-text"></i>
+                                        DNI
+                                    </label>
+
+                                </div>
+
+
+                                <!-- NOMBRE -->
+                                <div class="col-md-4">
+
+                                    <input
+                                        type="radio"
+                                        class="btn-check"
+                                        name="tipo"
+                                        id="tipo_nombre"
+                                        value="nombre"
+                                        autocomplete="off"
+                                        {% if request.GET.tipo == 'nombre' %}checked{% endif %}
+                                    >
+
+                                    <label
+                                        class="btn btn-outline-primary w-100"
+                                        for="tipo_nombre"
+                                    >
+                                        <i class="bi bi-person"></i>
+                                        Nombre
+                                    </label>
+
+                                </div>
+
+
+                                <!-- APELLIDO -->
+                                <div class="col-md-4">
+
+                                    <input
+                                        type="radio"
+                                        class="btn-check"
+                                        name="tipo"
+                                        id="tipo_apellido"
+                                        value="apellido"
+                                        autocomplete="off"
+                                        {% if request.GET.tipo == 'apellido' %}checked{% endif %}
+                                    >
+
+                                    <label
+                                        class="btn btn-outline-primary w-100"
+                                        for="tipo_apellido"
+                                    >
+                                        <i class="bi bi-person-badge"></i>
+                                        Apellido
+                                    </label>
+
+                                </div>
+
+                            </div>
+
                         </div>
-                        <div class="col-md-4 d-grid">
-                            <button type="submit" class="btn btn-primary btn-lg">
-                                <i class="bi bi-search"></i> Buscar
-                            </button>
+
+
+                        <!-- CAMPO DE BÚSQUEDA -->
+                        <div class="row g-2">
+
+                            <div class="col-md-8">
+
+                                <input
+                                    type="text"
+                                    name="q"
+                                    id="campoBusqueda"
+                                    class="form-control form-control-lg"
+                                    placeholder="Ingrese DNI"
+                                    value="{{ request.GET.q|default_if_none:'' }}"
+                                    autocomplete="off"
+                                    required
+                                >
+
+                            </div>
+
+
+                            <div class="col-md-4 d-grid">
+
+                                <button
+                                    type="submit"
+                                    class="btn btn-primary btn-lg"
+                                >
+                                    <i class="bi bi-search"></i>
+                                    Buscar
+                                </button>
+
+                            </div>
+
                         </div>
-                    </div>
-                </form>
+
+                    </form>
+
+                </div>
+
             </div>
+
         </div>
-    </div>
 
-    <!-- BOTÓN VOLVER SOLO SI HAY PACIENTE -->
-    {% if paciente %}
-    <div class="col-md-4 text-end">
-        {% if request.user.is_staff or request.user.is_superuser %}
-            <a href="{% url 'core:IndexAdmin' %}" class="btn btn-primary btn-lg">
-                <i class="bi bi-arrow-left-circle"></i> Volver
-            </a>
 
-        {% elif request.user.is_authenticated and request.user.medico %}
-            <a href="{% url 'core:medico' %}" class="btn btn-primary btn-lg">
-                <i class="bi bi-arrow-left-circle"></i> Volver
-            </a>
-
-        {% else %}
-            <a href="{% url 'home' %}" class="btn btn-secondary btn-lg">
-                <i class="bi bi-arrow-left-circle"></i> Volver
-            </a>
-        {% endif %}
-    </div>
-    {% endif %}
-
-</div>
-    {% if dni %}
+        <!-- BOTÓN VOLVER SOLO SI HAY PACIENTE -->
         {% if paciente %}
 
-        <!-- INFO PACIENTE -->
-        <div class="card shadow border-0 mb-4 paciente-card">
-            <div class="card-header bg-dark text-white d-flex justify-content-between">
-                <strong>{{ paciente.nombre }} {{ paciente.apellido }}</strong>
-                <span>DNI: {{ paciente.dni }}</span>
-            </div>
-            <div class="card-body">
-                <div class="row">
-                    <div class="col-md-4"><strong>Edad:</strong> {{ paciente.edad }}</div>
-                    <div class="col-md-4"><strong>Obra Social:</strong> {{ paciente.obrasocial.nombre }}</div>
-                </div>
-                <hr>
-                <strong>Observaciones Generales:</strong>
-                <p class="text-muted mb-0">
-                    {{ historia.observaciones_generales|default:"Sin observaciones." }}
-                </p>
-            </div>
+        <div class="col-md-4 text-end">
+
+            {% if request.user.is_staff or request.user.is_superuser %}
+
+                <a href="{% url 'core:IndexAdmin' %}"
+                   class="btn btn-primary btn-lg">
+
+                    <i class="bi bi-arrow-left-circle"></i>
+                    Volver
+
+                </a>
+
+
+            {% elif request.user.is_authenticated and request.user.medico %}
+
+                <a href="{% url 'core:medico' %}"
+                   class="btn btn-primary btn-lg">
+
+                    <i class="bi bi-arrow-left-circle"></i>
+                    Volver
+
+                </a>
+
+
+            {% else %}
+
+                <a href="{% url 'home' %}"
+                   class="btn btn-secondary btn-lg">
+
+                    <i class="bi bi-arrow-left-circle"></i>
+                    Volver
+
+                </a>
+
+            {% endif %}
+
         </div>
-        
+
+        {% endif %}
+
+    </div>
+
+
+    <!-- ===================================================== -->
+    <!-- LISTA DE PACIENTES ENCONTRADOS -->
+    <!-- ===================================================== -->
+
+    {% if pacientes_encontrados %}
+
+        <div class="card shadow border-0 mb-4">
+
+            <div class="card-header bg-dark text-white">
+
+                <strong>
+                    <i class="bi bi-people"></i>
+                    Pacientes encontrados
+                </strong>
+
+            </div>
+
+
+            <div class="card-body p-0">
+
+                <div class="table-responsive">
+
+                    <table class="table table-hover align-middle mb-0">
+
+                        <thead class="table-light">
+
+                            <tr>
+                                <th>Paciente</th>
+                                <th>DNI</th>
+                                <th>Obra Social</th>
+                                <th class="text-center">
+                                    Acción
+                                </th>
+                            </tr>
+
+                        </thead>
+
+
+                        <tbody>
+
+                            {% for p in pacientes_encontrados %}
+
+                            <tr>
+
+                                <td>
+
+                                    <strong>
+                                        {{ p.nombre }}
+                                        {{ p.apellido }}
+                                    </strong>
+
+                                </td>
+
+
+                                <td>
+                                    {{ p.dni }}
+                                </td>
+
+
+                                <td>
+
+                                    {% if p.obrasocial %}
+
+                                        {{ p.obrasocial.nombre }}
+
+                                    {% else %}
+
+                                        Sin obra social
+
+                                    {% endif %}
+
+                                </td>
+
+
+                                <td class="text-center">
+
+                                    <a
+                                        href="?tipo=dni&q={{ p.dni }}"
+                                        class="btn btn-primary btn-sm"
+                                    >
+
+                                        <i class="bi bi-file-medical"></i>
+                                        Ver Historia
+
+                                    </a>
+
+                                </td>
+
+                            </tr>
+
+                            {% endfor %}
+
+                        </tbody>
+
+                    </table>
+
+                </div>
+
+            </div>
+
+        </div>
+
+    {% endif %}
+
+
+
+    <!-- ===================================================== -->
+    <!-- HISTORIA DEL PACIENTE -->
+    <!-- ===================================================== -->
+
+    {% if paciente %}
+
+
+        <!-- INFO PACIENTE -->
+
+        <div class="card shadow border-0 mb-4 paciente-card">
+
+            <div class="card-header bg-dark text-white d-flex justify-content-between">
+
+                <strong>
+                    {{ paciente.nombre }}
+                    {{ paciente.apellido }}
+                </strong>
+
+                <span>
+                    DNI: {{ paciente.dni }}
+                </span>
+
+            </div>
+
+
+            <div class="card-body">
+
+                <div class="row">
+
+                    <div class="col-md-4">
+                        <strong>Edad:</strong>
+                        {{ paciente.edad }}
+                    </div>
+
+
+                    <div class="col-md-4">
+
+                        <strong>Obra Social:</strong>
+
+                        {% if paciente.obrasocial %}
+
+                            {{ paciente.obrasocial.nombre }}
+
+                        {% else %}
+
+                            Sin obra social
+
+                        {% endif %}
+
+                    </div>
+
+                </div>
+
+
+                <hr>
+
+
+                <strong>
+                    Observaciones Generales:
+                </strong>
+
+
+                <p class="text-muted mb-0">
+
+                    {{ historia.observaciones_generales|default:"Sin observaciones." }}
+
+                </p>
+
+            </div>
+
+        </div>
+
+
+
+        <!-- ===================================================== -->
         <!-- ANTECEDENTES MÉDICOS -->
+        <!-- ===================================================== -->
 
         <div class="card shadow border-0 mb-4">
 
             <div class="card-header bg-danger text-white">
+
                 <i class="bi bi-heart-pulse"></i>
+
                 Antecedentes Médicos
+
             </div>
+
 
             <div class="card-body">
 
                 <div class="row">
 
+
+                    <!-- PATOLÓGICOS -->
+
                     <div class="col-md-6 mb-3">
+
                         <div class="border rounded p-3 h-100 bg-light">
+
                             <strong class="text-danger">
                                 Antecedentes Patológicos
                             </strong>
@@ -102,11 +417,19 @@
                             <hr>
 
                             {{ historia.antecedentes_patologicos|default:"Sin datos registrados"|linebreaks }}
+
                         </div>
+
                     </div>
 
+
+
+                    <!-- ALÉRGICOS -->
+
                     <div class="col-md-6 mb-3">
+
                         <div class="border rounded p-3 h-100 bg-light">
+
                             <strong class="text-danger">
                                 Antecedentes Alérgicos
                             </strong>
@@ -114,11 +437,19 @@
                             <hr>
 
                             {{ historia.antecedentes_alergicos|default:"Sin datos registrados"|linebreaks }}
+
                         </div>
+
                     </div>
 
+
+
+                    <!-- TÓXICOS -->
+
                     <div class="col-md-6 mb-3">
+
                         <div class="border rounded p-3 h-100 bg-light">
+
                             <strong class="text-danger">
                                 Antecedentes Tóxicos
                             </strong>
@@ -126,11 +457,19 @@
                             <hr>
 
                             {{ historia.antecedentes_toxicos|default:"Sin datos registrados"|linebreaks }}
+
                         </div>
+
                     </div>
 
+
+
+                    <!-- QUIRÚRGICOS -->
+
                     <div class="col-md-6 mb-3">
+
                         <div class="border rounded p-3 h-100 bg-light">
+
                             <strong class="text-danger">
                                 Antecedentes Quirúrgicos
                             </strong>
@@ -138,11 +477,19 @@
                             <hr>
 
                             {{ historia.antecedentes_quirurgicos|default:"Sin datos registrados"|linebreaks }}
+
                         </div>
+
                     </div>
 
+
+
+                    <!-- MEDICACIÓN -->
+
                     <div class="col-12">
+
                         <div class="border rounded p-3 bg-light">
+
                             <strong class="text-danger">
                                 Medicación Base
                             </strong>
@@ -150,8 +497,11 @@
                             <hr>
 
                             {{ historia.medicacion_base|default:"Sin datos registrados"|linebreaks }}
+
                         </div>
+
                     </div>
+
 
                 </div>
 
@@ -161,165 +511,485 @@
 
 
 
+        <!-- ===================================================== -->
         <!-- FILTRO POR FECHA -->
+        <!-- ===================================================== -->
+
         <div class="card shadow border-0 mb-4">
+
             <div class="card-body">
-                <form method="get" class="row g-3 align-items-end">
 
-                    <input type="hidden" name="dni" value="{{ dni }}">
+                <form method="get"
+                      class="row g-3 align-items-end">
+
+
+                    <!-- MANTENER PACIENTE SELECCIONADO -->
+
+                    <input
+                        type="hidden"
+                        name="tipo"
+                        value="dni"
+                    >
+
+                    <input
+                        type="hidden"
+                        name="q"
+                        value="{{ paciente.dni }}"
+                    >
+
+
+                    <!-- MES -->
 
                     <div class="col-md-4">
-                        <label class="form-label">Mes</label>
-                        <select name="mes" class="form-select">
-                            <option value="">Todos</option>
-                            {% for i in "123456789101112"|make_list %}
-                            <option value="{{ forloop.counter }}"
-                                {% if mes == forloop.counter|stringformat:"s" %}selected{% endif %}>
-                                {{ forloop.counter }}
+
+                        <label class="form-label">
+                            Mes
+                        </label>
+
+                        <select
+                            name="mes"
+                            class="form-select"
+                        >
+
+                            <option value="">
+                                Todos
                             </option>
+
+
+                            {% for i in "123456789101112"|make_list %}
+
+                                <option
+                                    value="{{ forloop.counter }}"
+                                    {% if mes == forloop.counter|stringformat:"s" %}selected{% endif %}
+                                >
+
+                                    {{ forloop.counter }}
+
+                                </option>
+
                             {% endfor %}
+
                         </select>
+
                     </div>
+
+
+
+                    <!-- AÑO -->
 
                     <div class="col-md-4">
-                        <label class="form-label">Año</label>
-                        <input type="number" name="anio"
-                               class="form-control"
-                               placeholder="Ej: 2025"
-                               value="{{ anio }}">
+
+                        <label class="form-label">
+                            Año
+                        </label>
+
+                        <input
+                            type="number"
+                            name="anio"
+                            class="form-control"
+                            placeholder="Ej: 2025"
+                            value="{{ anio }}"
+                        >
+
                     </div>
 
+
+
+                    <!-- FILTRAR -->
+
                     <div class="col-md-2 d-grid">
-                        <button type="submit" class="btn btn-dark">
+
+                        <button
+                            type="submit"
+                            class="btn btn-dark"
+                        >
+
                             Filtrar
+
                         </button>
+
                     </div>
 
+
+
+                    <!-- LIMPIAR -->
+
                     <div class="col-md-2 d-grid">
-                        <a href="?dni={{ dni }}" class="btn btn-outline-secondary">
+
+                        <a
+                            href="?tipo=dni&q={{ paciente.dni }}"
+                            class="btn btn-outline-secondary"
+                        >
+
                             Limpiar
+
                         </a>
+
                     </div>
+
 
                 </form>
+
             </div>
+
         </div>
 
+
+
+        <!-- ===================================================== -->
         <!-- CONSULTAS -->
+        <!-- ===================================================== -->
+
         {% if consultas %}
-        <h4 class="mb-4 text-secondary">
-            Consultas Médicas
-            {% if mes or anio %}
-                <span class="badge bg-info text-dark">Filtrado</span>
-            {% endif %}
-        </h4>
 
-        {% for consulta in consultas %}
-        <a href="{% url 'detalle_consulta' consulta.id %}" class="text-decoration-none text-dark">
-        <div class="card mb-4 shadow border-0 consulta-card">
 
-            <div class="card-header consulta-header text-white d-flex justify-content-between align-items-center">
-                <div class="d-flex align-items-center gap-2">
+            <h4 class="mb-4 text-secondary">
 
-    <strong>{{ consulta.fecha }}</strong> — {{ consulta.motivo }}
+                Consultas Médicas
 
-    {% if consulta.sobreturno %}
-        <span class="badge bg-warning text-dark">
-            Sobreturno
-        </span>
-    {% endif %}
 
-</div>
-                <div>
-                    <span class="badge bg-light text-dark">
-                        Dr/a {{ consulta.medico }}
+                {% if mes or anio %}
+
+                    <span class="badge bg-info text-dark">
+                        Filtrado
                     </span>
-                </div>
-            </div>
 
-            <div class="card-body bg-white">
-
-                <!-- EXAMEN FISICO -->
-                {% if consulta.examen_fisico %}
-                <div class="mb-3">
-                    <div class="p-3 examen-box rounded">
-                        <strong class="text-dark">
-                            🩺 Examen Físico
-                        </strong>
-                        <p class="mb-0 mt-2">
-                            {{ consulta.examen_fisico|linebreaks }}
-                        </p>
-                    </div>
-                </div>
                 {% endif %}
 
-                <div class="row">
-                    <div class="col-md-6 mb-3">
-                        <div class="p-3 bg-light rounded">
-                            <strong class="text-primary">Diagnóstico</strong>
-                            <p class="mb-0">{{ consulta.diagnostico|linebreaks }}</p>
+            </h4>
+
+
+
+            {% for consulta in consultas %}
+
+
+                <a
+                    href="{% url 'detalle_consulta' consulta.id %}"
+                    class="text-decoration-none text-dark"
+                >
+
+
+                    <div class="card mb-4 shadow border-0 consulta-card">
+
+
+                        <div class="card-header consulta-header text-white d-flex justify-content-between align-items-center">
+
+
+                            <div class="d-flex align-items-center gap-2">
+
+                                <strong>
+                                    {{ consulta.fecha }}
+                                </strong>
+
+                                —
+
+                                {{ consulta.motivo }}
+
+
+                                {% if consulta.sobreturno %}
+
+                                    <span class="badge bg-warning text-dark">
+
+                                        Sobreturno
+
+                                    </span>
+
+                                {% endif %}
+
+
+                            </div>
+
+
+                            <div>
+
+                                <span class="badge bg-light text-dark">
+
+                                    Dr/a {{ consulta.medico }}
+
+                                </span>
+
+                            </div>
+
+
                         </div>
+
+
+
+                        <div class="card-body bg-white">
+
+
+                            <!-- EXAMEN FÍSICO -->
+
+                            {% if consulta.examen_fisico %}
+
+                                <div class="mb-3">
+
+                                    <div class="p-3 examen-box rounded">
+
+                                        <strong class="text-dark">
+
+                                            🩺 Examen Físico
+
+                                        </strong>
+
+
+                                        <p class="mb-0 mt-2">
+
+                                            {{ consulta.examen_fisico|linebreaks }}
+
+                                        </p>
+
+                                    </div>
+
+                                </div>
+
+                            {% endif %}
+
+
+
+                            <div class="row">
+
+
+                                <!-- DIAGNÓSTICO -->
+
+                                <div class="col-md-6 mb-3">
+
+                                    <div class="p-3 bg-light rounded">
+
+                                        <strong class="text-primary">
+
+                                            Diagnóstico
+
+                                        </strong>
+
+
+                                        <p class="mb-0">
+
+                                            {{ consulta.diagnostico|linebreaks }}
+
+                                        </p>
+
+                                    </div>
+
+                                </div>
+
+
+
+                                <!-- TRATAMIENTO -->
+
+                                <div class="col-md-6 mb-3">
+
+                                    <div class="p-3 bg-light rounded">
+
+                                        <strong class="text-success">
+
+                                            Tratamiento
+
+                                        </strong>
+
+
+                                        <p class="mb-0">
+
+                                            {{ consulta.tratamiento|linebreaks }}
+
+                                        </p>
+
+                                    </div>
+
+                                </div>
+
+
+                            </div>
+
+
+
+                            <!-- OBSERVACIONES -->
+
+                            {% if consulta.observaciones %}
+
+                                <div class="alert alert-secondary mt-3">
+
+                                    <strong>
+                                        Observaciones:
+                                    </strong>
+
+                                    {{ consulta.observaciones|linebreaks }}
+
+                                </div>
+
+                            {% endif %}
+
+
+                        </div>
+
                     </div>
 
-                    <div class="col-md-6 mb-3">
-                        <div class="p-3 bg-light rounded">
-                            <strong class="text-success">Tratamiento</strong>
-                            <p class="mb-0">{{ consulta.tratamiento|linebreaks }}</p>
-                        </div>
-                    </div>
-                </div>
 
-                {% if consulta.observaciones %}
-                <div class="alert alert-secondary mt-3">
-                    <strong>Observaciones:</strong>
-                    {{ consulta.observaciones|linebreaks }}
-                </div>
-                {% endif %}
+                </a>
 
-            </div>
-        </div>
-        </a>
-        {% endfor %}
+
+            {% endfor %}
+
+
 
         {% else %}
-        <div class="alert alert-warning text-center">
-            No hay consultas para el período seleccionado.
-        </div>
+
+
+            <div class="alert alert-warning text-center">
+
+                No hay consultas para el período seleccionado.
+
+            </div>
+
+
         {% endif %}
 
-        {% else %}
+
+
+    <!-- ===================================================== -->
+    <!-- SIN RESULTADOS -->
+    <!-- ===================================================== -->
+
+    {% elif request.GET.q and not pacientes_encontrados %}
+
+
         <div class="alert alert-danger text-center">
-            No se encontró ningún paciente con ese DNI.
+
+            <i class="bi bi-exclamation-triangle"></i>
+
+            No se encontró ningún paciente con
+
+            {% if request.GET.tipo == 'nombre' %}
+
+                ese nombre.
+
+            {% elif request.GET.tipo == 'apellido' %}
+
+                ese apellido.
+
+            {% else %}
+
+                ese DNI.
+
+            {% endif %}
+
         </div>
-        {% endif %}
+
+
     {% endif %}
+
 
 </div>
 
+
+
+<!-- ===================================================== -->
 <!-- ESTILOS -->
+<!-- ===================================================== -->
+
 <style>
+
 .paciente-card {
     border-left: 6px solid #198754;
 }
+
 
 .consulta-card {
     border-left: 6px solid #0d6efd;
     transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 
+
 .consulta-card:hover {
     transform: translateY(-4px);
     box-shadow: 0 12px 25px rgba(0,0,0,0.15);
 }
 
+
 .consulta-header {
     background: linear-gradient(135deg, #0d6efd, #0a58ca);
 }
+
 
 .examen-box {
     background-color: #f8f9fa;
     border-left: 5px solid #6c757d;
 }
+
 </style>
+
+
+
+<!-- ===================================================== -->
+<!-- CAMBIAR CAMPO SEGÚN TIPO DE BÚSQUEDA -->
+<!-- ===================================================== -->
+
+<script>
+
+document.addEventListener("DOMContentLoaded", function () {
+
+    const campo =
+        document.getElementById("campoBusqueda");
+
+    const opciones =
+        document.querySelectorAll('input[name="tipo"]');
+
+
+    function cambiarPlaceholder() {
+
+        const seleccionado =
+            document.querySelector('input[name="tipo"]:checked');
+
+
+        if (!seleccionado) {
+            return;
+        }
+
+
+        if (seleccionado.value === "dni") {
+
+            campo.placeholder =
+                "Ingrese DNI";
+
+        }
+
+        else if (seleccionado.value === "nombre") {
+
+            campo.placeholder =
+                "Ingrese nombre";
+
+        }
+
+        else if (seleccionado.value === "apellido") {
+
+            campo.placeholder =
+                "Ingrese apellido";
+
+        }
+
+    }
+
+
+    opciones.forEach(function(opcion) {
+
+        opcion.addEventListener("change", function () {
+
+            campo.value = "";
+
+            cambiarPlaceholder();
+
+            campo.focus();
+
+        });
+
+    });
+
+
+    cambiarPlaceholder();
+
+});
+
+</script>
+
 
 {% endblock %}
