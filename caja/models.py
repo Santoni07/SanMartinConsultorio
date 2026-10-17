@@ -1247,3 +1247,242 @@ class DetalleMedioPago(models.Model):
             
         )
         
+
+class ExtraCoseguro(models.Model):
+
+    # ==================================================
+    # RELACIÓN CON LA ATENCIÓN ORIGINAL
+    # ==================================================
+
+    turno = models.ForeignKey(
+        Turnos,
+        on_delete=models.PROTECT,
+        related_name="extras_coseguro",
+        verbose_name="Turno"
+    )
+
+    detalle_prestacion = models.OneToOneField(
+        DetalleMovimientoCaja,
+        on_delete=models.PROTECT,
+        related_name="extra_coseguro",
+        verbose_name="Prestación relacionada"
+    )
+
+    paciente = models.ForeignKey(
+        Paciente,
+        on_delete=models.PROTECT,
+        related_name="extras_coseguro",
+        verbose_name="Paciente"
+    )
+
+    medico = models.ForeignKey(
+        Medico,
+        on_delete=models.PROTECT,
+        related_name="extras_coseguro",
+        verbose_name="Médico"
+    )
+
+    centro_medico = models.ForeignKey(
+        CentroMedico,
+        on_delete=models.PROTECT,
+        related_name="extras_coseguro",
+        verbose_name="Centro médico"
+    )
+
+    fecha = models.DateField(
+        verbose_name="Fecha del extra"
+    )
+
+    # ==================================================
+    # MOVIMIENTOS DE CAJA
+    # ==================================================
+
+    ingreso_movimiento = models.OneToOneField(
+        MovimientoCaja,
+        on_delete=models.PROTECT,
+        related_name="extra_coseguro_ingreso",
+        verbose_name="Ingreso por extra coseguro"
+    )
+
+    egreso_movimiento = models.ForeignKey(
+        MovimientoCaja,
+        on_delete=models.PROTECT,
+        related_name="extras_coseguro_egreso",
+        null=True,
+        blank=True,
+        verbose_name="Egreso entregado al médico"
+    )
+    # ==================================================
+    # LIQUIDACIÓN DEL PAGO AL MÉDICO
+    # ==================================================
+
+    liquidacion_honorario = models.ForeignKey(
+        "honorarios.LiquidacionMedica",
+        on_delete=models.PROTECT,
+        related_name="extras_liquidados",
+        null=True,
+        blank=True,
+        verbose_name="Liquidación del extra"
+    )
+
+    fecha_liquidacion_honorario = models.DateTimeField(
+        null=True,
+        blank=True,
+        verbose_name="Fecha de liquidación del extra"
+    )
+
+    # ==================================================
+    # DISTRIBUCIÓN 70/30
+    # ==================================================
+
+    importe_extra = models.DecimalField(
+        max_digits=12,
+        decimal_places=2,
+        verbose_name="Importe extra cobrado"
+    )
+
+    porcentaje_medico = models.DecimalField(
+        max_digits=5,
+        decimal_places=2,
+        default=Decimal("70.00"),
+        verbose_name="Porcentaje médico"
+    )
+
+    porcentaje_consultorio = models.DecimalField(
+        max_digits=5,
+        decimal_places=2,
+        default=Decimal("30.00"),
+        verbose_name="Porcentaje consultorio"
+    )
+
+    importe_medico = models.DecimalField(
+        max_digits=12,
+        decimal_places=2,
+        default=0,
+        verbose_name="Importe correspondiente al médico"
+    )
+
+    importe_consultorio = models.DecimalField(
+        max_digits=12,
+        decimal_places=2,
+        default=0,
+        verbose_name="Importe a devolver al consultorio"
+    )
+
+    # ==================================================
+    # RETENCIÓN EN LIQUIDACIÓN
+    # ==================================================
+
+    liquidacion_retencion = models.ForeignKey(
+        "honorarios.LiquidacionMedica",
+        on_delete=models.PROTECT,
+        related_name="extras_coseguro_retenidos",
+        null=True,
+        blank=True,
+        verbose_name="Liquidación donde se aplicó la retención"
+    )
+
+    fecha_retencion = models.DateTimeField(
+        null=True,
+        blank=True,
+        verbose_name="Fecha de aplicación de la retención"
+    )
+
+    # ==================================================
+    # AUDITORÍA
+    # ==================================================
+
+    fecha_creacion = models.DateTimeField(
+        auto_now_add=True
+    )
+
+    creado_por = models.ForeignKey(
+        User,
+        on_delete=models.PROTECT,
+        related_name="extras_coseguro_creados"
+    )
+
+    observacion = models.TextField(
+        blank=True,
+        null=True
+    )
+
+    class Meta:
+        verbose_name = "Extra de coseguro"
+        verbose_name_plural = "Extras de coseguro"
+        ordering = [
+            "-fecha",
+            "-id",
+        ]
+        indexes = [
+            models.Index(
+                fields=["medico", "fecha"]
+            ),
+            models.Index(
+                fields=["liquidacion_honorario"]
+            ),
+            models.Index(
+                fields=["liquidacion_retencion"]
+            ),
+        ]
+
+    def __str__(self):
+        return (
+            f"{self.fecha:%d/%m/%Y} - "
+            f"{self.paciente} - "
+            f"{self.medico} - "
+            f"${self.importe_extra}"
+        )
+
+    def calcular_distribucion(self):
+
+        importe = self.importe_extra or Decimal("0.00")
+
+        self.importe_medico = (
+            importe *
+            self.porcentaje_medico /
+            Decimal("100")
+        ).quantize(
+            Decimal("0.01")
+        )
+
+        self.importe_consultorio = (
+            importe *
+            self.porcentaje_consultorio /
+            Decimal("100")
+        ).quantize(
+            Decimal("0.01")
+        )
+
+    def save(self, *args, **kwargs):
+
+        self.calcular_distribucion()
+
+        super().save(*args, **kwargs)
+
+    @property
+    def obra_social_cobrada(self):
+
+        return self.detalle_prestacion.obra_social_cobrada
+
+    @property
+    def retencion_aplicada(self):
+
+        return self.liquidacion_retencion_id is not None
+
+    @property
+    def estado_control(self):
+
+        if self.liquidacion_retencion_id:
+            return "RETENIDO"
+
+        if (
+            not self.egreso_movimiento_id
+            or self.egreso_movimiento.estado != "ACTIVO"
+        ):
+            return "PENDIENTE_PAGO_MEDICO"
+
+        if self.detalle_prestacion.obra_social_cobrada:
+            return "DISPONIBLE_PARA_RETENER"
+
+        return "PENDIENTE_COBRO_OBRA_SOCIAL"

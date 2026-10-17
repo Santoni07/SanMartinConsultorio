@@ -44,6 +44,12 @@ class LiquidacionMedica(models.Model):
         decimal_places=2,
         default=0
     )
+    total_retencion_extra_coseguro = models.DecimalField(
+        max_digits=12,
+        decimal_places=2,
+        default=0,
+        verbose_name="Retención por extras de coseguro"
+    )
 
     total_consultorio = models.DecimalField(
         max_digits=12,

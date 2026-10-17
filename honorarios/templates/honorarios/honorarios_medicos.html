@@ -158,6 +158,33 @@
 
             <div class="col-md-3">
 
+                <div class="card shadow-sm h-100 border-secondary">
+
+                    <div class="card-body">
+
+                        <div class="text-muted">
+                            Extras pendientes
+                        </div>
+
+                        <h3 class="mt-2 mb-1 text-secondary">
+                            $ {{ resumen.total_extras|floatformat:2 }}
+                        </h3>
+
+                        <span class="badge bg-secondary">
+                            Pendiente de liquidar
+                        </span>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+
+            <!-- TOTAL DISPONIBLE -->
+
+            <div class="col-md-3">
+
                 <div class="card shadow-sm h-100 border-success">
 
                     <div class="card-body">
@@ -171,7 +198,7 @@
                         </h2>
 
                         <small class="text-muted">
-                            Particular + Coseguros + Copagos + OS cobradas
+                            Particular + Coseguros + Copagos + Extras + OS cobradas
                         </small>
 
                     </div>
@@ -548,6 +575,95 @@
     </div>
 
 </div>
+
+
+    <!-- ================================================== -->
+    <!-- EXTRAS PENDIENTES -->
+    <!-- ================================================== -->
+
+    <div class="card mt-4 shadow-sm border-secondary">
+
+        <div class="card-header bg-secondary text-white">
+
+            <div class="d-flex justify-content-between align-items-center">
+
+                <strong>
+                    <i class="bi bi-cash-coin me-1"></i>
+                    Extras pendientes de liquidar
+                </strong>
+
+                <span class="badge bg-light text-secondary">
+                    {{ extras|length }}
+                </span>
+
+            </div>
+
+        </div>
+
+        <div class="card-body p-0">
+
+            {% if extras %}
+
+                <div class="table-responsive">
+
+                    <table class="table table-striped table-hover align-middle mb-0">
+
+                        <thead class="table-light">
+
+                            <tr>
+                                <th>Fecha</th>
+                                <th>Paciente</th>
+                                <th class="text-end">Monto</th>
+                                <th>Estado</th>
+                            </tr>
+
+                        </thead>
+
+                        <tbody>
+
+                            {% for extra in extras %}
+
+                                <tr>
+
+                                    <td>
+                                        {{ extra.fecha|date:"d/m/Y" }}
+                                    </td>
+
+                                    <td class="fw-semibold">
+                                        {{ extra.paciente }}
+                                    </td>
+
+                                    <td class="text-end fw-bold">
+                                        $ {{ extra.importe_extra|floatformat:2 }}
+                                    </td>
+
+                                    <td>
+                                        <span class="badge bg-warning text-dark">
+                                            Pendiente
+                                        </span>
+                                    </td>
+
+                                </tr>
+
+                            {% endfor %}
+
+                        </tbody>
+
+                    </table>
+
+                </div>
+
+            {% else %}
+
+                <div class="text-center text-muted p-4">
+                    No existen extras pendientes de liquidar.
+                </div>
+
+            {% endif %}
+
+        </div>
+
+    </div>
 
 
     <!-- ================================================== -->
@@ -1318,7 +1434,7 @@
     </div>
 
 </div>
-{% if resumen.total_disponible > 0 %}
+{% if resumen.total_disponible > 0 or resumen.total_extras > 0 %}
 
 <div class="card mt-4 shadow-sm">
 
@@ -1382,6 +1498,54 @@
                     >
 
                         Particular + Coseguros + Copagos
+
+                        <strong class="ms-2">
+                            $ 0,00
+                        </strong>
+
+                    </button>
+
+                    {% endif %}
+
+
+                    <!-- ====================================== -->
+                    <!-- EXTRAS -->
+                    <!-- ====================================== -->
+
+                    {% if resumen.total_extras > 0 %}
+
+                    <a
+                        href="{% url 'previsualizar_liquidacion_extras' medico_id %}"
+                        class="btn btn-secondary"
+                    >
+
+                        <div class="d-flex justify-content-between align-items-center">
+
+                            <span>
+
+                                <i class="bi bi-cash-coin me-1"></i>
+
+                                Extras
+
+                            </span>
+
+                            <strong>
+                                $ {{ resumen.total_extras|floatformat:2 }}
+                            </strong>
+
+                        </div>
+
+                    </a>
+
+                    {% else %}
+
+                    <button
+                        type="button"
+                        class="btn btn-outline-secondary"
+                        disabled
+                    >
+
+                        Extras
 
                         <strong class="ms-2">
                             $ 0,00

@@ -9,7 +9,7 @@ from django.http import HttpResponseBadRequest
 from honorarios.models import PagoLiquidacionMedica
 from django.db import transaction
 from django.db.models import Sum
-from .models import CajaDiaria, MovimientoCaja, HistorialMovimientoCaja,    MedioPago, ConceptoFacturacion, DetalleMovimientoCaja,DetalleMedioPago
+from .models import CajaDiaria, MovimientoCaja, HistorialMovimientoCaja,    MedioPago, ConceptoFacturacion, DetalleMovimientoCaja,DetalleMedioPago, ExtraCoseguro
 from .forms import (
     AperturaCajaForm,
     MovimientoCajaForm,
@@ -237,80 +237,111 @@ def abrir_caja(request):
 @transaction.atomic
 def registrar_movimiento(request):
 
+    # ======================================================
+    # CENTRO MÉDICO ACTIVO
+    # ======================================================
+
     centro_medico = obtener_centro_activo(request)
 
     if not validar_permiso_caja(request):
 
         messages.error(
             request,
-            'No tiene permisos para acceder a la caja de esta sede.'
+            "No tiene permisos para acceder a la caja de esta sede."
         )
 
-        return redirect('turnos:ver_disponibilidad')
+        return redirect(
+            "turnos:ver_disponibilidad"
+        )
 
     if not centro_medico:
 
         messages.error(
             request,
-            'No hay una sede activa seleccionada.'
+            "No hay una sede activa seleccionada."
         )
 
-        return redirect('core:index')
+        return redirect(
+            "core:index"
+        )
 
-    caja = obtener_caja_abierta(centro_medico)
+    # ======================================================
+    # CAJA ABIERTA
+    # ======================================================
+
+    caja = obtener_caja_abierta(
+        centro_medico
+    )
 
     if not caja:
 
         messages.error(
             request,
-            'Primero debe abrir la caja de esta sede.'
+            "Primero debe abrir la caja de esta sede."
         )
 
-        return redirect('abrir_caja')
+        return redirect(
+            "abrir_caja"
+        )
 
-    # =====================================
+    # ======================================================
     # MEDIOS DE PAGO DISPONIBLES
-    # =====================================
+    # ======================================================
 
-    medios_pago_disponibles = MedioPago.objects.filter(
-        activo=True
-    ).order_by("nombre")
+    medios_pago_disponibles = (
+        MedioPago.objects
+        .filter(activo=True)
+        .order_by("nombre")
+    )
 
-    if request.method == 'POST':
+    # ======================================================
+    # FUNCIÓN INTERNA PARA RENDERIZAR EL FORMULARIO
+    # ======================================================
 
-        print("POST RECIBIDO")
+    def render_formulario(formulario):
 
-        form = MovimientoCajaForm(request.POST)
+        return render(
+            request,
+            "caja/registrar_movimiento.html",
+            {
+                "form": formulario,
+                "caja": caja,
+                "centro_medico": centro_medico,
+                "medios_pago": medios_pago_disponibles,
+            },
+        )
+
+    # ======================================================
+    # FORMULARIO
+    # ======================================================
+
+    if request.method == "POST":
+
+        form = MovimientoCajaForm(
+            request.POST,
+            centro_medico=centro_medico,
+            fecha=caja.fecha,
+        )
 
         if form.is_valid():
 
-            print("FORM VALIDO")
-
-            # =====================================
-            # MEDIOS DE PAGO
-            # =====================================
+            # ==================================================
+            # VALIDAR MEDIOS DE PAGO
+            # ==================================================
 
             medios_pago_json = request.POST.get(
-                "medios_pago_json"
+                "medios_pago_json",
+                ""
             )
 
             if not medios_pago_json:
 
-                messages.error(
-                    request,
+                form.add_error(
+                    None,
                     "Debe agregar al menos un medio de pago."
                 )
 
-                return render(
-                    request,
-                    "caja/registrar_movimiento.html",
-                    {
-                        "form": form,
-                        "caja": caja,
-                        "centro_medico": centro_medico,
-                        "medios_pago": medios_pago_disponibles,
-                    },
-                )
+                return render_formulario(form)
 
             try:
 
@@ -320,132 +351,473 @@ def registrar_movimiento(request):
 
             except json.JSONDecodeError:
 
-                messages.error(
-                    request,
+                form.add_error(
+                    None,
                     "Error al procesar los medios de pago."
                 )
 
-                return render(
-                    request,
-                    "caja/registrar_movimiento.html",
-                    {
-                        "form": form,
-                        "caja": caja,
-                        "centro_medico": centro_medico,
-                        "medios_pago": medios_pago_disponibles,
-                    },
+                return render_formulario(form)
+
+            if (
+                not isinstance(medios_pago_data, list)
+                or not medios_pago_data
+            ):
+
+                form.add_error(
+                    None,
+                    "Debe agregar al menos un medio de pago."
                 )
 
-            movimiento = form.save(commit=False)
+                return render_formulario(form)
 
-            print("ANTES SAVE")
+            # ==================================================
+            # VALIDAR IMPORTES DE MEDIOS DE PAGO
+            # ==================================================
+
+            medios_validados = []
+            total_medios_pago = Decimal("0.00")
+
+            try:
+
+                for item in medios_pago_data:
+
+                    medio_id = item.get("medio")
+
+                    importe_medio = Decimal(
+                        str(item.get("importe", "0"))
+                    )
+
+                    if not medio_id:
+
+                        raise ValueError(
+                            "Medio de pago inválido."
+                        )
+
+                    if importe_medio <= Decimal("0.00"):
+
+                        raise ValueError(
+                            "El importe del medio de pago debe ser mayor a cero."
+                        )
+
+                    medio = MedioPago.objects.filter(
+                        pk=medio_id,
+                        activo=True,
+                    ).first()
+
+                    if not medio:
+
+                        raise ValueError(
+                            "Uno de los medios de pago no está disponible."
+                        )
+
+                    medios_validados.append({
+                        "medio": medio,
+                        "importe": importe_medio,
+                    })
+
+                    total_medios_pago += importe_medio
+
+            except (
+                ValueError,
+                TypeError,
+                InvalidOperation,
+            ) as error:
+
+                form.add_error(
+                    None,
+                    str(error)
+                )
+
+                return render_formulario(form)
+
+            importe_movimiento = (
+                form.cleaned_data["importe"]
+                or Decimal("0.00")
+            )
+
+            if (
+                total_medios_pago.quantize(
+                    Decimal("0.01")
+                )
+                !=
+                importe_movimiento.quantize(
+                    Decimal("0.01")
+                )
+            ):
+
+                form.add_error(
+                    None,
+                    (
+                        "El total de los medios de pago "
+                        f"(${total_medios_pago}) debe coincidir "
+                        f"con el importe del movimiento "
+                        f"(${importe_movimiento})."
+                    )
+                )
+
+                return render_formulario(form)
+
+            # ==================================================
+            # PREPARAR MOVIMIENTO
+            # ==================================================
+
+            movimiento = form.save(
+                commit=False
+            )
 
             movimiento.caja = caja
             movimiento.centro_medico = centro_medico
             movimiento.creado_por = request.user
             movimiento.estado = "ACTIVO"
 
-            movimiento.save()
+            # ==================================================
+            # IDENTIFICAR CONCEPTO EXTRA COSEGURO
+            # ==================================================
 
-            print("MOVIMIENTO GUARDADO")
+            concepto_facturacion = (
+                form.cleaned_data.get(
+                    "concepto_facturacion"
+                )
+            )
 
-            # =====================================
-            # GUARDAR DETALLE MEDIOS DE PAGO
-            # =====================================
+            codigo_concepto = ""
 
-            for item in medios_pago_data:
+            if (
+                concepto_facturacion
+                and concepto_facturacion.nomenclador
+            ):
 
-                medio = MedioPago.objects.get(
-                    pk=item["medio"]
+                codigo_concepto = (
+                    concepto_facturacion
+                    .nomenclador
+                    .codigo
+                    .upper()
+                    .strip()
                 )
 
-                DetalleMedioPago.objects.create(
+            es_extra_coseguro = (
+                codigo_concepto
+                == "EXTRA_COSEGURO"
+            )
 
-                    movimiento=movimiento,
+            detalle_original = None
+            extra_coseguro = None
 
-                    medio_pago=medio,
+            # ==================================================
+            # INGRESO EXTRA COSEGURO
+            # ==================================================
 
-                    importe=Decimal(
-                        str(item["importe"])
+            if (
+                es_extra_coseguro
+                and movimiento.tipo == "INGRESO"
+            ):
+
+                detalle_seleccionado = (
+                    form.cleaned_data.get(
+                        "detalle_extra_ingreso"
+                    )
+                )
+
+                detalle_original = (
+                    DetalleMovimientoCaja.objects
+                    .select_for_update()
+                    .select_related(
+                        "movimiento",
+                        "movimiento__turno",
+                        "movimiento__turno__paciente",
+                        "movimiento__turno__medico",
+                    )
+                    .filter(
+                        pk=detalle_seleccionado.pk,
+                        movimiento__centro_medico=centro_medico,
+                        movimiento__estado="ACTIVO",
+                        movimiento__turno__fecha=caja.fecha,
+                        prestacion_obra_social__isnull=False,
+                    )
+                    .exclude(
+                        estado="ANULADO"
+                    )
+                    .first()
+                )
+
+                if not detalle_original:
+
+                    form.add_error(
+                        "detalle_extra_ingreso",
+                        (
+                            "La prestación seleccionada ya no "
+                            "está disponible."
+                        )
                     )
 
+                    return render_formulario(form)
+
+                if ExtraCoseguro.objects.filter(
+                    detalle_prestacion=detalle_original
+                ).exists():
+
+                    form.add_error(
+                        "detalle_extra_ingreso",
+                        (
+                            "Esta prestación ya tiene registrado "
+                            "un extra de coseguro."
+                        )
+                    )
+
+                    return render_formulario(form)
+
+                turno = (
+                    detalle_original
+                    .movimiento
+                    .turno
+                )
+
+                if not turno.paciente or not turno.medico:
+
+                    form.add_error(
+                        "detalle_extra_ingreso",
+                        (
+                            "El turno seleccionado no tiene "
+                            "paciente o médico asociado."
+                        )
+                    )
+
+                    return render_formulario(form)
+
+                movimiento.turno = turno
+                movimiento.paciente = turno.paciente
+
+                movimiento.concepto = (
+                    f"Extra coseguro - "
+                    f"{turno.paciente}"
+                )
+
+            # ==================================================
+            # EGRESO EXTRA COSEGURO
+            # ==================================================
+
+            elif (
+                es_extra_coseguro
+                and movimiento.tipo == "EGRESO"
+            ):
+
+                extra_seleccionado = (
+                    form.cleaned_data.get(
+                        "extra_coseguro_egreso"
+                    )
+                )
+
+                extra_coseguro = (
+                    ExtraCoseguro.objects
+                    .select_for_update()
+                    .select_related(
+                        "turno",
+                        "paciente",
+                        "medico",
+                        "ingreso_movimiento",
+                    )
+                    .filter(
+                        pk=extra_seleccionado.pk,
+                        centro_medico=centro_medico,
+                        fecha=caja.fecha,
+                        ingreso_movimiento__estado="ACTIVO",
+                        egreso_movimiento__isnull=True,
+                    )
+                    .first()
+                )
+
+                if not extra_coseguro:
+
+                    form.add_error(
+                        "extra_coseguro_egreso",
+                        (
+                            "El extra seleccionado ya fue entregado "
+                            "o dejó de estar disponible."
+                        )
+                    )
+
+                    return render_formulario(form)
+
+                if (
+                    movimiento.importe.quantize(
+                        Decimal("0.01")
+                    )
+                    !=
+                    extra_coseguro.importe_extra.quantize(
+                        Decimal("0.01")
+                    )
+                ):
+
+                    form.add_error(
+                        "importe",
+                        (
+                            "El egreso debe coincidir con el extra "
+                            f"cobrado: ${extra_coseguro.importe_extra}."
+                        )
+                    )
+
+                    return render_formulario(form)
+
+                movimiento.turno = (
+                    extra_coseguro.turno
+                )
+
+                movimiento.paciente = (
+                    extra_coseguro.paciente
+                )
+
+                movimiento.concepto = (
+                    "Pago honorarios extra coseguro - "
+                    f"{extra_coseguro.paciente} - "
+                    f"{extra_coseguro.medico}"
+                )
+
+            # ==================================================
+            # GUARDAR MOVIMIENTO
+            # ==================================================
+
+            movimiento.save()
+
+            # ==================================================
+            # CREAR O ACTUALIZAR EXTRA COSEGURO
+            # ==================================================
+
+            if (
+                es_extra_coseguro
+                and movimiento.tipo == "INGRESO"
+            ):
+
+                turno = (
+                    detalle_original
+                    .movimiento
+                    .turno
+                )
+
+                extra_coseguro = (
+                    ExtraCoseguro.objects.create(
+                        turno=turno,
+                        detalle_prestacion=detalle_original,
+                        paciente=turno.paciente,
+                        medico=turno.medico,
+                        centro_medico=centro_medico,
+                        fecha=turno.fecha,
+                        ingreso_movimiento=movimiento,
+                        importe_extra=movimiento.importe,
+                        creado_por=request.user,
+                        observacion=movimiento.observacion,
+                    )
+                )
+
+            elif (
+                es_extra_coseguro
+                and movimiento.tipo == "EGRESO"
+            ):
+
+                extra_coseguro.egreso_movimiento = (
+                    movimiento
+                )
+
+                extra_coseguro.save()
+
+            # ==================================================
+            # GUARDAR MEDIOS DE PAGO
+            # ==================================================
+
+            for item in medios_validados:
+
+                DetalleMedioPago.objects.create(
+                    movimiento=movimiento,
+                    medio_pago=item["medio"],
+                    importe=item["importe"],
+                )
+
+            # ==================================================
+            # HISTORIAL
+            # ==================================================
+
+            datos_nuevos = {
+                "tipo": movimiento.tipo,
+                "importe": str(
+                    movimiento.importe
+                ),
+                "concepto": movimiento.concepto,
+                "observacion": movimiento.observacion,
+                "turno_id": movimiento.turno_id,
+                "paciente_id": movimiento.paciente_id,
+            }
+
+            if extra_coseguro:
+
+                datos_nuevos[
+                    "extra_coseguro_id"
+                ] = extra_coseguro.id
+
+                datos_nuevos[
+                    "importe_medico_70"
+                ] = str(
+                    extra_coseguro.importe_medico
+                )
+
+                datos_nuevos[
+                    "importe_consultorio_30"
+                ] = str(
+                    extra_coseguro.importe_consultorio
                 )
 
             HistorialMovimientoCaja.objects.create(
-
                 caja=caja,
-
                 movimiento=movimiento,
-
                 accion="CREADO",
-
                 usuario=request.user,
-
                 centro_medico=centro_medico,
-
-                descripcion=f"{movimiento.tipo} registrado por {request.user}.",
-
-                datos_nuevos={
-
-                    "tipo": movimiento.tipo,
-
-                    "importe": str(movimiento.importe),
-
-                    "concepto": movimiento.concepto,
-
-                    "observacion": movimiento.observacion,
-
-                }
-
+                descripcion=(
+                    f"{movimiento.tipo} registrado "
+                    f"por {request.user}."
+                ),
+                datos_nuevos=datos_nuevos,
             )
 
-            print("HISTORIAL GUARDADO")
+            # ==================================================
+            # MENSAJE DE ÉXITO
+            # ==================================================
 
-            
+            detalles_exito = [
+                f"Concepto: {movimiento.concepto}",
+                f"Importe: ${movimiento.importe}",
+            ]
+
+            if extra_coseguro:
+
+                detalles_exito.append(
+                    f"Paciente: {extra_coseguro.paciente}"
+                )
+
+                detalles_exito.append(
+                    f"Médico: {extra_coseguro.medico}"
+                )
 
             mostrar_exito(
-
                 request,
-
                 titulo="Movimiento registrado",
-
-                mensaje="El movimiento fue registrado correctamente.",
-
+                mensaje=(
+                    "El movimiento fue registrado correctamente."
+                ),
                 icono="bi-arrow-left-right",
-
-                detalles=[
-
-                    f"Concepto: {movimiento.concepto}",
-
-                    f"Importe: ${movimiento.importe}",
-
-                ],
-
+                detalles=detalles_exito,
             )
 
-            return redirect("caja_home")
-
-        else:
-
-            print("FORM INVALIDO")
-            print(form.errors)
+            return redirect(
+                "caja_home"
+            )
 
     else:
 
-        form = MovimientoCajaForm()
+        form = MovimientoCajaForm(
+            centro_medico=centro_medico,
+            fecha=caja.fecha,
+        )
 
-    return render(
-        request,
-        "caja/registrar_movimiento.html",
-        {
-            "form": form,
-            "caja": caja,
-            "centro_medico": centro_medico,
-            "medios_pago": medios_pago_disponibles,
-        },
-    )
-
-
+    return render_formulario(form)
 @login_required
 @transaction.atomic
 def registrar_cobro(request):

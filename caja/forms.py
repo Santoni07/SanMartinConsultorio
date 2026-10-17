@@ -1,5 +1,5 @@
 from django import forms
-from .models import CajaDiaria, MovimientoCaja, MedioPago,ConceptoFacturacion
+from .models import CajaDiaria, MovimientoCaja, MedioPago,ConceptoFacturacion, DetalleMovimientoCaja,ExtraCoseguro
 from django.utils import timezone
 from turnos.models import Turnos
 
@@ -30,15 +30,74 @@ class AperturaCajaForm(forms.ModelForm):
             }),
         }
 
+
+class DetalleExtraIngresoChoiceField(forms.ModelChoiceField):
+
+    def label_from_instance(self, obj):
+
+        turno = obj.movimiento.turno
+        paciente = turno.paciente
+        medico = turno.medico
+        obra_social = paciente.obrasocial
+
+        indicador = (
+            "🟡 SOBRETURNO — "
+            if turno.es_sobreturno
+            else ""
+        )
+
+        return (
+            f"{indicador}"
+            f"{paciente.apellido.upper()}, {paciente.nombre} — "
+            f"{turno.hora.strftime('%H:%M')} — "
+            f"Dr. {medico.nombre} {medico.apellido} — "
+            f"{obra_social.nombre}"
+        )
+class ExtraCoseguroEgresoChoiceField(forms.ModelChoiceField):
+
+    def label_from_instance(self, obj):
+
+        turno = obj.turno
+        paciente = obj.paciente
+        medico = obj.medico
+        obra_social = paciente.obrasocial
+
+        indicador = (
+            "🟡 SOBRETURNO — "
+            if turno.es_sobreturno
+            else ""
+        )
+
+        return (
+            f"{indicador}"
+            f"{paciente.apellido.upper()}, {paciente.nombre} — "
+            f"{turno.hora.strftime('%H:%M')} — "
+            f"Dr. {medico.nombre} {medico.apellido} — "
+            f"{obra_social.nombre}"
+        )
 class MovimientoCajaForm(forms.ModelForm):
 
+    detalle_extra_ingreso = DetalleExtraIngresoChoiceField(
+        queryset=DetalleMovimientoCaja.objects.none(),
+        required=False,
+        label="Paciente / turno relacionado",
+        empty_label="Seleccione el turno"
+    )
+
+    extra_coseguro_egreso = ExtraCoseguroEgresoChoiceField(
+        queryset=ExtraCoseguro.objects.none(),
+        required=False,
+        label="Paciente / turno relacionado",
+        empty_label="Seleccione el extra entregado al médico"
+    )
+
     class Meta:
+
         model = MovimientoCaja
 
         fields = [
             'tipo',
             'concepto_facturacion',
-          
             'importe',
             'retencion_monto',
             'retencion_motivo',
@@ -47,6 +106,7 @@ class MovimientoCajaForm(forms.ModelForm):
         ]
 
         widgets = {
+
             'tipo': forms.Select(attrs={
                 'class': 'form-select'
             }),
@@ -55,12 +115,10 @@ class MovimientoCajaForm(forms.ModelForm):
                 'class': 'form-select'
             }),
 
-           
-
             'importe': forms.NumberInput(attrs={
                 'class': 'form-control',
                 'step': '0.01',
-                'min': '0'
+                'min': '0.01'
             }),
 
             'retencion_monto': forms.NumberInput(attrs={
@@ -83,24 +141,162 @@ class MovimientoCajaForm(forms.ModelForm):
             }),
         }
 
-    def __init__(self, *args, **kwargs):
+    def __init__(
+        self,
+        *args,
+        centro_medico=None,
+        fecha=None,
+        **kwargs
+    ):
 
         super().__init__(*args, **kwargs)
+
         self.fields['retencion_monto'].required = False
         self.fields['retencion_motivo'].required = False
 
-       
-        self.fields[
-    'concepto_facturacion'
-].queryset = (
-    ConceptoFacturacion.objects.filter(
-        activo=True
-    )
-    .select_related("nomenclador")
-    .order_by("nomenclador__descripcion")
-)
-        
+        conceptos = (
+            ConceptoFacturacion.objects
+            .filter(activo=True)
+            .select_related("nomenclador")
+            .order_by("nomenclador__descripcion")
+        )
 
+        self.fields[
+            'concepto_facturacion'
+        ].queryset = conceptos
+
+        concepto_extra = conceptos.filter(
+            nomenclador__codigo__iexact="EXTRA_COSEGURO"
+        ).first()
+
+        self.fields[
+            'concepto_facturacion'
+        ].widget.attrs["data-extra-concepto-id"] = (
+            concepto_extra.id
+            if concepto_extra
+            else ""
+        )
+
+        if not centro_medico or not fecha:
+            return
+
+        # Prestaciones originales disponibles para registrar ingreso.
+
+        self.fields[
+            "detalle_extra_ingreso"
+        ].queryset = (
+            DetalleMovimientoCaja.objects
+            .filter(
+                movimiento__centro_medico=centro_medico,
+                movimiento__estado="ACTIVO",
+                movimiento__turno__isnull=False,
+                movimiento__turno__fecha=fecha,
+                movimiento__turno__estado__in=[
+                    "PENDIENTE",
+                    "ATENDIDO",
+                ],
+                prestacion_obra_social__isnull=False,
+            )
+            .exclude(
+                estado="ANULADO"
+            )
+            .exclude(
+                extra_coseguro__isnull=False
+            )
+            .select_related(
+                "movimiento__turno",
+                "movimiento__turno__paciente",
+                "movimiento__turno__paciente__obrasocial",
+                "movimiento__turno__medico",
+            )
+            .order_by(
+                "movimiento__turno__hora",
+                "id",
+            )
+        )
+
+        # Extras ingresados que todavía no tienen egreso.
+
+        self.fields[
+            "extra_coseguro_egreso"
+        ].queryset = (
+            ExtraCoseguro.objects
+            .filter(
+                centro_medico=centro_medico,
+                fecha=fecha,
+                ingreso_movimiento__estado="ACTIVO",
+                egreso_movimiento__isnull=True,
+            )
+            .select_related(
+                "turno",
+                "paciente",
+                "paciente__obrasocial",
+                "medico",
+            )
+            .order_by(
+                "turno__hora",
+                "id",
+            )
+        )
+
+    def clean(self):
+
+        cleaned_data = super().clean()
+
+        tipo = cleaned_data.get("tipo")
+        concepto = cleaned_data.get("concepto_facturacion")
+        importe = cleaned_data.get("importe")
+
+        detalle_ingreso = cleaned_data.get(
+            "detalle_extra_ingreso"
+        )
+
+        extra_egreso = cleaned_data.get(
+            "extra_coseguro_egreso"
+        )
+
+        codigo = ""
+
+        if concepto and concepto.nomenclador:
+            codigo = concepto.nomenclador.codigo.upper().strip()
+
+        es_extra = codigo == "EXTRA_COSEGURO"
+
+        if es_extra and tipo == "INGRESO":
+
+            if not detalle_ingreso:
+
+                self.add_error(
+                    "detalle_extra_ingreso",
+                    "Debe seleccionar el paciente y turno."
+                )
+
+        if es_extra and tipo == "EGRESO":
+
+            if not extra_egreso:
+
+                self.add_error(
+                    "extra_coseguro_egreso",
+                    "Debe seleccionar el ingreso extra correspondiente."
+                )
+
+            elif importe != extra_egreso.importe_extra:
+
+                self.add_error(
+                    "importe",
+                    (
+                        "El egreso debe coincidir con el importe "
+                        f"entregado al médico: "
+                        f"${extra_egreso.importe_extra}."
+                    )
+                )
+
+        if not es_extra:
+
+            cleaned_data["detalle_extra_ingreso"] = None
+            cleaned_data["extra_coseguro_egreso"] = None
+
+        return cleaned_data
 
 
 class TurnoChoiceField(forms.ModelChoiceField):

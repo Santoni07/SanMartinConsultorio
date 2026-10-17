@@ -42,6 +42,7 @@ function inicializar(){
     inicializarMediosPago();
 
     inicializarFormulario();
+    inicializarExtraCoseguro();
 
 }
 
@@ -241,5 +242,105 @@ function inicializarFormulario(){
 
         }
     );
+
+}
+
+// ======================================================
+// EXTRA COSEGURO
+// ======================================================
+
+function inicializarExtraCoseguro(){
+
+    const selectTipo =
+        document.getElementById("id_tipo");
+
+    const selectConcepto =
+        document.getElementById(
+            "id_concepto_facturacion"
+        );
+
+    const bloqueIngreso =
+        document.getElementById(
+            "bloque_extra_ingreso"
+        );
+
+    const bloqueEgreso =
+        document.getElementById(
+            "bloque_extra_egreso"
+        );
+
+    const selectIngreso =
+        document.getElementById(
+            "id_detalle_extra_ingreso"
+        );
+
+    const selectEgreso =
+        document.getElementById(
+            "id_extra_coseguro_egreso"
+        );
+
+    if(
+        !selectTipo ||
+        !selectConcepto ||
+        !bloqueIngreso ||
+        !bloqueEgreso ||
+        !selectIngreso ||
+        !selectEgreso
+    ){
+        return;
+    }
+
+    const actualizarVisibilidad = function(){
+
+        const extraConceptoId =
+            selectConcepto.dataset.extraConceptoId;
+
+        const esExtra =
+            extraConceptoId &&
+            selectConcepto.value === extraConceptoId;
+
+        const esIngreso =
+            selectTipo.value === "INGRESO";
+
+        const esEgreso =
+            selectTipo.value === "EGRESO";
+
+        bloqueIngreso.classList.toggle(
+            "d-none",
+            !(esExtra && esIngreso)
+        );
+
+        bloqueEgreso.classList.toggle(
+            "d-none",
+            !(esExtra && esEgreso)
+        );
+
+        selectIngreso.required =
+            esExtra && esIngreso;
+
+        selectEgreso.required =
+            esExtra && esEgreso;
+
+        if(!(esExtra && esIngreso)){
+            selectIngreso.value = "";
+        }
+
+        if(!(esExtra && esEgreso)){
+            selectEgreso.value = "";
+        }
+
+    };
+
+    selectTipo.addEventListener(
+        "change",
+        actualizarVisibilidad
+    );
+
+    selectConcepto.addEventListener(
+        "change",
+        actualizarVisibilidad
+    );
+
+    actualizarVisibilidad();
 
 }

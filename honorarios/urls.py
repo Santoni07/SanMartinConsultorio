@@ -20,6 +20,12 @@ path(
 ),
 
 path(
+    "extras/<int:medico_id>/previsualizar/",
+    views.previsualizar_liquidacion_extras,
+    name="previsualizar_liquidacion_extras",
+),
+
+path(
     "generar-obra-social/",
     views.generar_liquidacion_obra_social,
     name="generar_liquidacion_obra_social",
@@ -59,6 +65,12 @@ path(
     "detalle/<int:liquidacion_id>/",
     views.detalle_liquidacion_medica,
     name="detalle_liquidacion_medica",
+),
+
+path(
+    "extras/<int:medico_id>/generar/",
+    views.generar_liquidacion_extras,
+    name="generar_liquidacion_extras",
 ),
 
 path(

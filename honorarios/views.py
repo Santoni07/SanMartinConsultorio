@@ -1,4 +1,4 @@
-from decimal import Decimal
+from decimal import Decimal, InvalidOperation
 import json
 from obrasocial.models import ObraSocial
 from django.contrib import messages
@@ -21,6 +21,7 @@ from caja.models import (
     DetalleMovimientoCaja,
     DetalleMedioPago,
     MedioPago,
+    ExtraCoseguro,
 )
 from caja.views import obtener_caja_abierta
 
@@ -62,6 +63,7 @@ def honorarios_medicos(request):
     particulares = DetalleMovimientoCaja.objects.none()
     coseguros = DetalleMovimientoCaja.objects.none()
     copagos = DetalleMovimientoCaja.objects.none()
+    extras = ExtraCoseguro.objects.none()
 
     obras_sociales_pendientes = DetalleMovimientoCaja.objects.none()
     obras_sociales_cobradas = DetalleMovimientoCaja.objects.none()
@@ -79,6 +81,9 @@ def honorarios_medicos(request):
             Decimal("0.00"),
 
         "total_copagos":
+            Decimal("0.00"),
+            
+        "total_extras":
             Decimal("0.00"),
 
         # OS todavía no cobradas
@@ -196,6 +201,49 @@ def honorarios_medicos(request):
         total_copagos = (
             copagos.aggregate(
                 total=Sum("importe_copago")
+            )["total"]
+            or Decimal("0.00")
+        )
+        
+        # ==========================================
+        # EXTRAS PENDIENTES DE LIQUIDAR
+        # ==========================================
+        #
+        # Se muestran separados de los coseguros
+        # contractuales.
+        #
+        # El médico recibe ahora el 100% del extra.
+        # El 30% del consultorio se recuperará
+        # posteriormente mediante una retención.
+        # ==========================================
+
+        extras = (
+            ExtraCoseguro.objects
+            .filter(
+                medico_id=medico_id,
+                centro_medico=centro_medico,
+                ingreso_movimiento__estado="ACTIVO",
+                liquidacion_honorario__isnull=True,
+                egreso_movimiento__isnull=True,
+            )
+            .select_related(
+                "paciente",
+                "turno",
+                "medico",
+                "centro_medico",
+                "ingreso_movimiento",
+                "detalle_prestacion",
+            )
+            .order_by(
+                "fecha",
+                "turno__hora",
+                "id",
+            )
+        )
+
+        total_extras = (
+            extras.aggregate(
+                total=Sum("importe_extra")
             )["total"]
             or Decimal("0.00")
         )
@@ -601,6 +649,13 @@ def honorarios_medicos(request):
                 total_copagos,
 
             # --------------------------------------
+            # EXTRAS
+            # --------------------------------------
+
+            "total_extras":
+                total_extras,
+            
+            # --------------------------------------
             # OS PENDIENTES DE COBRO
             # --------------------------------------
 
@@ -635,6 +690,7 @@ def honorarios_medicos(request):
             "total_disponible":
                 (
                     total_disponible_directo
+                     + total_extras
                     + total_honorarios_os_disponible
                 ),
         }
@@ -658,6 +714,9 @@ def honorarios_medicos(request):
 
             "copagos":
                 copagos,
+                
+            "extras": 
+                extras,
 
             "obras_sociales_pendientes":
                 obras_sociales_pendientes,
@@ -853,6 +912,113 @@ def previsualizar_liquidacion(request, medico_id):
                 resumen,
         }
     )  
+
+
+@login_required
+def previsualizar_liquidacion_extras(
+    request,
+    medico_id
+):
+
+    # ==========================================
+    # CENTRO Y MÉDICO
+    # ==========================================
+
+    centro_medico = obtener_centro_activo(request)
+
+    medico = get_object_or_404(
+        Medico,
+        pk=medico_id
+    )
+
+    # ==========================================
+    # EXTRAS PENDIENTES
+    # ==========================================
+    #
+    # La empresa entrega al médico el 100%
+    # del importe extra cobrado.
+    #
+    # El 30% del consultorio se recuperará
+    # posteriormente mediante una retención,
+    # cuando la Obra Social haya pagado.
+    # ==========================================
+
+    extras = (
+        ExtraCoseguro.objects
+        .filter(
+            medico=medico,
+            centro_medico=centro_medico,
+            ingreso_movimiento__estado="ACTIVO",
+            liquidacion_honorario__isnull=True,
+            egreso_movimiento__isnull=True,
+        )
+        .select_related(
+            "paciente",
+            "turno",
+            "medico",
+            "centro_medico",
+            "ingreso_movimiento",
+            "detalle_prestacion",
+        )
+        .order_by(
+            "fecha",
+            "turno__hora",
+            "id",
+        )
+    )
+
+    # ==========================================
+    # TOTAL
+    # ==========================================
+
+    total_extras = (
+        extras.aggregate(
+            total=Sum("importe_extra")
+        )["total"]
+        or Decimal("0.00")
+    )
+
+    cantidad_extras = extras.count()
+
+    # ==========================================
+    # VALIDAR
+    # ==========================================
+
+    if not extras.exists():
+
+        messages.warning(
+            request,
+            "No existen extras pendientes de liquidar."
+        )
+
+        return redirect(
+            f"{reverse('honorarios_medicos')}?medico={medico.id}"
+        )
+
+    # ==========================================
+    # RESUMEN
+    # ==========================================
+
+    resumen = {
+        "cantidad_extras": cantidad_extras,
+        "total_extras": total_extras,
+    }
+
+    # ==========================================
+    # RENDER
+    # ==========================================
+
+    return render(
+        request,
+        "honorarios/previsualizar_liquidacion_extras.html",
+        {
+            "medico": medico,
+            "centro_medico": centro_medico,
+            "extras": extras,
+            "resumen": resumen,
+        }
+    )
+
 
 @login_required
 def previsualizar_liquidacion_os(request, medico_id):
@@ -1724,6 +1890,185 @@ def generar_liquidacion(request, medico_id):
         liquidacion_id=liquidacion.id
     )
 
+
+@login_required
+@transaction.atomic
+def generar_liquidacion_extras(
+    request,
+    medico_id
+):
+
+    # ==========================================
+    # SOLO POST
+    # ==========================================
+
+    if request.method != "POST":
+
+        return redirect(
+            "previsualizar_liquidacion_extras",
+            medico_id=medico_id
+        )
+
+    # ==========================================
+    # CENTRO Y MÉDICO
+    # ==========================================
+
+    centro_medico = obtener_centro_activo(request)
+
+    medico = get_object_or_404(
+        Medico,
+        pk=medico_id
+    )
+
+    # ==========================================
+    # BLOQUEAR Y BUSCAR EXTRAS PENDIENTES
+    # ==========================================
+    #
+    # select_for_update evita que dos usuarios
+    # generen dos liquidaciones sobre los mismos
+    # registros al mismo tiempo.
+    # ==========================================
+
+    extras = list(
+        ExtraCoseguro.objects
+        .select_for_update()
+        .filter(
+            medico=medico,
+            centro_medico=centro_medico,
+            ingreso_movimiento__estado="ACTIVO",
+            liquidacion_honorario__isnull=True,
+            egreso_movimiento__isnull=True,
+        )
+        .select_related(
+            "paciente",
+            "turno",
+            "ingreso_movimiento",
+            "detalle_prestacion",
+        )
+        .order_by(
+            "fecha",
+            "turno__hora",
+            "id",
+        )
+    )
+
+    # ==========================================
+    # VALIDAR
+    # ==========================================
+
+    if not extras:
+
+        messages.warning(
+            request,
+            "No existen extras pendientes de liquidar."
+        )
+
+        return redirect(
+            f"{reverse('honorarios_medicos')}?medico={medico.id}"
+        )
+
+    # ==========================================
+    # TOTAL A PAGAR
+    # ==========================================
+    #
+    # Se entrega el 100% al médico.
+    # La devolución del 30% se aplicará más
+    # adelante como retención.
+    # ==========================================
+
+    total_extras = sum(
+        (
+            extra.importe_extra
+            or Decimal("0.00")
+            for extra in extras
+        ),
+        Decimal("0.00")
+    )
+
+    if total_extras <= Decimal("0.00"):
+
+        messages.warning(
+            request,
+            "El total de extras debe ser mayor a cero."
+        )
+
+        return redirect(
+            "previsualizar_liquidacion_extras",
+            medico_id=medico.id
+        )
+
+    # ==========================================
+    # CREAR LIQUIDACIÓN
+    # ==========================================
+
+    liquidacion = LiquidacionMedica.objects.create(
+
+        medico=medico,
+
+        centro_medico=centro_medico,
+
+        cantidad_prestaciones=len(extras),
+
+        total_bruto=total_extras,
+
+        total_iva=Decimal("0.00"),
+
+        total_retenciones=Decimal("0.00"),
+
+        total_consultorio=Decimal("0.00"),
+
+        total_honorarios=total_extras,
+
+        estado="PENDIENTE",
+
+        observacion=(
+            "Liquidación correspondiente a extras."
+        ),
+
+        generado_por=request.user,
+
+        creado_por=request.user,
+    )
+
+    # ==========================================
+    # ASOCIAR EXTRAS A LA LIQUIDACIÓN
+    # ==========================================
+
+    fecha_actual = timezone.now()
+
+    ExtraCoseguro.objects.filter(
+        id__in=[
+            extra.id
+            for extra in extras
+        ]
+    ).update(
+        liquidacion_honorario=liquidacion,
+        fecha_liquidacion_honorario=fecha_actual,
+    )
+
+    # ==========================================
+    # MENSAJE
+    # ==========================================
+
+    messages.success(
+        request,
+        (
+            f"Liquidación de Extras #{liquidacion.id} "
+            f"generada correctamente. "
+            f"Total: ${total_extras:,.2f}"
+        )
+    )
+
+    # ==========================================
+    # DETALLE
+    # ==========================================
+
+    return redirect(
+        "detalle_liquidacion_medica",
+        liquidacion_id=liquidacion.id
+    )
+
+
 @login_required
 @transaction.atomic
 def generar_liquidacion_os(request, medico_id):
@@ -2174,6 +2519,21 @@ def registrar_pago_liquidacion(
         pk=liquidacion_id,
         centro_medico=centro_medico,
     )
+    
+    # ==========================================
+    # EXTRAS DE ESTA LIQUIDACIÓN
+    # ==========================================
+
+    extras_liquidacion = (
+        ExtraCoseguro.objects
+        .filter(
+            liquidacion_honorario=liquidacion
+        )
+    )
+
+    es_liquidacion_extras = (
+        extras_liquidacion.exists()
+    )
 
     # ==========================================
     # CAJA ABIERTA
@@ -2279,6 +2639,43 @@ def registrar_pago_liquidacion(
             importe = form.cleaned_data[
                 "importe"
             ]
+            
+            # ==================================
+            # TOTAL DE MEDIOS DE PAGO
+            # ==================================
+
+            try:
+
+                total_medios_pago = sum(
+                    (
+                        Decimal(
+                            str(item["importe"])
+                        )
+                        for item in medios_pago_seleccionados
+                    ),
+                    Decimal("0.00")
+                )
+
+            except (
+                KeyError,
+                TypeError,
+                ValueError,
+                InvalidOperation,
+            ):
+
+                mostrar_error(
+                    request,
+                    titulo="Medios de pago inválidos",
+                    mensaje=(
+                        "No se pudieron procesar "
+                        "los medios de pago seleccionados."
+                    ),
+                )
+
+                return redirect(
+                    "registrar_pago_liquidacion",
+                    liquidacion.id
+                )
 
             if importe <= 0:
 
@@ -2293,6 +2690,33 @@ def registrar_pago_liquidacion(
                     liquidacion.id
                 )
 
+            
+            # ==================================
+            # VALIDAR TOTAL DE MEDIOS
+            # ==================================
+
+            if total_medios_pago != importe:
+
+                mostrar_error(
+                    request,
+                    titulo="Importes diferentes",
+                    mensaje=(
+                        "La suma de los medios de pago "
+                        "debe coincidir con el importe abonado."
+                    ),
+                    detalles=[
+                        f"Importe del pago: ${importe}",
+                        (
+                            f"Total medios de pago: "
+                            f"${total_medios_pago}"
+                        ),
+                    ],
+                )
+
+                return redirect(
+                    "registrar_pago_liquidacion",
+                    liquidacion.id
+                )
             # ==================================
             # VALIDAR SALDO
             # ==================================
@@ -2314,6 +2738,53 @@ def registrar_pago_liquidacion(
                 )
 
             # ==================================
+            # LOS EXTRAS SE PAGAN COMPLETOS
+            # ==================================
+            #
+            # Esto garantiza que todos los extras
+            # puedan vincularse a un único egreso.
+            # ==================================
+
+            if (
+                es_liquidacion_extras
+                and importe != liquidacion.saldo_pendiente
+            ):
+
+                mostrar_error(
+                    request,
+                    titulo="Pago incompleto",
+                    mensaje=(
+                        "Las liquidaciones de Extras "
+                        "deben pagarse por el saldo completo."
+                    ),
+                    detalles=[
+                        (
+                            f"Saldo a pagar: "
+                            f"${liquidacion.saldo_pendiente}"
+                        )
+                    ],
+                )
+
+                return redirect(
+                    "registrar_pago_liquidacion",
+                    liquidacion.id
+                )
+            
+            
+            if es_liquidacion_extras:
+
+                concepto_movimiento = (
+                    f"Pago de Extras - "
+                    f"{liquidacion.medico}"
+                )
+
+            else:
+
+                concepto_movimiento = (
+                    f"Pago Honorarios Médicos - "
+                    f"{liquidacion.medico}"
+                )
+            # ==================================
             # CREAR EGRESO EN CAJA
             # ==================================
 
@@ -2327,10 +2798,7 @@ def registrar_pago_liquidacion(
 
                 importe=importe,
 
-                concepto=(
-                    f"Pago Honorarios Médicos - "
-                    f"{liquidacion.medico}"
-                ),
+                concepto=concepto_movimiento,
 
                 observacion=form.cleaned_data[
                     "observacion"
@@ -2415,6 +2883,21 @@ def registrar_pago_liquidacion(
                 liquidacion.pagado_por = None
 
             liquidacion.save()
+            
+            # ==================================
+            # VINCULAR EGRESO CON LOS EXTRAS
+            # ==================================
+
+            if (
+                es_liquidacion_extras
+                and liquidacion.estado == "PAGADA"
+            ):
+
+                extras_liquidacion.update(
+                    egreso_movimiento=movimiento
+                )
+                        
+            
 
             # ==================================
             # MENSAJE
@@ -2564,7 +3047,6 @@ def historial_liquidaciones_medicas(request):
         },
     )
 
-
 @login_required
 def detalle_liquidacion_medica(
     request,
@@ -2581,16 +3063,44 @@ def detalle_liquidacion_medica(
     )
 
     # ==========================================
-    # ITEMS NUEVOS
+    # EXTRAS DE ESTA LIQUIDACIÓN
     # ==========================================
-    #
-    # Sistema actual:
-    #
-    # DetalleLiquidacionMedica
-    #   - PARTICULAR
-    #   - COSEGURO
-    #   - OBRA SOCIAL (futuro)
-    #
+
+    extras_liquidacion = list(
+        ExtraCoseguro.objects
+        .filter(
+            liquidacion_honorario=liquidacion
+        )
+        .select_related(
+            "paciente",
+            "turno",
+            "medico",
+            "centro_medico",
+            "ingreso_movimiento",
+            "egreso_movimiento",
+        )
+        .order_by(
+            "fecha",
+            "turno__hora",
+            "id",
+        )
+    )
+
+    es_liquidacion_extras = bool(
+        extras_liquidacion
+    )
+
+    total_extras = sum(
+        (
+            extra.importe_extra
+            or Decimal("0.00")
+            for extra in extras_liquidacion
+        ),
+        Decimal("0.00")
+    )
+
+    # ==========================================
+    # ITEMS DEL SISTEMA ACTUAL
     # ==========================================
 
     items_nuevos = list(
@@ -2616,13 +3126,30 @@ def detalle_liquidacion_medica(
     # DETERMINAR SISTEMA
     # ==========================================
 
-    usa_sistema_nuevo = bool(items_nuevos)
+    usa_sistema_nuevo = bool(
+        items_nuevos
+    )
+
+    # ==========================================
+    # LIQUIDACIÓN DE EXTRAS
+    # ==========================================
+
+    if es_liquidacion_extras:
+
+        items = []
+
+        total_particulares = Decimal("0.00")
+        total_coseguros = Decimal("0.00")
+
+        cantidad_conceptos = len(
+            extras_liquidacion
+        )
 
     # ==========================================
     # SISTEMA NUEVO
     # ==========================================
 
-    if usa_sistema_nuevo:
+    elif usa_sistema_nuevo:
 
         items = items_nuevos
 
@@ -2666,13 +3193,6 @@ def detalle_liquidacion_medica(
             )
         )
 
-        # En las liquidaciones históricas no
-        # necesitamos reconstruir PARTICULAR /
-        # COSEGURO.
-        #
-        # Conservamos los totales originales
-        # de la liquidación.
-
         total_particulares = Decimal("0.00")
         total_coseguros = Decimal("0.00")
 
@@ -2711,14 +3231,32 @@ def detalle_liquidacion_medica(
             "items": items,
             "pagos": pagos,
 
-            "usa_sistema_nuevo": usa_sistema_nuevo,
-            "cantidad_conceptos": cantidad_conceptos,
+            "usa_sistema_nuevo":
+                usa_sistema_nuevo,
 
-            "total_particulares": total_particulares,
-            "total_coseguros": total_coseguros,
+            "cantidad_conceptos":
+                cantidad_conceptos,
+
+            "total_particulares":
+                total_particulares,
+
+            "total_coseguros":
+                total_coseguros,
+
+            # Extras
+            "es_liquidacion_extras":
+                es_liquidacion_extras,
+
+            "extras_liquidacion":
+                extras_liquidacion,
+
+            "total_extras":
+                total_extras,
         },
     )
-    
+
+
+
 
 @login_required
 def generar_liquidacion_obra_social(request):
