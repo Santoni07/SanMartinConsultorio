@@ -919,6 +919,37 @@ class DetalleMasterObraSocial(models.Model):
         null=True,
         blank=True,
     )
+    
+    # ======================================================
+    # CRÉDITO CONSULTORIO - OBRA SOCIAL
+    # ======================================================
+
+    importe_consultorio_reconocido = models.DecimalField(
+        "Importe consultorio reconocido",
+        max_digits=12,
+        decimal_places=2,
+        null=True,
+        blank=True
+    )
+
+    consultorio_ingresado_caja = models.BooleanField(
+        "Consultorio ingresado a caja",
+        default=False
+    )
+
+    fecha_ingreso_consultorio = models.DateTimeField(
+        "Fecha ingreso consultorio",
+        null=True,
+        blank=True
+    )
+
+    movimiento_ingreso_consultorio = models.ForeignKey(
+        "caja.MovimientoCaja",
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+        related_name="creditos_consultorio_obra_social"
+    )
     # ======================================================
     # CONFIGURACIÓN
     # ======================================================

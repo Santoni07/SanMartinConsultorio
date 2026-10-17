@@ -199,4 +199,21 @@ path(
     views.generar_master_refacturacion,
     name="generar_master_refacturacion",
 ),
+
+path(
+    "consultorio/ingresos/",
+    views.ingresos_consultorio_os,
+    name="ingresos_consultorio_os",
+),
+path(
+    "consultorio/ingresos/historial/",
+    views.historial_ingresos_consultorio_os,
+    name="historial_ingresos_consultorio_os",
+),
+path(
+    "consultorio/ingresos/<int:master_id>/registrar/",
+    views.ingresar_master_consultorio_caja,
+    name="ingresar_master_consultorio_caja",
+),
+
 ], 'obrasocial')
