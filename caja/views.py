@@ -70,48 +70,150 @@ def obtener_caja_abierta(centro_medico):
         estado='ABIERTA'
     ).order_by('turno').first()
 
-
 @login_required
 def caja_home(request):
+
+    # ==========================================
+    # CENTRO MÉDICO ACTIVO
+    # ==========================================
+
     centro_medico = obtener_centro_activo(request)
+
+    # ==========================================
+    # VALIDAR PERMISOS
+    # ==========================================
+
     if not validar_permiso_caja(request):
 
         messages.error(
             request,
-            'No tiene permisos para acceder a la caja de esta sede.'
+            "No tiene permisos para acceder a la caja de esta sede."
         )
 
-        return redirect('turnos:ver_disponibilidad')
+        return redirect("turnos:ver_disponibilidad")
 
     if not centro_medico:
-        messages.error(request, 'No hay una sede activa seleccionada.')
-        return redirect('core:index')
+
+        messages.error(
+            request,
+            "No hay una sede activa seleccionada."
+        )
+
+        return redirect("core:index")
+
+    # ==========================================
+    # CAJA ABIERTA
+    # ==========================================
 
     caja = obtener_caja_abierta(centro_medico)
 
-    cajas = CajaDiaria.objects.filter(
-        centro_medico=centro_medico
-    ).order_by('-fecha')[:10]
+    # ==========================================
+    # ÚLTIMAS CAJAS DE LA SEDE
+    # ==========================================
+
+    cajas = (
+        CajaDiaria.objects
+        .filter(
+            centro_medico=centro_medico
+        )
+        .order_by(
+            "-fecha",
+            "-id"
+        )[:10]
+    )
+
+    # ==========================================
+    # MOVIMIENTOS DE LA CAJA ABIERTA
+    # ==========================================
 
     if caja:
-        movimientos = MovimientoCaja.objects.filter(
-        caja=caja,
-        centro_medico=centro_medico
-    ).prefetch_related(
-    "detalles",
-    "detalles_medios_pago__medio_pago"
 
-    ).order_by("-fecha_creacion")
+        movimientos = (
+            MovimientoCaja.objects
+            .filter(
+                caja=caja,
+                centro_medico=centro_medico
+            )
+            .prefetch_related(
+                "detalles",
+                "detalles_medios_pago__medio_pago"
+            )
+            .order_by(
+                "-fecha_creacion"
+            )
+        )
+
     else:
+
         movimientos = MovimientoCaja.objects.none()
 
-    return render(request, 'caja/caja_home.html', {
-        'centro_medico': centro_medico,
-        'caja': caja,
-        'cajas': cajas,
-        'movimientos': movimientos,
-    })
+    # ==========================================
+    # FECHA ACTUAL
+    # ==========================================
 
+    hoy = timezone.localdate()
+
+    # ==========================================
+    # RETENCIONES RECUPERADAS DE LA CAJA ACTUAL
+    # ==========================================
+
+    if caja:
+
+        retenciones_extras = (
+            ExtraCoseguro.objects
+            .filter(
+                centro_medico=centro_medico,
+                caja_retencion=caja,
+                cobro_retencion_registrado=True,
+                liquidacion_retencion__isnull=False,
+                fecha_cobro_retencion__date=hoy,
+            )
+            .select_related(
+                "paciente",
+                "medico",
+                "liquidacion_retencion",
+                "cobro_retencion_registrado_por",
+                "caja_retencion",
+            )
+            .order_by(
+                "-fecha_cobro_retencion",
+                "-id",
+            )
+        )
+
+    else:
+
+        retenciones_extras = ExtraCoseguro.objects.none()
+
+    # ==========================================
+    # TOTAL RECUPERADO EN LA CAJA ACTUAL
+    # ==========================================
+
+    total_retenciones_extras = (
+        retenciones_extras.aggregate(
+            total=Sum("importe_consultorio")
+        )["total"]
+        or Decimal("0.00")
+    )
+
+    # ==========================================
+    # RENDER
+    # ==========================================
+
+    return render(
+        request,
+        "caja/caja_home.html",
+        {
+            "centro_medico": centro_medico,
+            "caja": caja,
+            "cajas": cajas,
+            "movimientos": movimientos,
+
+            "retenciones_extras": retenciones_extras,
+            "total_retenciones_extras": total_retenciones_extras,
+            "fecha_retenciones": hoy,
+        }
+    )
 
 @login_required
 @transaction.atomic

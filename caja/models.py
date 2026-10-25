@@ -1406,6 +1406,38 @@ class ExtraCoseguro(models.Model):
         blank=True,
         null=True
     )
+    
+     # ==================================================
+    # REGISTRO DE RETENCIÓN A FAVOR DEL CONSULTORIO
+    # ==================================================
+
+    cobro_retencion_registrado = models.BooleanField(
+        default=False,
+        verbose_name="Cobro de retención registrado"
+    )
+
+    fecha_cobro_retencion = models.DateTimeField(
+        null=True,
+        blank=True,
+        verbose_name="Fecha de registro del cobro"
+    )
+
+    cobro_retencion_registrado_por = models.ForeignKey(
+        User,
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+        related_name="retenciones_extras_registradas",
+        verbose_name="Usuario que registró el cobro"
+    )
+    caja_retencion = models.ForeignKey(
+        "caja.CajaDiaria",
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+        related_name="retenciones_extras_recuperadas",
+    )
+    
 
     class Meta:
         verbose_name = "Extra de coseguro"
@@ -1469,9 +1501,15 @@ class ExtraCoseguro(models.Model):
     def retencion_aplicada(self):
 
         return self.liquidacion_retencion_id is not None
-
+    
     @property
     def estado_control(self):
+
+        if (
+            self.liquidacion_retencion_id
+            and self.cobro_retencion_registrado
+        ):
+            return "COBRO_REGISTRADO"
 
         if self.liquidacion_retencion_id:
             return "RETENIDO"
@@ -1486,3 +1524,5 @@ class ExtraCoseguro(models.Model):
             return "DISPONIBLE_PARA_RETENER"
 
         return "PENDIENTE_COBRO_OBRA_SOCIAL"
+
+    

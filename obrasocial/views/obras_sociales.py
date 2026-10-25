@@ -12,6 +12,18 @@ from decimal import Decimal,InvalidOperation
 from caja.models import ConceptoFacturacion
 from nomenclador.models import NomencladorGeneral
 from caja.models import DetalleMovimientoCaja, DetalleMedioPago, MedioPago
+
+
+# ======================================================
+# PERMISOS - GESTIÓN DE OBRAS SOCIALES
+# ======================================================
+
+def usuario_autorizado_obras_sociales(user):
+    return (
+        user.is_authenticated
+        and user.username.lower() in {"cintia", "cintia2"}
+    )
+
 # ==========================================================
 # LISTADO
 # ==========================================================
@@ -554,7 +566,7 @@ def master_obra_social_lista(request, obra_social_id):
     # ACCESO EXCLUSIVO CINTIA
     # ======================================================
 
-    if request.user.username.lower() != "cintia":
+    if not usuario_autorizado_obras_sociales(request.user):
         raise PermissionDenied(
             "No tiene permisos para acceder al Master de Obra Social."
         )
@@ -664,7 +676,7 @@ def master_obra_social_nuevo(request, obra_social_id):
     # ACCESO EXCLUSIVO CINTIA
     # ======================================================
 
-    if request.user.username.lower() != "cintia":
+    if not usuario_autorizado_obras_sociales(request.user):
         raise PermissionDenied(
             "No tiene permisos para generar Masters."
         )
@@ -1083,7 +1095,7 @@ def master_obra_social_detalle(request, obra_social_id, master_id):
     # ACCESO EXCLUSIVO CINTIA
     # ======================================================
 
-    if request.user.username.lower() != "cintia":
+    if not usuario_autorizado_obras_sociales(request.user):
         raise PermissionDenied(
             "No tiene permisos para acceder al Master."
         )
@@ -1342,7 +1354,7 @@ def master_obra_social_presentar(request, obra_social_id, master_id):
     # ACCESO EXCLUSIVO CINTIA
     # ======================================================
 
-    if request.user.username.lower() != "cintia":
+    if not usuario_autorizado_obras_sociales(request.user):
         raise PermissionDenied(
             "No tiene permisos para presentar Masters."
         )
@@ -1622,7 +1634,7 @@ def master_obra_social_registrar_pago(
     # ACCESO EXCLUSIVO CINTIA
     # ======================================================
 
-    if request.user.username.lower() != "cintia":
+    if not usuario_autorizado_obras_sociales(request.user):
         raise PermissionDenied(
             "No tiene permisos para registrar cobros de Masters."
         )
@@ -2384,7 +2396,7 @@ def master_obra_social_cargar_liquidacion(
     # ACCESO EXCLUSIVO CINTIA
     # ======================================================
 
-    if request.user.username.lower() != "cintia":
+    if not usuario_autorizado_obras_sociales(request.user):
 
         raise PermissionDenied(
             "No tiene permisos para cargar liquidaciones "
@@ -2865,7 +2877,7 @@ def master_obra_social_imprimir(request, obra_social_id, master_id):
     # ACCESO EXCLUSIVO CINTIA
     # ======================================================
 
-    if request.user.username.lower() != "cintia":
+    if not usuario_autorizado_obras_sociales(request.user):
         raise PermissionDenied(
             "No tiene permisos para imprimir el Master."
         )
@@ -3040,7 +3052,7 @@ def ingresos_consultorio_os(request):
     # ACCESO EXCLUSIVO CINTIA
     # ======================================================
 
-    if request.user.username.lower() != "cintia":
+    if not usuario_autorizado_obras_sociales(request.user):
         raise PermissionDenied(
             "No tiene permisos para acceder a los ingresos "
             "del consultorio por Obras Sociales."
@@ -3064,6 +3076,23 @@ def ingresos_consultorio_os(request):
         pk=centro_id
     )
 
+     # ======================================================
+    # CAJAS ABIERTAS DE HOY - SEDE ACTIVA
+    # ======================================================
+
+    hoy = timezone.localdate()
+
+    cajas_abiertas = list(
+        CajaDiaria.objects.filter(
+            centro_medico=centro_medico,
+            fecha=hoy,
+            estado="ABIERTA",
+        ).order_by("turno")
+    )
+
+    cantidad_cajas_abiertas = len(cajas_abiertas)
+    
+    
     # ======================================================
     # MEDIOS DE PAGO ACTIVOS
     # ======================================================
@@ -3421,6 +3450,10 @@ def ingresos_consultorio_os(request):
 
             # PARA EL MODAL DE INGRESO
             "medios_pago": medios_pago,
+            
+            # CAJAS ABIERTAS DE HOY
+            "cajas_abiertas": cajas_abiertas,
+            "cantidad_cajas_abiertas": cantidad_cajas_abiertas,
 
             # HISTORIAL
             "historial_ingresos": historial_ingresos,
@@ -3441,7 +3474,9 @@ def ingresos_consultorio_os(request):
     )
 
 
-from caja.models import CajaDiaria, MovimientoCaja    
+from caja.models import CajaDiaria, MovimientoCaja
+
+
 @login_required
 @transaction.atomic
 def ingresar_master_consultorio_caja(request, master_id):
@@ -3450,7 +3485,7 @@ def ingresar_master_consultorio_caja(request, master_id):
     # ACCESO EXCLUSIVO CINTIA
     # ======================================================
 
-    if request.user.username.lower() != "cintia":
+    if not usuario_autorizado_obras_sociales(request.user):
         raise PermissionDenied(
             "No tiene permisos para registrar ingresos "
             "del consultorio por Obras Sociales."
@@ -3472,12 +3507,10 @@ def ingresar_master_consultorio_caja(request, master_id):
     centro_id = request.session.get("centro_id")
 
     if not centro_id:
-
         messages.error(
             request,
             "Debe seleccionar una sede."
         )
-
         return redirect(
             "obrasocial:ingresos_consultorio_os"
         )
@@ -3488,7 +3521,7 @@ def ingresar_master_consultorio_caja(request, master_id):
     )
 
     # ======================================================
-    # MASTER
+    # MASTER COBRADO
     # ======================================================
 
     master = get_object_or_404(
@@ -3506,19 +3539,6 @@ def ingresar_master_consultorio_caja(request, master_id):
     medio_pago_id = request.POST.get("medio_pago")
 
     if not medio_pago_id:
-
-        messages.error(
-            request,
-            "Debe seleccionar un medio de pago."
-        )
-
-        return redirect(
-            "obrasocial:ingresos_consultorio_os"
-        )
-
-    medio_pago_id = request.POST.get("medio_pago")
-
-    if not medio_pago_id:
         messages.error(
             request,
             "Debe seleccionar un medio de pago."
@@ -3532,46 +3552,85 @@ def ingresar_master_consultorio_caja(request, master_id):
         pk=medio_pago_id,
         activo=True,
     )
+
     # ======================================================
-    # CAJA ABIERTA DE LA SEDE ACTIVA
+    # CAJAS ABIERTAS DE LA SEDE Y FECHA ACTUAL
     # ======================================================
 
-    caja = (
+    hoy = timezone.localdate()
+
+    cajas_abiertas = list(
         CajaDiaria.objects
+        .select_for_update()
         .filter(
             centro_medico=centro_medico,
+            fecha=hoy,
             estado="ABIERTA",
         )
-        .order_by("-fecha_apertura")
-        .first()
+        .order_by("turno")
     )
 
-    if not caja:
+    # ======================================================
+    # SIN CAJAS ABIERTAS
+    # ======================================================
 
+    if not cajas_abiertas:
         messages.error(
             request,
-            (
-                f"No existe una caja abierta en "
-                f"{centro_medico.nombre}. "
-                f"Debe abrir una caja antes de registrar "
-                f"el ingreso."
-            )
+            f"No existe una caja abierta hoy en "
+            f"{centro_medico.nombre}. "
+            f"Debe abrir una caja antes de registrar "
+            f"el ingreso."
         )
-
         return redirect(
             "obrasocial:ingresos_consultorio_os"
         )
 
     # ======================================================
+    # UNA SOLA CAJA ABIERTA
+    # ======================================================
+
+    if len(cajas_abiertas) == 1:
+        caja = cajas_abiertas[0]
+
+    # ======================================================
+    # DOS CAJAS ABIERTAS
+    # ======================================================
+
+    else:
+        caja_id = request.POST.get("caja_id")
+
+        if not caja_id:
+            messages.error(
+                request,
+                "Hay dos cajas abiertas para hoy. "
+                "Debe seleccionar la caja de mañana "
+                "o tarde antes de registrar el ingreso."
+            )
+            return redirect(
+                "obrasocial:ingresos_consultorio_os"
+            )
+
+        caja = next(
+            (
+                c for c in cajas_abiertas
+                if str(c.pk) == str(caja_id)
+            ),
+            None
+        )
+
+        if caja is None:
+            messages.error(
+                request,
+                "La caja seleccionada no es válida "
+                "o ya no se encuentra abierta."
+            )
+            return redirect(
+                "obrasocial:ingresos_consultorio_os"
+            )
+
+    # ======================================================
     # PRESTACIONES PENDIENTES DEL MASTER
-    #
-    # IMPORTANTE:
-    # - mismo Master
-    # - solamente sede activa
-    # - solamente importes > 0
-    # - solamente los que todavía NO entraron a Caja
-    #
-    # select_for_update evita doble ingreso por doble clic
     # ======================================================
 
     detalles = list(
@@ -3579,12 +3638,9 @@ def ingresar_master_consultorio_caja(request, master_id):
         .select_for_update()
         .filter(
             master=master,
-
             detalle_movimiento__movimiento__centro_medico=centro_medico,
-
             importe_consultorio_reconocido__isnull=False,
             importe_consultorio_reconocido__gt=0,
-
             consultorio_ingresado_caja=False,
         )
         .select_related(
@@ -3598,25 +3654,19 @@ def ingresar_master_consultorio_caja(request, master_id):
     # ======================================================
 
     if not detalles:
-
         messages.warning(
             request,
-            (
-                f"El Master #{master.id} no tiene importes "
-                f"del consultorio pendientes de ingresar "
-                f"para {centro_medico.nombre}. "
-                f"Es posible que ya hayan sido ingresados."
-            )
+            f"El Master #{master.id} no tiene importes "
+            f"del consultorio pendientes de ingresar "
+            f"para {centro_medico.nombre}. "
+            f"Es posible que ya hayan sido ingresados."
         )
-
         return redirect(
             "obrasocial:ingresos_consultorio_os"
         )
 
     # ======================================================
     # CALCULAR TOTAL EN EL SERVIDOR
-    #
-    # NO confiamos en ningún importe enviado por el HTML
     # ======================================================
 
     total_consultorio = sum(
@@ -3629,12 +3679,10 @@ def ingresar_master_consultorio_caja(request, master_id):
     )
 
     if total_consultorio <= Decimal("0.00"):
-
         messages.error(
             request,
             "El importe a ingresar debe ser mayor a cero."
         )
-
         return redirect(
             "obrasocial:ingresos_consultorio_os"
         )
@@ -3644,33 +3692,26 @@ def ingresar_master_consultorio_caja(request, master_id):
     # ======================================================
 
     movimiento = MovimientoCaja.objects.create(
-
         caja=caja,
-
         centro_medico=centro_medico,
-
         tipo="INGRESO",
-
         importe=total_consultorio,
-
         concepto=(
             f"Ingreso Consultorio Obra Social - "
             f"{master.obra_social.nombre} - "
             f"Master #{master.id}"
         ),
-
         observacion=(
             f"Ingreso correspondiente al consultorio por "
             f"Master #{master.id} - "
             f"{master.obra_social.nombre} - "
             f"Período {master.mes:02d}/{master.anio}. "
             f"Sede: {centro_medico.nombre}. "
+            f"Turno: {caja.get_turno_display()}. "
             f"Prestaciones: {len(detalles)}. "
             f"Medio de pago: {medio_pago.nombre}."
         ),
-
         estado="ACTIVO",
-
         creado_por=request.user,
     )
 
@@ -3718,20 +3759,20 @@ def ingresar_master_consultorio_caja(request, master_id):
             f"Master #{master.id} - "
             f"{master.obra_social.nombre} - "
             f"{centro_medico.nombre} - "
+            f"Turno {caja.get_turno_display()} - "
             f"{len(detalles)} prestación/es - "
             f"${total_consultorio:,.2f} - "
             f"{medio_pago.nombre}."
         )
     )
 
-    # ======================================================
-    # VOLVER AL PANEL
-    # ======================================================
-
     return redirect(
         "obrasocial:ingresos_consultorio_os"
     )
-    
+
+
+
+
     
 @login_required
 def historial_ingresos_consultorio_os(request):
@@ -3740,7 +3781,7 @@ def historial_ingresos_consultorio_os(request):
     # ACCESO EXCLUSIVO CINTIA
     # ======================================================
 
-    if request.user.username.lower() != "cintia":
+    if not usuario_autorizado_obras_sociales(request.user):
         raise PermissionDenied(
             "No tiene permisos para acceder al historial "
             "de ingresos del consultorio."

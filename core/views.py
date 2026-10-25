@@ -275,3 +275,13 @@ def renovar_sesion(request):
     """
     request.session.modified = True
     return JsonResponse({"ok": True})
+
+
+from django.shortcuts import render
+
+def error_403(request, exception=None):
+    return render(
+        request,
+        "core/403.html",
+        status=403
+    )

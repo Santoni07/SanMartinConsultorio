@@ -417,17 +417,20 @@ Ingresos Consultorio - Obras Sociales
                         -->
 
                         <button type="button"
-        class="btn btn-success"
-        data-bs-toggle="modal"
-        data-bs-target="#modalIngreso{{ grupo.master.id }}">
+                                class="btn btn-success"
+                                data-bs-toggle="modal"
+                                data-bs-target="#modalIngreso{{ grupo.master.id }}"
+                                {% if cantidad_cajas_abiertas == 0 %}disabled{% endif %}>
+                            <i class="bi bi-cash-coin me-1"></i>
+                            Ingresar ${{ grupo.total_consultorio|floatformat:2 }} a Caja
+                        </button>
 
-    <i class="bi bi-cash-coin me-1"></i>
-
-    Ingresar
-    ${{ grupo.total_consultorio|floatformat:2 }}
-    a Caja
-
-</button>
+                        {% if cantidad_cajas_abiertas == 0 %}
+                            <div class="text-danger small mt-2">
+                                <i class="bi bi-exclamation-triangle me-1"></i>
+                                No hay ninguna caja abierta hoy en esta sede.
+                            </div>
+                        {% endif %}
 
 <!-- ================================================== -->
 <!-- MODAL CONFIRMAR INGRESO -->
@@ -513,6 +516,48 @@ Ingresos Consultorio - Obras Sociales
 
                     </div>
 
+
+                     <!-- ====================================== -->
+                     <!-- CAJA DE DESTINO -->
+                     <!-- ====================================== -->
+
+                     <div class="mt-4">
+                         <label class="form-label fw-bold" for="cajaDestino{{ grupo.master.id }}">
+                             <i class="bi bi-wallet2 me-1"></i>
+                             Caja de destino
+                         </label>
+
+                         {% if cantidad_cajas_abiertas == 1 %}
+                             {% with caja=cajas_abiertas.0 %}
+                                 <input type="hidden" name="caja_id" value="{{ caja.id }}">
+                                 <div class="alert alert-success mb-0">
+                                     <i class="bi bi-check-circle me-1"></i>
+                                     Caja abierta: <strong>{{ caja.get_turno_display }}</strong>
+                                     — {{ caja.fecha|date:"d/m/Y" }}
+                                 </div>
+                             {% endwith %}
+                         {% elif cantidad_cajas_abiertas == 2 %}
+                             <select name="caja_id"
+                                     id="cajaDestino{{ grupo.master.id }}"
+                                     class="form-select" required>
+                                 <option value="">Seleccionar turno de caja...</option>
+                                 {% for caja in cajas_abiertas %}
+                                     <option value="{{ caja.id }}">
+                                         Turno {{ caja.get_turno_display }}
+                                         — {{ caja.fecha|date:"d/m/Y" }}
+                                     </option>
+                                 {% endfor %}
+                             </select>
+                             <div class="form-text">
+                                 Hay dos cajas abiertas hoy. Seleccione en cuál registrar el ingreso.
+                             </div>
+                         {% else %}
+                             <div class="alert alert-danger mb-0">
+                                 No existe una caja abierta para hoy.
+                                 Debe abrir una caja antes de continuar.
+                             </div>
+                         {% endif %}
+                     </div>
 
                     <!-- ====================================== -->
                     <!-- MEDIO DE PAGO -->

@@ -969,36 +969,47 @@
     <!-- BOTONES -->
     <!-- ===================================================== -->
 
-    <div class="mt-4 mb-4 d-flex justify-content-between">
+   
+<!-- ===================================================== -->
+<!-- BOTONES -->
+<!-- ===================================================== -->
 
-        <a
-            href="{% url 'historial_liquidaciones_medicas' %}"
-            class="btn btn-secondary"
-        >
+<div class="mt-4 mb-4 d-flex justify-content-between align-items-center">
 
-            <i class="bi bi-arrow-left"></i>
+    <!-- VOLVER -->
+    <a href="{% url 'historial_liquidaciones_medicas' %}"
+       class="btn btn-secondary">
 
-            Volver
+        <i class="bi bi-arrow-left"></i>
+        Volver
+    </a>
 
+    <div class="d-flex gap-2">
+
+        <!-- DESCARGAR PDF -->
+        <a href="{% url 'pdf_liquidacion_medica' liquidacion.id %}"
+           class="btn btn-danger"
+           target="_blank">
+
+            <i class="bi bi-file-earmark-pdf"></i>
+            Descargar PDF
         </a>
 
-
+        <!-- REGISTRAR PAGO -->
         {% if liquidacion.estado != "PAGADA" %}
 
-            <a
-                href="{% url 'registrar_pago_liquidacion' liquidacion.id %}"
-                class="btn btn-success"
-            >
+            <a href="{% url 'registrar_pago_liquidacion' liquidacion.id %}"
+               class="btn btn-success">
 
                 <i class="bi bi-cash-coin"></i>
-
                 Registrar Pago
-
             </a>
 
         {% endif %}
 
     </div>
+
+</div>
 
 
 </div>

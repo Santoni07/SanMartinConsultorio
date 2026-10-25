@@ -1,5 +1,9 @@
 from decimal import Decimal, InvalidOperation
+from django.http import HttpResponse
 import json
+from datetime import datetime
+from decimal import Decimal
+from io import BytesIO
 from obrasocial.models import ObraSocial
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
@@ -22,6 +26,7 @@ from caja.models import (
     DetalleMedioPago,
     MedioPago,
     ExtraCoseguro,
+    CajaDiaria
 )
 from caja.views import obtener_caja_abierta
 
@@ -43,7 +48,20 @@ from honorarios.forms import (
     PagoLiquidacionForm,
     FiltroHistorialLiquidacionesForm,
 )
+from django.utils.html import escape
 
+from reportlab.lib import colors
+from reportlab.lib.pagesizes import A4
+from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+from reportlab.lib.enums import TA_CENTER, TA_RIGHT
+from reportlab.lib.units import cm
+from reportlab.platypus import (
+    SimpleDocTemplate,
+    Paragraph,
+    Spacer,
+    Table,
+    TableStyle,
+)
 
 @login_required
 def honorarios_medicos(request):
@@ -1243,16 +1261,104 @@ def previsualizar_liquidacion_os(request, medico_id):
             f"{reverse('honorarios_medicos')}?medico={medico.id}"
         )
 
+        # ======================================================
+    # EXTRAS DISPONIBLES PARA RETENCIÓN
+    # ======================================================
+    #
+    # Solamente se consideran extras:
+    #
+    # - relacionados con las prestaciones incluidas
+    # - ya pagados completamente al médico
+    # - cuya prestación fue cobrada a la obra social
+    # - que todavía no fueron retenidos
+    #
+    # El detalle no se envía al template porque en esta
+    # pantalla solamente mostraremos el monto acumulado.
+    # ======================================================
+
+    detalles_ids = {
+        detalle.id
+        for detalle in prestaciones_os
+    }
+
+    extras_para_retener = (
+        ExtraCoseguro.objects
+        .filter(
+            detalle_prestacion_id__in=detalles_ids,
+
+            medico=medico,
+            centro_medico=centro_medico,
+
+            egreso_movimiento__estado="ACTIVO",
+            liquidacion_honorario__estado="PAGADA",
+
+            detalle_prestacion__obra_social_cobrada=True,
+
+            liquidacion_retencion__isnull=True,
+        )
+        .distinct()
+    )
+
+    total_retenciones = (
+        extras_para_retener.aggregate(
+            total=Sum("importe_consultorio")
+        )["total"]
+        or Decimal("0.00")
+    )
+
+    cantidad_extras_retenidos = (
+        extras_para_retener.count()
+    )
+
+    # ======================================================
+    # TOTAL NETO A PAGAR
+    # ======================================================
+
+    total_honorarios_neto = (
+        total_honorarios_os
+        -
+        total_retenciones
+    )
+
+    retencion_supera_honorarios = (
+        total_honorarios_neto
+        <
+        Decimal("0.00")
+    )
+
+    # No dejamos un total negativo en la previsualización.
+    # La generación definitiva también deberá bloquearse
+    # si ocurre esta situación.
+
+    if retencion_supera_honorarios:
+
+        total_honorarios_neto = Decimal("0.00")
+
     # ======================================================
     # RESUMEN
     # ======================================================
 
     resumen = {
         "cantidad": len(prestaciones_os),
-        "total_importe_os": total_importe_os,
-        "total_honorarios_os": total_honorarios_os,
-    }
 
+        "total_importe_os":
+            total_importe_os,
+
+        "total_honorarios_os":
+            total_honorarios_os,
+
+        "total_retenciones":
+            total_retenciones,
+
+        "total_honorarios_neto":
+            total_honorarios_neto,
+
+        "cantidad_extras_retenidos":
+            cantidad_extras_retenidos,
+
+        "retencion_supera_honorarios":
+            retencion_supera_honorarios,
+    }
     # ======================================================
     # RENDER
     # ======================================================
@@ -2043,33 +2149,128 @@ def generar_liquidacion_os(request, medico_id):
         )
 
     # ======================================================
-    # IVA / CONSULTORIO / RETENCIONES
+    # IVA / CONSULTORIO
     # ======================================================
 
     total_iva = Decimal("0.00")
     total_consultorio = Decimal("0.00")
-    total_retenciones = Decimal("0.00")
+
+    # ======================================================
+    # EXTRAS DISPONIBLES PARA RETENCIÓN
+    # ======================================================
+    #
+    # Solamente se retienen Extras que:
+    #
+    # - pertenecen a las prestaciones de esta liquidación
+    # - ya fueron pagados completamente al médico
+    # - corresponden a una prestación cobrada por la OS
+    # - todavía no fueron retenidos
+    #
+    # select_for_update evita que el mismo Extra sea tomado
+    # simultáneamente por dos liquidaciones.
+    # ======================================================
+
+    detalles_ids = {
+        item["detalle"].id
+        for item in items_liquidacion
+    }
+
+    extras_para_retener = list(
+        ExtraCoseguro.objects
+        .select_for_update()
+        .filter(
+            detalle_prestacion_id__in=detalles_ids,
+
+            medico=medico,
+            centro_medico=centro_medico,
+
+            egreso_movimiento__estado="ACTIVO",
+            liquidacion_honorario__estado="PAGADA",
+
+            detalle_prestacion__obra_social_cobrada=True,
+
+            liquidacion_retencion__isnull=True,
+        )
+        .distinct()
+    )
+
+    # ======================================================
+    # TOTAL RETENCIONES
+    # ======================================================
+
+    total_retenciones = sum(
+        (
+            extra.importe_consultorio
+            or Decimal("0.00")
+            for extra in extras_para_retener
+        ),
+        Decimal("0.00")
+    )
+
+    # ======================================================
+    # TOTAL NETO A PAGAR
+    # ======================================================
+
+    total_honorarios_neto = (
+        total_honorarios_os
+        -
+        total_retenciones
+    )
+
+    # ======================================================
+    # VALIDAR RETENCIONES
+    # ======================================================
+
+    if total_honorarios_neto < Decimal("0.00"):
+
+        messages.error(
+            request,
+            (
+                "No se puede generar la liquidación porque "
+                "las retenciones superan los honorarios "
+                "disponibles."
+            )
+        )
+
+        return redirect(
+            "previsualizar_liquidacion_os",
+            medico_id=medico.id
+        )
 
     # ======================================================
     # CREAR LIQUIDACIÓN
     # ======================================================
 
     liquidacion = LiquidacionMedica.objects.create(
+
         medico=medico,
+
         centro_medico=centro_medico,
 
-        cantidad_prestaciones=len(items_liquidacion),
+        cantidad_prestaciones=len(
+            items_liquidacion
+        ),
 
         total_bruto=total_bruto,
+
         total_iva=total_iva,
+
         total_consultorio=total_consultorio,
 
-        total_honorarios=total_honorarios_os,
+        # Importe que efectivamente queda pendiente
+        # de pago al médico.
+
+        total_honorarios=total_honorarios_neto,
+
+        # Importe devuelto al consultorio mediante
+        # el descuento aplicado a esta liquidación.
+
         total_retenciones=total_retenciones,
 
         estado="PENDIENTE",
 
         generado_por=request.user,
+
         creado_por=request.user,
     )
 
@@ -2082,28 +2283,25 @@ def generar_liquidacion_os(request, medico_id):
         detalle = item["detalle"]
         detalle_master = item["detalle_master"]
         honorario_os = item["honorario"]
-        historico = item["historico"]
 
         # ==================================================
         # DETALLE LIQUIDACIÓN
         # ==================================================
 
         DetalleLiquidacionMedica.objects.create(
+
             liquidacion=liquidacion,
+
             detalle_movimiento=detalle,
 
-            # ----------------------------------------------
-            # NUEVO SISTEMA
-            # ----------------------------------------------
-            #
             # Para históricos queda NULL.
-            # Para Masters nuevos sabemos exactamente qué
-            # evento de cobro generó este honorario.
-            # ----------------------------------------------
+            # Para registros nuevos se conserva el detalle
+            # exacto del Master que generó el honorario.
 
             detalle_master_obra_social=detalle_master,
 
             tipo="OBRA_SOCIAL",
+
             importe=honorario_os,
         )
 
@@ -2141,6 +2339,29 @@ def generar_liquidacion_os(request, medico_id):
             )
 
     # ======================================================
+    # MARCAR EXTRAS COMO RETENIDOS
+    # ======================================================
+    #
+    # Cada Extra queda vinculado con esta liquidación.
+    # Al dejar de tener liquidacion_retencion=NULL,
+    # ya no podrá descontarse en otra liquidación.
+    # ======================================================
+
+    fecha_retencion = timezone.now()
+
+    for extra in extras_para_retener:
+
+        extra.liquidacion_retencion = liquidacion
+        extra.fecha_retencion = fecha_retencion
+
+        extra.save(
+            update_fields=[
+                "liquidacion_retencion",
+                "fecha_retencion",
+            ]
+        )
+
+    # ======================================================
     # COMPATIBILIDAD DEL MOVIMIENTO
     # ======================================================
     #
@@ -2148,11 +2369,9 @@ def generar_liquidacion_os(request, medico_id):
     # honorario_os_liquidado para decidir si futuras
     # refacturaciones pueden generar otro honorario.
     #
-    # Pero podemos dejarlo en True cuando TODOS los créditos
-    # de honorarios actualmente existentes de esa prestación
-    # ya están liquidados.
-    #
-    # Esto mantiene coherencia con otras pantallas antiguas.
+    # Se deja en True cuando todos los créditos de
+    # honorarios existentes de esa prestación ya fueron
+    # liquidados.
     # ======================================================
 
     movimientos_procesados = {
@@ -2191,8 +2410,12 @@ def generar_liquidacion_os(request, medico_id):
         (
             "Liquidación de Obra Social generada "
             "correctamente. "
-            f"Total honorarios: "
-            f"${total_honorarios_os:,.2f}"
+            f"Honorarios brutos: "
+            f"${total_honorarios_os:,.2f}. "
+            f"Retenciones: "
+            f"${total_retenciones:,.2f}. "
+            f"Total neto: "
+            f"${total_honorarios_neto:,.2f}."
         )
     )
 
@@ -2201,10 +2424,9 @@ def generar_liquidacion_os(request, medico_id):
     # ======================================================
 
     return redirect(
-    "detalle_liquidacion_medica",
-    liquidacion_id=liquidacion.id
-)
-
+        "detalle_liquidacion_medica",
+        liquidacion_id=liquidacion.id
+    )
 
 
 @login_required
@@ -3601,3 +3823,701 @@ def confirmar_liquidacion_obra_social(request):
         "detalle_liquidacion_medica",
         liquidacion_id=liquidacion.id
     )
+
+@login_required
+def panel_extras(request):
+
+    centro_medico = obtener_centro_activo(request)
+
+    if not centro_medico:
+        messages.error(
+            request,
+            "No hay una sede activa seleccionada."
+        )
+        return redirect("caja_home")
+
+    # =====================================================
+    # FILTROS RECIBIDOS
+    # =====================================================
+
+    medico_id = request.GET.get("medico")
+    fecha_desde = request.GET.get("fecha_desde")
+    fecha_hasta = request.GET.get("fecha_hasta")
+    estado = request.GET.get("estado")
+
+    busqueda_realizada = any(
+        request.GET.get(campo)
+        for campo in (
+            "medico",
+            "fecha_desde",
+            "fecha_hasta",
+            "estado",
+        )
+    )
+
+    # =====================================================
+    # CONSULTA PRINCIPAL
+    # =====================================================
+
+    extras = (
+        ExtraCoseguro.objects
+        .filter(centro_medico=centro_medico)
+        .select_related(
+            "turno",
+            "paciente",
+            "medico",
+            "centro_medico",
+            "detalle_prestacion",
+            "ingreso_movimiento",
+            "egreso_movimiento",
+            "liquidacion_honorario",
+            "liquidacion_retencion",
+            "cobro_retencion_registrado_por",
+            "caja_retencion",
+        )
+        .order_by("-fecha", "-id")
+    )
+
+    if medico_id:
+        extras = extras.filter(medico_id=medico_id)
+
+    if fecha_desde:
+        try:
+            fecha_desde_convertida = datetime.strptime(
+                fecha_desde, "%Y-%m-%d"
+            ).date()
+
+            extras = extras.filter(
+                fecha__gte=fecha_desde_convertida
+            )
+        except ValueError:
+            fecha_desde = ""
+
+    if fecha_hasta:
+        try:
+            fecha_hasta_convertida = datetime.strptime(
+                fecha_hasta, "%Y-%m-%d"
+            ).date()
+
+            extras = extras.filter(
+                fecha__lte=fecha_hasta_convertida
+            )
+        except ValueError:
+            fecha_hasta = ""
+
+    # =====================================================
+    # FILTROS POR ESTADO
+    # =====================================================
+
+    if estado == "PENDIENTE_PAGO_MEDICO":
+        extras = extras.filter(
+            egreso_movimiento__isnull=True,
+            liquidacion_retencion__isnull=True,
+        )
+
+    elif estado == "PENDIENTE_COBRO_OBRA_SOCIAL":
+        extras = extras.filter(
+            egreso_movimiento__estado="ACTIVO",
+            detalle_prestacion__obra_social_cobrada=False,
+            liquidacion_retencion__isnull=True,
+        )
+
+    elif estado == "DISPONIBLE_PARA_RETENER":
+        extras = extras.filter(
+            egreso_movimiento__estado="ACTIVO",
+            detalle_prestacion__obra_social_cobrada=True,
+            liquidacion_retencion__isnull=True,
+        )
+
+    elif estado == "RETENIDO":
+        extras = extras.filter(
+            liquidacion_retencion__isnull=False,
+            cobro_retencion_registrado=False,
+        )
+
+    elif estado == "COBRO_REGISTRADO":
+        extras = extras.filter(
+            liquidacion_retencion__isnull=False,
+            cobro_retencion_registrado=True,
+        )
+
+    # =====================================================
+    # NO MOSTRAR REGISTROS SIN BÚSQUEDA
+    # =====================================================
+
+    if not busqueda_realizada:
+        extras = extras.none()
+
+    # =====================================================
+    # TOTALES
+    # =====================================================
+
+    totales = extras.aggregate(
+        total_extras=Sum("importe_extra"),
+        total_medico=Sum("importe_medico"),
+        total_consultorio=Sum("importe_consultorio"),
+    )
+
+    total_extras = (
+        totales["total_extras"] or Decimal("0.00")
+    )
+
+    total_medico = (
+        totales["total_medico"] or Decimal("0.00")
+    )
+
+    total_consultorio = (
+        totales["total_consultorio"] or Decimal("0.00")
+    )
+
+    total_retenciones_pendientes = (
+        extras.filter(
+            liquidacion_retencion__isnull=False,
+            cobro_retencion_registrado=False,
+        ).aggregate(
+            total=Sum("importe_consultorio")
+        )["total"] or Decimal("0.00")
+    )
+
+    total_retenciones_registradas = (
+        extras.filter(
+            liquidacion_retencion__isnull=False,
+            cobro_retencion_registrado=True,
+        ).aggregate(
+            total=Sum("importe_consultorio")
+        )["total"] or Decimal("0.00")
+    )
+
+    # =====================================================
+    # MÉDICOS
+    # =====================================================
+
+    medicos = (
+        Medico.objects
+        .all()
+        .order_by("apellido", "nombre")
+    )
+
+    # =====================================================
+    # CAJAS ABIERTAS HOY - SEDE ACTIVA
+    # =====================================================
+
+    hoy = timezone.localdate()
+
+    cajas_abiertas = list(
+        CajaDiaria.objects.filter(
+            centro_medico=centro_medico,
+            fecha=hoy,
+            estado="ABIERTA",
+        ).order_by("turno", "id")
+    )
+
+    # =====================================================
+    # RENDER
+    # =====================================================
+
+    return render(
+        request,
+        "honorarios/panel_extras.html",
+        {
+            "extras": extras,
+            "medicos": medicos,
+            "centro_medico": centro_medico,
+            "medico_seleccionado": medico_id,
+            "fecha_desde": fecha_desde,
+            "fecha_hasta": fecha_hasta,
+            "estado_seleccionado": estado,
+            "busqueda_realizada": busqueda_realizada,
+
+            "cajas_abiertas": cajas_abiertas,
+
+            "total_extras": total_extras,
+            "total_medico": total_medico,
+            "total_consultorio": total_consultorio,
+
+            "total_retenciones_pendientes":
+                total_retenciones_pendientes,
+
+            "total_retenciones_registradas":
+                total_retenciones_registradas,
+        }
+    )
+
+from django.views.decorators.http import require_POST
+
+@login_required
+@require_POST
+@transaction.atomic
+def registrar_cobro_retencion_extra(request, extra_id):
+
+    centro_medico = obtener_centro_activo(request)
+
+    if not centro_medico:
+        messages.error(
+            request,
+            "No hay una sede activa seleccionada."
+        )
+        return redirect("panel_extras")
+
+    # ==================================================
+    # EXTRA A REGISTRAR
+    # ==================================================
+
+    extra = get_object_or_404(
+        ExtraCoseguro.objects.select_for_update(),
+        pk=extra_id,
+        centro_medico=centro_medico,
+    )
+
+    # ==================================================
+    # VALIDAR RETENCIÓN APLICADA
+    # ==================================================
+
+    if not extra.liquidacion_retencion_id:
+        messages.error(
+            request,
+            "Este extra todavía no tiene una retención aplicada."
+        )
+        return redirect("panel_extras")
+
+    # ==================================================
+    # VALIDAR LIQUIDACIÓN PAGADA
+    # ==================================================
+
+    if extra.liquidacion_retencion.estado != "PAGADA":
+        messages.error(
+            request,
+            "La liquidación médica todavía no está pagada."
+        )
+        return redirect("panel_extras")
+
+    # ==================================================
+    # EVITAR REGISTROS DUPLICADOS
+    # ==================================================
+
+    if extra.cobro_retencion_registrado:
+        messages.warning(
+            request,
+            "Esta retención ya fue registrada."
+        )
+        return redirect("panel_extras")
+
+    # ==================================================
+    # VALIDAR IMPORTE
+    # ==================================================
+
+    if extra.importe_consultorio <= Decimal("0.00"):
+        messages.error(
+            request,
+            "El importe de la retención no es válido."
+        )
+        return redirect("panel_extras")
+
+    # ==================================================
+    # BUSCAR CAJAS ABIERTAS DEL DÍA
+    # ==================================================
+
+    hoy = timezone.localdate()
+
+    cajas_abiertas = list(
+        CajaDiaria.objects
+        .select_for_update()
+        .filter(
+            centro_medico=centro_medico,
+            fecha=hoy,
+            estado="ABIERTA",
+        )
+        .order_by("turno", "id")
+    )
+
+    # ==================================================
+    # SIN CAJAS ABIERTAS
+    # ==================================================
+
+    if not cajas_abiertas:
+        messages.error(
+            request,
+            "No hay ninguna caja abierta hoy. "
+            "Debe abrir una caja antes de registrar "
+            "la recuperación de la retención."
+        )
+        return redirect("panel_extras")
+
+    # ==================================================
+    # UNA SOLA CAJA ABIERTA
+    # ==================================================
+
+    if len(cajas_abiertas) == 1:
+
+        caja = cajas_abiertas[0]
+
+    # ==================================================
+    # DOS CAJAS ABIERTAS: SELECCIONAR TURNO
+    # ==================================================
+
+    else:
+
+        caja_id = request.POST.get("caja_id")
+
+        if not caja_id:
+            messages.error(
+                request,
+                "Hay dos cajas abiertas. "
+                "Seleccione la caja de mañana o tarde "
+                "para registrar la retención."
+            )
+            return redirect("panel_extras")
+
+        caja = next(
+            (
+                item
+                for item in cajas_abiertas
+                if str(item.pk) == str(caja_id)
+            ),
+            None
+        )
+
+        if caja is None:
+            messages.error(
+                request,
+                "La caja seleccionada no es válida "
+                "o ya no se encuentra abierta."
+            )
+            return redirect("panel_extras")
+
+    # ==================================================
+    # REGISTRAR RETENCIÓN RECUPERADA
+    # ==================================================
+
+    extra.cobro_retencion_registrado = True
+
+    extra.fecha_cobro_retencion = timezone.now()
+
+    extra.cobro_retencion_registrado_por = request.user
+
+    extra.caja_retencion = caja
+
+    extra.save(
+        update_fields=[
+            "cobro_retencion_registrado",
+            "fecha_cobro_retencion",
+            "cobro_retencion_registrado_por",
+            "caja_retencion",
+        ]
+    )
+
+    # ==================================================
+    # CONFIRMACIÓN
+    # ==================================================
+
+    messages.success(
+        request,
+        (
+            f"Retención de ${extra.importe_consultorio:,.2f} "
+            f"registrada a favor del consultorio. "
+            f"Sede: {centro_medico.nombre}. "
+            f"Caja: {caja.get_turno_display()}. "
+            "No se generó ningún movimiento financiero."
+        )
+    )
+
+    return redirect("panel_extras")
+def formato_moneda(valor):
+    valor = Decimal(str(valor or 0))
+    texto = f"{valor:,.2f}"
+    texto = texto.replace(",", "X").replace(".", ",").replace("X", ".")
+    return f"$ {texto}"
+
+
+@login_required
+def pdf_liquidacion_medica(request, liquidacion_id):
+
+    centro = obtener_centro_activo(request)
+
+    liquidacion = get_object_or_404(
+        LiquidacionMedica.objects.select_related(
+            "medico",
+            "centro_medico",
+        ).prefetch_related(
+            "items__detalle_movimiento",
+            "pagos__movimiento_caja",
+        ),
+        pk=liquidacion_id,
+        centro_medico=centro,
+    )
+
+    buffer = BytesIO()
+
+    documento = SimpleDocTemplate(
+        buffer,
+        pagesize=A4,
+        leftMargin=1.7 * cm,
+        rightMargin=1.7 * cm,
+        topMargin=1.7 * cm,
+        bottomMargin=1.7 * cm,
+        title=f"Liquidación Médica #{liquidacion.id}",
+    )
+
+    estilos = getSampleStyleSheet()
+
+    titulo = ParagraphStyle(
+        "TituloCMSM",
+        parent=estilos["Heading1"],
+        fontSize=15,
+        leading=19,
+        alignment=TA_CENTER,
+        textColor=colors.HexColor("#17365D"),
+        spaceAfter=10,
+    )
+
+    seccion = ParagraphStyle(
+        "SeccionCMSM",
+        parent=estilos["Heading2"],
+        fontSize=10,
+        textColor=colors.HexColor("#17365D"),
+        spaceBefore=14,
+        spaceAfter=8,
+    )
+
+    celda = ParagraphStyle(
+        "CeldaCMSM",
+        parent=estilos["Normal"],
+        fontSize=8,
+        leading=11,
+    )
+
+    elementos = [
+        Paragraph("CENTRO MÉDICO SAN MARTÍN", titulo),
+        Paragraph(
+            f"LIQUIDACIÓN DE HONORARIOS N.º {liquidacion.id}",
+            ParagraphStyle(
+                "SubtituloCMSM",
+                parent=celda,
+                alignment=TA_CENTER,
+                fontSize=10,
+            ),
+        ),
+        Spacer(1, 15),
+    ]
+
+    datos = [
+        ["Médico", str(liquidacion.medico)],
+        ["Sede", str(liquidacion.centro_medico)],
+        [
+            "Fecha",
+            timezone.localtime(
+                liquidacion.fecha
+            ).strftime("%d/%m/%Y %H:%M"),
+        ],
+        ["Estado", liquidacion.get_estado_display()],
+    ]
+
+    tabla_datos = Table(
+        datos,
+        colWidths=[4 * cm, 13 * cm],
+    )
+
+    tabla_datos.setStyle(TableStyle([
+        ("FONTNAME", (0, 0), (0, -1), "Helvetica-Bold"),
+        ("FONTSIZE", (0, 0), (-1, -1), 9),
+        ("BOTTOMPADDING", (0, 0), (-1, -1), 7),
+    ]))
+
+    elementos.append(tabla_datos)
+    elementos.append(Paragraph("DETALLE DE HONORARIOS", seccion))
+
+    filas = [["Tipo", "Concepto", "Honorarios"]]
+    total_items = Decimal("0.00")
+
+    extras = list(
+        ExtraCoseguro.objects.filter(
+            liquidacion_honorario=liquidacion
+        ).order_by("id")
+    )
+
+    items = list(liquidacion.items.all())
+
+    if extras:
+        for extra in extras:
+            importe = extra.importe_extra or Decimal("0.00")
+            total_items += importe
+
+            filas.append([
+                "Extra",
+                "Extra liquidado al médico",
+                formato_moneda(importe),
+            ])
+
+    elif items:
+        for item in items:
+            importe = item.importe or Decimal("0.00")
+            total_items += importe
+
+            # No utilizamos str(detalle_movimiento),
+            # porque podría incluir datos del paciente.
+            filas.append([
+                item.get_tipo_display(),
+                f"Prestación #{item.detalle_movimiento_id}",
+                formato_moneda(importe),
+            ])
+
+    else:
+        # Compatibilidad con liquidaciones anteriores.
+        for detalle in liquidacion.detalles.all():
+            importe = (
+                detalle.importe_medico
+                or Decimal("0.00")
+            )
+            total_items += importe
+
+            filas.append([
+                "Histórico",
+                f"Prestación #{detalle.id}",
+                formato_moneda(importe),
+            ])
+
+    tabla_items = Table(
+        [
+            [
+                Paragraph(escape(str(c)), celda)
+                for c in fila
+            ]
+            for fila in filas
+        ],
+        colWidths=[3.5 * cm, 9 * cm, 4.5 * cm],
+        repeatRows=1,
+    )
+
+    tabla_items.setStyle(TableStyle([
+        ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#17365D")),
+        ("TEXTCOLOR", (0, 0), (-1, 0), colors.white),
+        ("ROWBACKGROUNDS", (0, 1), (-1, -1), [
+            colors.white,
+            colors.HexColor("#F3F6FA"),
+        ]),
+        ("VALIGN", (0, 0), (-1, -1), "TOP"),
+        ("BOTTOMPADDING", (0, 0), (-1, -1), 8),
+        ("TOPPADDING", (0, 0), (-1, -1), 8),
+        ("ALIGN", (2, 1), (2, -1), "RIGHT"),
+    ]))
+
+    elementos.append(tabla_items)
+
+    retenciones = (
+        liquidacion.total_retenciones
+        or Decimal("0.00")
+    )
+
+    elementos.append(
+        Paragraph("RESUMEN DE LIQUIDACIÓN", seccion)
+    )
+
+    resumen = [
+        ["Honorarios brutos", formato_moneda(total_items)],
+        ["Retenciones", f"- {formato_moneda(retenciones)}"],
+        [
+            "TOTAL NETO A PAGAR",
+            formato_moneda(liquidacion.total_honorarios),
+        ],
+        [
+            "Total pagado",
+            formato_moneda(liquidacion.total_pagado),
+        ],
+        [
+            "Saldo pendiente",
+            formato_moneda(liquidacion.saldo_pendiente),
+        ],
+    ]
+
+    tabla_resumen = Table(
+        resumen,
+        colWidths=[11 * cm, 6 * cm],
+    )
+
+    tabla_resumen.setStyle(TableStyle([
+        ("ALIGN", (1, 0), (1, -1), "RIGHT"),
+        ("FONTNAME", (0, 2), (-1, 2), "Helvetica-Bold"),
+        ("BACKGROUND", (0, 2), (-1, 2), colors.HexColor("#E8F2EA")),
+        ("LINEABOVE", (0, 2), (-1, 2), 0.7, colors.grey),
+        ("BOTTOMPADDING", (0, 0), (-1, -1), 9),
+        ("TOPPADDING", (0, 0), (-1, -1), 9),
+    ]))
+
+    elementos.append(tabla_resumen)
+
+    pagos = list(
+        liquidacion.pagos.all().order_by("fecha")
+    )
+
+    if pagos:
+        elementos.append(
+            Paragraph("PAGOS REGISTRADOS", seccion)
+        )
+
+        filas_pagos = [[
+            "Fecha",
+            "Movimiento",
+            "Importe",
+        ]]
+
+        for pago in pagos:
+            filas_pagos.append([
+                timezone.localtime(
+                    pago.fecha
+                ).strftime("%d/%m/%Y"),
+                f"#{pago.movimiento_caja_id}",
+                formato_moneda(pago.importe),
+            ])
+
+        tabla_pagos = Table(
+            filas_pagos,
+            colWidths=[5 * cm, 6 * cm, 6 * cm],
+            repeatRows=1,
+        )
+
+        tabla_pagos.setStyle(TableStyle([
+            ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#17365D")),
+            ("TEXTCOLOR", (0, 0), (-1, 0), colors.white),
+            ("ALIGN", (2, 1), (2, -1), "RIGHT"),
+            ("BOTTOMPADDING", (0, 0), (-1, -1), 8),
+        ]))
+
+        elementos.append(tabla_pagos)
+
+    if liquidacion.observacion:
+        elementos.append(
+            Paragraph("OBSERVACIONES", seccion)
+        )
+        elementos.append(
+            Paragraph(
+                escape(liquidacion.observacion),
+                celda,
+            )
+        )
+
+    elementos.append(Spacer(1, 20))
+    elementos.append(
+        Paragraph(
+            "Comprobante generado por Centro Médico San Martín.",
+            ParagraphStyle(
+                "PieCMSM",
+                parent=celda,
+                alignment=TA_CENTER,
+                textColor=colors.grey,
+            ),
+        )
+    )
+
+    documento.build(elementos)
+
+    respuesta = HttpResponse(
+        buffer.getvalue(),
+        content_type="application/pdf",
+    )
+
+    respuesta["Content-Disposition"] = (
+        f'inline; filename="liquidacion_{liquidacion.id}.pdf"'
+    )
+
+    buffer.close()
+    return respuesta

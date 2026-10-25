@@ -1,5 +1,9 @@
 {% extends 'core/base.html' %}
 
+{% block title %}
+Previsualización Liquidación OS
+{% endblock %}
+
 {% block content %}
 
 <div class="container mt-4 mb-5">
@@ -30,24 +34,31 @@
                 <div class="col-md-6">
 
                     <div class="text-muted">
+
                         Médico
+
                     </div>
 
                     <h5 class="mb-0">
+
                         {{ medico }}
+
                     </h5>
 
                 </div>
 
-
                 <div class="col-md-6 text-md-end mt-3 mt-md-0">
 
                     <div class="text-muted">
+
                         Prestaciones OS incluidas
+
                     </div>
 
                     <h5 class="mb-0">
+
                         {{ resumen.cantidad }}
+
                     </h5>
 
                 </div>
@@ -58,30 +69,37 @@
 
     </div>
 
-
     <!-- ================================================== -->
     <!-- RESUMEN -->
     <!-- ================================================== -->
 
     <div class="row g-3 mt-1">
 
-        <div class="col-md-6">
+        <!-- IMPORTE DE OBRAS SOCIALES -->
+
+        <div class="col-md-4">
 
             <div class="card shadow-sm h-100">
 
                 <div class="card-body">
 
                     <div class="text-muted">
+
                         Importe correspondiente a Obras Sociales
+
                     </div>
 
                     <h3 class="mb-1 mt-2">
+
                         $ {{ resumen.total_importe_os|floatformat:2 }}
+
                     </h3>
 
                     <small class="text-muted">
+
                         {{ resumen.cantidad }}
                         prestación/es cobradas
+
                     </small>
 
                 </div>
@@ -90,20 +108,77 @@
 
         </div>
 
+        <!-- HONORARIOS BRUTOS -->
 
-        <div class="col-md-6">
+        <div class="col-md-4">
 
             <div class="card shadow-sm h-100 border-success">
 
                 <div class="card-body">
 
                     <div class="fw-bold text-success">
-                        Honorarios OS a liquidar
+
+                        Honorarios OS brutos
+
                     </div>
 
                     <h2 class="mb-0 mt-2 text-success">
+
                         $ {{ resumen.total_honorarios_os|floatformat:2 }}
+
                     </h2>
+
+                    <small class="text-muted">
+
+                        Antes de retenciones
+
+                    </small>
+
+                </div>
+
+            </div>
+
+        </div>
+
+        <!-- RETENCIONES -->
+
+        <div class="col-md-4">
+
+            <div class="card shadow-sm h-100 border-warning">
+
+                <div class="card-body">
+
+                    <div class="fw-bold text-warning">
+
+                        <i class="bi bi-arrow-return-left me-1"></i>
+
+                        Retenciones
+
+                    </div>
+
+                    <h2 class="mb-0 mt-2 text-warning">
+
+                        $ {{ resumen.total_retenciones|floatformat:2 }}
+
+                    </h2>
+
+                    {% if resumen.total_retenciones > 0 %}
+
+                        <small class="text-muted">
+
+                            Se descontará del pago final
+
+                        </small>
+
+                    {% else %}
+
+                        <small class="text-muted">
+
+                            Sin retenciones pendientes
+
+                        </small>
+
+                    {% endif %}
 
                 </div>
 
@@ -112,7 +187,6 @@
         </div>
 
     </div>
-
 
     <!-- ================================================== -->
     <!-- PRESTACIONES -->
@@ -125,17 +199,20 @@
             <div class="d-flex justify-content-between align-items-center">
 
                 <strong>
+
                     Prestaciones de Obras Sociales cobradas
+
                 </strong>
 
                 <span class="badge bg-light text-primary">
+
                     {{ resumen.cantidad }}
+
                 </span>
 
             </div>
 
         </div>
-
 
         <div class="card-body p-0">
 
@@ -183,196 +260,191 @@
 
                     </thead>
 
-
                     <tbody>
 
                         {% for detalle in prestaciones_os %}
 
-                        <tr>
+                            <tr>
 
-                            <!-- FECHA -->
+                                <!-- FECHA -->
 
-                            <td>
+                                <td>
 
-                                {{ detalle.fecha_prestacion|date:"d/m/Y" }}
+                                    {{ detalle.fecha_prestacion|date:"d/m/Y" }}
 
-                            </td>
+                                </td>
 
+                                <!-- SEDE -->
 
-                            <!-- SEDE -->
+                                <td>
 
-                            <td>
+                                    <span class="badge bg-light text-dark border">
 
-                                <span class="badge bg-light text-dark border">
+                                        {{ detalle.movimiento.centro_medico.nombre }}
 
-                                    {{ detalle.movimiento.centro_medico.nombre }}
+                                    </span>
 
-                                </span>
+                                </td>
 
-                            </td>
+                                <!-- PACIENTE -->
 
+                                <td>
 
-                            <!-- PACIENTE -->
+                                    {{ detalle.movimiento.paciente }}
 
-                            <td>
+                                </td>
 
-                                {{ detalle.movimiento.paciente }}
+                                <!-- OBRA SOCIAL -->
 
-                            </td>
+                                <td>
 
+                                    <strong>
 
-                            <!-- OBRA SOCIAL -->
+                                        {{ detalle.prestacion_obra_social.obra_social }}
 
-                            <td>
+                                    </strong>
 
-                                <strong>
+                                    {% if detalle.prestacion_obra_social.plan %}
 
-                                    {{ detalle.prestacion_obra_social.obra_social }}
+                                        <div>
 
-                                </strong>
+                                            <small class="text-muted">
 
+                                                {{ detalle.prestacion_obra_social.plan.nombre }}
 
-                                {% if detalle.prestacion_obra_social.plan %}
+                                            </small>
 
-                                <div>
+                                        </div>
 
-                                    <small class="text-muted">
+                                    {% endif %}
 
-                                        {{ detalle.prestacion_obra_social.plan.nombre }}
+                                </td>
 
-                                    </small>
+                                <!-- PRESTACIÓN -->
 
-                                </div>
+                                <td>
 
-                                {% endif %}
+                                    <strong>
 
-                            </td>
+                                        {{ detalle.codigo }}
 
+                                    </strong>
 
-                            <!-- PRESTACIÓN -->
+                                    <div>
 
-                            <td>
+                                        <small class="text-muted">
 
-                                <strong>
-                                    {{ detalle.codigo }}
-                                </strong>
+                                            {{ detalle.descripcion }}
 
-                                <div>
+                                        </small>
 
-                                    <small class="text-muted">
-                                        {{ detalle.descripcion }}
-                                    </small>
+                                    </div>
 
-                                </div>
+                                    {% if detalle.importe_coseguro > 0 %}
 
+                                        <div class="mt-1">
 
-                                {% if detalle.importe_coseguro > 0 %}
+                                            <small class="text-success">
 
-                                <div class="mt-1">
+                                                Coseguro:
+                                                $ {{ detalle.importe_coseguro|floatformat:2 }}
 
-                                    <small class="text-success">
+                                            </small>
 
-                                        Coseguro:
-                                        $ {{ detalle.importe_coseguro|floatformat:2 }}
+                                        </div>
 
-                                    </small>
+                                    {% endif %}
 
-                                </div>
+                                    {% if detalle.importe_copago > 0 %}
 
-                                {% endif %}
+                                        <div>
 
+                                            <small class="text-info">
 
-                                {% if detalle.importe_copago > 0 %}
+                                                Copago:
+                                                $ {{ detalle.importe_copago|floatformat:2 }}
 
-                                <div>
+                                            </small>
 
-                                    <small class="text-info">
+                                        </div>
 
-                                        Copago:
-                                        $ {{ detalle.importe_copago|floatformat:2 }}
+                                    {% endif %}
 
-                                    </small>
+                                </td>
 
-                                </div>
+                                <!-- IMPORTE OS -->
 
-                                {% endif %}
+                                <td class="text-end">
 
-                            </td>
+                                    <strong>
 
+                                        $ {{ detalle.importe_os_calculado|floatformat:2 }}
 
-                            <!-- IMPORTE OS -->
+                                    </strong>
 
-                            <td class="text-end">
+                                </td>
 
-                                <strong>
+                                <!-- HONORARIO -->
 
-                                    $ {{ detalle.importe_os_calculado|floatformat:2 }}
+                                <td class="text-end">
 
-                                </strong>
+                                    <strong class="text-success">
 
-                            </td>
+                                        $ {{ detalle.honorario_os_calculado|floatformat:2 }}
 
+                                    </strong>
 
-                            <!-- HONORARIO -->
+                                </td>
 
-                            <td class="text-end">
+                                <!-- COBRO -->
 
-                                <strong class="text-success">
+                                <td>
 
-                                    $ {{ detalle.honorario_os_calculado|floatformat:2 }}
+                                    <span class="badge bg-success">
 
-                                </strong>
+                                        <i class="bi bi-check-circle me-1"></i>
 
-                            </td>
+                                        Cobrada
 
+                                    </span>
 
-                            <!-- COBRO -->
+                                    {% if detalle.fecha_cobro_obra_social %}
 
-                            <td>
+                                        <div class="mt-1">
 
-                                <span class="badge bg-success">
+                                            <small class="text-muted">
 
-                                    <i class="bi bi-check-circle me-1"></i>
+                                                {{ detalle.fecha_cobro_obra_social|date:"d/m/Y" }}
 
-                                    Cobrada
+                                            </small>
 
-                                </span>
+                                        </div>
 
+                                    {% endif %}
 
-                                {% if detalle.fecha_cobro_obra_social %}
+                                </td>
 
-                                <div class="mt-1">
-
-                                    <small class="text-muted">
-
-                                        {{ detalle.fecha_cobro_obra_social|date:"d/m/Y" }}
-
-                                    </small>
-
-                                </div>
-
-                                {% endif %}
-
-                            </td>
-
-                        </tr>
+                            </tr>
 
                         {% endfor %}
 
                     </tbody>
 
+                    <!-- ================================== -->
+                    <!-- TOTALES -->
+                    <!-- ================================== -->
 
                     <tfoot>
 
                         <tr class="table-light">
 
-                            <td colspan="5"
+                            <td
+                                colspan="5"
                                 class="text-end fw-bold">
 
                                 Totales
 
                             </td>
-
 
                             <td class="text-end fw-bold">
 
@@ -380,17 +452,59 @@
 
                             </td>
 
-
                             <td class="text-end fw-bold text-success">
 
                                 $ {{ resumen.total_honorarios_os|floatformat:2 }}
 
                             </td>
 
-
                             <td></td>
 
                         </tr>
+
+                        {% if resumen.total_retenciones > 0 %}
+
+                            <tr class="table-warning">
+
+                                <td
+                                    colspan="6"
+                                    class="text-end fw-bold">
+
+                                    Retenciones
+
+                                </td>
+
+                                <td class="text-end fw-bold text-danger">
+
+                                    − $ {{ resumen.total_retenciones|floatformat:2 }}
+
+                                </td>
+
+                                <td></td>
+
+                            </tr>
+
+                            <tr class="table-success">
+
+                                <td
+                                    colspan="6"
+                                    class="text-end fw-bold">
+
+                                    Honorarios netos
+
+                                </td>
+
+                                <td class="text-end fw-bold text-success">
+
+                                    $ {{ resumen.total_honorarios_neto|floatformat:2 }}
+
+                                </td>
+
+                                <td></td>
+
+                            </tr>
+
+                        {% endif %}
 
                     </tfoot>
 
@@ -402,7 +516,6 @@
 
     </div>
 
-
     <!-- ================================================== -->
     <!-- ACLARACIÓN -->
     <!-- ================================================== -->
@@ -410,7 +523,9 @@
     <div class="alert alert-info mt-4">
 
         <strong>
+
             Importante:
+
         </strong>
 
         esta liquidación incluye únicamente el componente
@@ -425,8 +540,18 @@
 
         </div>
 
-    </div>
+        {% if resumen.total_retenciones > 0 %}
 
+            <div class="mt-2">
+
+                Las retenciones se descuentan del total final
+                que corresponde pagar al médico.
+
+            </div>
+
+        {% endif %}
+
+    </div>
 
     <!-- ================================================== -->
     <!-- TOTAL FINAL -->
@@ -441,23 +566,46 @@
                 <div class="col-md-7">
 
                     <h5 class="mb-1">
-                        Total Honorarios OS a Liquidar
+
+                        Total neto a pagar al médico
+
                     </h5>
 
                     <div class="text-muted">
 
-                        Obras Sociales efectivamente cobradas
+                        Honorarios de Obras Sociales menos retenciones
 
                     </div>
 
-                </div>
+                    {% if resumen.total_retenciones > 0 %}
 
+                        <div class="mt-2">
+
+                            <span class="badge bg-light text-dark border me-2">
+
+                                Honorarios brutos:
+                                $ {{ resumen.total_honorarios_os|floatformat:2 }}
+
+                            </span>
+
+                            <span class="badge bg-warning text-dark">
+
+                                Retenciones:
+                                $ {{ resumen.total_retenciones|floatformat:2 }}
+
+                            </span>
+
+                        </div>
+
+                    {% endif %}
+
+                </div>
 
                 <div class="col-md-5 text-md-end mt-3 mt-md-0">
 
                     <h2 class="text-success mb-0">
 
-                        $ {{ resumen.total_honorarios_os|floatformat:2 }}
+                        $ {{ resumen.total_honorarios_neto|floatformat:2 }}
 
                     </h2>
 
@@ -469,7 +617,6 @@
 
     </div>
 
-
     <!-- ================================================== -->
     <!-- ACCIONES -->
     <!-- ================================================== -->
@@ -478,39 +625,53 @@
 
         <div class="card-body">
 
-            <!-- ========================================== -->
-            <!-- TODAVÍA NO GENERAMOS -->
-            <!-- ========================================== -->
+            {% if resumen.retencion_supera_honorarios %}
 
-            
+                <div class="alert alert-danger">
+
+                    <i class="bi bi-exclamation-triangle-fill me-1"></i>
+
+                    <strong>
+                        No se puede generar la liquidación.
+                    </strong>
+
+                    Las retenciones pendientes superan los
+                    honorarios disponibles.
+
+                </div>
+
+            {% endif %}
+
             <form
-    method="post"
-    action="{% url 'generar_liquidacion_os' medico.id %}"
-    class="d-inline"
->
+                method="post"
+                action="{% url 'generar_liquidacion_os' medico.id %}"
+                class="d-inline">
 
-    {% csrf_token %}
+                {% csrf_token %}
 
-    <button
-        type="submit"
-        class="btn btn-success"
-        onclick="return confirm(
-            '¿Confirma generar la liquidación de honorarios de Obras Sociales cobradas?'
-        );"
-    >
+                <button
+                    type="submit"
+                    class="btn btn-success"
+                    {% if resumen.retencion_supera_honorarios %}
+                        disabled
+                    {% endif %}
+                    onclick="return confirm(
+                        '¿Confirma generar la liquidación de honorarios de Obras Sociales cobradas?'
+                    );">
 
-        <i class="bi bi-check-circle me-1"></i>
+                    <i class="bi bi-check-circle me-1"></i>
 
-        Generar Liquidación OS
+                    Generar Liquidación OS
 
-    </button>
+                </button>
 
-</form>
+            </form>
 
             <a
                 href="{% url 'honorarios_medicos' %}?medico={{ medico.id }}"
-                class="btn btn-secondary"
-            >
+                class="btn btn-secondary">
+
+                <i class="bi bi-arrow-left me-1"></i>
 
                 Volver
 
