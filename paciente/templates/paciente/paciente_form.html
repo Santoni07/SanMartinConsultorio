@@ -445,6 +445,18 @@
 
                             </div>
 
+                            <!-- PLAN DE OBRA SOCIAL -->
+
+                            <div class="col-md-6 mb-3" id="contenedor-plan-obra-social" hidden>
+                                <label for="{{ form.plan_obra_social.id_for_label }}" class="form-label">
+                                    Plan de obra social
+                                </label>
+                                {{ form.plan_obra_social }}
+                                {% for error in form.plan_obra_social.errors %}
+                                    <div class="field-error">{{ error }}</div>
+                                {% endfor %}
+                            </div>
+
                             <!-- NÚMERO DE AFILIADO -->
 
                             <div class="col-md-6 mb-3">
@@ -643,6 +655,7 @@
 
 </div>
 
+{{ planes_por_obra_social|json_script:"planes-obra-social-data" }}
 <script>
 
     document.addEventListener('DOMContentLoaded', function () {
@@ -650,6 +663,31 @@
         const formulario = document.getElementById('pacienteForm');
         const botonConfirmar = document.getElementById('abrirConfirmacion');
         const modalElemento = document.getElementById('confirmarModal');
+        const obraSocial = document.getElementById('id_obrasocial');
+        const planSelect = document.getElementById('id_plan_obra_social');
+        const planContenedor = document.getElementById('contenedor-plan-obra-social');
+        const datosPlanes = document.getElementById('planes-obra-social-data');
+        const planesPorObraSocial = datosPlanes ? JSON.parse(datosPlanes.textContent) : {};
+
+        function actualizarPlanes(conservarSeleccion = false) {
+            if (!obraSocial || !planSelect || !planContenedor) return;
+            const planAnterior = conservarSeleccion ? planSelect.value : '';
+            const planes = planesPorObraSocial[String(obraSocial.value)] || [];
+            planSelect.replaceChildren(new Option('Seleccione un plan', ''));
+            for (const plan of planes) {
+                planSelect.add(new Option(plan.nombre, String(plan.id)));
+            }
+            planContenedor.hidden = planes.length === 0;
+            planSelect.disabled = planes.length === 0;
+            if (conservarSeleccion && planes.some(p => String(p.id) === planAnterior)) {
+                planSelect.value = planAnterior;
+            }
+        }
+        if (obraSocial && planSelect) {
+            actualizarPlanes(true);
+            obraSocial.addEventListener('change', () => actualizarPlanes(false));
+        }
+
 
         botonConfirmar.addEventListener('click', function () {
 

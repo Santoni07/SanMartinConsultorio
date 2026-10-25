@@ -5,7 +5,9 @@ from paciente.forms import BusquedaPacienteForm,  PacienteForm
 from django.contrib.auth.mixins import LoginRequiredMixin
 
 from django.contrib import messages
-
+from obrasocial.models import PlanObraSocial
+from django.core.serializers.json import DjangoJSONEncoder
+import json
 
 from .models import  Paciente
 from django.urls import reverse_lazy
@@ -33,7 +35,6 @@ class BuscarPacienteView(LoginRequiredMixin,TemplateView):
         else:
             return self.render_to_response({'form': form})
 
-   
 class PacienteUpdateView(LoginRequiredMixin, UpdateView):
 
     model = Paciente
@@ -41,11 +42,104 @@ class PacienteUpdateView(LoginRequiredMixin, UpdateView):
 
     template_name_suffix = '_update_form'
 
+    # ==========================================
+    # ENVIAR PLANES AL HTML
+    # ==========================================
+
+    def get_context_data(self, **kwargs):
+
+        context = super().get_context_data(**kwargs)
+
+        planes_por_obra_social = {}
+
+        planes = PlanObraSocial.objects.select_related(
+            "obra_social"
+        ).all()
+
+        for plan in planes:
+
+            obra_social_id = str(plan.obra_social_id)
+
+            if obra_social_id not in planes_por_obra_social:
+                planes_por_obra_social[obra_social_id] = []
+
+            planes_por_obra_social[obra_social_id].append({
+                "id": plan.id,
+                "nombre": str(plan),
+            })
+
+        context["planes_por_obra_social"] = json.dumps(
+            planes_por_obra_social,
+            cls=DjangoJSONEncoder
+        )
+
+        return context
+
+    # ==========================================
+    # REDIRECCIÓN DESPUÉS DE GUARDAR
+    # ==========================================
+
     def get_success_url(self):
+
         return reverse_lazy(
             'paciente:update',
             args=[self.object.id]
         ) + '?ok'
+
+
+class PacienteCreateView(LoginRequiredMixin, CreateView):
+
+    model = Paciente
+    form_class = PacienteForm
+
+    success_url = reverse_lazy('paciente:buscar')
+
+    # ==========================================
+    # ENVIAR PLANES AL HTML
+    # ==========================================
+
+    def get_context_data(self, **kwargs):
+
+        context = super().get_context_data(**kwargs)
+
+        planes_por_obra_social = {}
+
+        planes = (
+            PlanObraSocial.objects
+            .filter(activo=True)
+            .select_related("obra_social")
+            .order_by("obra_social_id", "orden", "codigo", "nombre")
+        )
+
+        for plan in planes:
+
+            obra_social_id = str(plan.obra_social_id)
+
+            if obra_social_id not in planes_por_obra_social:
+                planes_por_obra_social[obra_social_id] = []
+
+            planes_por_obra_social[obra_social_id].append({
+                "id": plan.id,
+                "nombre": f"{plan.codigo} - {plan.nombre}",
+            })
+
+        context["planes_por_obra_social"] = planes_por_obra_social
+
+        return context
+
+    # ==========================================
+    # GUARDAR PACIENTE
+    # ==========================================
+
+    def form_valid(self, form):
+
+        messages.success(
+            self.request,
+            'Paciente creado exitosamente'
+        )
+
+        return super().form_valid(form)   
+
 
 class PacienteDeleteView(LoginRequiredMixin,DeleteView):
     model=Paciente
@@ -53,16 +147,3 @@ class PacienteDeleteView(LoginRequiredMixin,DeleteView):
     
     
  
-class PacienteCreateView(LoginRequiredMixin,CreateView):
-    model = Paciente
-    form_class = PacienteForm
-    success_url = reverse_lazy('paciente:buscar')
-
-    def form_valid(self, form):
-        messages.success(self.request, 'Paciente creado exitosamente')
-        return super().form_valid(form)
-        
-
-       
-
-

@@ -1,3 +1,4 @@
+
 {% extends 'core/base.html' %}
 {% load static %}
 
@@ -127,13 +128,16 @@
 </style>
 {% endblock %}
 
+
 {% block content %}
 
 <div class="container py-5">
 
     <div class="patient-page">
 
+        <!-- ===================================== -->
         <!-- CABECERA -->
+        <!-- ===================================== -->
 
         <div class="page-header mb-4">
 
@@ -159,7 +163,10 @@
 
         </div>
 
+
+        <!-- ===================================== -->
         <!-- MENSAJE CORRECTO -->
+        <!-- ===================================== -->
 
         {% if 'ok' in request.GET %}
 
@@ -175,7 +182,10 @@
 
         {% endif %}
 
+
+        <!-- ===================================== -->
         <!-- ERRORES -->
+        <!-- ===================================== -->
 
         {% if form.errors %}
 
@@ -215,6 +225,11 @@
 
         {% endif %}
 
+
+        <!-- ===================================== -->
+        <!-- FORMULARIO -->
+        <!-- ===================================== -->
+
         <div class="card form-card">
 
             <div class="card-body p-4 p-lg-5">
@@ -223,7 +238,10 @@
 
                     {% csrf_token %}
 
+
+                    <!-- ===================================== -->
                     <!-- DATOS PERSONALES -->
+                    <!-- ===================================== -->
 
                     <div class="section-title">
 
@@ -256,6 +274,7 @@
 
                         </div>
 
+
                         <!-- APELLIDO -->
 
                         <div class="col-md-4 mb-3">
@@ -277,6 +296,7 @@
                             {% endfor %}
 
                         </div>
+
 
                         <!-- NOMBRE -->
 
@@ -300,6 +320,7 @@
 
                         </div>
 
+
                         <!-- FECHA DE NACIMIENTO -->
 
                         <div class="col-md-4 mb-3">
@@ -321,6 +342,7 @@
                             {% endfor %}
 
                         </div>
+
 
                         <!-- SEXO -->
 
@@ -345,7 +367,10 @@
 
                     </div>
 
-                    <!-- CONTACTO -->
+
+                    <!-- ===================================== -->
+                    <!-- DATOS DE CONTACTO -->
+                    <!-- ===================================== -->
 
                     <div class="section-title mt-4">
 
@@ -378,6 +403,7 @@
 
                         </div>
 
+
                         <!-- EMAIL -->
 
                         <div class="col-md-4 mb-3">
@@ -399,6 +425,7 @@
                             {% endfor %}
 
                         </div>
+
 
                         <!-- DIRECCIÓN -->
 
@@ -424,7 +451,10 @@
 
                     </div>
 
+
+                    <!-- ===================================== -->
                     <!-- COBERTURA MÉDICA -->
+                    <!-- ===================================== -->
 
                     <div class="section-title mt-4">
 
@@ -459,6 +489,40 @@
 
                             </div>
 
+
+                            <!-- ===================================== -->
+                            <!-- PLAN DE OBRA SOCIAL -->
+                            <!-- ===================================== -->
+
+                            <div
+                                class="col-md-6 mb-3"
+                                id="contenedorPlanObraSocial"
+                                style="display: none;"
+                            >
+
+                                <label
+                                    for="{{ form.plan_obra_social.id_for_label }}"
+                                    class="form-label"
+                                >
+                                    Plan de obra social
+                                </label>
+
+                                {{ form.plan_obra_social }}
+
+                                <div class="field-help">
+                                    Seleccione el plan correspondiente
+                                    a la obra social.
+                                </div>
+
+                                {% for error in form.plan_obra_social.errors %}
+                                    <div class="field-error">
+                                        {{ error }}
+                                    </div>
+                                {% endfor %}
+
+                            </div>
+
+
                             <!-- NÚMERO DE AFILIADO -->
 
                             <div class="col-md-6 mb-3">
@@ -488,7 +552,10 @@
 
                     </div>
 
+
+                    <!-- ===================================== -->
                     <!-- OBSERVACIONES -->
+                    <!-- ===================================== -->
 
                     <div class="section-title mt-4">
 
@@ -520,7 +587,10 @@
 
                     </div>
 
+
+                    <!-- ===================================== -->
                     <!-- BOTONES -->
+                    <!-- ===================================== -->
 
                     <div class="d-flex justify-content-between align-items-center mt-4 form-actions">
 
@@ -543,7 +613,10 @@
 
                     </div>
 
-                    <!-- MODAL -->
+
+                    <!-- ===================================== -->
+                    <!-- MODAL DE CONFIRMACIÓN -->
+                    <!-- ===================================== -->
 
                     <div
                         class="modal fade"
@@ -629,30 +702,150 @@
 
 </div>
 
+
+<!-- ===================================== -->
+<!-- JAVASCRIPT -->
+<!-- ===================================== -->
+
 <script>
 
-    document.addEventListener('DOMContentLoaded', function () {
+document.addEventListener('DOMContentLoaded', function () {
 
-        const formulario = document.getElementById('pacienteForm');
-        const botonConfirmar = document.getElementById('abrirConfirmacion');
-        const modalElemento = document.getElementById('confirmarModal');
+    const formulario = document.getElementById('pacienteForm');
 
-        botonConfirmar.addEventListener('click', function () {
+    const botonConfirmar = document.getElementById(
+        'abrirConfirmacion'
+    );
 
-            if (!formulario.checkValidity()) {
-                formulario.reportValidity();
-                return;
+    const modalElemento = document.getElementById(
+        'confirmarModal'
+    );
+
+    // ==========================================
+    // SELECTORES DE OBRA SOCIAL Y PLAN
+    // ==========================================
+
+    const obraSocialSelect = document.getElementById(
+        'id_obrasocial'
+    );
+
+    const planSelect = document.getElementById(
+        'id_plan_obra_social'
+    );
+
+    const contenedorPlan = document.getElementById(
+        'contenedorPlanObraSocial'
+    );
+
+    // ==========================================
+    // PLANES ENVIADOS DESDE DJANGO
+    // ==========================================
+
+    const planesPorObraSocial = JSON.parse(
+        '{{ planes_por_obra_social|default:"{}"|escapejs }}'
+    );
+
+    // ==========================================
+    // ACTUALIZAR PLANES
+    // ==========================================
+
+    function actualizarPlanes(conservarSeleccion = false) {
+
+        if (!obraSocialSelect || !planSelect || !contenedorPlan) {
+            return;
+        }
+
+        const obraSocialId = obraSocialSelect.value;
+
+        const planActual = conservarSeleccion
+            ? planSelect.value
+            : '';
+
+        planSelect.innerHTML = '';
+
+        const opcionInicial = document.createElement('option');
+
+        opcionInicial.value = '';
+        opcionInicial.textContent = 'Seleccione un plan';
+
+        planSelect.appendChild(opcionInicial);
+
+        const planes = planesPorObraSocial[obraSocialId] || [];
+
+        if (planes.length > 0) {
+
+            contenedorPlan.style.display = '';
+
+            planes.forEach(function (plan) {
+
+                const opcion = document.createElement('option');
+
+                opcion.value = plan.id;
+                opcion.textContent = plan.nombre;
+
+                if (
+                    String(plan.id) === String(planActual)
+                ) {
+                    opcion.selected = true;
+                }
+
+                planSelect.appendChild(opcion);
+
+            });
+
+        } else {
+
+            contenedorPlan.style.display = 'none';
+
+            planSelect.value = '';
+
+        }
+
+    }
+
+    // ==========================================
+    // CAMBIO DE OBRA SOCIAL
+    // ==========================================
+
+    if (obraSocialSelect) {
+
+        obraSocialSelect.addEventListener(
+            'change',
+            function () {
+                actualizarPlanes(false);
             }
+        );
 
-            const modal = bootstrap.Modal.getOrCreateInstance(
-                modalElemento
-            );
+    }
 
-            modal.show();
+    // ==========================================
+    // INICIALIZAR AL EDITAR
+    // ==========================================
 
-        });
+    actualizarPlanes(true);
+
+    // ==========================================
+    // MODAL DE CONFIRMACIÓN
+    // ==========================================
+
+    botonConfirmar.addEventListener('click', function () {
+
+        if (!formulario.checkValidity()) {
+
+            formulario.reportValidity();
+
+            return;
+        }
+
+        const modal = bootstrap.Modal.getOrCreateInstance(
+            modalElemento
+        );
+
+        modal.show();
 
     });
+
+});
 
 </script>
 
