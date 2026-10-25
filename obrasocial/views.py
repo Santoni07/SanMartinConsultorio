@@ -30,7 +30,7 @@ def obras_sociales(request):
 
         request,
 
-        "obraSocial/obrasocial.html",
+        "obrasocial/obrasocial.html",
 
         {
 
@@ -76,7 +76,7 @@ def crear_obra_social(request):
 
         request,
 
-        "obraSocial/obrasocial_form.html",
+        "obrasocial/obrasocial_form.html",
 
         {
 
