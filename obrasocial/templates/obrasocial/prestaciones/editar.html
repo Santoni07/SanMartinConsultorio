@@ -1,0 +1,813 @@
+{% extends 'core/base.html' %}
+{% load static %}
+
+{% block title %}Editar Prestación{% endblock %}
+
+{% block content %}
+
+<div class="container mt-4 mb-5">
+
+    <div class="row justify-content-center">
+
+        <div class="col-lg-10">
+
+            <!-- ================================================= -->
+            <!-- ENCABEZADO -->
+            <!-- ================================================= -->
+
+            <div class="card shadow border-0 mb-4">
+
+                <div class="card-header bg-primary text-white py-3">
+
+                    <div class="d-flex justify-content-between align-items-center">
+
+                        <div>
+
+                            <h2 class="mb-1">
+                                <i class="bi bi-pencil-square"></i>
+                                Editar Prestación
+                            </h2>
+
+                            <p class="mb-0">
+                                {{ obra_social.nombre }}
+                            </p>
+
+                            {% if prestacion.plan %}
+
+                                <small>
+                                    Plan: {{ prestacion.plan.nombre }}
+                                </small>
+
+                            {% else %}
+
+                                <small>
+                                    Convenio general sin planes
+                                </small>
+
+                            {% endif %}
+
+                        </div>
+
+                        <a href="{% url 'obrasocial:listar_prestaciones' obra_social.id %}"
+                           class="btn btn-light">
+
+                            <i class="bi bi-arrow-left-circle"></i>
+                            Volver
+
+                        </a>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+
+            <!-- ================================================= -->
+            <!-- DATOS DE LA PRESTACIÓN -->
+            <!-- ================================================= -->
+
+            <div class="card shadow-sm border-0 mb-4">
+
+                <div class="card-header bg-light">
+
+                    <h5 class="mb-0">
+                        <i class="bi bi-clipboard2-pulse text-primary"></i>
+                        Prestación
+                    </h5>
+
+                </div>
+
+                <div class="card-body">
+
+                    <div class="row g-3">
+
+                        <div class="col-md-3">
+
+                            <label class="form-label text-muted">
+                                Código
+                            </label>
+
+                            <div class="form-control bg-light fw-bold">
+                                {{ prestacion.nomenclador.codigo }}
+                            </div>
+
+                        </div>
+
+
+                        <div class="col-md-9">
+
+                            <label class="form-label text-muted">
+                                Descripción
+                            </label>
+
+                            <div class="form-control bg-light">
+                                {{ prestacion.nomenclador.descripcion }}
+                            </div>
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+
+            <!-- ================================================= -->
+            <!-- ERRORES -->
+            <!-- ================================================= -->
+
+            {% if form.errors %}
+
+                <div class="alert alert-danger">
+
+                    <h6 class="fw-bold">
+                        <i class="bi bi-exclamation-triangle"></i>
+                        Revise los datos ingresados
+                    </h6>
+
+                    {{ form.errors }}
+
+                </div>
+
+            {% endif %}
+
+
+            <!-- ================================================= -->
+            <!-- FORMULARIO -->
+            <!-- ================================================= -->
+
+            <form method="post">
+
+                {% csrf_token %}
+
+
+                <!-- ============================================= -->
+                <!-- ARANCEL -->
+                <!-- ============================================= -->
+
+                <div class="card shadow-sm border-0 mb-4">
+
+                    <div class="card-header bg-light">
+
+                        <h5 class="mb-0">
+                            <i class="bi bi-cash-stack text-success"></i>
+                            Arancel
+                        </h5>
+
+                    </div>
+
+                    <div class="card-body">
+
+                        <div class="row g-3">
+
+                            <div class="col-md-4">
+
+                                <label class="form-label fw-bold">
+                                    {{ form.valor.label }}
+                                </label>
+
+                                <div class="input-group">
+
+                                    <span class="input-group-text">
+                                        $
+                                    </span>
+
+                                    {{ form.valor }}
+
+                                </div>
+
+                            </div>
+
+
+                            <div class="col-md-4">
+
+                                <label class="form-label fw-bold">
+                                    {{ form.tipo_concepto.label }}
+                                </label>
+
+                                {{ form.tipo_concepto }}
+
+                            </div>
+
+
+                            <div class="col-md-4">
+
+                                <label class="form-label fw-bold">
+                                    {{ form.estado.label }}
+                                </label>
+
+                                {{ form.estado }}
+
+                            </div>
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+
+
+                <!-- ============================================= -->
+                <!-- COSEGURO -->
+                <!-- ============================================= -->
+
+                <div class="card shadow-sm border-0 mb-4">
+
+                    <div class="card-header bg-light">
+
+                        <h5 class="mb-0">
+                            <i class="bi bi-cash-coin text-warning"></i>
+                            Coseguro
+                        </h5>
+
+                    </div>
+
+                    <div class="card-body">
+
+                        <div class="row g-3 align-items-end">
+
+                            <!-- TIENE COSEGURO -->
+
+                            <div class="col-md-4">
+
+                                <label class="form-label fw-bold d-block">
+                                    Coseguro del paciente
+                                </label>
+
+                                <div class="form-check form-switch mt-2">
+
+                                    {{ form.tiene_coseguro }}
+
+                                    <label
+                                        class="form-check-label"
+                                        for="{{ form.tiene_coseguro.id_for_label }}"
+                                    >
+                                        Esta prestación tiene coseguro
+                                    </label>
+
+                                </div>
+
+                                {% if form.tiene_coseguro.errors %}
+
+                                    <div class="text-danger small mt-1">
+                                        {{ form.tiene_coseguro.errors }}
+                                    </div>
+
+                                {% endif %}
+
+                            </div>
+
+
+                            <!-- IMPORTE COSEGURO -->
+
+                            <div class="col-md-4"
+                                id="contenedor_importe_coseguro">
+
+                                <label class="form-label fw-bold">
+                                    {{ form.importe_coseguro.label }}
+                                </label>
+
+                                <div class="input-group">
+
+                                    <span class="input-group-text">
+                                        $
+                                    </span>
+
+                                    {{ form.importe_coseguro }}
+
+                                </div>
+
+                                {% if form.importe_coseguro.errors %}
+
+                                    <div class="text-danger small mt-1">
+                                        {{ form.importe_coseguro.errors }}
+                                    </div>
+
+                                {% endif %}
+
+                            </div>
+
+
+                            <!-- INFORMACIÓN -->
+
+                            <div class="col-md-4">
+
+                                <div class="alert alert-info mb-0 py-2">
+
+                                    <small>
+
+                                        El coseguro es abonado por el paciente
+                                        y forma parte del valor total de la
+                                        prestación.
+
+                                    </small>
+
+                                </div>
+
+                            </div>
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+                <!-- ============================================= -->
+                <!-- COPAGO -->
+                <!-- ============================================= -->
+
+                <div class="card shadow-sm border-0 mb-4">
+
+                    <div class="card-header bg-light">
+
+                        <h5 class="mb-0">
+                            <i class="bi bi-wallet2 text-success"></i>
+                            Copago
+                        </h5>
+
+                    </div>
+
+                    <div class="card-body">
+
+                        <div class="row g-3 align-items-end">
+
+                            <!-- TIENE COPAGO -->
+
+                            <div class="col-md-4">
+
+                                <label class="form-label fw-bold d-block">
+                                    Copago del paciente
+                                </label>
+
+                                <div class="form-check form-switch mt-2">
+
+                                    {{ form.tiene_copago }}
+
+                                    <label
+                                        class="form-check-label"
+                                        for="{{ form.tiene_copago.id_for_label }}"
+                                    >
+                                        Esta prestación tiene copago
+                                    </label>
+
+                                </div>
+
+                                {% if form.tiene_copago.errors %}
+
+                                    <div class="text-danger small mt-1">
+                                        {{ form.tiene_copago.errors }}
+                                    </div>
+
+                                {% endif %}
+
+                            </div>
+
+
+                            <!-- IMPORTE COPAGO -->
+
+                            <div
+                                class="col-md-4"
+                                id="contenedor_importe_copago"
+                            >
+
+                                <label class="form-label fw-bold">
+                                    {{ form.importe_copago.label }}
+                                </label>
+
+                                <div class="input-group">
+
+                                    <span class="input-group-text">
+                                        $
+                                    </span>
+
+                                    {{ form.importe_copago }}
+
+                                </div>
+
+                                {% if form.importe_copago.errors %}
+
+                                    <div class="text-danger small mt-1">
+                                        {{ form.importe_copago.errors }}
+                                    </div>
+
+                                {% endif %}
+
+                            </div>
+
+
+                            <!-- INFORMACIÓN -->
+
+                            <div class="col-md-4">
+
+                                <div class="alert alert-success mb-0 py-2">
+
+                                    <small>
+
+                                        El copago es abonado por el paciente
+                                        y se destina al honorario médico.
+                                        No se descuenta del importe que debe
+                                        pagar la Obra Social.
+
+                                    </small>
+
+                                </div>
+
+                            </div>
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+
+
+
+
+                <!-- ============================================= -->
+                <!-- DISTRIBUCIÓN -->
+                <!-- ============================================= -->
+
+                <div class="card shadow-sm border-0 mb-4">
+
+                    <div class="card-header bg-light">
+
+                        <h5 class="mb-0">
+                            <i class="bi bi-percent text-primary"></i>
+                            Distribución del arancel
+                        </h5>
+
+                    </div>
+
+
+                    <div class="card-body">
+
+                        <div class="row g-3">
+
+                            <div class="col-md-4">
+
+                                <label class="form-label fw-bold">
+                                    {{ form.porcentaje_iva.label }}
+                                </label>
+
+                                <div class="input-group">
+
+                                    {{ form.porcentaje_iva }}
+
+                                    <span class="input-group-text">
+                                        %
+                                    </span>
+
+                                </div>
+
+                            </div>
+
+
+                            <div class="col-md-4">
+
+                                <label class="form-label fw-bold">
+                                    {{ form.porcentaje_medico.label }}
+                                </label>
+
+                                <div class="input-group">
+
+                                    {{ form.porcentaje_medico }}
+
+                                    <span class="input-group-text">
+                                        %
+                                    </span>
+
+                                </div>
+
+                            </div>
+
+
+                            <div class="col-md-4">
+
+                                <label class="form-label fw-bold">
+                                    {{ form.porcentaje_consultorio.label }}
+                                </label>
+
+                                <div class="input-group">
+
+                                    {{ form.porcentaje_consultorio }}
+
+                                    <span class="input-group-text">
+                                        %
+                                    </span>
+
+                                </div>
+
+                            </div>
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+
+                <!-- ============================================= -->
+                <!-- HONORARIO MÉDICO -->
+                <!-- ============================================= -->
+
+                <div class="card shadow-sm border-0 mb-4">
+
+                    <div class="card-header bg-light">
+
+                        <h5 class="mb-0">
+                            <i class="bi bi-person-badge text-primary"></i>
+                            Honorario médico
+                        </h5>
+
+                    </div>
+
+
+                    <div class="card-body">
+
+                        <div class="row g-3">
+
+                            <div class="col-md-6">
+
+                                <label class="form-label fw-bold">
+                                    {{ form.tipo_calculo.label }}
+                                </label>
+
+                                {{ form.tipo_calculo }}
+
+                                <div class="form-text">
+                                    Indique si el honorario se calcula
+                                    por porcentaje o mediante un importe fijo.
+                                </div>
+
+                            </div>
+
+
+                            <div class="col-md-6">
+
+                                <label class="form-label fw-bold">
+                                    {{ form.honorario_fijo_medico.label }}
+                                </label>
+
+                                <div class="input-group">
+
+                                    <span class="input-group-text">
+                                        $
+                                    </span>
+
+                                    {{ form.honorario_fijo_medico }}
+
+                                </div>
+
+                            </div>
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+
+                <!-- ============================================= -->
+                <!-- PROVEEDOR -->
+                <!-- ============================================= -->
+
+                <div class="card shadow-sm border-0 mb-4">
+
+                    <div class="card-header bg-light">
+
+                        <h5 class="mb-0">
+                            <i class="bi bi-truck text-secondary"></i>
+                            Proveedor
+                        </h5>
+
+                    </div>
+
+
+                    <div class="card-body">
+
+                        <div class="row g-3">
+
+                            <div class="col-md-8">
+
+                                <label class="form-label fw-bold">
+                                    {{ form.proveedor.label }}
+                                </label>
+
+                                {{ form.proveedor }}
+
+                                <div class="form-text">
+                                    Opcional. Utilizar solamente cuando
+                                    la prestación tenga un proveedor asociado.
+                                </div>
+
+                            </div>
+
+
+                            <div class="col-md-4">
+
+                                <label class="form-label fw-bold">
+                                    {{ form.importe_proveedor.label }}
+                                </label>
+
+                                <div class="input-group">
+
+                                    <span class="input-group-text">
+                                        $
+                                    </span>
+
+                                    {{ form.importe_proveedor }}
+
+                                </div>
+
+                            </div>
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+
+                <!-- ============================================= -->
+                <!-- BOTONES -->
+                <!-- ============================================= -->
+
+                <div class="card shadow-sm border-0">
+
+                    <div class="card-body">
+
+                        <div class="d-flex justify-content-between">
+
+                            <a href="{% url 'obrasocial:listar_prestaciones' obra_social.id %}"
+                               class="btn btn-secondary">
+
+                                <i class="bi bi-x-circle"></i>
+                                Cancelar
+
+                            </a>
+
+
+                            <button type="submit"
+                                    class="btn btn-primary px-4">
+
+                                <i class="bi bi-check-circle"></i>
+                                Guardar Cambios
+
+                            </button>
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+            </form>
+
+        </div>
+
+    </div>
+
+</div>
+
+<script>
+
+document.addEventListener("DOMContentLoaded", function(){
+
+    // ==========================================
+    // COSEGURO
+    // ==========================================
+
+    const tieneCoseguro =
+        document.getElementById(
+            "{{ form.tiene_coseguro.id_for_label }}"
+        );
+
+    const importeCoseguro =
+        document.getElementById(
+            "{{ form.importe_coseguro.id_for_label }}"
+        );
+
+    const contenedorCoseguro =
+        document.getElementById(
+            "contenedor_importe_coseguro"
+        );
+
+
+    function actualizarCoseguro(){
+
+        if(
+            !tieneCoseguro ||
+            !importeCoseguro ||
+            !contenedorCoseguro
+        ){
+            return;
+        }
+
+        if(tieneCoseguro.checked){
+
+            importeCoseguro.disabled = false;
+
+            contenedorCoseguro.classList.remove(
+                "opacity-50"
+            );
+
+        }else{
+
+            importeCoseguro.value = "0";
+
+            importeCoseguro.disabled = true;
+
+            contenedorCoseguro.classList.add(
+                "opacity-50"
+            );
+
+        }
+
+    }
+
+
+    if(tieneCoseguro){
+
+        tieneCoseguro.addEventListener(
+            "change",
+            actualizarCoseguro
+        );
+
+        actualizarCoseguro();
+
+    }
+
+
+    // ==========================================
+    // COPAGO
+    // ==========================================
+
+    const tieneCopago =
+        document.getElementById(
+            "{{ form.tiene_copago.id_for_label }}"
+        );
+
+    const importeCopago =
+        document.getElementById(
+            "{{ form.importe_copago.id_for_label }}"
+        );
+
+    const contenedorCopago =
+        document.getElementById(
+            "contenedor_importe_copago"
+        );
+
+
+    function actualizarCopago(){
+
+        if(
+            !tieneCopago ||
+            !importeCopago ||
+            !contenedorCopago
+        ){
+            return;
+        }
+
+        if(tieneCopago.checked){
+
+            importeCopago.disabled = false;
+
+            contenedorCopago.classList.remove(
+                "opacity-50"
+            );
+
+        }else{
+
+            importeCopago.value = "0";
+
+            importeCopago.disabled = true;
+
+            contenedorCopago.classList.add(
+                "opacity-50"
+            );
+
+        }
+
+    }
+
+
+    if(tieneCopago){
+
+        tieneCopago.addEventListener(
+            "change",
+            actualizarCopago
+        );
+
+        actualizarCopago();
+
+    }
+
+});
+
+</script>
+
+{% endblock %}

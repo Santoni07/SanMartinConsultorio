@@ -1,3 +1,4 @@
+
 {% extends 'core/base.html' %}
 {% load static %}
 
@@ -104,7 +105,96 @@ form label{
 
                         {% csrf_token %}
 
-                        {{ form.as_p }}
+                        <!-- =====================================
+                             CAMPOS ORIGINALES DEL FORMULARIO
+                             MAIN
+                        ====================================== -->
+
+                        <!--
+                            Se mantienen todos los campos definidos
+                            en PacienteUpdateForm.
+
+                            Incluye:
+                            - DNI
+                            - Nombre
+                            - Apellido
+                            - Teléfono
+                            - Sexo
+                            - Email
+                            - Dirección
+                            - Observaciones
+                            - Obra social
+                            - Plan de obra social
+                            - Número de afiliado
+                        -->
+
+                        {% for field in form %}
+
+                            {% if field.name == 'plan_obra_social' %}
+
+                                <!-- =====================================
+                                     AGREGADO OBRASOCIAL:
+                                     PLAN DINÁMICO
+                                ====================================== -->
+
+                                <div
+                                    id="contenedorPlanObraSocial"
+                                    style="display:none;"
+                                >
+
+                                    <p>
+
+                                        {{ field.label_tag }}
+
+                                        {{ field }}
+
+                                        {% if field.help_text %}
+                                            <small class="text-muted">
+                                                {{ field.help_text }}
+                                            </small>
+                                        {% endif %}
+
+                                        {% for error in field.errors %}
+                                            <span class="text-danger d-block">
+                                                {{ error }}
+                                            </span>
+                                        {% endfor %}
+
+                                    </p>
+
+                                </div>
+
+                            {% else %}
+
+                                <p>
+
+                                    {{ field.label_tag }}
+
+                                    {{ field }}
+
+                                    {% if field.help_text %}
+                                        <small class="text-muted">
+                                            {{ field.help_text }}
+                                        </small>
+                                    {% endif %}
+
+                                    {% for error in field.errors %}
+                                        <span class="text-danger d-block">
+                                            {{ error }}
+                                        </span>
+                                    {% endfor %}
+
+                                </p>
+
+                            {% endif %}
+
+                        {% endfor %}
+
+                        {% for error in form.non_field_errors %}
+                            <div class="alert alert-danger">
+                                {{ error }}
+                            </div>
+                        {% endfor %}
 
                         <hr class="my-4">
 
@@ -141,5 +231,157 @@ form label{
     </div>
 
 </div>
+
+
+<!-- =====================================
+     AGREGADO OBRASOCIAL:
+     PLANES DISPONIBLES
+====================================== -->
+
+{{ planes_por_obra_social|json_script:"planes-obra-social-data" }}
+
+
+<!-- =====================================
+     AGREGADO OBRASOCIAL:
+     JAVASCRIPT
+====================================== -->
+
+<script>
+
+document.addEventListener('DOMContentLoaded', function () {
+
+    // ==========================================
+    // ELEMENTOS DEL FORMULARIO
+    // ==========================================
+
+    const obraSocialSelect = document.getElementById(
+        'id_obrasocial'
+    );
+
+    const planSelect = document.getElementById(
+        'id_plan_obra_social'
+    );
+
+    const contenedorPlan = document.getElementById(
+        'contenedorPlanObraSocial'
+    );
+
+    const datosPlanes = document.getElementById(
+        'planes-obra-social-data'
+    );
+
+    // ==========================================
+    // DATOS ENVIADOS DESDE DJANGO
+    // ==========================================
+
+    const planesPorObraSocial = datosPlanes
+        ? JSON.parse(datosPlanes.textContent)
+        : {};
+
+    // ==========================================
+    // ACTUALIZAR PLANES SEGÚN OBRA SOCIAL
+    // ==========================================
+
+    function actualizarPlanes(conservarSeleccion = false) {
+
+        if (
+            !obraSocialSelect ||
+            !planSelect ||
+            !contenedorPlan
+        ) {
+            return;
+        }
+
+        const obraSocialId = obraSocialSelect.value;
+
+        const planActual = conservarSeleccion
+            ? planSelect.value
+            : '';
+
+        const planes = (
+            planesPorObraSocial[String(obraSocialId)] || []
+        );
+
+        // Limpiar opciones anteriores
+        planSelect.innerHTML = '';
+
+        // Opción inicial
+        const opcionInicial = document.createElement('option');
+
+        opcionInicial.value = '';
+        opcionInicial.textContent = 'Seleccione un plan';
+
+        planSelect.appendChild(opcionInicial);
+
+        // ==========================================
+        // CARGAR PLANES
+        // ==========================================
+
+        planes.forEach(function (plan) {
+
+            const opcion = document.createElement('option');
+
+            opcion.value = String(plan.id);
+            opcion.textContent = plan.nombre;
+
+            if (
+                String(plan.id) === String(planActual)
+            ) {
+                opcion.selected = true;
+            }
+
+            planSelect.appendChild(opcion);
+
+        });
+
+        // ==========================================
+        // MOSTRAR U OCULTAR EL PLAN
+        // ==========================================
+
+        if (planes.length > 0) {
+
+            contenedorPlan.style.display = '';
+
+            planSelect.disabled = false;
+
+        } else {
+
+            contenedorPlan.style.display = 'none';
+
+            planSelect.value = '';
+
+            planSelect.disabled = true;
+
+        }
+
+    }
+
+    // ==========================================
+    // EVENTO: CAMBIO DE OBRA SOCIAL
+    // ==========================================
+
+    if (obraSocialSelect && planSelect) {
+
+        obraSocialSelect.addEventListener(
+            'change',
+            function () {
+
+                actualizarPlanes(false);
+
+            }
+        );
+
+        // ==========================================
+        // INICIALIZACIÓN AL EDITAR
+        // CONSERVA EL PLAN DEL PACIENTE
+        // ==========================================
+
+        actualizarPlanes(true);
+
+    }
+
+});
+
+</script>
 
 {% endblock %}

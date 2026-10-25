@@ -41,7 +41,7 @@ def politica_privacidad(request):
 def terminos_condiciones(request):
     return render(request, 'core/terminos.html')
 
-    
+
 class CustomLoginView(LoginView):
     template_name = "registration/login.html"
     redirect_authenticated_user = True
@@ -145,7 +145,7 @@ class CustomLoginView(LoginView):
     def form_invalid(self, form):
         print("❌ FORM INVALID:", form.errors)
         return super().form_invalid(form)
-    
+
     def post(self, request, *args, **kwargs):
         username = request.POST.get("username")
         password = request.POST.get("password")
@@ -199,7 +199,7 @@ class AdminPageView(TemplateView):
 
 class MedicoPageView(LoginRequiredMixin,TemplateView):
     template_name = 'core/IndexMedico.html'
-    
+
 
 def ValidarUsuario(request):
     if request.user.is_authenticated:
@@ -266,8 +266,8 @@ Fecha de solicitud: {datetime.now()}
         'especialidades': especialidades,
         'obras_sociales': obras_sociales,
     })
-    
-from django.http import JsonResponse   
+
+from django.http import JsonResponse
 @login_required
 def renovar_sesion(request):
     """
@@ -275,3 +275,13 @@ def renovar_sesion(request):
     """
     request.session.modified = True
     return JsonResponse({"ok": True})
+
+
+from django.shortcuts import render
+
+def error_403(request, exception=None):
+    return render(
+        request,
+        "core/403.html",
+        status=403
+    )

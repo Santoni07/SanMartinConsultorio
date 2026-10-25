@@ -1,0 +1,190 @@
+{% extends 'core/base.html' %}
+
+{% block title %}
+Presentar Master
+{% endblock %}
+
+{% block content %}
+
+<div class="container mt-4">
+
+    <!-- ================================================== -->
+    <!-- CABECERA -->
+    <!-- ================================================== -->
+
+    <div class="card shadow-sm border-0 mb-4">
+
+        <div class="card-header text-white py-4"
+             style="background:#5DADE2;">
+
+            <div class="d-flex justify-content-between align-items-center">
+
+                <div>
+
+                    <h3 class="mb-1">
+
+                        <i class="bi bi-send-check me-2"></i>
+
+                        Presentar Master
+
+                    </h3>
+
+                    <div class="opacity-75">
+
+                        {{ obra_social.nombre }}
+                        -
+                        {{ master.mes|stringformat:"02d" }}/{{ master.anio }}
+
+                    </div>
+
+                </div>
+
+
+                <a href="{% url 'obrasocial:master_obra_social_detalle' obra_social.id master.id %}"
+                   class="btn btn-light">
+
+                    <i class="bi bi-arrow-left"></i>
+                    Volver
+
+                </a>
+
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <!-- ================================================== -->
+    <!-- ADVERTENCIA -->
+    <!-- ================================================== -->
+
+    <div class="alert alert-warning">
+
+        <strong>
+            <i class="bi bi-exclamation-triangle me-1"></i>
+            Confirmación de presentación
+        </strong>
+
+        <div class="mt-2">
+
+            Al confirmar, el Master dejará de estar en
+            <strong>Borrador</strong> y pasará a
+            <strong>Presentado</strong>.
+
+        </div>
+
+    </div>
+
+
+    <!-- ================================================== -->
+    <!-- FORMULARIO -->
+    <!-- ================================================== -->
+
+    <div class="card shadow-sm">
+
+        <div class="card-header bg-light">
+
+            <strong>
+                Datos de presentación
+            </strong>
+
+        </div>
+
+
+        <div class="card-body">
+
+            <form method="post">
+
+                {% csrf_token %}
+
+
+                <div class="row g-3">
+
+                    <!-- FECHA -->
+
+                    <div class="col-md-4">
+
+                        <label class="form-label">
+                            Fecha de presentación *
+                        </label>
+
+                        <input type="date"
+                               name="fecha_presentacion"
+                               value="{{ hoy|date:'Y-m-d' }}"
+                               class="form-control"
+                               required>
+
+                    </div>
+
+
+                    <!-- NÚMERO PRESENTACIÓN -->
+
+                    <div class="col-md-4">
+
+                        <label class="form-label">
+                            N.º de presentación
+                        </label>
+
+                        <input type="text"
+                               name="numero_presentacion"
+                               class="form-control"
+                               maxlength="50"
+                               placeholder="Opcional">
+
+                    </div>
+
+
+                    <!-- FACTURA -->
+
+                    <div class="col-md-4">
+
+                        <label class="form-label">
+                            N.º de factura
+                        </label>
+
+                        <input type="text"
+                               name="numero_factura"
+                               class="form-control"
+                               maxlength="50"
+                               placeholder="Opcional">
+
+                    </div>
+
+                </div>
+
+
+                <hr class="my-4">
+
+
+                <div class="d-flex justify-content-end gap-2">
+
+                    <a href="{% url 'obrasocial:master_obra_social_detalle' obra_social.id master.id %}"
+                       class="btn btn-secondary">
+
+                        Cancelar
+
+                    </a>
+
+
+                    <button type="submit"
+                            class="btn btn-success"
+                            onclick="return confirm('¿Confirma que este Master fue presentado a la Obra Social?');">
+
+                        <i class="bi bi-send-check me-1"></i>
+
+                        Confirmar presentación
+
+                    </button>
+
+                </div>
+
+            </form>
+
+        </div>
+
+    </div>
+
+</div>
+
+{% endblock %}

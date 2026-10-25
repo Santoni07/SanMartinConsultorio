@@ -11,37 +11,38 @@ document.addEventListener("DOMContentLoaded", () => {
 
 });
 
+
 // =========================================================
 // CONFIGURACIÓN
 // =========================================================
 
+const TIEMPO_INACTIVIDAD = 20 * 60 * 1000;   // 20 minutos
+const TIEMPO_AVISO = 19 * 60 * 1000;         // Aviso al minuto 19
+const CUENTA_REGRESIVA = 60;
 
-
-const TIEMPO_INACTIVIDAD = 20 * 60 * 1000;     // 20 minutos
-const TIEMPO_AVISO = 19 * 60 * 1000;           // Mostrar aviso al minuto 19
-const CUENTA_REGRESIVA = 60;                   // 60 segundos
 
 // =========================================================
 // VARIABLES
 // =========================================================
 
 let temporizadorAviso = null;
-let temporizadorLogout = null;
+let temporizadorFin = null;
 let temporizadorContador = null;
 
 let segundosRestantes = CUENTA_REGRESIVA;
 
 let modalSesion = null;
 
+
 // =========================================================
 // INICIALIZACIÓN
 // =========================================================
 
-function iniciarControlSesion(){
+function iniciarControlSesion() {
 
     const modal = document.getElementById("modalSesion");
 
-    if(modal){
+    if (modal) {
 
         modalSesion = new bootstrap.Modal(modal);
 
@@ -51,11 +52,12 @@ function iniciarControlSesion(){
 
     reiniciarTemporizadores();
 
+
     const boton = document.getElementById(
         "btnContinuarSesion"
     );
 
-    if(boton){
+    if (boton) {
 
         boton.addEventListener(
             "click",
@@ -66,11 +68,12 @@ function iniciarControlSesion(){
 
 }
 
+
 // =========================================================
 // EVENTOS DEL USUARIO
 // =========================================================
 
-function registrarEventosUsuario(){
+function registrarEventosUsuario() {
 
     const eventos = [
 
@@ -95,15 +98,23 @@ function registrarEventosUsuario(){
 
 }
 
-function actividadUsuario(){
 
-    if(modalSesion){
+// =========================================================
+// ACTIVIDAD DEL USUARIO
+// =========================================================
 
-        const modalVisible = document
-            .getElementById("modalSesion")
-            .classList.contains("show");
+function actividadUsuario() {
 
-        if(modalVisible){
+    if (modalSesion) {
+
+        const modal = document.getElementById(
+            "modalSesion"
+        );
+
+        if (
+            modal &&
+            modal.classList.contains("show")
+        ) {
 
             return;
 
@@ -115,116 +126,192 @@ function actividadUsuario(){
 
 }
 
+
 // =========================================================
-// TEMPORIZADORES
+// REINICIAR TEMPORIZADORES
 // =========================================================
 
-function reiniciarTemporizadores(){
+function reiniciarTemporizadores() {
 
-    clearTimeout(temporizadorAviso);
-    clearTimeout(temporizadorLogout);
-    clearInterval(temporizadorContador);
-
-    segundosRestantes = CUENTA_REGRESIVA;
-
-    temporizadorAviso = setTimeout(
-
-        mostrarAviso,
-
-        TIEMPO_AVISO
-
+    clearTimeout(
+        temporizadorAviso
     );
 
-    temporizadorLogout = setTimeout(
-
-        cerrarSesion,
-
-        TIEMPO_INACTIVIDAD
-
+    clearTimeout(
+        temporizadorFin
     );
+
+    clearInterval(
+        temporizadorContador
+    );
+
+
+    segundosRestantes =
+        CUENTA_REGRESIVA;
+
+
+    temporizadorAviso =
+        setTimeout(
+
+            mostrarAviso,
+
+            TIEMPO_AVISO
+
+        );
+
+
+    temporizadorFin =
+        setTimeout(
+
+            sesionInactiva,
+
+            TIEMPO_INACTIVIDAD
+
+        );
 
 }
 
-function mostrarAviso(){
+
+// =========================================================
+// MOSTRAR AVISO
+// =========================================================
+
+function mostrarAviso() {
+
+    if (!modalSesion) {
+
+        return;
+
+    }
+
+    segundosRestantes =
+        CUENTA_REGRESIVA;
 
     actualizarContador();
 
     modalSesion.show();
 
-    temporizadorContador = setInterval(() => {
 
-        segundosRestantes--;
+    temporizadorContador =
+        setInterval(() => {
 
-        actualizarContador();
+            segundosRestantes--;
 
-        if(segundosRestantes <= 0){
+            actualizarContador();
 
-            clearInterval(
-                temporizadorContador
-            );
 
-        }
+            if (
+                segundosRestantes <= 0
+            ) {
 
-    },1000);
+                clearInterval(
+                    temporizadorContador
+                );
+
+            }
+
+        }, 1000);
 
 }
 
+
 // =========================================================
-// CONTADOR
+// ACTUALIZAR CONTADOR
 // =========================================================
 
-function actualizarContador(){
+function actualizarContador() {
 
-    const contador = document.getElementById(
-        "contadorSesion"
-    );
+    const contador =
+        document.getElementById(
+            "contadorSesion"
+        );
 
-    if(contador){
+    if (contador) {
 
-        contador.textContent = segundosRestantes;
+        contador.textContent =
+            segundosRestantes;
 
     }
 
 }
 
+
 // =========================================================
 // CONTINUAR SESIÓN
 // =========================================================
 
-function continuarSesion(){
+function continuarSesion() {
 
-    fetch("/renovar-sesion/", {
+    fetch(
+        "/renovar-sesion/",
+        {
+            method: "GET",
+            credentials: "same-origin"
+        }
+    )
 
-        method: "GET",
+    .then(response => {
 
-        credentials: "same-origin"
+        if (!response.ok) {
 
-    })
-    .then(() => {
+            throw new Error(
+                "No se pudo renovar la sesión."
+            );
 
-        clearInterval(temporizadorContador);
+        }
 
-        segundosRestantes = CUENTA_REGRESIVA;
+        clearInterval(
+            temporizadorContador
+        );
 
-        modalSesion.hide();
+        segundosRestantes =
+            CUENTA_REGRESIVA;
+
+
+        if (modalSesion) {
+
+            modalSesion.hide();
+
+        }
+
 
         reiniciarTemporizadores();
 
     })
+
     .catch(() => {
 
-        window.location.href = "/logout/";
+        window.location.href =
+            "/accounts/login/";
 
     });
 
 }
 
+
 // =========================================================
-// LOGOUT
+// SESIÓN INACTIVA
 // =========================================================
 
-function cerrarSesion(){
+function sesionInactiva() {
 
-    window.location.href = "/accounts/logout/";
+    clearInterval(
+        temporizadorContador
+    );
+
+    /*
+    IMPORTANTE:
+
+    NO llamamos /accounts/logout/
+
+    Una pestaña vieja podría cerrar la sesión
+    mientras el usuario está trabajando en
+    otra pestaña.
+
+    Simplemente enviamos esta pestaña al login.
+    */
+
+    window.location.href =
+        "/accounts/login/";
 
 }

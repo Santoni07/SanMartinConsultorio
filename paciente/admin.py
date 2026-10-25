@@ -1,7 +1,6 @@
 from django.contrib import admin
 from .models import Paciente
 
-
 @admin.register(Paciente)
 class PacienteAdmin(admin.ModelAdmin):
 
@@ -13,6 +12,8 @@ class PacienteAdmin(admin.ModelAdmin):
         'sexo',
         'telefono',
         'obrasocial',
+        'numero_afiliado',
+        'plan_obra_social',
         'activo',
         'fecha_alta',
     )
@@ -21,6 +22,7 @@ class PacienteAdmin(admin.ModelAdmin):
         'sexo',
         'activo',
         'obrasocial',
+        'plan_obra_social',
         'fecha_alta',
     )
 
@@ -28,6 +30,7 @@ class PacienteAdmin(admin.ModelAdmin):
         'apellido',
         'nombre',
         'dni',
+        'numero_afiliado',
         'telefono',
         'email',
     )
@@ -44,7 +47,7 @@ class PacienteAdmin(admin.ModelAdmin):
 
     fieldsets = (
 
-        ('Datos Personales', {
+        ('Datos personales', {
             'fields': (
                 'apellido',
                 'nombre',
@@ -62,9 +65,16 @@ class PacienteAdmin(admin.ModelAdmin):
             )
         }),
 
-        ('Información Médica', {
+        ('Obra social', {
             'fields': (
                 'obrasocial',
+                'numero_afiliado',
+                'plan_obra_social',
+            )
+        }),
+
+        ('Información médica', {
+            'fields': (
                 'observaciones',
             )
         }),

@@ -1,0 +1,693 @@
+{% extends 'core/base.html' %}
+
+{% block title %}
+Ingresos Consultorio - Obras Sociales
+{% endblock %}
+
+{% block content %}
+
+<div class="container mt-4">
+
+    <!-- ================================================== -->
+    <!-- CABECERA -->
+    <!-- ================================================== -->
+
+   <div class="card shadow-sm border-0 mb-4">
+
+    <div class="card-header text-white py-4"
+         style="background:#5DADE2;">
+
+        <div class="d-flex justify-content-between align-items-center">
+
+            <!-- IZQUIERDA -->
+            <div>
+
+                <h3 class="mb-1">
+                    <i class="bi bi-building-check me-2"></i>
+                    Ingresos del Consultorio
+                </h3>
+
+                <div class="opacity-75">
+                    Obras Sociales cobradas
+                </div>
+
+            </div>
+
+
+            <!-- DERECHA -->
+            <div class="text-end">
+
+                <small class="d-block opacity-75">
+                    Sede activa
+                </small>
+
+                <strong class="d-block mb-2">
+                    {{ centro_medico.nombre }}
+                </strong>
+
+                <!-- BOTÓN HISTORIAL -->
+                <a href="{% url 'obrasocial:historial_ingresos_consultorio_os' %}"
+                   class="btn btn-light btn-sm">
+
+                    <i class="bi bi-clock-history me-1"></i>
+                    Ver historial
+
+                </a>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+
+    <!-- ================================================== -->
+    <!-- RESUMEN -->
+    <!-- ================================================== -->
+
+    <div class="card shadow-sm border-0 mb-4">
+
+        <div class="card-body">
+
+            <div class="row align-items-center">
+
+                <div class="col-md-8">
+
+                    <small class="text-muted">
+                        Total pendiente de ingresar a Caja
+                    </small>
+
+                    <h2 class="mb-0 text-success">
+                        ${{ total_pendiente|floatformat:2 }}
+                    </h2>
+
+                </div>
+
+                <div class="col-md-4 text-md-end mt-3 mt-md-0">
+
+                    <span class="badge bg-primary fs-6">
+                        {{ masters_pendientes|length }}
+                        Master{{ masters_pendientes|length|pluralize:"s" }}
+                    </span>
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <!-- ================================================== -->
+    <!-- MASTERS -->
+    <!-- ================================================== -->
+
+    {% for grupo in masters_pendientes %}
+
+        <div class="card shadow-sm border-0 mb-4">
+
+            <!-- ========================================== -->
+            <!-- CABECERA DEL MASTER -->
+            <!-- ========================================== -->
+
+            <div class="card-header bg-light py-3">
+
+                <div class="d-flex justify-content-between align-items-center flex-wrap gap-3">
+
+                    <div>
+
+                        <div class="d-flex align-items-center gap-2 mb-1">
+
+                            <h5 class="mb-0">
+                                Master #{{ grupo.master.id }}
+                            </h5>
+
+                            {% if grupo.master.tipo == "REFACTURACION" %}
+
+                                <span class="badge bg-warning text-dark">
+                                    <i class="bi bi-arrow-repeat me-1"></i>
+                                    Refacturación
+                                </span>
+
+                            {% else %}
+
+                                <span class="badge bg-info text-dark">
+                                    Presentación normal
+                                </span>
+
+                            {% endif %}
+
+                        </div>
+
+                        <div class="text-muted">
+
+                            <strong>
+                                {{ grupo.master.obra_social.nombre }}
+                            </strong>
+
+                            ·
+
+                            Período:
+                            {{ grupo.master.mes|stringformat:"02d" }}/{{ grupo.master.anio }}
+
+                            ·
+
+                            {{ centro_medico.nombre }}
+
+                        </div>
+
+                    </div>
+
+
+                    <div class="text-end">
+
+                        <small class="text-muted d-block">
+                            Total consultorio
+                        </small>
+
+                        <h4 class="text-success mb-0">
+                            ${{ grupo.total_consultorio|floatformat:2 }}
+                        </h4>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+
+            <!-- ========================================== -->
+            <!-- PRESTACIONES -->
+            <!-- ========================================== -->
+
+            <div class="card-body p-0">
+
+                <div class="table-responsive">
+
+                    <table class="table table-hover align-middle mb-0">
+
+                        <thead class="table-light">
+
+                            <tr>
+
+                                <th>
+                                    Fecha
+                                </th>
+
+                                <th>
+                                    Paciente
+                                </th>
+
+                                <th>
+                                    Prestación
+                                </th>
+
+                                <th>
+                                    Médico
+                                </th>
+
+                                <th class="text-end">
+                                    Reconocido OS
+                                </th>
+
+                                <th class="text-end">
+                                    Consultorio
+                                </th>
+
+                            </tr>
+
+                        </thead>
+
+                        <tbody>
+
+                            {% for item in grupo.prestaciones %}
+
+                                <tr>
+
+                                    <!-- ================== -->
+                                    <!-- FECHA -->
+                                    <!-- ================== -->
+
+                                    <td>
+
+                                        {{ item.detalle_movimiento.fecha_prestacion|date:"d/m/Y" }}
+
+                                    </td>
+
+
+                                    <!-- ================== -->
+                                    <!-- PACIENTE -->
+                                    <!-- ================== -->
+
+                                    <td>
+
+                                        {% if item.detalle_movimiento.movimiento.paciente %}
+
+                                            <strong>
+                                                {{ item.detalle_movimiento.movimiento.paciente.apellido }},
+                                                {{ item.detalle_movimiento.movimiento.paciente.nombre }}
+                                            </strong>
+
+                                        {% else %}
+
+                                            -
+
+                                        {% endif %}
+
+                                    </td>
+
+
+                                    <!-- ================== -->
+                                    <!-- PRESTACIÓN -->
+                                    <!-- ================== -->
+
+                                    <td>
+
+                                        {% if item.detalle_movimiento.prestacion_obra_social %}
+
+                                            <div>
+
+                                                <strong>
+                                                    {{ item.detalle_movimiento.prestacion_obra_social.nomenclador.codigo }}
+                                                </strong>
+
+                                            </div>
+
+                                            <small class="text-muted">
+
+                                                {{ item.detalle_movimiento.prestacion_obra_social.nomenclador.descripcion }}
+
+                                            </small>
+
+                                        {% else %}
+
+                                            -
+
+                                        {% endif %}
+
+                                    </td>
+
+
+                                    <!-- ================== -->
+                                    <!-- MÉDICO -->
+                                    <!-- ================== -->
+
+                                    <td>
+
+                                        {% if item.detalle_movimiento.movimiento.turno.medico %}
+
+                                            {{ item.detalle_movimiento.movimiento.turno.medico }}
+
+                                        {% else %}
+
+                                            -
+
+                                        {% endif %}
+
+                                    </td>
+
+
+                                    <!-- ================== -->
+                                    <!-- RECONOCIDO OS -->
+                                    <!-- ================== -->
+
+                                    <td class="text-end">
+
+                                        ${{ item.importe_reconocido|floatformat:2 }}
+
+                                    </td>
+
+
+                                    <!-- ================== -->
+                                    <!-- CONSULTORIO -->
+                                    <!-- ================== -->
+
+                                    <td class="text-end">
+
+                                        <strong class="text-success">
+
+                                            ${{ item.importe_consultorio_reconocido|floatformat:2 }}
+
+                                        </strong>
+
+                                    </td>
+
+                                </tr>
+
+                            {% endfor %}
+
+                        </tbody>
+
+
+                        <!-- ================================== -->
+                        <!-- TOTAL DEL MASTER / SEDE -->
+                        <!-- ================================== -->
+
+                        <tfoot class="table-light">
+
+                            <tr>
+
+                                <td colspan="4">
+
+                                    <strong>
+                                        {{ grupo.cantidad }}
+                                        prestación{{ grupo.cantidad|pluralize:"es" }}
+                                    </strong>
+
+                                    <span class="text-muted ms-2">
+                                        {{ centro_medico.nombre }}
+                                    </span>
+
+                                </td>
+
+                                <td class="text-end">
+
+                                    <strong>
+                                        Total a ingresar:
+                                    </strong>
+
+                                </td>
+
+                                <td class="text-end">
+
+                                    <h5 class="text-success mb-0">
+
+                                        ${{ grupo.total_consultorio|floatformat:2 }}
+
+                                    </h5>
+
+                                </td>
+
+                            </tr>
+
+                        </tfoot>
+
+                    </table>
+
+                </div>
+
+            </div>
+
+
+            <!-- ========================================== -->
+            <!-- BOTÓN INGRESAR A CAJA -->
+            <!-- ========================================== -->
+
+            <div class="card-footer bg-white py-3">
+
+                <div class="d-flex justify-content-between align-items-center">
+
+                    <div>
+
+                        <small class="text-muted">
+                            Se generará un único ingreso en la caja
+                            de <strong>{{ centro_medico.nombre }}</strong>.
+                        </small>
+
+                    </div>
+
+                    <div>
+
+                        <!--
+                            Todavía NO activamos el POST.
+                            Primero vamos a crear la URL y la DEF.
+                        -->
+
+                        <button type="button"
+                                class="btn btn-success"
+                                data-bs-toggle="modal"
+                                data-bs-target="#modalIngreso{{ grupo.master.id }}"
+                                {% if cantidad_cajas_abiertas == 0 %}disabled{% endif %}>
+                            <i class="bi bi-cash-coin me-1"></i>
+                            Ingresar ${{ grupo.total_consultorio|floatformat:2 }} a Caja
+                        </button>
+
+                        {% if cantidad_cajas_abiertas == 0 %}
+                            <div class="text-danger small mt-2">
+                                <i class="bi bi-exclamation-triangle me-1"></i>
+                                No hay ninguna caja abierta hoy en esta sede.
+                            </div>
+                        {% endif %}
+
+<!-- ================================================== -->
+<!-- MODAL CONFIRMAR INGRESO -->
+<!-- ================================================== -->
+
+<div class="modal fade"
+     id="modalIngreso{{ grupo.master.id }}"
+     tabindex="-1"
+     aria-hidden="true">
+
+    <div class="modal-dialog modal-dialog-centered">
+
+        <div class="modal-content">
+
+            <form method="post"
+                  action="{% url 'obrasocial:ingresar_master_consultorio_caja' grupo.master.id %}">
+
+                {% csrf_token %}
+
+                <!-- HEADER -->
+                <div class="modal-header">
+
+                    <h5 class="modal-title">
+                        <i class="bi bi-cash-coin text-success me-2"></i>
+                        Confirmar ingreso a Caja
+                    </h5>
+
+                    <button type="button"
+                            class="btn-close"
+                            data-bs-dismiss="modal"
+                            aria-label="Cerrar">
+                    </button>
+
+                </div>
+
+
+                <!-- BODY -->
+                <div class="modal-body">
+
+                    <p>
+                        Se registrará el ingreso correspondiente al
+                        consultorio del:
+                    </p>
+
+                    <div class="border rounded p-3 bg-light">
+
+                        <div class="mb-2">
+                            <strong>Master:</strong>
+                            #{{ grupo.master.id }}
+                        </div>
+
+                        <div class="mb-2">
+                            <strong>Obra Social:</strong>
+                            {{ grupo.master.obra_social.nombre }}
+                        </div>
+
+                        <div class="mb-2">
+                            <strong>Período:</strong>
+                            {{ grupo.master.mes|stringformat:"02d" }}/{{ grupo.master.anio }}
+                        </div>
+
+                        <div class="mb-2">
+                            <strong>Sede:</strong>
+                            {{ centro_medico.nombre }}
+                        </div>
+
+                        <div class="mb-2">
+                            <strong>Prestaciones:</strong>
+                            {{ grupo.cantidad }}
+                        </div>
+
+                        <hr>
+
+                        <div class="d-flex justify-content-between align-items-center">
+
+                            <strong>Total a ingresar</strong>
+
+                            <h4 class="text-success mb-0">
+                                ${{ grupo.total_consultorio|floatformat:2 }}
+                            </h4>
+
+                        </div>
+
+                    </div>
+
+
+                     <!-- ====================================== -->
+                     <!-- CAJA DE DESTINO -->
+                     <!-- ====================================== -->
+
+                     <div class="mt-4">
+                         <label class="form-label fw-bold" for="cajaDestino{{ grupo.master.id }}">
+                             <i class="bi bi-wallet2 me-1"></i>
+                             Caja de destino
+                         </label>
+
+                         {% if cantidad_cajas_abiertas == 1 %}
+                             {% with caja=cajas_abiertas.0 %}
+                                 <input type="hidden" name="caja_id" value="{{ caja.id }}">
+                                 <div class="alert alert-success mb-0">
+                                     <i class="bi bi-check-circle me-1"></i>
+                                     Caja abierta: <strong>{{ caja.get_turno_display }}</strong>
+                                     — {{ caja.fecha|date:"d/m/Y" }}
+                                 </div>
+                             {% endwith %}
+                         {% elif cantidad_cajas_abiertas == 2 %}
+                             <select name="caja_id"
+                                     id="cajaDestino{{ grupo.master.id }}"
+                                     class="form-select" required>
+                                 <option value="">Seleccionar turno de caja...</option>
+                                 {% for caja in cajas_abiertas %}
+                                     <option value="{{ caja.id }}">
+                                         Turno {{ caja.get_turno_display }}
+                                         — {{ caja.fecha|date:"d/m/Y" }}
+                                     </option>
+                                 {% endfor %}
+                             </select>
+                             <div class="form-text">
+                                 Hay dos cajas abiertas hoy. Seleccione en cuál registrar el ingreso.
+                             </div>
+                         {% else %}
+                             <div class="alert alert-danger mb-0">
+                                 No existe una caja abierta para hoy.
+                                 Debe abrir una caja antes de continuar.
+                             </div>
+                         {% endif %}
+                     </div>
+
+                    <!-- ====================================== -->
+                    <!-- MEDIO DE PAGO -->
+                    <!-- ====================================== -->
+
+                    <div class="mt-4">
+
+                        <label for="medioPago{{ grupo.master.id }}"
+                               class="form-label fw-bold">
+
+                            <i class="bi bi-credit-card me-1"></i>
+                            Medio de pago
+
+                        </label>
+
+                        <select name="medio_pago"
+                                id="medioPago{{ grupo.master.id }}"
+                                class="form-select"
+                                required>
+
+                            <option value="">
+                                Seleccionar medio de pago...
+                            </option>
+
+                            {% for medio in medios_pago %}
+
+                                <option value="{{ medio.id }}">
+                                    {{ medio.nombre }}
+                                </option>
+
+                            {% endfor %}
+
+                        </select>
+
+                        <div class="form-text">
+                            Seleccione cómo realizó el pago la Obra Social.
+                        </div>
+
+                    </div>
+
+
+                    <!-- AVISO -->
+
+                    <div class="alert alert-warning mt-3 mb-0">
+
+                        <i class="bi bi-exclamation-triangle me-1"></i>
+
+                        Este importe será registrado como un
+                        <strong>INGRESO</strong>
+                        en la caja actualmente abierta de
+                        <strong>{{ centro_medico.nombre }}</strong>.
+
+                    </div>
+
+                </div>
+
+
+                <!-- FOOTER -->
+                <div class="modal-footer">
+
+                    <button type="button"
+                            class="btn btn-secondary"
+                            data-bs-dismiss="modal">
+
+                        Cancelar
+
+                    </button>
+
+                    <button type="submit"
+                            class="btn btn-success">
+
+                        <i class="bi bi-check-circle me-1"></i>
+
+                        Confirmar ingreso
+
+                    </button>
+
+                </div>
+
+            </form>
+
+        </div>
+
+    </div>
+
+</div>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+        </div>
+
+    {% empty %}
+
+
+        <!-- ================================================== -->
+        <!-- SIN PENDIENTES -->
+        <!-- ================================================== -->
+
+        <div class="card shadow-sm border-0">
+
+            <div class="card-body text-center py-5">
+
+                <i class="bi bi-check-circle-fill text-success"
+                   style="font-size:4rem;"></i>
+
+                <h4 class="mt-3">
+                    No hay ingresos pendientes
+                </h4>
+
+                <p class="text-muted mb-0">
+
+                    No existen importes del consultorio pendientes
+                    de ingresar a Caja para
+
+                    <strong>
+                        {{ centro_medico.nombre }}
+                    </strong>.
+
+                </p>
+
+            </div>
+
+        </div>
+
+    {% endfor %}
+
+</div>
+
+{% endblock %}

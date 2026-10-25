@@ -9,7 +9,7 @@ from turnos.models import Turnos
 from medicos.models import Medico
 from decimal import Decimal
 from proveedores.models import Proveedor
-
+from obrasocial.models import PrestacionPlan
 class CajaDiaria(models.Model):
     ESTADOS = [
         ('ABIERTA', 'Abierta'),
@@ -128,7 +128,7 @@ class ConceptoFacturacion(models.Model):
     on_delete=models.PROTECT,
     blank=True,
     null=True,
-   
+
     related_name="particular"
 )
 
@@ -216,9 +216,10 @@ class ConceptoFacturacion(models.Model):
             f"{self.nomenclador.codigo} - {self.nomenclador.descripcion}"
             if self.nomenclador
             else f"Concepto #{self.id} (Sin nomenclador)"
-        )  
+        )
 
 class MovimientoCaja(models.Model):
+
     TIPOS = [
         ('INGRESO', 'Ingreso'),
         ('EGRESO', 'Egreso'),
@@ -228,11 +229,16 @@ class MovimientoCaja(models.Model):
         ('ACTIVO', 'Activo'),
         ('ANULADO', 'Anulado'),
     ]
-    
+
+    # ==================================================
+    # DEPILACIÓN
+    # ==================================================
+
     TIPOS_EGRESO_DEPILACION = [
         ('OPERADORA', 'Operadora'),
         ('ALQUILER', 'Alquiler de máquina'),
     ]
+
     es_depilacion = models.BooleanField(
         default=False,
         verbose_name="Corresponde a Depilación"
@@ -245,6 +251,11 @@ class MovimientoCaja(models.Model):
         null=True,
         verbose_name="Tipo de egreso de depilación"
     )
+
+    # ==================================================
+    # CAJA / CENTRO
+    # ==================================================
+
     caja = models.ForeignKey(
         CajaDiaria,
         on_delete=models.PROTECT,
@@ -256,12 +267,18 @@ class MovimientoCaja(models.Model):
         on_delete=models.PROTECT,
         related_name='movimientos_caja'
     )
+
+    # ==================================================
+    # CONCEPTO / TURNO / PACIENTE
+    # ==================================================
+
     concepto_facturacion = models.ForeignKey(
         ConceptoFacturacion,
         on_delete=models.PROTECT,
         null=True,
         blank=True
     )
+
     turno = models.ForeignKey(
         Turnos,
         on_delete=models.SET_NULL,
@@ -278,13 +295,15 @@ class MovimientoCaja(models.Model):
         related_name='movimientos_caja'
     )
 
+    # ==================================================
+    # MOVIMIENTO
+    # ==================================================
+
     tipo = models.CharField(
         max_length=20,
         choices=TIPOS,
         default='INGRESO'
     )
-
-  
 
     importe = models.DecimalField(
         max_digits=12,
@@ -296,7 +315,10 @@ class MovimientoCaja(models.Model):
         default='Consulta médica'
     )
 
-    observacion = models.TextField(blank=True, null=True)
+    observacion = models.TextField(
+        blank=True,
+        null=True
+    )
 
     estado = models.CharField(
         max_length=20,
@@ -304,13 +326,19 @@ class MovimientoCaja(models.Model):
         default='ACTIVO'
     )
 
+    # ==================================================
+    # USUARIO / FECHAS
+    # ==================================================
+
     creado_por = models.ForeignKey(
         User,
         on_delete=models.PROTECT,
         related_name='movimientos_caja_creados'
     )
 
-    fecha_creacion = models.DateTimeField(auto_now_add=True)
+    fecha_creacion = models.DateTimeField(
+        auto_now_add=True
+    )
 
     anulado_por = models.ForeignKey(
         User,
@@ -319,9 +347,24 @@ class MovimientoCaja(models.Model):
         blank=True,
         related_name='movimientos_caja_anulados'
     )
+
+    fecha_anulacion = models.DateTimeField(
+        null=True,
+        blank=True
+    )
+
+    motivo_anulacion = models.TextField(
+        blank=True,
+        null=True
+    )
+
+    # ==================================================
+    # LIQUIDACIÓN
+    # ==================================================
+
     liquidado = models.BooleanField(
-    default=False
-)
+        default=False
+    )
 
     liquidacion = models.ForeignKey(
         LiquidacionMedica,
@@ -329,8 +372,10 @@ class MovimientoCaja(models.Model):
         null=True,
         blank=True
     )
-    fecha_anulacion = models.DateTimeField(null=True, blank=True)
-    motivo_anulacion = models.TextField(blank=True, null=True)
+
+    # ==================================================
+    # IMPORTES
+    # ==================================================
 
     importe_bruto = models.DecimalField(
         max_digits=12,
@@ -349,11 +394,13 @@ class MovimientoCaja(models.Model):
         decimal_places=2,
         default=0
     )
+
     retencion_motivo = models.CharField(
-    max_length=255,
-    blank=True,
-    null=True
-)
+        max_length=255,
+        blank=True,
+        null=True
+    )
+
     importe_neto = models.DecimalField(
         max_digits=12,
         decimal_places=2,
@@ -371,15 +418,25 @@ class MovimientoCaja(models.Model):
         decimal_places=2,
         default=0
     )
-        
-    
+
+    # ==================================================
+    # META
+    # ==================================================
+
     class Meta:
         verbose_name = 'Movimiento de caja'
         verbose_name_plural = 'Movimientos de caja'
         ordering = ['-fecha_creacion']
 
     def __str__(self):
-        return f'{self.fecha_creacion:%d/%m/%Y %H:%M} - {self.tipo} - ${self.importe}'
+        return (
+            f'{self.fecha_creacion:%d/%m/%Y %H:%M} - '
+            f'{self.tipo} - ${self.importe}'
+        )
+
+    # ==================================================
+    # ANULAR MOVIMIENTO
+    # ==================================================
 
     def anular(self, usuario, motivo=""):
 
@@ -404,13 +461,20 @@ class MovimientoCaja(models.Model):
             self.turno.save(
                 update_fields=["estado"]
             )
-        
+
+    # ==================================================
+    # RECALCULAR TOTALES
+    # ==================================================
+
     def recalcular_totales(self):
         """
-        Recalcula todos los importes del movimiento a partir de sus detalles.
+        Recalcula todos los importes del movimiento
+        a partir de sus detalles.
         """
 
-        detalles = self.detalles.exclude(estado="ANULADO")
+        detalles = self.detalles.exclude(
+            estado="ANULADO"
+        )
 
         self.importe_bruto = sum(
             (detalle.importe for detalle in detalles),
@@ -433,11 +497,15 @@ class MovimientoCaja(models.Model):
         )
 
         self.importe_consultorio = sum(
-            (detalle.importe_consultorio for detalle in detalles),
+            (
+                detalle.importe_consultorio
+                for detalle in detalles
+            ),
             Decimal("0.00")
         )
 
         # El importe total del movimiento será el bruto
+
         self.importe = self.importe_bruto
 
         self.save(
@@ -450,9 +518,6 @@ class MovimientoCaja(models.Model):
                 "importe_consultorio",
             ]
         )
-        
-    
-
 
 class HistorialMovimientoCaja(models.Model):
     ACCIONES = [
@@ -528,8 +593,21 @@ class DetalleMovimientoCaja(models.Model):
     concepto_facturacion = models.ForeignKey(
         ConceptoFacturacion,
         on_delete=models.PROTECT,
+        null=True,
+        blank=True,
         verbose_name="Prestación"
     )
+
+    prestacion_obra_social = models.ForeignKey(
+        PrestacionPlan,
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+        related_name="detalles_caja",
+        verbose_name="Prestación Obra Social"
+    )
+
+
 
     # ==========================================
     # FOTOGRAFÍA DEL NOMENCLADOR
@@ -620,7 +698,78 @@ class DetalleMovimientoCaja(models.Model):
         decimal_places=2,
         default=0,
         verbose_name="Importe Proveedor"
-        
+
+    )
+    # ==========================================
+    # COSEGURO
+    # ==========================================
+
+    tiene_coseguro = models.BooleanField(
+        default=False,
+        verbose_name="Tiene coseguro"
+    )
+
+    importe_coseguro = models.DecimalField(
+        max_digits=12,
+        decimal_places=2,
+        default=0,
+        verbose_name="Importe coseguro"
+    )
+
+    # ==========================================
+    # CONTROL COSEGURO / OBRA SOCIAL
+    # ==========================================
+
+    coseguro_cobrado = models.BooleanField(
+        default=False,
+        verbose_name="Coseguro cobrado"
+    )
+
+    coseguro_liquidado = models.BooleanField(
+        default=False,
+        verbose_name="Coseguro liquidado"
+    )
+
+    # ==========================================
+    # COPAGO
+    # ==========================================
+
+    tiene_copago = models.BooleanField(
+        default=False,
+        verbose_name="Tiene copago"
+    )
+
+    importe_copago = models.DecimalField(
+        max_digits=12,
+        decimal_places=2,
+        default=0,
+        verbose_name="Importe copago"
+    )
+
+    copago_cobrado = models.BooleanField(
+        default=False,
+        verbose_name="Copago cobrado"
+    )
+
+    copago_liquidado = models.BooleanField(
+        default=False,
+        verbose_name="Copago liquidado"
+    )
+
+    obra_social_cobrada = models.BooleanField(
+        default=False,
+        verbose_name="Obra social cobrada"
+    )
+
+    fecha_cobro_obra_social = models.DateField(
+        null=True,
+        blank=True,
+        verbose_name="Fecha de cobro obra social"
+    )
+
+    honorario_os_liquidado = models.BooleanField(
+        default=False,
+        verbose_name="Honorario de obra social liquidado"
     )
 
     # ==========================================
@@ -702,6 +851,23 @@ class DetalleMovimientoCaja(models.Model):
         related_name="detalles",
         verbose_name="Liquidación Proveedor"
     )
+    # Snapshot del resultado reconocido por la obra social
+
+    importe_reconocido_obra_social = models.DecimalField(
+        max_digits=12,
+        decimal_places=2,
+        null=True,
+        blank=True,
+        verbose_name="Importe reconocido por Obra Social"
+    )
+
+    honorario_reconocido_obra_social = models.DecimalField(
+        max_digits=12,
+        decimal_places=2,
+        null=True,
+        blank=True,
+        verbose_name="Honorario médico reconocido por Obra Social"
+    )
     class Meta:
 
         verbose_name = "Detalle de Movimiento"
@@ -712,14 +878,14 @@ class DetalleMovimientoCaja(models.Model):
             "orden",
             "id"
         ]
-        
+
     def copiar_desde_concepto(self, concepto):
         """
         Copia la configuración completa del ConceptoFacturacion.
         De esta forma el detalle conserva una fotografía histórica,
         aunque el concepto cambie en el futuro.
         """
-        
+
         self.concepto_facturacion = concepto
 
         # ===============================
@@ -757,6 +923,8 @@ class DetalleMovimientoCaja(models.Model):
 
         self.importe_proveedor = concepto.importe_proveedor
 
+
+
         # ===============================
         # Importe Particular
         # ===============================
@@ -765,9 +933,9 @@ class DetalleMovimientoCaja(models.Model):
             Decimal(self.cantidad) *
             concepto.importe_particular
         )
-            
-    
-    
+
+
+
     def calcular_importes(self):
         """
         Calcula todos los importes del detalle de la prestación.
@@ -844,38 +1012,178 @@ class DetalleMovimientoCaja(models.Model):
 
             self.importe_medico = Decimal("0.00")
             self.importe_consultorio = base_distribucion
-    
+
+
+    def copiar_desde_prestacion_obra_social(self, prestacion):
+        """
+        Copia la configuración completa de PrestacionPlan.
+
+        El detalle conserva una fotografía histórica de la prestación
+        aunque posteriormente cambien los valores o la configuración
+        del convenio.
+        """
+
+        self.prestacion_obra_social = prestacion
+
+        # ===============================
+        # Datos del nomenclador
+        # ===============================
+
+        self.codigo = prestacion.nomenclador.codigo
+        self.descripcion = prestacion.nomenclador.descripcion
+        self.tipo_concepto = prestacion.tipo_concepto
+
+        # ===============================
+        # Configuración de cálculo
+        # ===============================
+
+        self.tipo_calculo = prestacion.tipo_calculo
+
+        self.porcentaje_iva = prestacion.porcentaje_iva
+
+        self.porcentaje_medico = prestacion.porcentaje_medico
+
+        self.porcentaje_consultorio = prestacion.porcentaje_consultorio
+
+        self.honorario_fijo_medico = prestacion.honorario_fijo_medico
+
+        # ===============================
+        # Proveedor
+        # ===============================
+
+        self.proveedor = prestacion.proveedor
+
+        if prestacion.proveedor:
+            self.nombre_proveedor = prestacion.proveedor.nombre
+        else:
+            self.nombre_proveedor = ""
+
+        self.importe_proveedor = prestacion.importe_proveedor
+
+        # ===============================
+        # Coseguro
+        # ===============================
+
+        self.tiene_coseguro = (
+            prestacion.tiene_coseguro
+        )
+
+        if prestacion.tiene_coseguro:
+
+            self.importe_coseguro = (
+                Decimal(self.cantidad) *
+                prestacion.importe_coseguro
+            )
+
+        else:
+
+            self.importe_coseguro = Decimal("0.00")
+
+
+        # ===============================
+        # Copago
+        # ===============================
+
+        self.tiene_copago = (
+            prestacion.tiene_copago
+        )
+
+        if prestacion.tiene_copago:
+
+            self.importe_copago = (
+                Decimal(self.cantidad) *
+                prestacion.importe_copago
+            )
+
+        else:
+
+            self.importe_copago = Decimal("0.00")
+        # ===============================
+        # Importe Obra Social
+        # ===============================
+
+        self.importe = (
+            Decimal(self.cantidad) *
+            prestacion.valor
+        )
+
     def save(self, *args, **kwargs):
         """
         Antes de guardar:
-        - Copia la configuración del ConceptoFacturacion (si aún no existe).
+        - Si es PARTICULAR, copia la configuración desde ConceptoFacturacion.
+        - Si es OBRA SOCIAL, copia la configuración desde PrestacionPlan.
         - Calcula todos los importes.
 
         Después de guardar:
         - Recalcula automáticamente los totales del MovimientoCaja.
         """
 
-        # Copiar la fotografía sólo la primera vez
-        if self._state.adding:
-            self.copiar_desde_concepto(
-                self.concepto_facturacion
-            )
-            
-        print("=" * 80)
-        print("ANTES DEL SAVE")
-        print("Proveedor:", self.proveedor)
-        print("Nombre:", self.nombre_proveedor)
-        print("Importe:", self.importe_proveedor)
+        # ==========================================
+        # COPIAR FOTOGRAFÍA SOLO LA PRIMERA VEZ
+        # ==========================================
 
-        # Calcular importes
+        if self._state.adding:
+
+            # ==========================================
+            # PARTICULAR
+            # ==========================================
+
+            if self.concepto_facturacion:
+
+                self.copiar_desde_concepto(
+                    self.concepto_facturacion
+                )
+
+                # ===============================
+                # Coseguro
+                # ===============================
+
+                self.tiene_coseguro = False
+                self.importe_coseguro = Decimal("0.00")
+
+                # ===============================
+                # Copago
+                # ===============================
+
+                self.tiene_copago = False
+                self.importe_copago = Decimal("0.00")
+
+            # OBRA SOCIAL
+            elif self.prestacion_obra_social:
+
+                self.copiar_desde_prestacion_obra_social(
+                    self.prestacion_obra_social
+                )
+
+            # SIN PRESTACIÓN
+            else:
+
+                raise ValueError(
+                    "El detalle debe tener una prestación particular "
+                    "o una prestación de obra social."
+                )
+
+        # ==========================================
+        # CALCULAR IMPORTES
+        # ==========================================
+
         self.calcular_importes()
+
+        # ==========================================
+        # GUARDAR DETALLE
+        # ==========================================
 
         super().save(*args, **kwargs)
 
-        # Actualizar el movimiento
+        # ==========================================
+        # RECALCULAR TOTALES DEL MOVIMIENTO
+        # ==========================================
+
         if self.movimiento_id:
+
             self.movimiento.recalcular_totales()
-    
+
+
     @property
     def descripcion_prestaciones(self):
 
@@ -885,12 +1193,12 @@ class DetalleMovimientoCaja(models.Model):
             f"{d.codigo} - {d.descripcion}"
             for d in detalles
         )
-    
+
     def __str__(self):
 
         return f"{self.codigo} - {self.descripcion}"
-    
-    
+
+
 class DetalleMedioPago(models.Model):
 
     movimiento = models.ForeignKey(
@@ -936,7 +1244,278 @@ class DetalleMedioPago(models.Model):
 
         return (
             f"{self.medio_pago} - ${self.importe}"
-            
-            
+
+
         )
-        
+
+
+class ExtraCoseguro(models.Model):
+
+    # ==================================================
+    # RELACIÓN CON LA ATENCIÓN ORIGINAL
+    # ==================================================
+
+    turno = models.ForeignKey(
+        Turnos,
+        on_delete=models.PROTECT,
+        related_name="extras_coseguro",
+        verbose_name="Turno"
+    )
+
+    detalle_prestacion = models.OneToOneField(
+        DetalleMovimientoCaja,
+        on_delete=models.PROTECT,
+        related_name="extra_coseguro",
+        verbose_name="Prestación relacionada"
+    )
+
+    paciente = models.ForeignKey(
+        Paciente,
+        on_delete=models.PROTECT,
+        related_name="extras_coseguro",
+        verbose_name="Paciente"
+    )
+
+    medico = models.ForeignKey(
+        Medico,
+        on_delete=models.PROTECT,
+        related_name="extras_coseguro",
+        verbose_name="Médico"
+    )
+
+    centro_medico = models.ForeignKey(
+        CentroMedico,
+        on_delete=models.PROTECT,
+        related_name="extras_coseguro",
+        verbose_name="Centro médico"
+    )
+
+    fecha = models.DateField(
+        verbose_name="Fecha del extra"
+    )
+
+    # ==================================================
+    # MOVIMIENTOS DE CAJA
+    # ==================================================
+
+    ingreso_movimiento = models.OneToOneField(
+        MovimientoCaja,
+        on_delete=models.PROTECT,
+        related_name="extra_coseguro_ingreso",
+        verbose_name="Ingreso por extra coseguro"
+    )
+
+    egreso_movimiento = models.ForeignKey(
+        MovimientoCaja,
+        on_delete=models.PROTECT,
+        related_name="extras_coseguro_egreso",
+        null=True,
+        blank=True,
+        verbose_name="Egreso entregado al médico"
+    )
+    # ==================================================
+    # LIQUIDACIÓN DEL PAGO AL MÉDICO
+    # ==================================================
+
+    liquidacion_honorario = models.ForeignKey(
+        "honorarios.LiquidacionMedica",
+        on_delete=models.PROTECT,
+        related_name="extras_liquidados",
+        null=True,
+        blank=True,
+        verbose_name="Liquidación del extra"
+    )
+
+    fecha_liquidacion_honorario = models.DateTimeField(
+        null=True,
+        blank=True,
+        verbose_name="Fecha de liquidación del extra"
+    )
+
+    # ==================================================
+    # DISTRIBUCION DEL ADELANTO: 100% MEDICO / 0% CONSULTORIO
+    # ==================================================
+
+    importe_extra = models.DecimalField(
+        max_digits=12,
+        decimal_places=2,
+        verbose_name="Importe extra cobrado"
+    )
+
+    porcentaje_medico = models.DecimalField(
+        max_digits=5,
+        decimal_places=2,
+        default=Decimal("100.00"),
+        verbose_name="Porcentaje médico"
+    )
+
+    porcentaje_consultorio = models.DecimalField(
+        max_digits=5,
+        decimal_places=2,
+        default=Decimal("0.00"),
+        verbose_name="Porcentaje consultorio"
+    )
+
+    importe_medico = models.DecimalField(
+        max_digits=12,
+        decimal_places=2,
+        default=0,
+        verbose_name="Importe correspondiente al médico"
+    )
+
+    importe_consultorio = models.DecimalField(
+        max_digits=12,
+        decimal_places=2,
+        default=0,
+        verbose_name="Importe a devolver al consultorio"
+    )
+
+    # ==================================================
+    # RETENCIÓN EN LIQUIDACIÓN
+    # ==================================================
+
+    liquidacion_retencion = models.ForeignKey(
+        "honorarios.LiquidacionMedica",
+        on_delete=models.PROTECT,
+        related_name="extras_coseguro_retenidos",
+        null=True,
+        blank=True,
+        verbose_name="Liquidación donde se aplicó la retención"
+    )
+
+    fecha_retencion = models.DateTimeField(
+        null=True,
+        blank=True,
+        verbose_name="Fecha de aplicación de la retención"
+    )
+
+    # ==================================================
+    # AUDITORÍA
+    # ==================================================
+
+    fecha_creacion = models.DateTimeField(
+        auto_now_add=True
+    )
+
+    creado_por = models.ForeignKey(
+        User,
+        on_delete=models.PROTECT,
+        related_name="extras_coseguro_creados"
+    )
+
+    observacion = models.TextField(
+        blank=True,
+        null=True
+    )
+
+     # ==================================================
+    # REGISTRO DE RETENCIÓN A FAVOR DEL CONSULTORIO
+    # ==================================================
+
+    cobro_retencion_registrado = models.BooleanField(
+        default=False,
+        verbose_name="Cobro de retención registrado"
+    )
+
+    fecha_cobro_retencion = models.DateTimeField(
+        null=True,
+        blank=True,
+        verbose_name="Fecha de registro del cobro"
+    )
+
+    cobro_retencion_registrado_por = models.ForeignKey(
+        User,
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+        related_name="retenciones_extras_registradas",
+        verbose_name="Usuario que registró el cobro"
+    )
+    caja_retencion = models.ForeignKey(
+        "caja.CajaDiaria",
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+        related_name="retenciones_extras_recuperadas",
+    )
+
+
+    class Meta:
+        verbose_name = "Extra de coseguro"
+        verbose_name_plural = "Extras de coseguro"
+        ordering = [
+            "-fecha",
+            "-id",
+        ]
+        indexes = [
+            models.Index(
+                fields=["medico", "fecha"]
+            ),
+            models.Index(
+                fields=["liquidacion_honorario"]
+            ),
+            models.Index(
+                fields=["liquidacion_retencion"]
+            ),
+        ]
+
+    def __str__(self):
+        return (
+            f"{self.fecha:%d/%m/%Y} - "
+            f"{self.paciente} - "
+            f"{self.medico} - "
+            f"${self.importe_extra}"
+        )
+
+    def calcular_distribucion(self):
+        """El extra se adelanta íntegramente al médico.
+
+        Su recuperación se registra al liquidar la obra social,
+        no como un reparto del cobro inicial.
+        """
+        importe = Decimal(self.importe_extra or "0.00").quantize(
+            Decimal("0.01")
+        )
+        self.porcentaje_medico = Decimal("100.00")
+        self.porcentaje_consultorio = Decimal("0.00")
+        self.importe_medico = importe
+        self.importe_consultorio = Decimal("0.00")
+
+    def save(self, *args, **kwargs):
+
+        self.calcular_distribucion()
+
+        super().save(*args, **kwargs)
+
+    @property
+    def obra_social_cobrada(self):
+
+        return self.detalle_prestacion.obra_social_cobrada
+
+    @property
+    def retencion_aplicada(self):
+
+        return self.liquidacion_retencion_id is not None
+
+    @property
+    def estado_control(self):
+
+        if (
+            self.liquidacion_retencion_id
+            and self.cobro_retencion_registrado
+        ):
+            return "COBRO_REGISTRADO"
+
+        if self.liquidacion_retencion_id:
+            return "RETENIDO"
+
+        if (
+            not self.egreso_movimiento_id
+            or self.egreso_movimiento.estado != "ACTIVO"
+        ):
+            return "PENDIENTE_PAGO_MEDICO"
+
+        if self.detalle_prestacion.obra_social_cobrada:
+            return "DISPONIBLE_PARA_RETENER"
+
+        return "PENDIENTE_COBRO_OBRA_SOCIAL"

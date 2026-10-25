@@ -21,46 +21,46 @@ from agendas.urls import Agenda_patterns
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    
+
 # url core
       path('', include('core.urls')),
 
-     
+
 # path del Auth
     # path('accounts/', include('django.contrib.auth.urls')),
      path('accounts/', include('registration.urls')),
 
 # path del especialidades
    path('especialidades/', include(Especialidades_patterns)),
-   
+
 #path medicos
      path('medicos/', include(Medico_patterns)),
-     
+
 # path servicios
     path('servicios/', include(Servicios_patterns)),
-    
+
 # path Pacientes
     path('pacientes/', include(Paciente_patterns)),
-    
+
 # path ObraSocial
     path('obrasocial/', include(ObraSocial_patterns)),
-    
+
 # path agenda
     path('agenda/', include(Agenda_patterns)),
 # path turnos
    path('turnos/', include('turnos.urls')),
-   
+
 # path estudios
    path('estudios/', include('estudios.urls')),
-   
+
 # path historial
    path('historial/', include('historial.urls')),
-# path gerencia 
+# path gerencia
 path(
     'gerencia/',
     include('gerencia.urls')
 ),
-# path caja 
+# path caja
 path('caja/', include('caja.urls')),
 # path honorarios
 path('honorarios/', include('honorarios.urls')),
@@ -78,5 +78,14 @@ path(
 
 if settings.DEBUG:
     from django.conf.urls.static import static
-    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
-    
+    urlpatterns += static(
+        settings.MEDIA_URL,
+        document_root=settings.MEDIA_ROOT
+    )
+
+
+# ======================================================
+# MANEJO GLOBAL DE ERRORES
+# ======================================================
+
+handler403 = "core.views.error_403"

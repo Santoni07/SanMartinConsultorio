@@ -1,6 +1,15 @@
+
 from django import forms
-from .models import CajaDiaria, MovimientoCaja, MedioPago,ConceptoFacturacion
 from django.utils import timezone
+
+from .models import (
+    CajaDiaria,
+    MovimientoCaja,
+    MedioPago,
+    ConceptoFacturacion,
+    DetalleMovimientoCaja,
+    ExtraCoseguro,
+)
 from turnos.models import Turnos
 
 
@@ -30,7 +39,70 @@ class AperturaCajaForm(forms.ModelForm):
             }),
         }
 
+
+class DetalleExtraIngresoChoiceField(forms.ModelChoiceField):
+
+    def label_from_instance(self, obj):
+
+        turno = obj.movimiento.turno
+        paciente = turno.paciente
+        medico = turno.medico
+        obra_social = paciente.obrasocial
+
+        indicador = (
+            "SOBRETURNO — "
+            if turno.es_sobreturno
+            else ""
+        )
+
+        return (
+            f"{indicador}"
+            f"{paciente.apellido.upper()}, {paciente.nombre} — "
+            f"{turno.hora.strftime('%H:%M')} — "
+            f"Dr. {medico.nombre} {medico.apellido} — "
+            f"{obra_social.nombre}"
+        )
+
+
+class ExtraCoseguroEgresoChoiceField(forms.ModelChoiceField):
+
+    def label_from_instance(self, obj):
+
+        turno = obj.turno
+        paciente = obj.paciente
+        medico = obj.medico
+        obra_social = paciente.obrasocial
+
+        indicador = (
+            "SOBRETURNO — "
+            if turno.es_sobreturno
+            else ""
+        )
+
+        return (
+            f"{indicador}"
+            f"{paciente.apellido.upper()}, {paciente.nombre} — "
+            f"{turno.hora.strftime('%H:%M')} — "
+            f"Dr. {medico.nombre} {medico.apellido} — "
+            f"{obra_social.nombre}"
+        )
+
+
 class MovimientoCajaForm(forms.ModelForm):
+
+    detalle_extra_ingreso = DetalleExtraIngresoChoiceField(
+        queryset=DetalleMovimientoCaja.objects.none(),
+        required=False,
+        label="Paciente / turno relacionado",
+        empty_label="Seleccione el turno"
+    )
+
+    extra_coseguro_egreso = ExtraCoseguroEgresoChoiceField(
+        queryset=ExtraCoseguro.objects.none(),
+        required=False,
+        label="Paciente / turno relacionado",
+        empty_label="Seleccione el extra entregado al médico"
+    )
 
     class Meta:
         model = MovimientoCaja
@@ -38,13 +110,11 @@ class MovimientoCajaForm(forms.ModelForm):
         fields = [
             'tipo',
             'concepto_facturacion',
-          
             'importe',
             'retencion_monto',
             'retencion_motivo',
             'concepto',
             'observacion',
-            
             'tipo_egreso_depilacion',
         ]
 
@@ -57,19 +127,14 @@ class MovimientoCajaForm(forms.ModelForm):
                 'class': 'form-select'
             }),
 
-           
-
-            'tipo_egreso_depilacion': forms.RadioSelect(
-    attrs={
-        'class': 'form-check-input'
-    }
-),
-            
+            'tipo_egreso_depilacion': forms.RadioSelect(attrs={
+                'class': 'form-check-input'
+            }),
 
             'importe': forms.NumberInput(attrs={
                 'class': 'form-control',
                 'step': '0.01',
-                'min': '0'
+                'min': '0.01'
             }),
 
             'retencion_monto': forms.NumberInput(attrs={
@@ -92,52 +157,179 @@ class MovimientoCajaForm(forms.ModelForm):
             }),
         }
 
-    def __init__(self, *args, **kwargs):
+    def __init__(
+        self,
+        *args,
+        centro_medico=None,
+        fecha=None,
+        **kwargs
+    ):
 
         super().__init__(*args, **kwargs)
+
         self.fields['retencion_monto'].required = False
         self.fields['retencion_motivo'].required = False
+
+        # Mantener funcionalidad de depilación de main.
         self.fields['tipo_egreso_depilacion'].required = False
         self.fields['tipo_egreso_depilacion'].choices = (
-        MovimientoCaja.TIPOS_EGRESO_DEPILACION
-    )
+            MovimientoCaja.TIPOS_EGRESO_DEPILACION
+        )
 
-       
+        conceptos = (
+            ConceptoFacturacion.objects
+            .filter(activo=True)
+            .select_related("nomenclador")
+            .order_by("nomenclador__descripcion")
+        )
+
         self.fields[
-    'concepto_facturacion'
-].queryset = (
-    ConceptoFacturacion.objects.filter(
-        activo=True
-    )
-    .select_related("nomenclador")
-    .order_by("nomenclador__descripcion")
-)
+            'concepto_facturacion'
+        ].queryset = conceptos
+
+        concepto_extra = conceptos.filter(
+            nomenclador__codigo__iexact="EXTRA_COSEGURO"
+        ).first()
+
+        self.fields[
+            'concepto_facturacion'
+        ].widget.attrs["data-extra-concepto-id"] = (
+            concepto_extra.id
+            if concepto_extra
+            else ""
+        )
+
+        if not centro_medico or not fecha:
+            return
+
+        # Prestaciones originales disponibles
+        # para registrar un ingreso extra.
+
+        self.fields[
+            "detalle_extra_ingreso"
+        ].queryset = (
+            DetalleMovimientoCaja.objects
+            .filter(
+                movimiento__centro_medico=centro_medico,
+                movimiento__estado="ACTIVO",
+                movimiento__turno__isnull=False,
+                movimiento__turno__fecha=fecha,
+                movimiento__turno__estado__in=[
+                    "PENDIENTE",
+                    "ATENDIDO",
+                ],
+                prestacion_obra_social__isnull=False,
+            )
+            .exclude(
+                estado="ANULADO"
+            )
+            .exclude(
+                extra_coseguro__isnull=False
+            )
+            .select_related(
+                "movimiento__turno",
+                "movimiento__turno__paciente",
+                "movimiento__turno__paciente__obrasocial",
+                "movimiento__turno__medico",
+            )
+            .order_by(
+                "movimiento__turno__hora",
+                "id",
+            )
+        )
+
+        # Extras ingresados que todavía
+        # no tienen egreso.
+
+        self.fields[
+            "extra_coseguro_egreso"
+        ].queryset = (
+            ExtraCoseguro.objects
+            .filter(
+                centro_medico=centro_medico,
+                fecha=fecha,
+                ingreso_movimiento__estado="ACTIVO",
+                egreso_movimiento__isnull=True,
+            )
+            .select_related(
+                "turno",
+                "paciente",
+                "paciente__obrasocial",
+                "medico",
+            )
+            .order_by(
+                "turno__hora",
+                "id",
+            )
+        )
+
     def clean(self):
 
         cleaned_data = super().clean()
 
         tipo = cleaned_data.get("tipo")
-        tipo_egreso = cleaned_data.get("tipo_egreso_depilacion")
+        concepto = cleaned_data.get("concepto_facturacion")
+        importe = cleaned_data.get("importe")
 
-        # Si no es un egreso, limpiamos los datos
+        detalle_ingreso = cleaned_data.get(
+            "detalle_extra_ingreso"
+        )
+
+        extra_egreso = cleaned_data.get(
+            "extra_coseguro_egreso"
+        )
+
+        codigo = ""
+
+        if concepto and concepto.nomenclador:
+            codigo = concepto.nomenclador.codigo.upper().strip()
+
+        es_extra = codigo == "EXTRA_COSEGURO"
+
+        # Validar ingreso de extra de coseguro.
+        if es_extra and tipo == "INGRESO":
+
+            if not detalle_ingreso:
+                self.add_error(
+                    "detalle_extra_ingreso",
+                    "Debe seleccionar el paciente y turno."
+                )
+
+        # Validar egreso de extra de coseguro.
+        if es_extra and tipo == "EGRESO":
+
+            if not extra_egreso:
+                self.add_error(
+                    "extra_coseguro_egreso",
+                    "Debe seleccionar el ingreso extra correspondiente."
+                )
+
+            elif importe != extra_egreso.importe_extra:
+                self.add_error(
+                    "importe",
+                    (
+                        "El egreso debe coincidir con el importe "
+                        f"entregado al médico: "
+                        f"${extra_egreso.importe_extra}."
+                    )
+                )
+
+        # Mantener comportamiento de depilación.
+        tipo_egreso = cleaned_data.get(
+            "tipo_egreso_depilacion"
+        )
+
         if tipo != "EGRESO":
-
             cleaned_data["tipo_egreso_depilacion"] = None
             cleaned_data["es_depilacion"] = False
-
-            return cleaned_data
-
-        # Si eligió un tipo de egreso, automáticamente es de depilación
-        if tipo_egreso:
-
-            cleaned_data["es_depilacion"] = True
-
         else:
+            cleaned_data["es_depilacion"] = bool(tipo_egreso)
 
-            cleaned_data["es_depilacion"] = False
+        if not es_extra:
+            cleaned_data["detalle_extra_ingreso"] = None
+            cleaned_data["extra_coseguro_egreso"] = None
 
         return cleaned_data
-
 
 
 class TurnoChoiceField(forms.ModelChoiceField):
@@ -146,7 +338,7 @@ class TurnoChoiceField(forms.ModelChoiceField):
 
         if obj.es_sobreturno:
             return (
-                f"🟡 SOBRETURNO | "
+                f"SOBRETURNO | "
                 f"{obj.fecha.strftime('%d/%m/%Y')} "
                 f"{obj.hora.strftime('%H:%M')} - "
                 f"{obj.medico} ({obj.paciente})"
@@ -157,7 +349,8 @@ class TurnoChoiceField(forms.ModelChoiceField):
             f"{obj.hora.strftime('%H:%M')} - "
             f"{obj.medico} ({obj.paciente})"
         )
-        
+
+
 class CobroConsultaForm(forms.ModelForm):
 
     turno = TurnoChoiceField(
@@ -192,7 +385,6 @@ class CobroConsultaForm(forms.ModelForm):
         ]
 
         widgets = {
-
             'concepto_facturacion': forms.Select(attrs={
                 'class': 'form-select'
             }),
@@ -214,7 +406,6 @@ class CobroConsultaForm(forms.ModelForm):
                 'rows': 3,
                 'placeholder': 'Observación opcional'
             }),
-
         }
 
     def __init__(self, *args, **kwargs):
@@ -226,10 +417,7 @@ class CobroConsultaForm(forms.ModelForm):
 
         super().__init__(*args, **kwargs)
 
-        # ======================================
-        # PRESTACIONES
-        # ======================================
-
+        # Prestaciones.
         self.fields['concepto_facturacion'].queryset = (
             ConceptoFacturacion.objects.filter(
                 activo=True
@@ -244,10 +432,7 @@ class CobroConsultaForm(forms.ModelForm):
 
         self.fields['importe_particular'].initial = 0
 
-        # ======================================
-        # TURNOS
-        # ======================================
-
+        # Turnos.
         if centro_medico:
 
             turnos_cobrados = MovimientoCaja.objects.filter(
@@ -282,9 +467,8 @@ class CobroConsultaForm(forms.ModelForm):
             )
 
 
-
-           
 class AnularMovimientoCajaForm(forms.Form):
+
     motivo_anulacion = forms.CharField(
         label='Motivo de anulación',
         widget=forms.Textarea(attrs={
@@ -297,6 +481,7 @@ class AnularMovimientoCajaForm(forms.Form):
 
 
 class CerrarCajaForm(forms.ModelForm):
+
     class Meta:
         model = CajaDiaria
         fields = [
@@ -310,11 +495,11 @@ class CerrarCajaForm(forms.ModelForm):
                 'placeholder': 'Observaciones del cierre de caja'
             }),
         }
-        
+
+
 class ConceptoFacturacionForm(forms.ModelForm):
 
     class Meta:
-
         model = ConceptoFacturacion
 
         fields = [
@@ -327,13 +512,11 @@ class ConceptoFacturacionForm(forms.ModelForm):
             "honorario_fijo_medico",
             "tipo_concepto",
             "proveedor",
-            
             "importe_proveedor",
             "activo",
         ]
 
         widgets = {
-
             "nomenclador": forms.Select(attrs={
                 'class': 'form-select select2'
             }),
@@ -377,11 +560,9 @@ class ConceptoFacturacionForm(forms.ModelForm):
             "activo": forms.CheckboxInput(attrs={
                 "class": "form-check-input"
             }),
-
         }
 
         labels = {
-
             "nomenclador": "Prestación",
             "importe_particular": "Importe Particular",
             "porcentaje_iva": "IVA (%)",

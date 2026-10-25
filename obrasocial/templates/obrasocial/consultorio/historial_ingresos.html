@@ -1,0 +1,827 @@
+{% extends 'core/base.html' %}
+
+{% block title %}
+Historial de Ingresos - Consultorio
+{% endblock %}
+
+{% block content %}
+
+<div class="container mt-4">
+
+    <!-- ================================================== -->
+    <!-- CABECERA -->
+    <!-- ================================================== -->
+
+    <div class="card shadow-sm border-0 mb-4">
+
+        <div class="card-header text-white py-4"
+             style="background:#5DADE2;">
+
+            <div class="d-flex justify-content-between align-items-center flex-wrap gap-3">
+
+                <div>
+
+                    <h3 class="mb-1">
+                        <i class="bi bi-clock-history me-2"></i>
+                        Historial de Ingresos
+                    </h3>
+
+                    <div class="opacity-75">
+                        Ingresos del consultorio por Obras Sociales
+                    </div>
+
+                </div>
+
+                <div class="text-end">
+
+                    <small class="d-block opacity-75">
+                        Sede activa
+                    </small>
+
+                    <strong class="d-block mb-2">
+                        {{ centro_medico.nombre }}
+                    </strong>
+
+                    <a href="{% url 'obrasocial:ingresos_consultorio_os' %}"
+                       class="btn btn-light btn-sm">
+
+                        <i class="bi bi-arrow-left me-1"></i>
+                        Volver a pendientes
+
+                    </a>
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <!-- ================================================== -->
+    <!-- FILTROS -->
+    <!-- ================================================== -->
+
+    <div class="card shadow-sm border-0 mb-4">
+
+        <div class="card-body">
+
+            <form method="get"
+                  class="row g-3 align-items-end">
+
+                <!-- MES -->
+
+                <div class="col-md-4">
+
+                    <label class="form-label fw-bold">
+                        Mes
+                    </label>
+
+                    <select name="mes"
+                            class="form-select">
+
+                        {% for numero, nombre in meses %}
+
+                            <option value="{{ numero }}"
+                                {% if numero == mes %}
+                                    selected
+                                {% endif %}>
+
+                                {{ nombre }}
+
+                            </option>
+
+                        {% endfor %}
+
+                    </select>
+
+                </div>
+
+
+                <!-- AÑO -->
+
+                <div class="col-md-4">
+
+                    <label class="form-label fw-bold">
+                        Año
+                    </label>
+
+                    <select name="anio"
+                            class="form-select">
+
+                        {% for anio_opcion in anios_disponibles %}
+
+                            <option value="{{ anio_opcion }}"
+                                {% if anio_opcion == anio %}
+                                    selected
+                                {% endif %}>
+
+                                {{ anio_opcion }}
+
+                            </option>
+
+                        {% endfor %}
+
+                    </select>
+
+                </div>
+
+
+                <!-- BUSCAR -->
+
+                <div class="col-md-4">
+
+                    <button type="submit"
+                            class="btn btn-primary w-100">
+
+                        <i class="bi bi-search me-1"></i>
+                        Buscar
+
+                    </button>
+
+                </div>
+
+            </form>
+
+        </div>
+
+    </div>
+
+
+    <!-- ================================================== -->
+    <!-- RESUMEN -->
+    <!-- ================================================== -->
+
+    <div class="row g-3 mb-4">
+
+        <!-- TOTAL -->
+
+        <div class="col-lg-3 col-md-6">
+
+            <div class="card shadow-sm border-0 h-100">
+
+                <div class="card-body">
+
+                    <div class="d-flex justify-content-between align-items-start">
+
+                        <div>
+
+                            <small class="text-muted d-block">
+                                Total ingresado
+                            </small>
+
+                            <h3 class="text-success mb-0 mt-1">
+                                ${{ total_ingresado|floatformat:2 }}
+                            </h3>
+
+                        </div>
+
+                        <i class="bi bi-cash-stack fs-2 text-success"></i>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+        </div>
+
+
+        <!-- INGRESOS -->
+
+        <div class="col-lg-3 col-md-6">
+
+            <div class="card shadow-sm border-0 h-100">
+
+                <div class="card-body">
+
+                    <small class="text-muted d-block">
+                        Ingresos a Caja
+                    </small>
+
+                    <h3 class="mb-0 mt-1">
+                        {{ cantidad_ingresos }}
+                    </h3>
+
+                </div>
+
+            </div>
+
+        </div>
+
+
+        <!-- MASTERS -->
+
+        <div class="col-lg-3 col-md-6">
+
+            <div class="card shadow-sm border-0 h-100">
+
+                <div class="card-body">
+
+                    <small class="text-muted d-block">
+                        Masters
+                    </small>
+
+                    <h3 class="mb-0 mt-1">
+                        {{ cantidad_masters }}
+                    </h3>
+
+                </div>
+
+            </div>
+
+        </div>
+
+
+        <!-- PRESTACIONES -->
+
+        <div class="col-lg-3 col-md-6">
+
+            <div class="card shadow-sm border-0 h-100">
+
+                <div class="card-body">
+
+                    <small class="text-muted d-block">
+                        Prestaciones
+                    </small>
+
+                    <h3 class="mb-0 mt-1">
+                        {{ cantidad_prestaciones }}
+                    </h3>
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <!-- ================================================== -->
+    <!-- MEDIOS DE PAGO -->
+    <!-- ================================================== -->
+
+    <div class="card shadow-sm border-0 mb-4">
+
+        <div class="card-header bg-light py-3">
+
+            <strong>
+                <i class="bi bi-credit-card me-2"></i>
+                Resumen por medio de pago
+            </strong>
+
+        </div>
+
+        <div class="card-body">
+
+            {% if resumen_medios_pago %}
+
+                <div class="row g-3">
+
+                    {% for medio in resumen_medios_pago %}
+
+                        <div class="col-lg-3 col-md-4 col-sm-6">
+
+                            <div class="border rounded p-3 h-100">
+
+                                <small class="text-muted d-block">
+                                    {{ medio.nombre }}
+                                </small>
+
+                                <h5 class="text-success mb-0 mt-1">
+                                    ${{ medio.importe|floatformat:2 }}
+                                </h5>
+
+                            </div>
+
+                        </div>
+
+                    {% endfor %}
+
+                </div>
+
+            {% else %}
+
+                <div class="text-muted">
+                    No hay medios de pago registrados para este período.
+                </div>
+
+            {% endif %}
+
+        </div>
+
+    </div>
+
+
+    <!-- ================================================== -->
+    <!-- HISTORIAL -->
+    <!-- ================================================== -->
+
+    <div class="card shadow-sm border-0 mb-5">
+
+        <div class="card-header bg-light py-3">
+
+            <div class="d-flex justify-content-between align-items-center">
+
+                <strong>
+                    <i class="bi bi-list-check me-2"></i>
+                    Ingresos registrados
+                </strong>
+
+                <span class="badge bg-secondary">
+                    {{ cantidad_ingresos }}
+                </span>
+
+            </div>
+
+        </div>
+
+
+        <div class="card-body p-0">
+
+            {% if historial_ingresos %}
+
+                <div class="accordion"
+                     id="accordionHistorialConsultorio">
+
+                    {% for grupo in historial_ingresos %}
+
+                        <div class="accordion-item">
+
+                            <!-- ====================================== -->
+                            <!-- CABECERA -->
+                            <!-- ====================================== -->
+
+                            <h2 class="accordion-header"
+                                id="headingIngreso{{ grupo.movimiento.id }}">
+
+                                <button class="accordion-button collapsed"
+                                        type="button"
+                                        data-bs-toggle="collapse"
+                                        data-bs-target="#collapseIngreso{{ grupo.movimiento.id }}"
+                                        aria-expanded="false">
+
+                                    <div class="container-fluid p-0">
+
+                                        <div class="row align-items-center g-2">
+
+                                            <!-- FECHA -->
+
+                                            <div class="col-lg-2">
+
+                                                <small class="text-muted d-block">
+                                                    Fecha de ingreso
+                                                </small>
+
+                                                <strong>
+                                                    {{ grupo.fecha_ingreso|date:"d/m/Y" }}
+                                                </strong>
+
+                                                <div class="small text-muted">
+                                                    {{ grupo.fecha_ingreso|date:"H:i" }} hs
+                                                </div>
+
+                                            </div>
+
+
+                                            <!-- OS -->
+
+                                            <div class="col-lg-3">
+
+                                                <small class="text-muted d-block">
+                                                    Obra Social
+                                                </small>
+
+                                                <strong>
+                                                    {{ grupo.obra_social.nombre }}
+                                                </strong>
+
+                                                <div class="small text-muted">
+
+                                                    Master #{{ grupo.master.id }}
+
+                                                    ·
+
+                                                    {{ grupo.master.mes|stringformat:"02d" }}/{{ grupo.master.anio }}
+
+                                                </div>
+
+                                            </div>
+
+
+                                            <!-- TIPO -->
+
+                                            <div class="col-lg-2">
+
+                                                <small class="text-muted d-block">
+                                                    Presentación
+                                                </small>
+
+                                                {% if grupo.master.tipo == "REFACTURACION" %}
+
+                                                    <span class="badge bg-warning text-dark">
+                                                        Refacturación
+                                                    </span>
+
+                                                {% else %}
+
+                                                    <span class="badge bg-info text-dark">
+                                                        Normal
+                                                    </span>
+
+                                                {% endif %}
+
+                                            </div>
+
+
+                                            <!-- MEDIO -->
+
+                                            <div class="col-lg-2">
+
+                                                <small class="text-muted d-block">
+                                                    Medio de pago
+                                                </small>
+
+                                                {% if grupo.medios_pago %}
+
+                                                    {% for medio in grupo.medios_pago %}
+
+                                                        <div>
+                                                            {{ medio.nombre }}
+                                                        </div>
+
+                                                    {% endfor %}
+
+                                                {% else %}
+
+                                                    <span class="badge bg-warning text-dark">
+                                                        Sin registrar
+                                                    </span>
+
+                                                {% endif %}
+
+                                            </div>
+
+
+                                            <!-- TOTAL -->
+
+                                            <div class="col-lg-3 text-lg-end">
+
+                                                <small class="text-muted d-block">
+                                                    Ingreso consultorio
+                                                </small>
+
+                                                <h5 class="text-success mb-0">
+                                                    ${{ grupo.total_consultorio|floatformat:2 }}
+                                                </h5>
+
+                                                <small class="text-muted">
+                                                    {{ grupo.cantidad }}
+                                                    prestación{{ grupo.cantidad|pluralize:"es" }}
+                                                </small>
+
+                                            </div>
+
+                                        </div>
+
+                                    </div>
+
+                                </button>
+
+                            </h2>
+
+
+                            <!-- ====================================== -->
+                            <!-- DETALLE DESPLEGABLE -->
+                            <!-- ====================================== -->
+
+                            <div id="collapseIngreso{{ grupo.movimiento.id }}"
+                                 class="accordion-collapse collapse"
+                                 data-bs-parent="#accordionHistorialConsultorio">
+
+                                <div class="accordion-body">
+
+
+                                    <!-- DATOS DEL MOVIMIENTO -->
+
+                                    <div class="row g-3 mb-4">
+
+                                        <div class="col-md-3">
+
+                                            <small class="text-muted d-block">
+                                                Movimiento de Caja
+                                            </small>
+
+                                            <strong>
+                                                #{{ grupo.movimiento.id }}
+                                            </strong>
+
+                                        </div>
+
+
+                                        <div class="col-md-3">
+
+                                            <small class="text-muted d-block">
+                                                Registrado por
+                                            </small>
+
+                                            <strong>
+                                                {{ grupo.movimiento.creado_por.username|default:"-" }}
+                                            </strong>
+
+                                        </div>
+
+
+                                        <div class="col-md-3">
+
+                                            <small class="text-muted d-block">
+                                                Estado
+                                            </small>
+
+                                            {% if grupo.movimiento.estado == "ACTIVO" %}
+
+                                                <span class="badge bg-success">
+                                                    Activo
+                                                </span>
+
+                                            {% else %}
+
+                                                <span class="badge bg-secondary">
+                                                    {{ grupo.movimiento.estado }}
+                                                </span>
+
+                                            {% endif %}
+
+                                        </div>
+
+
+                                        <div class="col-md-3">
+
+                                            <small class="text-muted d-block">
+                                                Medio de pago
+                                            </small>
+
+                                            {% if grupo.medios_pago %}
+
+                                                {% for medio in grupo.medios_pago %}
+
+                                                    <div>
+
+                                                        <strong>
+                                                            {{ medio.nombre }}
+                                                        </strong>
+
+                                                        <span class="text-muted">
+                                                            ${{ medio.importe|floatformat:2 }}
+                                                        </span>
+
+                                                    </div>
+
+                                                {% endfor %}
+
+                                            {% else %}
+
+                                                <span class="text-muted">
+                                                    Sin registrar
+                                                </span>
+
+                                            {% endif %}
+
+                                        </div>
+
+                                    </div>
+
+
+                                    <!-- ================================== -->
+                                    <!-- PRESTACIONES -->
+                                    <!-- ================================== -->
+
+                                    <div class="table-responsive">
+
+                                        <table class="table table-hover table-sm align-middle">
+
+                                            <thead class="table-light">
+
+                                                <tr>
+
+                                                    <th>
+                                                        Fecha
+                                                    </th>
+
+                                                    <th>
+                                                        Paciente
+                                                    </th>
+
+                                                    <th>
+                                                        Prestación
+                                                    </th>
+
+                                                    <th>
+                                                        Médico
+                                                    </th>
+
+                                                    <th class="text-end">
+                                                        Reconocido OS
+                                                    </th>
+
+                                                    <th class="text-end">
+                                                        Consultorio
+                                                    </th>
+
+                                                </tr>
+
+                                            </thead>
+
+
+                                            <tbody>
+
+                                                {% for item in grupo.prestaciones %}
+
+                                                    <tr>
+
+                                                        <!-- FECHA -->
+
+                                                        <td>
+
+                                                            {{ item.detalle_movimiento.fecha_prestacion|date:"d/m/Y" }}
+
+                                                        </td>
+
+
+                                                        <!-- PACIENTE -->
+
+                                                        <td>
+
+                                                            {% if item.detalle_movimiento.movimiento.paciente %}
+
+                                                                <strong>
+                                                                    {{ item.detalle_movimiento.movimiento.paciente.apellido }},
+                                                                    {{ item.detalle_movimiento.movimiento.paciente.nombre }}
+                                                                </strong>
+
+                                                            {% else %}
+
+                                                                -
+
+                                                            {% endif %}
+
+                                                        </td>
+
+
+                                                        <!-- PRESTACIÓN -->
+
+                                                        <td>
+
+                                                            {% if item.detalle_movimiento.prestacion_obra_social %}
+
+                                                                <div>
+
+                                                                    <strong>
+                                                                        {{ item.detalle_movimiento.prestacion_obra_social.nomenclador.codigo }}
+                                                                    </strong>
+
+                                                                </div>
+
+                                                                <small class="text-muted">
+
+                                                                    {{ item.detalle_movimiento.prestacion_obra_social.nomenclador.descripcion }}
+
+                                                                </small>
+
+                                                            {% else %}
+
+                                                                -
+
+                                                            {% endif %}
+
+                                                        </td>
+
+
+                                                        <!-- MÉDICO -->
+
+                                                        <td>
+
+                                                            {% if item.detalle_movimiento.movimiento.turno.medico %}
+
+                                                                {{ item.detalle_movimiento.movimiento.turno.medico }}
+
+                                                            {% else %}
+
+                                                                -
+
+                                                            {% endif %}
+
+                                                        </td>
+
+
+                                                        <!-- RECONOCIDO -->
+
+                                                        <td class="text-end">
+
+                                                            ${{ item.importe_reconocido|floatformat:2 }}
+
+                                                        </td>
+
+
+                                                        <!-- CONSULTORIO -->
+
+                                                        <td class="text-end">
+
+                                                            <strong class="text-success">
+
+                                                                ${{ item.importe_consultorio_reconocido|floatformat:2 }}
+
+                                                            </strong>
+
+                                                        </td>
+
+                                                    </tr>
+
+                                                {% endfor %}
+
+                                            </tbody>
+
+
+                                            <!-- TOTAL -->
+
+                                            <tfoot class="table-light">
+
+                                                <tr>
+
+                                                    <td colspan="5"
+                                                        class="text-end">
+
+                                                        <strong>
+                                                            Total consultorio:
+                                                        </strong>
+
+                                                    </td>
+
+                                                    <td class="text-end">
+
+                                                        <strong class="text-success">
+
+                                                            ${{ grupo.total_consultorio|floatformat:2 }}
+
+                                                        </strong>
+
+                                                    </td>
+
+                                                </tr>
+
+                                            </tfoot>
+
+                                        </table>
+
+                                    </div>
+
+                                </div>
+
+                            </div>
+
+                        </div>
+
+                    {% endfor %}
+
+                </div>
+
+
+            {% else %}
+
+                <!-- ========================================== -->
+                <!-- SIN RESULTADOS -->
+                <!-- ========================================== -->
+
+                <div class="text-center py-5">
+
+                    <i class="bi bi-calendar-x text-muted"
+                       style="font-size:4rem;"></i>
+
+                    <h4 class="mt-3">
+                        No hay ingresos registrados
+                    </h4>
+
+                    <p class="text-muted mb-0">
+
+                        No existen ingresos del consultorio para
+                        el período seleccionado en
+
+                        <strong>
+                            {{ centro_medico.nombre }}
+                        </strong>.
+
+                    </p>
+
+                </div>
+
+            {% endif %}
+
+        </div>
+
+    </div>
+
+</div>
+
+{% endblock %}

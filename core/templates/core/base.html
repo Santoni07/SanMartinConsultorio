@@ -94,7 +94,7 @@
       border-radius: 8px;
       padding: 8px 18px;
     }
-    .navbar .dropdown:hover ul {
+    .navbar .dropdown:hover > ul {
   display: block;
 }
 
@@ -109,6 +109,24 @@
 
 .navbar .dropdown ul li a {
   color: #333;
+}
+
+/* Submenús internos de Caja */
+.navbar .dropdown ul .dropdown {
+    position: relative;
+}
+
+.navbar .dropdown ul .dropdown > ul {
+    position: absolute;
+    top: 0;
+    left: 100%;
+    min-width: 250px;
+    margin-left: 6px;
+    display: none;
+}
+
+.navbar .dropdown ul .dropdown:hover > ul {
+    display: block;
 }
 .main-content {
     margin-top: 30px;
@@ -153,6 +171,12 @@
     box-shadow: none;
   }
 
+  .navbar .dropdown ul .dropdown > ul {
+    position: static;
+    left: auto;
+    margin-left: 15px;
+}
+
 }
   </style>
 
@@ -168,7 +192,7 @@
     <div class="container-fluid d-flex align-items-center">
 
       <a href="{% url 'core:index' %}" class="d-flex align-items-center text-decoration-none">
-        <img src="{% static 'core/img/logo.jpg' %}" 
+        <img src="{% static 'core/img/logo.jpg' %}"
              class="me-2 rounded-circle"
              style="width: 45px; height: 45px;">
         <span class="fw-bold text-dark">Centro Médico San Martín</span>
@@ -221,7 +245,7 @@
 {% else %}
     <!-- NAVBAR DINAMICO -->
 <div class="navbar-main">
-        
+
 
 
 
@@ -298,7 +322,7 @@
                                     Seleccionar
                                 </a>
                             </li>
-                            
+
 
                         </ul>
 
@@ -329,7 +353,7 @@
                                 </a>
                             </li>
 
-                             
+
 
                         </ul>
 
@@ -376,7 +400,7 @@
                         </ul>
 
                     </li>
-                    
+
                     <li class="dropdown">
 
                         <a href="#">
@@ -502,7 +526,7 @@
 
                     </li>
 
-                
+
 
                     <li class="dropdown">
 
@@ -568,6 +592,43 @@
         </a>
     </li>
 
+    <li class="dropdown">
+
+    <a href="#">
+
+        <span>Consultorio</span>
+        <i class="bi bi-chevron-right"></i>
+
+    </a>
+
+    <ul>
+
+        <li>
+
+            <a href="{% url 'obrasocial:ingresos_consultorio_os' %}">
+
+
+                Ingresos del Consultorio
+
+            </a>
+
+        </li>
+
+        <li>
+
+            <a href="{% url 'panel_extras' %}">
+
+
+                Gestión de Extras
+
+            </a>
+
+        </li>
+
+    </ul>
+
+</li>
+
         <li class="dropdown">
 
     <a href="#">
@@ -588,6 +649,9 @@
                 Liquidaciones Médicas
             </a>
         </li>
+        <a href="{% url 'generar_liquidacion_obra_social' %}">
+    Generar Liquidación Obra Social
+</a>
         <li>
             <a href="{% url 'historial_liquidaciones_medicas' %}">
                 Historial de Liquidaciones
@@ -790,10 +854,10 @@
             </li>
             {% endif %}
 
-    
+
             </ul>
     </div>
-        
+
         </nav>
 
         <!-- 🧠 BOTÓN DERECHO DINÁMICO -->

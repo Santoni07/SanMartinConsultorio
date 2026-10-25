@@ -1,3 +1,4 @@
+
 {% extends 'core/base.html' %}
 {% load static %}
 
@@ -430,6 +431,46 @@
                             </div>
 
 
+                            <!-- =====================================================
+                                 AGREGADO DE OBRASOCIAL: PLAN
+                            ====================================================== -->
+
+                            <div
+                                class="col-lg-4 col-md-6"
+                                id="contenedor-plan-obra-social"
+                                hidden
+                            >
+
+                                <label
+                                    class="form-label"
+                                    for="{{ form.plan_obra_social.id_for_label }}"
+                                >
+                                    Plan de obra social
+                                </label>
+
+                                {{ form.plan_obra_social }}
+
+                            </div>
+
+
+                            <!-- =====================================================
+                                 AGREGADO DE OBRASOCIAL: NÚMERO DE AFILIADO
+                            ====================================================== -->
+
+                            <div class="col-lg-4 col-md-6">
+
+                                <label
+                                    class="form-label"
+                                    for="{{ form.numero_afiliado.id_for_label }}"
+                                >
+                                    Número de afiliado
+                                </label>
+
+                                {{ form.numero_afiliado }}
+
+                            </div>
+
+
                         </div>
 
                     </div>
@@ -686,5 +727,82 @@
 
 </div>
 
+
+<!-- =====================================================
+     AGREGADO DE OBRASOCIAL: DATOS DE PLANES
+===================================================== -->
+
+{{ planes_por_obra_social|json_script:"planes-obra-social-data" }}
+
+
+<!-- =====================================================
+     AGREGADO DE OBRASOCIAL: JAVASCRIPT
+===================================================== -->
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+
+    const obraSocial = document.getElementById('id_obrasocial');
+    const planSelect = document.getElementById('id_plan_obra_social');
+    const planContenedor = document.getElementById(
+        'contenedor-plan-obra-social'
+    );
+    const datosPlanes = document.getElementById(
+        'planes-obra-social-data'
+    );
+
+    const planesPorObraSocial = datosPlanes
+        ? JSON.parse(datosPlanes.textContent)
+        : {};
+
+    function actualizarPlanes(conservarSeleccion = false) {
+
+        if (!obraSocial || !planSelect || !planContenedor) {
+            return;
+        }
+
+        const planAnterior = conservarSeleccion
+            ? planSelect.value
+            : '';
+
+        const planes = (
+            planesPorObraSocial[String(obraSocial.value)] || []
+        );
+
+        planSelect.replaceChildren(
+            new Option('Seleccione un plan', '')
+        );
+
+        for (const plan of planes) {
+            planSelect.add(
+                new Option(plan.nombre, String(plan.id))
+            );
+        }
+
+        planContenedor.hidden = planes.length === 0;
+        planSelect.disabled = planes.length === 0;
+
+        if (
+            conservarSeleccion &&
+            planes.some(
+                p => String(p.id) === planAnterior
+            )
+        ) {
+            planSelect.value = planAnterior;
+        }
+    }
+
+    if (obraSocial && planSelect) {
+
+        actualizarPlanes(true);
+
+        obraSocial.addEventListener('change', function () {
+            actualizarPlanes(false);
+        });
+
+    }
+
+});
+</script>
 
 {% endblock %}

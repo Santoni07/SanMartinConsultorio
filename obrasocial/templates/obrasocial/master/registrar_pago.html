@@ -1,0 +1,663 @@
+{% extends 'core/base.html' %}
+
+{% block title %}
+Registrar Cobro - {{ obra_social.nombre }}
+{% endblock %}
+
+{% block content %}
+
+<div class="container mt-4">
+
+    <!-- ================================================== -->
+    <!-- CABECERA -->
+    <!-- ================================================== -->
+
+    <div class="card shadow-sm border-0 mb-4">
+
+        <div class="card-header text-white py-4"
+             style="background:#5DADE2;">
+
+            <div class="d-flex justify-content-between align-items-center">
+
+                <div>
+
+                    <h3 class="mb-1">
+
+                        <i class="bi bi-cash-coin me-2"></i>
+
+                        Registrar Cobro
+
+                    </h3>
+
+                    <div class="opacity-75">
+
+                        {{ obra_social.nombre }}
+                        -
+                        Master
+                        {{ master.mes|stringformat:"02d" }}/{{ master.anio }}
+
+                    </div>
+
+                </div>
+
+                <a href="{% url 'obrasocial:master_obra_social_detalle' obra_social.id master.id %}"
+                   class="btn btn-light">
+
+                    <i class="bi bi-arrow-left"></i>
+                    Volver
+
+                </a>
+
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <!-- ================================================== -->
+    <!-- INFORMACIÓN -->
+    <!-- ================================================== -->
+
+    <div class="alert alert-info">
+
+        <i class="bi bi-info-circle me-1"></i>
+
+        La liquidación de la Obra Social ya fue cargada.
+
+        En esta pantalla solamente se confirma el
+
+        <strong>cobro efectivo del importe reconocido</strong>.
+
+        Las prestaciones rechazadas no generan cobro
+        ni habilitan honorarios médicos.
+
+    </div>
+
+
+    <!-- ================================================== -->
+    <!-- RESUMEN -->
+    <!-- ================================================== -->
+
+    <div class="row g-3 mb-4">
+
+        <!-- PRESENTADO -->
+
+        <div class="col-md-4">
+
+            <div class="card shadow-sm h-100">
+
+                <div class="card-body">
+
+                    <div class="text-muted mb-1">
+                        Total presentado
+                    </div>
+
+                    <h3 class="mb-0">
+
+                        $ {{ total_presentado|floatformat:2 }}
+
+                    </h3>
+
+                </div>
+
+            </div>
+
+        </div>
+
+
+        <!-- RECONOCIDO -->
+
+        <div class="col-md-4">
+
+            <div class="card shadow-sm border-success h-100">
+
+                <div class="card-body">
+
+                    <div class="text-muted mb-1">
+                        Total a cobrar
+                    </div>
+
+                    <h3 class="text-success mb-0">
+
+                        $ {{ total_reconocido|floatformat:2 }}
+
+                    </h3>
+
+                    <small class="text-muted">
+                        Importe reconocido por la Obra Social
+                    </small>
+
+                </div>
+
+            </div>
+
+        </div>
+
+
+        <!-- DIFERENCIA -->
+
+        <div class="col-md-4">
+
+            <div class="card shadow-sm border-danger h-100">
+
+                <div class="card-body">
+
+                    <div class="text-muted mb-1">
+                        Débitos / Rechazos
+                    </div>
+
+                    <h3 class="text-danger mb-0">
+
+                        $ {{ total_debitado|floatformat:2 }}
+
+                    </h3>
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <!-- ================================================== -->
+    <!-- CONTADORES -->
+    <!-- ================================================== -->
+
+    <div class="card shadow-sm mb-4">
+
+        <div class="card-body py-3">
+
+            <span class="badge bg-success me-2">
+
+                <i class="bi bi-check-circle me-1"></i>
+
+                Pagadas:
+                {{ cantidad_pagadas }}
+
+            </span>
+
+            <span class="badge bg-warning text-dark me-2">
+
+                <i class="bi bi-dash-circle me-1"></i>
+
+                Debitadas:
+                {{ cantidad_debitadas }}
+
+            </span>
+
+            <span class="badge bg-danger">
+
+                <i class="bi bi-x-circle me-1"></i>
+
+                Rechazadas:
+                {{ cantidad_rechazadas }}
+
+            </span>
+
+        </div>
+
+    </div>
+
+
+    <!-- ================================================== -->
+    <!-- FORMULARIO -->
+    <!-- ================================================== -->
+
+    <form method="post">
+
+        {% csrf_token %}
+
+
+        <!-- ============================================== -->
+        <!-- FECHA DE COBRO -->
+        <!-- ============================================== -->
+
+        <div class="card shadow-sm mb-4">
+
+            <div class="card-body">
+
+                <div class="row">
+
+                    <div class="col-md-4">
+
+                        <label class="form-label">
+
+                            Fecha de cobro *
+
+                        </label>
+
+                        <input type="date"
+                               name="fecha_cobro"
+                               value="{{ hoy|date:'Y-m-d' }}"
+                               class="form-control"
+                               required>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+        </div>
+
+
+        <!-- ============================================== -->
+        <!-- PRESTACIONES -->
+        <!-- ============================================== -->
+
+        <div class="card shadow-sm">
+
+            <div class="card-header bg-light">
+
+                <strong>
+
+                    <i class="bi bi-list-check me-1"></i>
+
+                    Resultado de la liquidación
+
+                </strong>
+
+            </div>
+
+
+            <div class="card-body p-0">
+
+                <div class="table-responsive">
+
+                    <table class="table table-hover align-middle mb-0">
+
+                        <thead class="table-light">
+
+                            <tr>
+
+                                <th>Fecha</th>
+
+                                <th>Sede</th>
+
+                                <th>Paciente</th>
+
+                                <th>Médico</th>
+
+                                <th>Código</th>
+
+                                <th>Prestación</th>
+
+                                <th class="text-end">
+                                    Presentado
+                                </th>
+
+                                <th class="text-center">
+                                    Resultado
+                                </th>
+
+                                <th class="text-end">
+                                    Reconocido
+                                </th>
+
+                                <th class="text-end">
+                                    Diferencia
+                                </th>
+
+                            </tr>
+
+                        </thead>
+
+
+                        <tbody>
+
+                            {% for item in detalles %}
+
+                            {% with detalle=item.detalle_movimiento %}
+
+                            <tr>
+
+                                <!-- FECHA -->
+
+                                <td>
+
+                                    {{ detalle.fecha_prestacion|date:"d/m/Y" }}
+
+                                </td>
+
+
+                                <!-- SEDE -->
+
+                                <td>
+
+                                    <span class="badge bg-light text-dark border">
+
+                                        {{ detalle.movimiento.centro_medico.nombre }}
+
+                                    </span>
+
+                                </td>
+
+
+                                <!-- PACIENTE -->
+
+                                <td>
+
+                                    {% if detalle.movimiento.paciente %}
+
+                                        {{ detalle.movimiento.paciente }}
+
+                                    {% else %}
+
+                                        -
+
+                                    {% endif %}
+
+                                </td>
+
+
+                                <!-- MÉDICO -->
+
+                                <td>
+
+                                    {% if detalle.movimiento.turno and detalle.movimiento.turno.medico %}
+
+                                        {{ detalle.movimiento.turno.medico.nombre }}
+                                        {{ detalle.movimiento.turno.medico.apellido }}
+
+                                        {% if detalle.movimiento.turno.medico.matricula %}
+
+                                            <div class="small text-muted">
+
+                                                MP
+                                                {{ detalle.movimiento.turno.medico.matricula }}
+
+                                            </div>
+
+                                        {% endif %}
+
+                                    {% else %}
+
+                                        -
+
+                                    {% endif %}
+
+                                </td>
+
+
+                                <!-- CÓDIGO -->
+
+                                <td>
+
+                                    {{ detalle.codigo }}
+
+                                </td>
+
+
+                                <!-- PRESTACIÓN -->
+
+                                <td>
+
+                                    {{ detalle.descripcion }}
+
+                                    {% if detalle.coseguro_cobrado %}
+
+                                        <div class="small text-info">
+
+                                            Coseguro cobrado:
+                                            $
+                                            {{ detalle.importe_coseguro|floatformat:2 }}
+
+                                        </div>
+
+                                    {% endif %}
+
+                                </td>
+
+
+                                <!-- PRESENTADO -->
+
+                                <td class="text-end">
+
+                                    <strong>
+
+                                        $
+                                        {{ item.importe_presentado_calculado|floatformat:2 }}
+
+                                    </strong>
+
+                                </td>
+
+
+                                <!-- RESULTADO -->
+
+                                <td class="text-center">
+
+                                    {% if item.estado == "PAGADO" %}
+
+                                        <span class="badge bg-success">
+
+                                            <i class="bi bi-check-circle me-1"></i>
+
+                                            Aceptado
+
+                                        </span>
+
+                                    {% elif item.estado == "DEBITADO" %}
+
+                                        <span class="badge bg-warning text-dark">
+
+                                            <i class="bi bi-dash-circle me-1"></i>
+
+                                            Débito parcial
+
+                                        </span>
+
+                                    {% elif item.estado == "RECHAZADO" %}
+
+                                        <span class="badge bg-danger">
+
+                                            <i class="bi bi-x-circle me-1"></i>
+
+                                            Rechazado
+
+                                        </span>
+
+                                    {% else %}
+
+                                        <span class="badge bg-secondary">
+
+                                            Sin resolver
+
+                                        </span>
+
+                                    {% endif %}
+
+                                </td>
+
+
+                                <!-- RECONOCIDO -->
+
+                                <td class="text-end">
+
+                                    {% if item.importe_reconocido_calculado > 0 %}
+
+                                        <strong class="text-success">
+
+                                            $
+                                            {{ item.importe_reconocido_calculado|floatformat:2 }}
+
+                                        </strong>
+
+                                    {% else %}
+
+                                        <span class="text-muted">
+
+                                            $ 0,00
+
+                                        </span>
+
+                                    {% endif %}
+
+                                </td>
+
+
+                                <!-- DIFERENCIA -->
+
+                                <td class="text-end">
+
+                                    {% if item.diferencia_calculada > 0 %}
+
+                                        <strong class="text-danger">
+
+                                            $
+                                            {{ item.diferencia_calculada|floatformat:2 }}
+
+                                        </strong>
+
+                                    {% else %}
+
+                                        <span class="text-muted">
+
+                                            $ 0,00
+
+                                        </span>
+
+                                    {% endif %}
+
+                                </td>
+
+                            </tr>
+
+                            {% endwith %}
+
+                            {% empty %}
+
+                            <tr>
+
+                                <td colspan="10"
+                                    class="text-center text-muted py-4">
+
+                                    No existen prestaciones en este Master.
+
+                                </td>
+
+                            </tr>
+
+                            {% endfor %}
+
+                        </tbody>
+
+
+                        <!-- ================================== -->
+                        <!-- TOTALES -->
+                        <!-- ================================== -->
+
+                        <tfoot class="table-light">
+
+                            <tr>
+
+                                <th colspan="6"
+                                    class="text-end">
+
+                                    Totales
+
+                                </th>
+
+                                <th class="text-end">
+
+                                    $
+                                    {{ total_presentado|floatformat:2 }}
+
+                                </th>
+
+                                <th></th>
+
+                                <th class="text-end text-success">
+
+                                    $
+                                    {{ total_reconocido|floatformat:2 }}
+
+                                </th>
+
+                                <th class="text-end text-danger">
+
+                                    $
+                                    {{ total_debitado|floatformat:2 }}
+
+                                </th>
+
+                            </tr>
+
+                        </tfoot>
+
+                    </table>
+
+                </div>
+
+            </div>
+
+
+            <!-- ========================================== -->
+            <!-- CONFIRMACIÓN -->
+            <!-- ========================================== -->
+
+            <div class="card-footer bg-white">
+
+                <div class="row align-items-center">
+
+                    <div class="col-md-7">
+
+                        <div class="text-muted">
+
+                            <i class="bi bi-info-circle me-1"></i>
+
+                            Al confirmar, el Master quedará como
+
+                            <strong>COBRADO</strong>
+
+                            y se habilitarán para honorarios
+                            únicamente los importes efectivamente
+                            reconocidos por la Obra Social.
+
+                        </div>
+
+                    </div>
+
+
+                    <div class="col-md-5">
+
+                        <div class="d-flex justify-content-end gap-2">
+
+                            <a href="{% url 'obrasocial:master_obra_social_detalle' obra_social.id master.id %}"
+                               class="btn btn-secondary">
+
+                                Cancelar
+
+                            </a>
+
+
+                            <button type="submit"
+                                    class="btn btn-success"
+                                    onclick="return confirm(
+                                        '¿Confirma el cobro de $ {{ total_reconocido|floatformat:2 }} informado por la Obra Social?'
+                                    );">
+
+                                <i class="bi bi-cash-coin me-1"></i>
+
+                                Confirmar Cobro
+
+                            </button>
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </form>
+
+</div>
+
+{% endblock %}

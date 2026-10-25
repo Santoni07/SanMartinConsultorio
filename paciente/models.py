@@ -61,6 +61,20 @@ class Paciente(models.Model):
         blank=True,
         null=True
     )
+    numero_afiliado = models.CharField(
+        max_length=30,
+        blank=True,
+        null=True,
+        verbose_name="Número de afiliado"
+    )
+    plan_obra_social = models.ForeignKey(
+        'obrasocial.PlanObraSocial',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='pacientes',
+        verbose_name='Plan de Obra Social'
+    )
 
     activo = models.BooleanField(
         default=True

@@ -1,0 +1,330 @@
+{% extends 'core/base.html' %}
+{% load static %}
+
+{% block title %}Crear Plan{% endblock %}
+
+{% block content %}
+
+<div class="container mt-4 mb-5">
+
+    <div class="row justify-content-center">
+
+        <div class="col-lg-9">
+
+            <!-- ENCABEZADO -->
+
+            <div class="card shadow border-0 mb-4">
+
+                <div class="card-header bg-primary text-white py-3">
+
+                    <div class="d-flex justify-content-between align-items-center">
+
+                        <div>
+
+                            <h2 class="mb-1">
+                                <i class="bi bi-plus-circle"></i>
+                                Crear Plan
+                            </h2>
+
+                            <p class="mb-0">
+                                {{ obra_social.nombre }}
+                            </p>
+
+                            <small>
+                                Alta de un nuevo plan de la obra social
+                            </small>
+
+                        </div>
+
+                        <a href="{% url 'obrasocial:detail' obra_social.id %}"
+                           class="btn btn-light">
+
+                            <i class="bi bi-arrow-left-circle"></i>
+                            Volver
+
+                        </a>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+
+            <!-- ERRORES GENERALES -->
+
+            {% if form.non_field_errors %}
+
+                <div class="alert alert-danger">
+
+                    {% for error in form.non_field_errors %}
+
+                        <div>
+                            <i class="bi bi-exclamation-triangle"></i>
+                            {{ error }}
+                        </div>
+
+                    {% endfor %}
+
+                </div>
+
+            {% endif %}
+
+
+            <!-- FORMULARIO -->
+
+            <form method="post">
+
+                {% csrf_token %}
+
+
+                <!-- DATOS DEL PLAN -->
+
+                <div class="card shadow-sm border-0 mb-4">
+
+                    <div class="card-header bg-light">
+
+                        <h5 class="mb-0">
+
+                            <i class="bi bi-diagram-3 text-primary"></i>
+                            Datos del Plan
+
+                        </h5>
+
+                    </div>
+
+
+                    <div class="card-body">
+
+                        <div class="row g-4">
+
+
+                            <!-- CÓDIGO -->
+
+                            <div class="col-md-4">
+
+                                <label class="form-label fw-bold"
+                                       for="{{ form.codigo.id_for_label }}">
+
+                                    Código
+
+                                    <span class="text-danger">*</span>
+
+                                </label>
+
+                                {{ form.codigo }}
+
+                                {% if form.codigo.errors %}
+
+                                    {% for error in form.codigo.errors %}
+
+                                        <div class="text-danger small mt-1">
+                                            {{ error }}
+                                        </div>
+
+                                    {% endfor %}
+
+                                {% endif %}
+
+                                <div class="form-text">
+                                    Código identificador del plan.
+                                </div>
+
+                            </div>
+
+
+                            <!-- NOMBRE -->
+
+                            <div class="col-md-8">
+
+                                <label class="form-label fw-bold"
+                                       for="{{ form.nombre.id_for_label }}">
+
+                                    Nombre del Plan
+
+                                    <span class="text-danger">*</span>
+
+                                </label>
+
+                                {{ form.nombre }}
+
+                                {% if form.nombre.errors %}
+
+                                    {% for error in form.nombre.errors %}
+
+                                        <div class="text-danger small mt-1">
+                                            {{ error }}
+                                        </div>
+
+                                    {% endfor %}
+
+                                {% endif %}
+
+                            </div>
+
+
+                            <!-- ORDEN -->
+
+                            <div class="col-md-4">
+
+                                <label class="form-label fw-bold"
+                                       for="{{ form.orden.id_for_label }}">
+
+                                    Orden
+
+                                </label>
+
+                                {{ form.orden }}
+
+                                {% if form.orden.errors %}
+
+                                    {% for error in form.orden.errors %}
+
+                                        <div class="text-danger small mt-1">
+                                            {{ error }}
+                                        </div>
+
+                                    {% endfor %}
+
+                                {% endif %}
+
+                                <div class="form-text">
+                                    Determina el orden en que aparecerá el plan.
+                                </div>
+
+                            </div>
+
+
+                            <!-- ACTIVO -->
+
+                            <div class="col-md-8">
+
+                                <label class="form-label fw-bold d-block">
+                                    Estado
+                                </label>
+
+                                <div class="border rounded p-3 bg-light">
+
+                                    <div class="form-check form-switch">
+
+                                        {{ form.activo }}
+
+                                        <label class="form-check-label"
+                                               for="{{ form.activo.id_for_label }}">
+
+                                            Plan activo
+
+                                        </label>
+
+                                    </div>
+
+                                </div>
+
+                                {% if form.activo.errors %}
+
+                                    {% for error in form.activo.errors %}
+
+                                        <div class="text-danger small mt-1">
+                                            {{ error }}
+                                        </div>
+
+                                    {% endfor %}
+
+                                {% endif %}
+
+                            </div>
+
+
+                            <!-- OBSERVACIONES -->
+
+                            <div class="col-12">
+
+                                <label class="form-label fw-bold"
+                                       for="{{ form.observaciones.id_for_label }}">
+
+                                    Observaciones
+
+                                </label>
+
+                                {{ form.observaciones }}
+
+                                {% if form.observaciones.errors %}
+
+                                    {% for error in form.observaciones.errors %}
+
+                                        <div class="text-danger small mt-1">
+                                            {{ error }}
+                                        </div>
+
+                                    {% endfor %}
+
+                                {% endif %}
+
+                                <div class="form-text">
+                                    Información adicional o aclaraciones sobre el plan.
+                                </div>
+
+                            </div>
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+
+                <!-- INFORMACIÓN -->
+
+                <div class="alert alert-info">
+
+                    <i class="bi bi-info-circle me-1"></i>
+
+                    El plan será asociado automáticamente a
+
+                    <strong>{{ obra_social.nombre }}</strong>.
+
+                    No es necesario seleccionar nuevamente la obra social.
+
+                </div>
+
+
+                <!-- BOTONES -->
+
+                <div class="card shadow-sm border-0">
+
+                    <div class="card-body">
+
+                        <div class="d-flex justify-content-between">
+
+                            <a href="{% url 'obrasocial:detail' obra_social.id %}"
+                               class="btn btn-secondary">
+
+                                <i class="bi bi-x-circle"></i>
+                                Cancelar
+
+                            </a>
+
+
+                            <button type="submit"
+                                    class="btn btn-success px-4">
+
+                                <i class="bi bi-check-circle"></i>
+                                Crear Plan
+
+                            </button>
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+            </form>
+
+        </div>
+
+    </div>
+
+</div>
+
+{% endblock %}

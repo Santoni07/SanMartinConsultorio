@@ -4,64 +4,51 @@
 
 {% block content %}
 <style>
-
-    .fila-anulada{
-
-        background-color:#f3f4f6 !important;
-
-        color:#6c757d;
-
+    .fila-anulada {
+        background-color: #f3f4f6 !important;
+        color: #6c757d;
     }
-
+    .retenciones-card {
+        border-radius: 12px;
+        overflow: hidden;
+    }
 </style>
-<div class="container mt-4">
+<div class="container mt-4 mb-5">
 
     <div class="d-flex justify-content-between align-items-center mb-4">
         <div>
             <h2 class="fw-bold">Caja - {{ centro_medico.nombre }}</h2>
             <p class="text-muted mb-0">Caja por turno: mañana y tarde</p>
         </div>
-
-        <a href="{% url 'caja_home' %}" class="btn btn-secondary">
-            Volver
-        </a>
+        <a href="{% url 'caja_home' %}" class="btn btn-secondary">Volver</a>
     </div>
-
-    
 
     {% if caja %}
         <div class="card shadow-sm mb-4 border-success">
             <div class="card-header bg-success text-white">
                 <strong>
-                    Caja abierta -
-                    {{ caja.fecha|date:"d/m/Y" }} -
-                    {{ caja.get_turno_display }}
+                    Caja abierta - {{ caja.fecha|date:"d/m/Y" }} - {{ caja.get_turno_display }}
                 </strong>
             </div>
-
             <div class="card-body">
                 <div class="row text-center">
                     <div class="col-md-3 mb-3">
                         <h6>Saldo inicial</h6>
                         <h4>${{ caja.saldo_inicial }}</h4>
                     </div>
-
                     <div class="col-md-3 mb-3">
                         <h6>Ingresos</h6>
                         <h4 class="text-success">${{ caja.total_ingresos }}</h4>
                     </div>
-
                     <div class="col-md-3 mb-3">
                         <h6>Egresos</h6>
                         <h4 class="text-danger">${{ caja.total_egresos }}</h4>
                     </div>
-
                     <div class="col-md-3 mb-3">
                         <h6>Saldo final</h6>
                         <h4 class="fw-bold">${{ caja.saldo_final }}</h4>
                     </div>
                 </div>
-
                 <div class="alert alert-info mb-3">
                     <strong>Turno actual:</strong> {{ caja.get_turno_display }}
                     <br>
@@ -69,19 +56,10 @@
                     <br>
                     <strong>Hora apertura:</strong> {{ caja.fecha_apertura|localtime|date:"H:i" }}
                 </div>
-
                 <div class="d-flex flex-wrap gap-2 mt-3">
-                    <a href="{% url 'registrar_cobro' %}" class="btn btn-success">
-                        Registrar Cobro
-                    </a>
-
-                    <a href="{% url 'registrar_movimiento' %}" class="btn btn-primary">
-                        Registrar Movimiento
-                    </a>
-
-                    <a href="{% url 'cerrar_caja' %}" class="btn btn-danger">
-                        Cerrar Caja
-                    </a>
+                    <a href="{% url 'registrar_cobro' %}" class="btn btn-success">Registrar Cobro</a>
+                    <a href="{% url 'registrar_movimiento' %}" class="btn btn-primary">Registrar Movimiento</a>
+                    <a href="{% url 'cerrar_caja' %}" class="btn btn-danger">Cerrar Caja</a>
                 </div>
             </div>
         </div>
@@ -90,25 +68,15 @@
             No hay caja abierta para la sede <strong>{{ centro_medico.nombre }}</strong>.
             Recordá que ahora se abre una caja por turno: <strong>Mañana</strong> o <strong>Tarde</strong>.
         </div>
-
-        <a href="{% url 'abrir_caja' %}" class="btn btn-success">
-            Abrir Caja
-        </a>
+        <a href="{% url 'abrir_caja' %}" class="btn btn-success">Abrir Caja</a>
     {% endif %}
 
     <div class="card shadow-sm mt-4">
-        <div class="card-header bg-dark text-white">
-            Movimientos del turno actual
-        </div>
-
+        <div class="card-header bg-dark text-white">Movimientos del turno actual</div>
         <div class="card-body table-responsive">
             <table class="table table-striped align-middle">
                 <thead>
-                    <tr
-                        {% if mov.estado == 'ANULADO' %}
-                            class="fila-anulada"
-                        {% endif %}
-                    >
+                    <tr>
                         <th>Hora</th>
                         <th>Tipo</th>
                         <th>Paciente</th>
@@ -121,147 +89,152 @@
                         <th class="text-end">Acción</th>
                     </tr>
                 </thead>
-
                 <tbody>
                     {% for mov in movimientos %}
-                    <tr>
-                        <td>{{ mov.fecha_creacion|localtime|date:"H:i" }}</td>
-
-                        <td>
-                            {% if mov.tipo == 'INGRESO' %}
-                                <span class="badge bg-success">Ingreso</span>
-                            {% else %}
-                                <span class="badge bg-danger">Egreso</span>
-                            {% endif %}
-                        </td>
-
-                        <td>
-                            {% if mov.paciente %}
-                                {{ mov.paciente }}
-                            {% else %}
-                                -
-                            {% endif %}
-                        </td>
-
-                        <td>
-                            {% if mov.turno %}
-                                {{ mov.turno.fecha|date:"d/m/Y" }} {{ mov.turno.hora|time:"H:i" }}
-                            {% else %}
-                                -
-                            {% endif %}
-                        </td>
-
-                        <td>
-
-    {% for detalle in mov.detalles.all %}
-
-        <div class="mb-1">
-
-            <strong>{{ detalle.codigo }}</strong>
-
-            <br>
-
-            <small class="text-muted">
-
-                {{ detalle.descripcion }}
-
-            </small>
-
-        </div>
-
-    {% empty %}
-
-    {% if mov.pagoliquidacionmedica %}
-
-        <strong>Pago Liquidación Médica</strong>
-
-        <br>
-
-        <small class="text-muted">
-
-            {{ mov.pagoliquidacionmedica.liquidacion.medico }}
-
-        </small>
-
-    {% else %}
-
-        {{ mov.concepto|default:"-" }}
-
-    {% endif %}
-
-{% endfor %}
-
-</td>
-        <td>
-
-    {% for detalle in mov.detalles_medios_pago.all %}
-
-        <div>
-
-            <strong>{{ detalle.medio_pago.nombre }}</strong>
-
-            <br>
-
-            <small class="text-muted">
-
-                ${{ detalle.importe }}
-
-            </small>
-
-        </div>
-
-    {% empty %}
-
-        -
-
-    {% endfor %}
-
-</td>
-                        <td>
-
-    {% if mov.estado == 'ANULADO' %}
-
-        <del>${{ mov.importe }}</del>
-
-    {% else %}
-
-        ${{ mov.importe }}
-
-    {% endif %}
-
-</td>
-                        <td>{{ mov.creado_por.username }}</td>
-
-                        <td>
-                            {% if mov.estado == 'ACTIVO' %}
-                                <span class="badge bg-success">Activo</span>
-                            {% else %}
-                                <span class="badge bg-secondary">Anulado</span>
-                            {% endif %}
-                        </td>
-
-                        <td class="text-end">
-                            {% if mov.estado == 'ACTIVO' and caja and caja.estado == 'ABIERTA' %}
-                                <a href="{% url 'anular_movimiento' mov.id %}" class="btn btn-sm btn-outline-danger">
-                                    Anular
-                                </a>
-                            {% else %}
-                                -
-                            {% endif %}
-                        </td>
-                    </tr>
+                        <tr {% if mov.estado == 'ANULADO' %}class="fila-anulada"{% endif %}>
+                            <td>{{ mov.fecha_creacion|localtime|date:"H:i" }}</td>
+                            <td>
+                                {% if mov.tipo == 'EGRESO' %}
+                                    <span class="badge bg-danger">Egreso</span>
+                                {% else %}
+                                    {% with detalle=mov.detalles.first %}
+                                        {% if detalle and detalle.prestacion_obra_social %}
+                                            <span class="badge bg-primary">A cobrar OS</span>
+                                        {% else %}
+                                            <span class="badge bg-success">Ingreso</span>
+                                        {% endif %}
+                                    {% endwith %}
+                                {% endif %}
+                            </td>
+                            <td>{{ mov.paciente|default:"-" }}</td>
+                            <td>
+                                {% if mov.turno %}
+                                    {{ mov.turno.fecha|date:"d/m/Y" }} {{ mov.turno.hora|time:"H:i" }}
+                                {% else %}
+                                    -
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% for detalle in mov.detalles.all %}
+                                    <div class="mb-1">
+                                        <strong>{{ detalle.codigo }}</strong><br>
+                                        <small class="text-muted">{{ detalle.descripcion }}</small>
+                                    </div>
+                                {% empty %}
+                                    {% if mov.pagoliquidacionmedica %}
+                                        <strong>Pago Liquidación Médica</strong><br>
+                                        <small class="text-muted">{{ mov.pagoliquidacionmedica.liquidacion.medico }}</small>
+                                    {% else %}
+                                        {{ mov.concepto|default:"-" }}
+                                    {% endif %}
+                                {% endfor %}
+                            </td>
+                            <td>
+                                {% for detalle in mov.detalles_medios_pago.all %}
+                                    <div>
+                                        <strong>{{ detalle.medio_pago.nombre }}</strong><br>
+                                        <small class="text-muted">${{ detalle.importe }}</small>
+                                    </div>
+                                {% empty %}
+                                    -
+                                {% endfor %}
+                            </td>
+                            <td>
+                                {% if mov.estado == 'ANULADO' %}
+                                    <del>${{ mov.importe }}</del>
+                                {% else %}
+                                    ${{ mov.importe }}
+                                {% endif %}
+                            </td>
+                            <td>{{ mov.creado_por.username }}</td>
+                            <td>
+                                {% if mov.estado == 'ACTIVO' %}
+                                    <span class="badge bg-success">Activo</span>
+                                {% else %}
+                                    <span class="badge bg-secondary">Anulado</span>
+                                {% endif %}
+                            </td>
+                            <td class="text-end">
+                                {% if mov.estado == 'ACTIVO' and caja and caja.estado == 'ABIERTA' %}
+                                    <a href="{% url 'anular_movimiento' mov.id %}" class="btn btn-sm btn-outline-danger">Anular</a>
+                                {% else %}
+                                    -
+                                {% endif %}
+                            </td>
+                        </tr>
                     {% empty %}
-                    <tr>
-                        <td colspan="10" class="text-center text-muted">
-                            No hay movimientos cargados para este turno.
-                        </td>
-                    </tr>
+                        <tr>
+                            <td colspan="10" class="text-center text-muted">
+                                No hay movimientos cargados para este turno.
+                            </td>
+                        </tr>
                     {% endfor %}
                 </tbody>
             </table>
         </div>
     </div>
 
+    {% if retenciones_extras %}
+    <!-- RETENCIONES DE EXTRAS: REGISTRO INFORMATIVO, NO MOVIMIENTO DE EFECTIVO -->
+    <div class="card shadow-sm mt-4 retenciones-card">
+        <div class="card-header bg-primary text-white d-flex flex-wrap justify-content-between align-items-center gap-2">
+            <strong>
+                <i class="bi bi-clipboard-check me-1"></i>
+                Retenciones de Extras Recuperadas
+            </strong>
+            <span class="badge bg-light text-primary">{{ retenciones_extras|length }} registro{{ retenciones_extras|length|pluralize }}</span>
+        </div>
+        <div class="card-body">
+            <div class="row align-items-center g-3 mb-3">
+                <div class="col-md-5">
+                    <div class="text-muted small">Total recuperado hoy - {{ centro_medico.nombre }}</div>
+                    <div class="fs-3 fw-bold text-primary">${{ total_retenciones_extras|floatformat:2 }}</div>
+                </div>
+                <div class="col-md-7">
+                    <div class="alert alert-info mb-0 small">
+                        <strong>Registro de recupero:</strong> estos importes fueron retenidos de las liquidaciones médicas.
+                        No representan nuevos cobros en efectivo o banco y no se suman al saldo de caja.
+                    </div>
+                </div>
+            </div>
+            <div class="table-responsive">
+                <table class="table table-hover table-bordered align-middle mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Fecha de registro</th>
+                            <th>Paciente</th>
+                            <th>Médico</th>
+                            <th>Liquidación</th>
+                            <th>Usuario</th>
+                            <th class="text-end">Extra original</th>
+                            <th class="text-end">Recuperado (30%)</th>
+                            <th>Estado</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for extra in retenciones_extras %}
+                            <tr>
+                                <td>{{ extra.fecha_cobro_retencion|localtime|date:"d/m/Y H:i"|default:"-" }}</td>
+                                <td>{{ extra.paciente|default:"-" }}</td>
+                                <td>{{ extra.medico|default:"-" }}</td>
+                                <td>#{{ extra.liquidacion_retencion.id }}</td>
+                                <td>{{ extra.cobro_retencion_registrado_por.username|default:"-" }}</td>
+                                <td class="text-end">${{ extra.importe_extra|floatformat:2 }}</td>
+                                <td class="text-end fw-bold text-primary">${{ extra.importe_consultorio|floatformat:2 }}</td>
+                                <td><span class="badge bg-success">Registrado</span></td>
+                            </tr>
+                        {% empty %}
+                            <tr>
+                                <td colspan="8" class="text-center text-muted py-4">
+                                    Todavía no hay retenciones de extras registradas para esta sede.
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    {% endif %}
 </div>
-
 {% endblock %}

@@ -1,6 +1,6 @@
 from django.db import models
 from django.contrib.auth.models import User
-
+from django.conf import settings
 from medicos.models import Medico
 from core.models import CentroMedico
 
@@ -43,6 +43,12 @@ class LiquidacionMedica(models.Model):
         max_digits=12,
         decimal_places=2,
         default=0
+    )
+    total_retencion_extra_coseguro = models.DecimalField(
+        max_digits=12,
+        decimal_places=2,
+        default=0,
+        verbose_name="Retención por extras de coseguro"
     )
 
     total_consultorio = models.DecimalField(
@@ -98,7 +104,14 @@ class LiquidacionMedica(models.Model):
     cantidad_pagos = models.IntegerField(
         default=0
     )
-    
+    creado_por = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.PROTECT,
+        related_name="liquidaciones_medicas_creadas",
+        null=True,
+        blank=True,
+        verbose_name="Generado por",
+    )
     class Meta:
         ordering = ['-fecha']
 
@@ -115,7 +128,68 @@ class LiquidacionMedica(models.Model):
             self.total_honorarios -
             self.total_pagado
         )
-        
+
+
+class DetalleLiquidacionMedica(models.Model):
+
+    TIPOS = [
+        ("PARTICULAR", "Particular"),
+        ("COSEGURO", "Coseguro"),
+         ("COPAGO", "Copago"),
+        ("OBRA_SOCIAL", "Obra Social"),
+    ]
+
+    liquidacion = models.ForeignKey(
+        "LiquidacionMedica",
+        on_delete=models.CASCADE,
+        related_name="items",
+        verbose_name="Liquidación",
+    )
+
+    detalle_movimiento = models.ForeignKey(
+        "caja.DetalleMovimientoCaja",
+        on_delete=models.PROTECT,
+        related_name="items_liquidacion",
+        verbose_name="Detalle de prestación",
+    )
+
+    tipo = models.CharField(
+        max_length=20,
+        choices=TIPOS,
+        verbose_name="Tipo",
+    )
+
+    importe = models.DecimalField(
+        max_digits=12,
+        decimal_places=2,
+        default=0,
+        verbose_name="Importe liquidado",
+    )
+
+    fecha_creacion = models.DateTimeField(
+        auto_now_add=True
+    )
+    detalle_master_obra_social = models.ForeignKey(
+        "obrasocial.DetalleMasterObraSocial",
+        on_delete=models.PROTECT,
+        related_name="items_liquidacion_medica",
+        null=True,
+        blank=True,
+        verbose_name="Detalle Master Obra Social",
+    )
+
+    class Meta:
+        verbose_name = "Detalle de liquidación médica"
+        verbose_name_plural = "Detalles de liquidaciones médicas"
+        ordering = ["id"]
+
+    def __str__(self):
+        return (
+            f"Liquidación #{self.liquidacion_id} - "
+            f"{self.get_tipo_display()} - "
+            f"${self.importe}"
+        )
+
 class PagoLiquidacionMedica(models.Model):
 
     liquidacion = models.ForeignKey(
