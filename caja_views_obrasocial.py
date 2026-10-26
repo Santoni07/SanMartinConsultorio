@@ -1,0 +1,3214 @@
+﻿from django.shortcuts import render, redirect, get_object_or_404
+from .services import CierreCajaService
+from turnos.models import Turnos
+from .pdf.cierre_caja import generar_pdf_cierre
+from django.contrib import messages
+from django.contrib.auth.decorators import login_required
+from django.utils import timezone
+from django.http import HttpResponseBadRequest
+from honorarios.models import PagoLiquidacionMedica
+from django.db import transaction
+from django.db.models import Sum
+from .models import CajaDiaria, MovimientoCaja, HistorialMovimientoCaja,    MedioPago, ConceptoFacturacion, DetalleMovimientoCaja,DetalleMedioPago, ExtraCoseguro
+from .forms import (
+    AperturaCajaForm,
+    MovimientoCajaForm,
+    CobroConsultaForm,
+    AnularMovimientoCajaForm,
+    CerrarCajaForm,
+)
+from core.models import CentroMedico, PerfilUsuario
+import json
+from django.http import HttpResponse
+from obrasocial.models import PrestacionPlan
+from decimal import Decimal
+
+from .calculos import calcular_detalle
+from core.utils import mostrar_exito
+def obtener_centro_activo(request):
+    centro = getattr(request, 'centro_activo', None)
+
+    if centro:
+        return centro
+
+    centro_id = request.session.get('centro_id')
+
+    if centro_id:
+        centro = CentroMedico.objects.filter(
+            id=centro_id,
+            activo=True
+        ).first()
+
+        if centro:
+            return centro
+
+    if request.user.is_authenticated:
+        perfil = PerfilUsuario.objects.filter(
+            user=request.user,
+            activo=True
+        ).first()
+
+        if perfil and perfil.centro_principal:
+            request.session['centro_id'] = perfil.centro_principal.id
+            return perfil.centro_principal
+
+    return CentroMedico.objects.filter(activo=True).first()
+
+def validar_permiso_caja(request):
+
+    perfil = request.user.perfilusuario
+    centro = obtener_centro_activo(request)
+
+    return not (
+        perfil.rol == 'RECEPCION'
+        and centro != perfil.centro_principal
+    )
+def obtener_caja_abierta(centro_medico):
+    return CajaDiaria.objects.filter(
+        centro_medico=centro_medico,
+        fecha=timezone.localdate(),
+        estado='ABIERTA'
+    ).order_by('turno').first()
+
+@login_required
+def caja_home(request):
+
+    # ==========================================
+    # CENTRO M├ëDICO ACTIVO
+    # ==========================================
+
+    centro_medico = obtener_centro_activo(request)
+
+    # ==========================================
+    # VALIDAR PERMISOS
+    # ==========================================
+
+    if not validar_permiso_caja(request):
+
+        messages.error(
+            request,
+            "No tiene permisos para acceder a la caja de esta sede."
+        )
+
+        return redirect("turnos:ver_disponibilidad")
+
+    if not centro_medico:
+
+        messages.error(
+            request,
+            "No hay una sede activa seleccionada."
+        )
+
+        return redirect("core:index")
+
+    # ==========================================
+    # CAJA ABIERTA
+    # ==========================================
+
+    caja = obtener_caja_abierta(centro_medico)
+
+    # ==========================================
+    # ├ÜLTIMAS CAJAS DE LA SEDE
+    # ==========================================
+
+    cajas = (
+        CajaDiaria.objects
+        .filter(
+            centro_medico=centro_medico
+        )
+        .order_by(
+            "-fecha",
+            "-id"
+        )[:10]
+    )
+
+    # ==========================================
+    # MOVIMIENTOS DE LA CAJA ABIERTA
+    # ==========================================
+
+    if caja:
+
+        movimientos = (
+            MovimientoCaja.objects
+            .filter(
+                caja=caja,
+                centro_medico=centro_medico
+            )
+            .prefetch_related(
+                "detalles",
+                "detalles_medios_pago__medio_pago"
+            )
+            .order_by(
+                "-fecha_creacion"
+            )
+        )
+
+    else:
+
+        movimientos = MovimientoCaja.objects.none()
+
+    # ==========================================
+    # FECHA ACTUAL
+    # ==========================================
+
+    hoy = timezone.localdate()
+
+    # ==========================================
+    # RETENCIONES RECUPERADAS DE LA CAJA ACTUAL
+    # ==========================================
+
+    if caja:
+
+        retenciones_extras = (
+            ExtraCoseguro.objects
+            .filter(
+                centro_medico=centro_medico,
+                caja_retencion=caja,
+                cobro_retencion_registrado=True,
+                liquidacion_retencion__isnull=False,
+                fecha_cobro_retencion__date=hoy,
+            )
+            .select_related(
+                "paciente",
+                "medico",
+                "liquidacion_retencion",
+                "cobro_retencion_registrado_por",
+                "caja_retencion",
+            )
+            .order_by(
+                "-fecha_cobro_retencion",
+                "-id",
+            )
+        )
+
+    else:
+
+        retenciones_extras = ExtraCoseguro.objects.none()
+
+    # ==========================================
+    # TOTAL RECUPERADO EN LA CAJA ACTUAL
+    # ==========================================
+
+    total_retenciones_extras = (
+        retenciones_extras.aggregate(
+            total=Sum("importe_consultorio")
+        )["total"]
+        or Decimal("0.00")
+    )
+
+    # ==========================================
+    # RENDER
+    # ==========================================
+
+    return render(
+        request,
+        "caja/caja_home.html",
+        {
+            "centro_medico": centro_medico,
+            "caja": caja,
+            "cajas": cajas,
+            "movimientos": movimientos,
+
+            "retenciones_extras": retenciones_extras,
+            "total_retenciones_extras": total_retenciones_extras,
+            "fecha_retenciones": hoy,
+        }
+    )
+
+@login_required
+@transaction.atomic
+def abrir_caja(request):
+
+    centro_medico = obtener_centro_activo(request)
+    if not validar_permiso_caja(request):
+
+        messages.error(
+            request,
+            'No tiene permisos para acceder a la caja de esta sede.'
+        )
+
+        return redirect('turnos:ver_disponibilidad')
+
+    if not centro_medico:
+        messages.error(
+            request,
+            'No hay una sede activa seleccionada.'
+        )
+        return redirect('caja_home')
+
+    if request.method == 'POST':
+
+        form = AperturaCajaForm(request.POST)
+
+        if form.is_valid():
+
+            turno = form.cleaned_data['turno']
+
+            caja_existente = CajaDiaria.objects.filter(
+                centro_medico=centro_medico,
+                fecha=timezone.localdate(),
+                turno=turno
+            ).first()
+
+            if caja_existente:
+
+                estado = (
+                    'abierta'
+                    if caja_existente.estado == 'ABIERTA'
+                    else 'cerrada'
+                )
+
+                messages.warning(
+                    request,
+                    f'La caja del turno '
+                    f'{caja_existente.get_turno_display()} '
+                    f'ya fue creada hoy y actualmente se encuentra {estado}.'
+                )
+
+                return redirect('caja_home')
+
+            caja = form.save(commit=False)
+
+            caja.centro_medico = centro_medico
+            caja.fecha = timezone.localdate()
+            caja.abierta_por = request.user
+            caja.estado = 'ABIERTA'
+
+            caja.save()
+
+            HistorialMovimientoCaja.objects.create(
+                caja=caja,
+                accion='APERTURA_CAJA',
+                usuario=request.user,
+                centro_medico=centro_medico,
+                descripcion=(
+                    f'Apertura de caja '
+                    f'{caja.get_turno_display()} '
+                    f'en {centro_medico.nombre}'
+                ),
+                datos_nuevos={
+                    'fecha': str(caja.fecha),
+                    'turno': caja.get_turno_display(),
+                    'saldo_inicial': str(caja.saldo_inicial),
+                    'observacion_apertura': caja.observacion_apertura,
+                    'usuario': request.user.username,
+                }
+            )
+
+            mostrar_exito(
+
+                request,
+
+                titulo="Caja abierta",
+
+                mensaje="La caja se abri├│ correctamente.",
+
+                icono="bi-safe",
+
+                detalles=[
+
+                    f"Sede: {centro_medico.nombre}",
+
+                    f"Turno: {caja.get_turno_display()}",
+
+                    f"Saldo inicial: ${caja.saldo_inicial}",
+
+                ],
+
+            )
+
+            return redirect("caja_home")
+
+            
+
+    else:
+
+        form = AperturaCajaForm()
+
+    return render(
+        request,
+        'caja/abrir_caja.html',
+        {
+            'form': form,
+            'centro_medico': centro_medico,
+        }
+    )
+
+
+@login_required
+@transaction.atomic
+def registrar_movimiento(request):
+
+    # ======================================================
+    # CENTRO M├ëDICO ACTIVO
+    # ======================================================
+
+    centro_medico = obtener_centro_activo(request)
+
+    if not validar_permiso_caja(request):
+
+        messages.error(
+            request,
+            "No tiene permisos para acceder a la caja de esta sede."
+        )
+
+        return redirect(
+            "turnos:ver_disponibilidad"
+        )
+
+    if not centro_medico:
+
+        messages.error(
+            request,
+            "No hay una sede activa seleccionada."
+        )
+
+        return redirect(
+            "core:index"
+        )
+
+    # ======================================================
+    # CAJA ABIERTA
+    # ======================================================
+
+    caja = obtener_caja_abierta(
+        centro_medico
+    )
+
+    if not caja:
+
+        messages.error(
+            request,
+            "Primero debe abrir la caja de esta sede."
+        )
+
+        return redirect(
+            "abrir_caja"
+        )
+
+    # ======================================================
+    # MEDIOS DE PAGO DISPONIBLES
+    # ======================================================
+
+    medios_pago_disponibles = (
+        MedioPago.objects
+        .filter(activo=True)
+        .order_by("nombre")
+    )
+
+    # ======================================================
+    # FUNCI├ôN INTERNA PARA RENDERIZAR EL FORMULARIO
+    # ======================================================
+
+    def render_formulario(formulario):
+
+        return render(
+            request,
+            "caja/registrar_movimiento.html",
+            {
+                "form": formulario,
+                "caja": caja,
+                "centro_medico": centro_medico,
+                "medios_pago": medios_pago_disponibles,
+            },
+        )
+
+    # ======================================================
+    # FORMULARIO
+    # ======================================================
+
+    if request.method == "POST":
+
+        form = MovimientoCajaForm(
+            request.POST,
+            centro_medico=centro_medico,
+            fecha=caja.fecha,
+        )
+
+        if form.is_valid():
+
+            # ==================================================
+            # VALIDAR MEDIOS DE PAGO
+            # ==================================================
+
+            medios_pago_json = request.POST.get(
+                "medios_pago_json",
+                ""
+            )
+
+            if not medios_pago_json:
+
+                form.add_error(
+                    None,
+                    "Debe agregar al menos un medio de pago."
+                )
+
+                return render_formulario(form)
+
+            try:
+
+                medios_pago_data = json.loads(
+                    medios_pago_json
+                )
+
+            except json.JSONDecodeError:
+
+                form.add_error(
+                    None,
+                    "Error al procesar los medios de pago."
+                )
+
+                return render_formulario(form)
+
+            if (
+                not isinstance(medios_pago_data, list)
+                or not medios_pago_data
+            ):
+
+                form.add_error(
+                    None,
+                    "Debe agregar al menos un medio de pago."
+                )
+
+                return render_formulario(form)
+
+            # ==================================================
+            # VALIDAR IMPORTES DE MEDIOS DE PAGO
+            # ==================================================
+
+            medios_validados = []
+            total_medios_pago = Decimal("0.00")
+
+            try:
+
+                for item in medios_pago_data:
+
+                    medio_id = item.get("medio")
+
+                    importe_medio = Decimal(
+                        str(item.get("importe", "0"))
+                    )
+
+                    if not medio_id:
+
+                        raise ValueError(
+                            "Medio de pago inv├ílido."
+                        )
+
+                    if importe_medio <= Decimal("0.00"):
+
+                        raise ValueError(
+                            "El importe del medio de pago debe ser mayor a cero."
+                        )
+
+                    medio = MedioPago.objects.filter(
+                        pk=medio_id,
+                        activo=True,
+                    ).first()
+
+                    if not medio:
+
+                        raise ValueError(
+                            "Uno de los medios de pago no est├í disponible."
+                        )
+
+                    medios_validados.append({
+                        "medio": medio,
+                        "importe": importe_medio,
+                    })
+
+                    total_medios_pago += importe_medio
+
+            except (
+                ValueError,
+                TypeError,
+                InvalidOperation,
+            ) as error:
+
+                form.add_error(
+                    None,
+                    str(error)
+                )
+
+                return render_formulario(form)
+
+            importe_movimiento = (
+                form.cleaned_data["importe"]
+                or Decimal("0.00")
+            )
+
+            if (
+                total_medios_pago.quantize(
+                    Decimal("0.01")
+                )
+                !=
+                importe_movimiento.quantize(
+                    Decimal("0.01")
+                )
+            ):
+
+                form.add_error(
+                    None,
+                    (
+                        "El total de los medios de pago "
+                        f"(${total_medios_pago}) debe coincidir "
+                        f"con el importe del movimiento "
+                        f"(${importe_movimiento})."
+                    )
+                )
+
+                return render_formulario(form)
+
+            # ==================================================
+            # PREPARAR MOVIMIENTO
+            # ==================================================
+
+            movimiento = form.save(
+                commit=False
+            )
+
+            movimiento.caja = caja
+            movimiento.centro_medico = centro_medico
+            movimiento.creado_por = request.user
+            movimiento.estado = "ACTIVO"
+
+            # ==================================================
+            # IDENTIFICAR CONCEPTO EXTRA COSEGURO
+            # ==================================================
+
+            concepto_facturacion = (
+                form.cleaned_data.get(
+                    "concepto_facturacion"
+                )
+            )
+
+            codigo_concepto = ""
+
+            if (
+                concepto_facturacion
+                and concepto_facturacion.nomenclador
+            ):
+
+                codigo_concepto = (
+                    concepto_facturacion
+                    .nomenclador
+                    .codigo
+                    .upper()
+                    .strip()
+                )
+
+            es_extra_coseguro = (
+                codigo_concepto
+                == "EXTRA_COSEGURO"
+            )
+
+            detalle_original = None
+            extra_coseguro = None
+
+            # ==================================================
+            # INGRESO EXTRA COSEGURO
+            # ==================================================
+
+            if (
+                es_extra_coseguro
+                and movimiento.tipo == "INGRESO"
+            ):
+
+                detalle_seleccionado = (
+                    form.cleaned_data.get(
+                        "detalle_extra_ingreso"
+                    )
+                )
+
+                detalle_original = (
+                    DetalleMovimientoCaja.objects
+                    .select_for_update()
+                    .select_related(
+                        "movimiento",
+                        "movimiento__turno",
+                        "movimiento__turno__paciente",
+                        "movimiento__turno__medico",
+                    )
+                    .filter(
+                        pk=detalle_seleccionado.pk,
+                        movimiento__centro_medico=centro_medico,
+                        movimiento__estado="ACTIVO",
+                        movimiento__turno__fecha=caja.fecha,
+                        prestacion_obra_social__isnull=False,
+                    )
+                    .exclude(
+                        estado="ANULADO"
+                    )
+                    .first()
+                )
+
+                if not detalle_original:
+
+                    form.add_error(
+                        "detalle_extra_ingreso",
+                        (
+                            "La prestaci├│n seleccionada ya no "
+                            "est├í disponible."
+                        )
+                    )
+
+                    return render_formulario(form)
+
+                if ExtraCoseguro.objects.filter(
+                    detalle_prestacion=detalle_original
+                ).exists():
+
+                    form.add_error(
+                        "detalle_extra_ingreso",
+                        (
+                            "Esta prestaci├│n ya tiene registrado "
+                            "un extra de coseguro."
+                        )
+                    )
+
+                    return render_formulario(form)
+
+                turno = (
+                    detalle_original
+                    .movimiento
+                    .turno
+                )
+
+                if not turno.paciente or not turno.medico:
+
+                    form.add_error(
+                        "detalle_extra_ingreso",
+                        (
+                            "El turno seleccionado no tiene "
+                            "paciente o m├®dico asociado."
+                        )
+                    )
+
+                    return render_formulario(form)
+
+                movimiento.turno = turno
+                movimiento.paciente = turno.paciente
+
+                movimiento.concepto = (
+                    f"Extra coseguro - "
+                    f"{turno.paciente}"
+                )
+
+            # ==================================================
+            # EGRESO EXTRA COSEGURO
+            # ==================================================
+
+            elif (
+                es_extra_coseguro
+                and movimiento.tipo == "EGRESO"
+            ):
+
+                extra_seleccionado = (
+                    form.cleaned_data.get(
+                        "extra_coseguro_egreso"
+                    )
+                )
+
+                extra_coseguro = (
+                    ExtraCoseguro.objects
+                    .select_for_update()
+                    .select_related(
+                        "turno",
+                        "paciente",
+                        "medico",
+                        "ingreso_movimiento",
+                    )
+                    .filter(
+                        pk=extra_seleccionado.pk,
+                        centro_medico=centro_medico,
+                        fecha=caja.fecha,
+                        ingreso_movimiento__estado="ACTIVO",
+                        egreso_movimiento__isnull=True,
+                    )
+                    .first()
+                )
+
+                if not extra_coseguro:
+
+                    form.add_error(
+                        "extra_coseguro_egreso",
+                        (
+                            "El extra seleccionado ya fue entregado "
+                            "o dej├│ de estar disponible."
+                        )
+                    )
+
+                    return render_formulario(form)
+
+                if (
+                    movimiento.importe.quantize(
+                        Decimal("0.01")
+                    )
+                    !=
+                    extra_coseguro.importe_extra.quantize(
+                        Decimal("0.01")
+                    )
+                ):
+
+                    form.add_error(
+                        "importe",
+                        (
+                            "El egreso debe coincidir con el extra "
+                            f"cobrado: ${extra_coseguro.importe_extra}."
+                        )
+                    )
+
+                    return render_formulario(form)
+
+                movimiento.turno = (
+                    extra_coseguro.turno
+                )
+
+                movimiento.paciente = (
+                    extra_coseguro.paciente
+                )
+
+                movimiento.concepto = (
+                    "Pago honorarios extra coseguro - "
+                    f"{extra_coseguro.paciente} - "
+                    f"{extra_coseguro.medico}"
+                )
+
+            # ==================================================
+            # GUARDAR MOVIMIENTO
+            # ==================================================
+
+            movimiento.save()
+
+            # ==================================================
+            # CREAR O ACTUALIZAR EXTRA COSEGURO
+            # ==================================================
+
+            if (
+                es_extra_coseguro
+                and movimiento.tipo == "INGRESO"
+            ):
+
+                turno = (
+                    detalle_original
+                    .movimiento
+                    .turno
+                )
+
+                extra_coseguro = (
+                    ExtraCoseguro.objects.create(
+                        turno=turno,
+                        detalle_prestacion=detalle_original,
+                        paciente=turno.paciente,
+                        medico=turno.medico,
+                        centro_medico=centro_medico,
+                        fecha=turno.fecha,
+                        ingreso_movimiento=movimiento,
+                        importe_extra=movimiento.importe,
+                        creado_por=request.user,
+                        observacion=movimiento.observacion,
+                    )
+                )
+
+            elif (
+                es_extra_coseguro
+                and movimiento.tipo == "EGRESO"
+            ):
+
+                extra_coseguro.egreso_movimiento = (
+                    movimiento
+                )
+
+                extra_coseguro.save()
+
+            # ==================================================
+            # GUARDAR MEDIOS DE PAGO
+            # ==================================================
+
+            for item in medios_validados:
+
+                DetalleMedioPago.objects.create(
+                    movimiento=movimiento,
+                    medio_pago=item["medio"],
+                    importe=item["importe"],
+                )
+
+            # ==================================================
+            # HISTORIAL
+            # ==================================================
+
+            datos_nuevos = {
+                "tipo": movimiento.tipo,
+                "importe": str(
+                    movimiento.importe
+                ),
+                "concepto": movimiento.concepto,
+                "observacion": movimiento.observacion,
+                "turno_id": movimiento.turno_id,
+                "paciente_id": movimiento.paciente_id,
+            }
+
+            if extra_coseguro:
+
+                datos_nuevos[
+                    "extra_coseguro_id"
+                ] = extra_coseguro.id
+
+                datos_nuevos[
+                    "importe_medico_70"
+                ] = str(
+                    extra_coseguro.importe_medico
+                )
+
+                datos_nuevos[
+                    "importe_consultorio_30"
+                ] = str(
+                    extra_coseguro.importe_consultorio
+                )
+
+            HistorialMovimientoCaja.objects.create(
+                caja=caja,
+                movimiento=movimiento,
+                accion="CREADO",
+                usuario=request.user,
+                centro_medico=centro_medico,
+                descripcion=(
+                    f"{movimiento.tipo} registrado "
+                    f"por {request.user}."
+                ),
+                datos_nuevos=datos_nuevos,
+            )
+
+            # ==================================================
+            # MENSAJE DE ├ëXITO
+            # ==================================================
+
+            detalles_exito = [
+                f"Concepto: {movimiento.concepto}",
+                f"Importe: ${movimiento.importe}",
+            ]
+
+            if extra_coseguro:
+
+                detalles_exito.append(
+                    f"Paciente: {extra_coseguro.paciente}"
+                )
+
+                detalles_exito.append(
+                    f"M├®dico: {extra_coseguro.medico}"
+                )
+
+            mostrar_exito(
+                request,
+                titulo="Movimiento registrado",
+                mensaje=(
+                    "El movimiento fue registrado correctamente."
+                ),
+                icono="bi-arrow-left-right",
+                detalles=detalles_exito,
+            )
+
+            return redirect(
+                "caja_home"
+            )
+
+    else:
+
+        form = MovimientoCajaForm(
+            centro_medico=centro_medico,
+            fecha=caja.fecha,
+        )
+
+    return render_formulario(form)
+@login_required
+@transaction.atomic
+def registrar_cobro(request):
+
+    centro_medico = obtener_centro_activo(request)
+
+    # =====================================
+    # VALIDACIONES DE CAJA
+    # =====================================
+
+    if not validar_permiso_caja(request):
+
+        messages.error(
+            request,
+            'No tiene permisos para acceder a la caja de esta sede.'
+        )
+
+        return redirect(
+            'turnos:ver_disponibilidad'
+        )
+
+    if not centro_medico:
+
+        messages.error(
+            request,
+            'No hay una sede activa seleccionada.'
+        )
+
+        return redirect(
+            'caja_home'
+        )
+
+    caja = obtener_caja_abierta(
+        centro_medico
+    )
+
+    # =====================================
+    # MEDIOS DE PAGO
+    # =====================================
+
+    medios_pago = MedioPago.objects.filter(
+        activo=True
+    ).order_by(
+        "nombre"
+    )
+
+    if not caja:
+
+        messages.error(
+            request,
+            'Primero debe abrir la caja de esta sede.'
+        )
+
+        return redirect(
+            'abrir_caja'
+        )
+
+    # =====================================
+    # POST
+    # =====================================
+
+    if request.method == 'POST':
+
+        form = CobroConsultaForm(
+            request.POST,
+            centro_medico=centro_medico
+        )
+
+        print("=" * 80)
+
+        print(
+            "FORM ES V├üLIDO:",
+            form.is_valid()
+        )
+
+        if not form.is_valid():
+            print(form.errors)
+
+        if form.is_valid():
+
+            print("=" * 80)
+
+            turno = form.cleaned_data[
+                "turno"
+            ]
+
+            # =====================================
+            # LEER DETALLES
+            # =====================================
+
+            detalles_json = request.POST.get(
+                "detalles_json"
+            )
+
+            if not detalles_json:
+
+                messages.error(
+                    request,
+                    "Debe agregar al menos una prestaci├│n."
+                )
+
+                return render(
+                    request,
+                    "caja/registrar_cobro.html",
+                    {
+                        "form": form,
+                        "caja": caja,
+                        "centro_medico": centro_medico,
+                        "medios_pago": medios_pago,
+                    },
+                )
+
+            try:
+
+                detalles = json.loads(
+                    detalles_json
+                )
+
+            except json.JSONDecodeError:
+
+                messages.error(
+                    request,
+                    "Error al procesar las prestaciones."
+                )
+
+                return render(
+                    request,
+                    "caja/registrar_cobro.html",
+                    {
+                        "form": form,
+                        "caja": caja,
+                        "centro_medico": centro_medico,
+                        "medios_pago": medios_pago,
+                    },
+                )
+
+            if not detalles:
+
+                messages.error(
+                    request,
+                    "Debe agregar al menos una prestaci├│n."
+                )
+
+                return render(
+                    request,
+                    "caja/registrar_cobro.html",
+                    {
+                        "form": form,
+                        "caja": caja,
+                        "centro_medico": centro_medico,
+                        "medios_pago": medios_pago,
+                    },
+                )
+
+            # =====================================
+            # CALCULAR VALOR DE PRESTACIONES
+            # Y MONTO A COBRAR AL PACIENTE
+            # =====================================
+
+            total_prestaciones = Decimal(
+                "0.00"
+            )
+
+            total_a_cobrar_paciente = Decimal(
+                "0.00"
+            )
+
+            for detalle in detalles:
+
+                cantidad = Decimal(
+                    str(
+                        detalle.get(
+                            "cantidad",
+                            1
+                        )
+                    )
+                )
+
+                importe = Decimal(
+                    str(
+                        detalle.get(
+                            "importe",
+                            0
+                        )
+                    )
+                )
+
+                subtotal = (
+                    cantidad * importe
+                )
+
+                # Valor econ├│mico de la prestaci├│n
+                total_prestaciones += subtotal
+
+                origen = detalle.get(
+                    "origen"
+                )
+
+                # =================================
+                # PARTICULAR
+                # =================================
+
+                if origen == "PARTICULAR":
+
+                    # Particular lo paga
+                    # completamente el paciente.
+
+                    total_a_cobrar_paciente += (
+                        subtotal
+                    )
+
+                # =================================
+                # OBRA SOCIAL
+                # =================================
+
+                elif origen == "OBRA_SOCIAL":
+
+                    # =================================
+                    # OBTENER PRESTACI├ôN DEL CONVENIO
+                    # =================================
+
+                    prestacion = (
+                        PrestacionPlan.objects
+                        .filter(
+                            pk=detalle.get("id"),
+                            estado="ACTIVA",
+                        )
+                        .first()
+                    )
+
+                    if not prestacion:
+
+                        raise ValueError(
+                            "La prestaci├│n de Obra Social no existe "
+                            "o no se encuentra activa."
+                        )
+
+                    # =================================
+                    # COSEGURO
+                    # =================================
+                    #
+                    # El coseguro lo paga el paciente.
+                    # =================================
+
+                    if prestacion.tiene_coseguro:
+
+                        coseguro = Decimal(
+                            str(
+                                prestacion.importe_coseguro
+                                or 0
+                            )
+                        )
+
+                        total_a_cobrar_paciente += (
+                            cantidad * coseguro
+                        )
+
+                    # =================================
+                    # COPAGO
+                    # =================================
+                    #
+                    # El copago tambi├®n lo paga el
+                    # paciente.
+                    #
+                    # IMPORTANTE:
+                    # NO se descuenta del importe que
+                    # posteriormente paga la OS.
+                    # =================================
+
+                    if prestacion.tiene_copago:
+
+                        copago = Decimal(
+                            str(
+                                prestacion.importe_copago
+                                or 0
+                            )
+                        )
+
+                        total_a_cobrar_paciente += (
+                            cantidad * copago
+                        )
+
+                else:
+
+                    raise ValueError(
+                        "Origen de prestaci├│n inv├ílido."
+                    )
+
+            # =====================================
+            # LEER MEDIOS DE PAGO
+            # =====================================
+
+            medios_pago_json = request.POST.get(
+                "medios_pago_json"
+            )
+
+            # Solamente exigimos medios de pago
+            # cuando realmente el paciente
+            # tiene algo que pagar.
+            #
+            # Puede ser:
+            #
+            # - Particular
+            # - Coseguro
+            # - Copago
+
+            if (
+                total_a_cobrar_paciente
+                > Decimal("0.00")
+            ):
+
+                if not medios_pago_json:
+
+                    messages.error(
+                        request,
+                        "Debe agregar al menos un medio de pago."
+                    )
+
+                    return render(
+                        request,
+                        "caja/registrar_cobro.html",
+                        {
+                            "form": form,
+                            "caja": caja,
+                            "centro_medico": centro_medico,
+                            "medios_pago": medios_pago,
+                        },
+                    )
+
+                try:
+
+                    medios_pago_data = json.loads(
+                        medios_pago_json
+                    )
+
+                except json.JSONDecodeError:
+
+                    messages.error(
+                        request,
+                        "Error al procesar los medios de pago."
+                    )
+
+                    return render(
+                        request,
+                        "caja/registrar_cobro.html",
+                        {
+                            "form": form,
+                            "caja": caja,
+                            "centro_medico": centro_medico,
+                            "medios_pago": medios_pago,
+                        },
+                    )
+
+            else:
+
+                # Obra Social sin coseguro ni copago:
+                # no existe dinero recibido
+                # del paciente.
+
+                medios_pago_data = []
+
+            # =====================================
+            # VALIDAR TOTAL REAL COBRADO
+            # =====================================
+
+            total_medios = Decimal(
+                "0.00"
+            )
+
+            for medio in medios_pago_data:
+
+                total_medios += Decimal(
+                    str(
+                        medio.get(
+                            "importe",
+                            0
+                        )
+                    )
+                )
+
+            if abs(
+                total_a_cobrar_paciente
+                - total_medios
+            ) > Decimal("0.01"):
+
+                diferencia = (
+                    total_a_cobrar_paciente
+                    - total_medios
+                )
+
+                if diferencia > 0:
+
+                    messages.error(
+                        request,
+                        f"El cobro no puede registrarse. "
+                        f"Faltan cobrar "
+                        f"${diferencia:.2f}."
+                    )
+
+                else:
+
+                    messages.error(
+                        request,
+                        f"El cobro no puede registrarse. "
+                        f"Existe un excedente de "
+                        f"${abs(diferencia):.2f}."
+                    )
+
+                return render(
+                    request,
+                    "caja/registrar_cobro.html",
+                    {
+                        "form": form,
+                        "caja": caja,
+                        "centro_medico": centro_medico,
+                        "medios_pago": medios_pago,
+                    },
+                )
+
+            # =====================================
+            # CREAR MOVIMIENTO
+            # =====================================
+
+            movimiento = form.save(
+                commit=False
+            )
+
+            movimiento.caja = caja
+
+            movimiento.centro_medico = (
+                centro_medico
+            )
+
+            movimiento.turno = turno
+
+            movimiento.paciente = (
+                turno.paciente
+            )
+
+            movimiento.tipo = "INGRESO"
+
+            movimiento.creado_por = (
+                request.user
+            )
+
+            movimiento.estado = "ACTIVO"
+
+            # Los importes se calculan
+            # posteriormente desde los detalles.
+
+            movimiento.concepto = (
+                "Cobro de prestaciones"
+            )
+
+            movimiento.importe = 0
+            movimiento.importe_bruto = 0
+            movimiento.importe_iva = 0
+            movimiento.importe_neto = 0
+            movimiento.importe_medico = 0
+            movimiento.importe_consultorio = 0
+
+            movimiento.save()
+
+            # =====================================
+            # RECORRER PRESTACIONES
+            # =====================================
+
+            orden = 1
+
+            for item in detalles:
+
+                origen = item.get(
+                    "origen"
+                )
+
+                cantidad = int(
+                    item.get(
+                        "cantidad",
+                        1
+                    )
+                )
+
+                # =================================
+                # PARTICULAR
+                # =================================
+
+                if origen == "PARTICULAR":
+
+                    concepto = get_object_or_404(
+                        ConceptoFacturacion.objects.select_related(
+                            "nomenclador",
+                            "proveedor",
+                        ),
+                        pk=item["id"],
+                        activo=True
+                    )
+
+                    detalle = DetalleMovimientoCaja(
+                        movimiento=movimiento,
+                        concepto_facturacion=concepto,
+                        prestacion_obra_social=None,
+                        fecha_prestacion=turno.fecha,
+                        cantidad=cantidad,
+                        orden=orden,
+                    )
+
+                # =================================
+                # OBRA SOCIAL
+                # =================================
+
+                elif origen == "OBRA_SOCIAL":
+
+                    prestacion = get_object_or_404(
+                        PrestacionPlan.objects.select_related(
+                            "nomenclador",
+                            "obra_social",
+                            "plan",
+                            "proveedor",
+                        ),
+                        pk=item["id"],
+                        estado="ACTIVA"
+                    )
+
+                    # =================================
+                    # COSEGURO COBRADO AL PACIENTE
+                    # =================================
+                    #
+                    # Si tiene coseguro, anteriormente
+                    # ya validamos que ese importe fue
+                    # pagado.
+                    # =================================
+
+                    coseguro_cobrado = (
+                        prestacion.tiene_coseguro
+                        and prestacion.importe_coseguro
+                        and prestacion.importe_coseguro
+                            > Decimal("0.00")
+                    )
+
+                    # =================================
+                    # COPAGO COBRADO AL PACIENTE
+                    # =================================
+                    #
+                    # Si tiene copago, anteriormente
+                    # tambi├®n validamos que ese importe
+                    # fue pagado.
+                    # =================================
+
+                    copago_cobrado = (
+                        prestacion.tiene_copago
+                        and prestacion.importe_copago
+                        and prestacion.importe_copago
+                            > Decimal("0.00")
+                    )
+
+                    # =================================
+                    # CREAR DETALLE
+                    # =================================
+
+                    detalle = DetalleMovimientoCaja(
+
+                        movimiento=movimiento,
+
+                        concepto_facturacion=None,
+
+                        prestacion_obra_social=prestacion,
+
+                        fecha_prestacion=turno.fecha,
+
+                        cantidad=cantidad,
+
+                        orden=orden,
+
+                        # =============================
+                        # COSEGURO
+                        # =============================
+
+                        coseguro_cobrado=bool(
+                            coseguro_cobrado
+                        ),
+
+                        coseguro_liquidado=False,
+
+                        # =============================
+                        # COPAGO
+                        # =============================
+
+                        copago_cobrado=bool(
+                            copago_cobrado
+                        ),
+
+                        copago_liquidado=False,
+
+                        # =============================
+                        # OBRA SOCIAL
+                        # =============================
+
+                        obra_social_cobrada=False,
+
+                        fecha_cobro_obra_social=None,
+
+                        honorario_os_liquidado=False,
+                    )
+
+                # =================================
+                # ORIGEN INCORRECTO
+                # =================================
+
+                else:
+
+                    raise ValueError(
+                        "Origen de prestaci├│n inv├ílido."
+                    )
+
+                # =================================
+                # GUARDAR DETALLE
+                # =================================
+                #
+                # El modelo copia la fotograf├¡a
+                # econ├│mica de la prestaci├│n:
+                #
+                # - valor
+                # - coseguro
+                # - copago
+                # - IVA
+                # - honorarios
+                # - consultorio
+                # - proveedor
+                # =================================
+
+                detalle.save()
+
+                orden += 1
+
+            # =====================================
+            # DESCRIPCI├ôN DEL MOVIMIENTO
+            # =====================================
+
+            if len(detalles) == 1:
+
+                item = detalles[0]
+
+                origen = item.get(
+                    "origen"
+                )
+
+                # =================================
+                # PARTICULAR
+                # =================================
+
+                if origen == "PARTICULAR":
+
+                    concepto = (
+                        ConceptoFacturacion.objects
+                        .select_related(
+                            "nomenclador"
+                        )
+                        .get(
+                            pk=item["id"]
+                        )
+                    )
+
+                    movimiento.concepto_facturacion = (
+                        concepto
+                    )
+
+                    movimiento.concepto = (
+                        f"{concepto.nomenclador.codigo} - "
+                        f"{concepto.nomenclador.descripcion}"
+                    )
+
+                # =================================
+                # OBRA SOCIAL
+                # =================================
+
+                elif origen == "OBRA_SOCIAL":
+
+                    prestacion = (
+                        PrestacionPlan.objects
+                        .select_related(
+                            "nomenclador"
+                        )
+                        .get(
+                            pk=item["id"]
+                        )
+                    )
+
+                    movimiento.concepto_facturacion = (
+                        None
+                    )
+
+                    movimiento.concepto = (
+                        f"{prestacion.nomenclador.codigo} - "
+                        f"{prestacion.nomenclador.descripcion}"
+                    )
+
+                else:
+
+                    movimiento.concepto_facturacion = (
+                        None
+                    )
+
+                    movimiento.concepto = (
+                        "Cobro de prestaci├│n"
+                    )
+
+            # =====================================
+            # VARIAS PRESTACIONES
+            # =====================================
+
+            else:
+
+                movimiento.concepto_facturacion = (
+                    None
+                )
+
+                movimiento.concepto = (
+                    f"{len(detalles)} prestaciones"
+                )
+
+            movimiento.save(
+                update_fields=[
+                    "concepto",
+                    "concepto_facturacion",
+                ]
+            )
+
+            # =====================================
+            # MEDIOS DE PAGO
+            # =====================================
+            #
+            # PARTICULAR:
+            # se crean normalmente.
+            #
+            # OBRA SOCIAL CON COSEGURO:
+            # se registra el coseguro.
+            #
+            # OBRA SOCIAL CON COPAGO:
+            # se registra el copago.
+            #
+            # OBRA SOCIAL SIN COSEGURO NI COPAGO:
+            # medios_pago_data est├í vac├¡o.
+            # =====================================
+
+            for item in medios_pago_data:
+
+                medio = MedioPago.objects.get(
+                    pk=item["medio"]
+                )
+
+                DetalleMedioPago.objects.create(
+                    movimiento=movimiento,
+                    medio_pago=medio,
+                    importe=Decimal(
+                        str(
+                            item["importe"]
+                        )
+                    )
+                )
+
+            # =====================================
+            # MENSAJE FINAL
+            # =====================================
+
+            detalles_mensaje = [
+
+                f"Paciente: "
+                f"{movimiento.paciente}",
+
+                f"Prestaciones: "
+                f"{len(detalles)}",
+
+                f"Valor prestaciones: "
+                f"${movimiento.importe}",
+
+            ]
+
+            if (
+                total_a_cobrar_paciente
+                > Decimal("0.00")
+            ):
+
+                detalles_mensaje.append(
+                    f"Cobrado al paciente: "
+                    f"${total_a_cobrar_paciente}"
+                )
+
+            else:
+
+                detalles_mensaje.append(
+                    "Cobrado al paciente: $0.00 "
+                    "(Obra Social)"
+                )
+
+            mostrar_exito(
+                request,
+                titulo="Cobro registrado",
+                mensaje=(
+                    "La prestaci├│n fue registrada "
+                    "correctamente."
+                ),
+                icono="bi-cash-coin",
+                detalles=detalles_mensaje,
+            )
+
+            return redirect(
+                "caja_home"
+            )
+
+    # =====================================
+    # GET
+    # =====================================
+
+    else:
+
+        form = CobroConsultaForm(
+            centro_medico=centro_medico
+        )
+
+    return render(
+        request,
+        'caja/registrar_cobro.html',
+        {
+            'form': form,
+            'caja': caja,
+            'centro_medico': centro_medico,
+            'medios_pago': medios_pago,
+        }
+    )
+
+
+@login_required
+@transaction.atomic
+def anular_movimiento(request, movimiento_id):
+
+    # ==========================================
+    # CENTRO ACTIVO
+    # ==========================================
+
+    centro_medico = obtener_centro_activo(request)
+
+    # ==========================================
+    # VALIDAR PERMISOS
+    # ==========================================
+
+    if not validar_permiso_caja(request):
+
+        messages.error(
+            request,
+            'No tiene permisos para acceder a la caja de esta sede.'
+        )
+
+        return redirect(
+            'turnos:ver_disponibilidad'
+        )
+
+    # ==========================================
+    # BUSCAR MOVIMIENTO
+    # ==========================================
+
+    movimiento = get_object_or_404(
+        MovimientoCaja,
+        id=movimiento_id,
+        centro_medico=centro_medico,
+        estado='ACTIVO'
+    )
+
+    # ==========================================
+    # NO PERMITIR ANULAR CAJA CERRADA
+    # ==========================================
+
+    if movimiento.caja.estado == 'CERRADA':
+
+        messages.error(
+            request,
+            'No se puede anular un movimiento de una caja cerrada.'
+        )
+
+        return redirect(
+            'caja_home'
+        )
+
+    # ==========================================
+    # POST
+    # ==========================================
+
+    if request.method == 'POST':
+
+        form = AnularMovimientoCajaForm(
+            request.POST
+        )
+
+        if form.is_valid():
+
+            motivo = form.cleaned_data[
+                'motivo_anulacion'
+            ]
+
+            # ==================================
+            # GUARDAR DATOS ANTERIORES
+            # ==================================
+
+            datos_anteriores = {
+
+                "estado": movimiento.estado,
+
+                "importe": str(
+                    movimiento.importe
+                ),
+
+                "tipo": movimiento.tipo,
+
+                "concepto": movimiento.concepto,
+
+                "medios_pago": [
+
+                    {
+
+                        "medio":
+                            detalle.medio_pago.nombre,
+
+                        "importe":
+                            str(detalle.importe),
+
+                    }
+
+                    for detalle
+                    in movimiento.detalles_medios_pago.all()
+
+                ],
+
+            }
+
+            # ==================================
+            # DETECTAR SI ES PAGO DE HONORARIOS
+            # ==================================
+            #
+            # Lo hacemos ANTES de anular para
+            # conservar la referencia.
+            # ==================================
+
+            pago_honorarios = (
+                PagoLiquidacionMedica.objects
+                .select_related(
+                    "liquidacion"
+                )
+                .filter(
+                    movimiento_caja=movimiento
+                )
+                .first()
+            )
+
+            # ==================================
+            # ANULAR MOVIMIENTO
+            # ==================================
+
+            movimiento.anular(
+                usuario=request.user,
+                motivo=motivo
+            )
+
+            # ==================================
+            # SI ERA COBRO DE UN TURNO
+            # ==================================
+
+            if movimiento.turno:
+
+                movimiento.turno.estado = (
+                    "PENDIENTE"
+                )
+
+                movimiento.turno.save(
+                    update_fields=[
+                        "estado"
+                    ]
+                )
+
+            # ==================================
+            # SI ERA PAGO DE HONORARIOS
+            # ==================================
+
+            if pago_honorarios:
+
+                liquidacion = (
+                    pago_honorarios.liquidacion
+                )
+
+                # ------------------------------
+                # SUMAR ├ÜNICAMENTE PAGOS
+                # CUYO MOVIMIENTO SIGUE ACTIVO
+                # ------------------------------
+
+                total_pagado_activo = (
+                    PagoLiquidacionMedica.objects
+                    .filter(
+                        liquidacion=liquidacion,
+                        movimiento_caja__estado="ACTIVO",
+                    )
+                    .aggregate(
+                        total=Sum("importe")
+                    )["total"]
+                    or Decimal("0.00")
+                )
+
+                # ------------------------------
+                # CANTIDAD DE PAGOS ACTIVOS
+                # ------------------------------
+
+                cantidad_pagos_activos = (
+                    PagoLiquidacionMedica.objects
+                    .filter(
+                        liquidacion=liquidacion,
+                        movimiento_caja__estado="ACTIVO",
+                    )
+                    .count()
+                )
+
+                # ------------------------------
+                # ACTUALIZAR TOTALES
+                # ------------------------------
+
+                liquidacion.total_pagado = (
+                    total_pagado_activo
+                )
+
+                liquidacion.cantidad_pagos = (
+                    cantidad_pagos_activos
+                )
+
+                # ==================================
+                # DETERMINAR ESTADO
+                # ==================================
+
+                if total_pagado_activo <= 0:
+
+                    liquidacion.estado = (
+                        "PENDIENTE"
+                    )
+
+                    liquidacion.fecha_pago = None
+                    liquidacion.pagado_por = None
+
+                elif (
+                    total_pagado_activo
+                    < liquidacion.total_honorarios
+                ):
+
+                    liquidacion.estado = (
+                        "PARCIAL"
+                    )
+
+                    # Buscamos el ├║ltimo pago
+                    # que todav├¡a contin├║a activo.
+
+                    ultimo_pago = (
+                        PagoLiquidacionMedica.objects
+                        .filter(
+                            liquidacion=liquidacion,
+                            movimiento_caja__estado="ACTIVO",
+                        )
+                        .order_by("-fecha")
+                        .first()
+                    )
+
+                    if ultimo_pago:
+
+                        liquidacion.fecha_pago = (
+                            ultimo_pago.fecha
+                        )
+
+                        liquidacion.pagado_por = (
+                            ultimo_pago.registrado_por
+                        )
+
+                else:
+
+                    liquidacion.estado = (
+                        "PAGADA"
+                    )
+
+                    ultimo_pago = (
+                        PagoLiquidacionMedica.objects
+                        .filter(
+                            liquidacion=liquidacion,
+                            movimiento_caja__estado="ACTIVO",
+                        )
+                        .order_by("-fecha")
+                        .first()
+                    )
+
+                    if ultimo_pago:
+
+                        liquidacion.fecha_pago = (
+                            ultimo_pago.fecha
+                        )
+
+                        liquidacion.pagado_por = (
+                            ultimo_pago.registrado_por
+                        )
+
+                # ------------------------------
+                # GUARDAR LIQUIDACI├ôN
+                # ------------------------------
+
+                liquidacion.save(
+                    update_fields=[
+                        "total_pagado",
+                        "cantidad_pagos",
+                        "estado",
+                        "fecha_pago",
+                        "pagado_por",
+                    ]
+                )
+
+            # ==================================
+            # HISTORIAL CAJA
+            # ==================================
+
+            HistorialMovimientoCaja.objects.create(
+
+                caja=movimiento.caja,
+
+                movimiento=movimiento,
+
+                accion='ANULADO',
+
+                usuario=request.user,
+
+                centro_medico=centro_medico,
+
+                descripcion=(
+                    f'Movimiento anulado. '
+                    f'Motivo: {motivo}'
+                ),
+
+                datos_anteriores=(
+                    datos_anteriores
+                ),
+
+                datos_nuevos={
+
+                    'estado':
+                        movimiento.estado,
+
+                    'anulado_por':
+                        request.user.username,
+
+                    'motivo_anulacion':
+                        motivo,
+
+                }
+
+            )
+
+            # ==================================
+            # MENSAJE
+            # ==================================
+
+            detalles_mensaje = [
+
+                f"Concepto: {movimiento.concepto}",
+
+                f"Importe: ${movimiento.importe}",
+
+            ]
+
+            if pago_honorarios:
+
+                detalles_mensaje.append(
+                    "El pago de honorarios "
+                    "asociado fue revertido."
+                )
+
+                detalles_mensaje.append(
+                    f"Liquidaci├│n "
+                    f"#{pago_honorarios.liquidacion_id}"
+                )
+
+            mostrar_exito(
+
+                request,
+
+                titulo="Movimiento anulado",
+
+                mensaje=(
+                    "El movimiento fue "
+                    "anulado correctamente."
+                ),
+
+                icono="bi-trash",
+
+                detalles=detalles_mensaje,
+
+            )
+
+            return redirect(
+                "caja_home"
+            )
+
+    else:
+
+        form = AnularMovimientoCajaForm()
+
+    # ==========================================
+    # MOSTRAR CONFIRMACI├ôN
+    # ==========================================
+
+    return render(
+        request,
+        'caja/anular_movimiento.html',
+        {
+            'form': form,
+            'movimiento': movimiento,
+            'centro_medico': centro_medico,
+        }
+    )
+@login_required
+@transaction.atomic
+def cerrar_caja(request):
+    centro_medico = obtener_centro_activo(request)
+    if not validar_permiso_caja(request):
+
+        messages.error(
+            request,
+            'No tiene permisos para acceder a la caja de esta sede.'
+        )
+
+        return redirect('turnos:ver_disponibilidad')
+
+    if not centro_medico:
+        messages.error(request, 'No hay una sede activa seleccionada.')
+        return redirect('caja_home')
+
+    caja = obtener_caja_abierta(centro_medico)
+
+    if not caja:
+        messages.error(request, 'No hay caja abierta para cerrar.')
+        return redirect('caja_home')
+
+    movimientos = MovimientoCaja.objects.filter(
+        caja=caja,
+        centro_medico=centro_medico,
+        estado='ACTIVO'
+    ).select_related(
+        'paciente',
+        'turno',
+        'creado_por'
+    ).prefetch_related(
+        'detalles',
+        'detalles_medios_pago__medio_pago'
+    ).order_by('fecha_creacion')
+    from collections import defaultdict
+
+    resumen_medios = defaultdict(Decimal)
+
+    for movimiento in movimientos:
+
+        signo = Decimal("1")
+
+        if movimiento.tipo == "EGRESO":
+            signo = Decimal("-1")
+
+        for detalle in movimiento.detalles_medios_pago.all():
+
+            resumen_medios[
+                detalle.medio_pago.nombre
+            ] += signo * detalle.importe
+
+    total_ingresos = movimientos.filter(
+        tipo='INGRESO'
+    ).aggregate(
+        total=Sum('importe')
+    )['total'] or 0
+
+    total_egresos = movimientos.filter(
+        tipo='EGRESO'
+    ).aggregate(
+        total=Sum('importe')
+    )['total'] or 0
+
+    saldo_final = caja.saldo_inicial + total_ingresos - total_egresos
+
+    if request.method == 'POST':
+        form = CerrarCajaForm(request.POST, instance=caja)
+
+        if form.is_valid():
+            caja = form.save(commit=False)
+            caja.estado = 'CERRADA'
+            caja.cerrada_por = request.user
+            caja.fecha_cierre = timezone.now()
+            caja.save()
+
+            HistorialMovimientoCaja.objects.create(
+                caja=caja,
+                accion='CIERRE_CAJA',
+                usuario=request.user,
+                centro_medico=centro_medico,
+                descripcion=(
+                    f'Cierre de caja {caja.get_turno_display()} '
+                    f'de {centro_medico.nombre}.'
+                ),
+                datos_nuevos={
+                    'fecha': str(caja.fecha),
+                    'turno': caja.get_turno_display(),
+                    'saldo_inicial': str(caja.saldo_inicial),
+                    'total_ingresos': str(total_ingresos),
+                    'total_egresos': str(total_egresos),
+                    'saldo_final': str(saldo_final),
+                    'observacion_cierre': caja.observacion_cierre,
+                    'cerrada_por': request.user.username,
+                }
+            )
+
+            mostrar_exito(
+
+            request,
+
+            titulo="Caja cerrada",
+
+            mensaje="La caja se cerr├│ correctamente.",
+
+            icono="bi-safe2-fill",
+
+            detalles=[
+
+                f"Sede: {centro_medico.nombre}",
+
+                f"Turno: {caja.get_turno_display()}",
+
+                f"Ingresos: ${total_ingresos}",
+
+                f"Egresos: ${total_egresos}",
+
+                f"Saldo Final: ${saldo_final}",
+
+            ],
+
+        )
+
+        return redirect("caja_home")
+    else:
+        form = CerrarCajaForm(instance=caja)
+
+    efectivo_rendir = (
+        caja.saldo_inicial +
+        resumen_medios.get(
+            "Efectivo",
+            Decimal("0")
+        )
+    )
+    return render(request, 'caja/cerrar_caja.html', {
+        'form': form,
+        'caja': caja,
+        'centro_medico': centro_medico,
+        'movimientos': movimientos,
+        'resumen_medios': resumen_medios.items(),
+        'total_ingresos': total_ingresos,
+        'total_egresos': total_egresos,
+        'efectivo_rendir': efectivo_rendir,
+        'saldo_final': saldo_final,
+    })
+
+@login_required
+def detalle_caja(request, caja_id):
+
+    centro_medico = obtener_centro_activo(request)
+
+    if not validar_permiso_caja(request):
+
+        messages.error(
+            request,
+            'No tiene permisos para acceder a la caja de esta sede.'
+        )
+
+        return redirect('turnos:ver_disponibilidad')
+
+    caja = get_object_or_404(
+        CajaDiaria,
+        pk=caja_id,
+        centro_medico=centro_medico
+    )
+
+    movimientos = (
+        MovimientoCaja.objects.filter(
+            caja=caja,
+            estado="ACTIVO"
+        )
+        .select_related(
+            "paciente",
+            "creado_por",
+        )
+        .prefetch_related(
+            "detalles",
+            "detalles_medios_pago__medio_pago",
+        )
+        .order_by("fecha_creacion")
+    )
+
+    total_ingresos = (
+        movimientos.filter(
+            tipo='INGRESO'
+        ).aggregate(
+            total=Sum('importe')
+        )['total'] or 0
+    )
+
+    total_egresos = (
+        movimientos.filter(
+            tipo='EGRESO'
+        ).aggregate(
+            total=Sum('importe')
+        )['total'] or 0
+    )
+
+    resultado = total_ingresos - total_egresos
+
+    medios_pago = (
+        DetalleMedioPago.objects.filter(
+            movimiento__caja=caja,
+            movimiento__estado="ACTIVO",
+        )
+        .values("medio_pago__nombre")
+        .annotate(
+            total=Sum("importe")
+        )
+        .order_by("medio_pago__nombre")
+    )
+
+    return render(
+        request,
+        'caja/detalle_caja.html',
+        {
+            'caja': caja,
+            'movimientos': movimientos,
+            'total_ingresos': total_ingresos,
+            'total_egresos': total_egresos,
+            'resultado': resultado,
+            'medios_pago': medios_pago,
+        }
+    )
+
+
+@login_required
+def cajas_cerradas(request):
+
+    
+    centro_medico = obtener_centro_activo(request)
+    if not validar_permiso_caja(request):
+
+        messages.error(
+            request,
+            'No tiene permisos para acceder a la caja de esta sede.'
+        )
+
+        return redirect('turnos:turnos:ver_disponibilidad')
+
+    fecha = request.GET.get('fecha')
+
+    cajas = CajaDiaria.objects.filter(
+        centro_medico=centro_medico,
+        estado='CERRADA'
+    )
+
+    if fecha:
+
+        cajas = cajas.filter(
+            fecha=fecha
+        )
+
+    cajas = cajas.order_by(
+        '-fecha',
+        '-id'
+    )
+
+    if not fecha:
+        cajas = cajas[:5]
+
+    return render(
+        request,
+        'caja/cajas_cerradas.html',
+        {
+            'cajas': cajas,
+            'centro_medico': centro_medico,
+            'fecha': fecha,
+        }
+    )
+
+
+from django.http import JsonResponse
+
+@login_required
+def ajax_prestaciones(request):
+
+    tipo = request.GET.get("tipo")
+    turno_id = request.GET.get("turno_id")
+
+    if not tipo:
+        return JsonResponse([], safe=False)
+
+    # ==========================================
+    # OBTENER TURNO Y COBERTURA
+    # ==========================================
+
+    if not turno_id:
+        return JsonResponse({
+            "error": "Debe seleccionar un turno."
+        }, status=400)
+
+    try:
+
+        turno = Turnos.objects.select_related(
+            "paciente",
+            "paciente__obrasocial",
+            "paciente__plan_obra_social",
+        ).get(
+            pk=turno_id
+        )
+
+    except Turnos.DoesNotExist:
+
+        return JsonResponse({
+            "error": "El turno seleccionado no existe."
+        }, status=404)
+
+    paciente = turno.paciente
+    obra_social = paciente.obrasocial
+    plan = paciente.plan_obra_social
+
+    data = []
+
+    # ==========================================
+    # PARTICULAR
+    # ==========================================
+
+    if obra_social.es_particular:
+
+        prestaciones = ConceptoFacturacion.objects.filter(
+            activo=True,
+            tipo_concepto=tipo
+        ).select_related(
+            "nomenclador"
+        ).order_by(
+            "nomenclador__descripcion"
+        )
+
+        for p in prestaciones:
+
+            if not p.nomenclador:
+                continue
+
+            data.append({
+                "id": p.id,
+                "origen": "PARTICULAR",
+                "nombre": (
+                    f"{p.nomenclador.codigo} - "
+                    f"{p.nomenclador.descripcion}"
+                )
+            })
+
+        return JsonResponse(data, safe=False)
+
+    # ==========================================
+    # OBRA SOCIAL
+    # ==========================================
+
+    filtros = {
+        "obra_social": obra_social,
+        "estado": "ACTIVA",
+        "tipo_concepto": tipo,
+    }
+
+    # ==========================================
+    # OBRA SOCIAL CON PLANES
+    # ==========================================
+
+    if obra_social.usa_planes:
+
+        if not plan:
+
+            return JsonResponse({
+                "error": (
+                    f"El paciente {paciente} no tiene "
+                    f"un plan asignado para {obra_social.nombre}."
+                )
+            }, status=400)
+
+        if plan.obra_social_id != obra_social.id:
+
+            return JsonResponse({
+                "error": (
+                    "El plan asignado al paciente no pertenece "
+                    "a su obra social."
+                )
+            }, status=400)
+
+        filtros["plan"] = plan
+
+    # ==========================================
+    # OBRA SOCIAL SIN PLANES
+    # ==========================================
+
+    else:
+
+        filtros["plan__isnull"] = True
+
+    prestaciones = PrestacionPlan.objects.filter(
+        **filtros
+    ).select_related(
+        "nomenclador"
+    ).order_by(
+        "nomenclador__descripcion"
+    )
+
+    for p in prestaciones:
+
+        data.append({
+            "id": p.id,
+            "origen": "OBRA_SOCIAL",
+            "nombre": (
+                f"{p.nomenclador.codigo} - "
+                f"{p.nomenclador.descripcion}"
+            )
+        })
+
+    return JsonResponse(data, safe=False)
+
+@login_required
+def ajax_importe_prestacion(request):
+
+    prestacion_id = request.GET.get(
+        "prestacion_id"
+    )
+
+    origen = request.GET.get(
+        "origen"
+    )
+
+    turno_id = request.GET.get(
+        "turno_id"
+    )
+
+    # ==========================================
+    # VALIDAR DATOS
+    # ==========================================
+
+    if (
+        not prestacion_id or
+        not origen or
+        not turno_id
+    ):
+
+        return JsonResponse({
+            "error": (
+                "Faltan datos para obtener "
+                "el importe."
+            ),
+            "importe": 0
+        }, status=400)
+
+
+    # ==========================================
+    # OBTENER TURNO
+    # ==========================================
+
+    try:
+
+        turno = (
+            Turnos.objects
+            .select_related(
+                "paciente",
+                "paciente__obrasocial",
+                "paciente__plan_obra_social",
+            )
+            .get(
+                pk=turno_id
+            )
+        )
+
+    except Turnos.DoesNotExist:
+
+        return JsonResponse({
+            "error": "El turno no existe.",
+            "importe": 0
+        }, status=404)
+
+
+    paciente = turno.paciente
+
+    obra_social = paciente.obrasocial
+
+    plan = paciente.plan_obra_social
+
+
+    # ==========================================
+    # PARTICULAR
+    # ==========================================
+
+    if origen == "PARTICULAR":
+
+        if not obra_social.es_particular:
+
+            return JsonResponse({
+                "error": (
+                    "El paciente no posee "
+                    "cobertura Particular."
+                ),
+                "importe": 0
+            }, status=400)
+
+
+        try:
+
+            concepto = (
+                ConceptoFacturacion.objects
+                .select_related(
+                    "nomenclador"
+                )
+                .get(
+                    pk=prestacion_id,
+                    activo=True
+                )
+            )
+
+        except ConceptoFacturacion.DoesNotExist:
+
+            return JsonResponse({
+                "error": (
+                    "La prestaci├│n particular "
+                    "no existe."
+                ),
+                "importe": 0
+            }, status=404)
+
+
+        return JsonResponse({
+
+            # ======================================
+            # VALOR PARTICULAR
+            # ======================================
+
+            "importe": float(
+                concepto.importe_particular
+            ),
+
+
+            # ======================================
+            # PARTICULAR NO TIENE COSEGURO
+            # ======================================
+
+            "tiene_coseguro": False,
+
+            "importe_coseguro": 0,
+
+
+            # ======================================
+            # PARTICULAR NO TIENE COPAGO
+            # ======================================
+
+            "tiene_copago": False,
+
+            "importe_copago": 0,
+
+
+            # ======================================
+            # DATOS PRESTACI├ôN
+            # ======================================
+
+            "codigo":
+                concepto.nomenclador.codigo,
+
+            "descripcion":
+                concepto.nomenclador.descripcion,
+
+            "origen":
+                "PARTICULAR"
+        })
+
+
+    # ==========================================
+    # OBRA SOCIAL
+    # ==========================================
+
+    if origen == "OBRA_SOCIAL":
+
+        filtros = {
+
+            "pk":
+                prestacion_id,
+
+            "obra_social":
+                obra_social,
+
+            "estado":
+                "ACTIVA",
+        }
+
+
+        # ======================================
+        # OBRA SOCIAL CON PLAN
+        # ======================================
+
+        if obra_social.usa_planes:
+
+            if not plan:
+
+                return JsonResponse({
+                    "error": (
+                        "El paciente no tiene "
+                        "un plan asignado."
+                    ),
+                    "importe": 0
+                }, status=400)
+
+
+            if (
+                plan.obra_social_id !=
+                obra_social.id
+            ):
+
+                return JsonResponse({
+                    "error": (
+                        "El plan del paciente "
+                        "no pertenece a su "
+                        "obra social."
+                    ),
+                    "importe": 0
+                }, status=400)
+
+
+            filtros["plan"] = plan
+
+
+        # ======================================
+        # OBRA SOCIAL SIN PLAN
+        # ======================================
+
+        else:
+
+            filtros[
+                "plan__isnull"
+            ] = True
+
+
+        # ======================================
+        # OBTENER PRESTACI├ôN
+        # ======================================
+
+        try:
+
+            prestacion = (
+                PrestacionPlan.objects
+                .select_related(
+                    "nomenclador"
+                )
+                .get(
+                    **filtros
+                )
+            )
+
+        except PrestacionPlan.DoesNotExist:
+
+            return JsonResponse({
+                "error": (
+                    "La prestaci├│n no pertenece "
+                    "al convenio del paciente."
+                ),
+                "importe": 0
+            }, status=404)
+
+
+        # ======================================
+        # COSEGURO
+        # ======================================
+
+        importe_coseguro = 0
+
+
+        if prestacion.tiene_coseguro:
+
+            importe_coseguro = (
+                prestacion.importe_coseguro
+                or 0
+            )
+
+
+        # ======================================
+        # COPAGO
+        # ======================================
+
+        importe_copago = 0
+
+
+        if prestacion.tiene_copago:
+
+            importe_copago = (
+                prestacion.importe_copago
+                or 0
+            )
+
+
+        # ======================================
+        # RESPUESTA
+        # ======================================
+
+        return JsonResponse({
+
+            # ==================================
+            # VALOR CONVENIO
+            # ==================================
+            #
+            # Este valor es el valor de la
+            # prestaci├│n.
+            #
+            # El copago NO modifica este valor.
+            # ==================================
+
+            "importe": float(
+                prestacion.valor
+            ),
+
+
+            # ==================================
+            # COSEGURO
+            # ==================================
+
+            "tiene_coseguro":
+                prestacion.tiene_coseguro,
+
+            "importe_coseguro": float(
+                importe_coseguro
+            ),
+
+
+            # ==================================
+            # COPAGO
+            # ==================================
+
+            "tiene_copago":
+                prestacion.tiene_copago,
+
+            "importe_copago": float(
+                importe_copago
+            ),
+
+
+            # ==================================
+            # DATOS PRESTACI├ôN
+            # ==================================
+
+            "codigo":
+                prestacion.nomenclador.codigo,
+
+            "descripcion":
+                prestacion.nomenclador.descripcion,
+
+            "origen":
+                "OBRA_SOCIAL"
+        })
+
+
+    # ==========================================
+    # ORIGEN INV├üLIDO
+    # ==========================================
+
+    return JsonResponse({
+        "error": (
+            "Origen de prestaci├│n inv├ílido."
+        ),
+        "importe": 0
+    }, status=400)
+@login_required
+def ajax_cobertura_turno(request):
+
+    turno_id = request.GET.get("turno_id")
+
+    if not turno_id:
+        return JsonResponse({
+            "ok": False,
+            "error": "No se recibi├│ el turno."
+        })
+
+    try:
+        turno = Turnos.objects.select_related(
+            "paciente",
+            "paciente__obrasocial",
+            "paciente__plan_obra_social",
+        ).get(
+            pk=turno_id
+        )
+
+    except Turnos.DoesNotExist:
+        return JsonResponse({
+            "ok": False,
+            "error": "El turno no existe."
+        })
+
+    paciente = turno.paciente
+    obra_social = paciente.obrasocial
+    plan = paciente.plan_obra_social
+
+    # ==========================================
+    # PARTICULAR
+    # ==========================================
+
+    if obra_social.es_particular:
+
+        return JsonResponse({
+            "ok": True,
+            "tipo": "PARTICULAR",
+
+            "paciente": {
+                "id": paciente.id,
+                "nombre": str(paciente),
+            },
+
+            "obra_social": {
+                "id": obra_social.id,
+                "nombre": obra_social.nombre,
+            },
+
+            "plan": None,
+        })
+
+    # ==========================================
+    # OBRA SOCIAL QUE UTILIZA PLANES
+    # ==========================================
+
+    if obra_social.usa_planes:
+
+        if not plan:
+
+            return JsonResponse({
+                "ok": False,
+                "error": (
+                    f"El paciente {paciente} pertenece a "
+                    f"{obra_social.nombre}, pero no tiene un plan asignado."
+                )
+            })
+
+        # Seguridad:
+        # el plan debe pertenecer a la obra social del paciente.
+
+        if plan.obra_social_id != obra_social.id:
+
+            return JsonResponse({
+                "ok": False,
+                "error": (
+                    "El plan asignado al paciente no pertenece "
+                    "a su obra social."
+                )
+            })
+
+        return JsonResponse({
+            "ok": True,
+            "tipo": "OBRA_SOCIAL",
+
+            "paciente": {
+                "id": paciente.id,
+                "nombre": str(paciente),
+            },
+
+            "obra_social": {
+                "id": obra_social.id,
+                "nombre": obra_social.nombre,
+            },
+
+            "plan": {
+                "id": plan.id,
+                "codigo": plan.codigo,
+                "nombre": plan.nombre,
+            },
+        })
+
+    # ==========================================
+    # OBRA SOCIAL SIN PLANES
+    # ==========================================
+
+    return JsonResponse({
+        "ok": True,
+        "tipo": "OBRA_SOCIAL",
+
+        "paciente": {
+            "id": paciente.id,
+            "nombre": str(paciente),
+        },
+
+        "obra_social": {
+            "id": obra_social.id,
+            "nombre": obra_social.nombre,
+        },
+
+        "plan": None,
+    })
+
+
+
+@login_required
+def pdf_cierre_caja(request, caja_id):
+
+    caja = get_object_or_404(
+        CajaDiaria,
+        pk=caja_id,
+    )
+
+    service = CierreCajaService(
+        caja
+    )
+
+    datos = service.obtener_datos()
+
+    pdf = generar_pdf_cierre(
+        datos
+    )
+
+    response = HttpResponse(
+        pdf,
+        content_type="application/pdf",
+    )
+
+    response[
+        "Content-Disposition"
+    ] = (
+        f'attachment; '
+        f'filename="CierreCaja_{caja.id}.pdf"'
+    )
+
+    return response
+
+
+@login_required
+def constancia_prestacion(request):
+
+    # ==========================================
+    # SOLO POST
+    # ==========================================
+
+    if request.method != "POST":
+
+        return HttpResponseBadRequest(
+            "M├®todo no permitido."
+        )
+
+    # ==========================================
+    # DATOS RECIBIDOS
+    # ==========================================
+
+    turno_id = request.POST.get(
+    "turno"
+)
+
+    detalles_json = request.POST.get(
+        "detalles_json"
+    )
+
+    # ==========================================
+    # VALIDAR TURNO
+    # ==========================================
+
+    if not turno_id:
+
+        return HttpResponseBadRequest(
+            "No se recibi├│ el turno."
+        )
+
+    # ==========================================
+    # OBTENER TURNO
+    # ==========================================
+
+    turno = get_object_or_404(
+        Turnos.objects.select_related(
+            "paciente",
+            "paciente__obrasocial",
+            "paciente__plan_obra_social",
+            "medico",
+        ),
+        pk=turno_id
+    )
+
+    paciente = turno.paciente
+
+    obra_social = paciente.obrasocial
+
+    plan = paciente.plan_obra_social
+
+    # ==========================================
+    # VALIDAR OBRA SOCIAL
+    # ==========================================
+
+    if obra_social.es_particular:
+
+        return HttpResponseBadRequest(
+            "La constancia de prestaci├│n est├í disponible ├║nicamente para pacientes con Obra Social."
+        )
+
+    # ==========================================
+    # PROCESAR PRESTACIONES
+    # ==========================================
+
+    try:
+
+        prestaciones = json.loads(
+            detalles_json or "[]"
+        )
+
+    except json.JSONDecodeError:
+
+        return HttpResponseBadRequest(
+            "No se pudieron procesar las prestaciones."
+        )
+
+    if not prestaciones:
+
+        return HttpResponseBadRequest(
+            "Debe agregar al menos una prestaci├│n."
+        )
+
+    # ==========================================
+    # SEGURIDAD
+    # ==========================================
+    #
+    # Solo necesitamos c├│digo y descripci├│n.
+    # No enviamos importes al comprobante.
+    # ==========================================
+
+    prestaciones_constancia = []
+
+    for item in prestaciones:
+
+        prestaciones_constancia.append({
+            "codigo": item.get(
+                "codigo",
+                ""
+            ),
+
+            "descripcion": item.get(
+                "descripcion",
+                ""
+            ),
+
+            "cantidad": item.get(
+                "cantidad",
+                1
+            ),
+        })
+
+    # ==========================================
+    # FECHA / HORA
+    # ==========================================
+
+    fecha = timezone.localtime()
+
+    dias = {
+        0: "Lunes",
+        1: "Martes",
+        2: "Mi├®rcoles",
+        3: "Jueves",
+        4: "Viernes",
+        5: "S├íbado",
+        6: "Domingo",
+    }
+
+    dia = dias[
+        fecha.weekday()
+    ]
+
+    # ==========================================
+    # CENTRO
+    # ==========================================
+
+    centro_medico = obtener_centro_activo(
+        request
+    )
+
+    # ==========================================
+    # RENDER
+    # ==========================================
+
+    return render(
+        request,
+        "caja/constancia_prestacion.html",
+        {
+            "turno": turno,
+            "paciente": paciente,
+            "obra_social": obra_social,
+            "plan": plan,
+            "medico": turno.medico,
+            "centro_medico": centro_medico,
+            "prestaciones": prestaciones_constancia,
+            "fecha": fecha,
+            "dia": dia,
+        }
+    )
