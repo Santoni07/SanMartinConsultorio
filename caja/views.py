@@ -2313,6 +2313,10 @@ def detalle_caja(request, caja_id):
         centro_medico=centro_medico
     )
 
+    # ==========================================
+    # MOVIMIENTOS ACTIVOS
+    # ==========================================
+
     movimientos = (
         MovimientoCaja.objects.filter(
             caja=caja,
@@ -2329,49 +2333,126 @@ def detalle_caja(request, caja_id):
         .order_by("fecha_creacion")
     )
 
+    # ==========================================
+    # TOTALES GENERALES
+    # ==========================================
+
     total_ingresos = (
         movimientos.filter(
-            tipo='INGRESO'
+            tipo="INGRESO"
         ).aggregate(
-            total=Sum('importe')
-        )['total'] or 0
+            total=Sum("importe")
+        )["total"] or Decimal("0.00")
     )
 
     total_egresos = (
         movimientos.filter(
-            tipo='EGRESO'
+            tipo="EGRESO"
         ).aggregate(
-            total=Sum('importe')
-        )['total'] or 0
+            total=Sum("importe")
+        )["total"] or Decimal("0.00")
     )
 
     resultado = total_ingresos - total_egresos
+
+    # ==========================================
+    # TOTALES POR MEDIO DE PAGO
+    # ==========================================
 
     medios_pago = (
         DetalleMedioPago.objects.filter(
             movimiento__caja=caja,
             movimiento__estado="ACTIVO",
         )
-        .values("medio_pago__nombre")
+        .values(
+            "medio_pago__nombre",
+            "movimiento__tipo",
+        )
         .annotate(
             total=Sum("importe")
         )
         .order_by("medio_pago__nombre")
     )
 
-    return render(
-        request,
-        'caja/detalle_caja.html',
-        {
-            'caja': caja,
-            'movimientos': movimientos,
-            'total_ingresos': total_ingresos,
-            'total_egresos': total_egresos,
-            'resultado': resultado,
-            'medios_pago': medios_pago,
-        }
+    # ==========================================
+    # CONTROL DE EFECTIVO
+    # ==========================================
+
+    ingresos_efectivo = Decimal("0.00")
+    egresos_efectivo = Decimal("0.00")
+
+    for medio in medios_pago:
+
+        nombre = (
+            medio["medio_pago__nombre"] or ""
+        ).strip().lower()
+
+        tipo = medio["movimiento__tipo"]
+
+        importe = medio["total"] or Decimal("0.00")
+
+        if nombre == "efectivo":
+
+            if tipo == "INGRESO":
+                ingresos_efectivo += importe
+
+            elif tipo == "EGRESO":
+                egresos_efectivo += importe
+
+    saldo_efectivo = (
+        ingresos_efectivo - egresos_efectivo
     )
 
+    # ==========================================
+    # RESUMEN NETO POR MEDIO DE PAGO
+    # ==========================================
+
+    from collections import defaultdict
+
+    resumen = defaultdict(lambda: Decimal("0.00"))
+
+    for medio in medios_pago:
+
+        nombre = medio["medio_pago__nombre"]
+        tipo = medio["movimiento__tipo"]
+        importe = medio["total"] or Decimal("0.00")
+
+        if tipo == "INGRESO":
+            resumen[nombre] += importe
+
+        elif tipo == "EGRESO":
+            resumen[nombre] -= importe
+
+    medios_pago_resumen = [
+        {
+            "medio_pago__nombre": nombre,
+            "total": total,
+        }
+        for nombre, total in sorted(resumen.items())
+    ]
+
+    # ==========================================
+    # RENDER
+    # ==========================================
+
+    return render(
+        request,
+        "caja/detalle_caja.html",
+        {
+            "caja": caja,
+            "movimientos": movimientos,
+
+            "total_ingresos": total_ingresos,
+            "total_egresos": total_egresos,
+            "resultado": resultado,
+
+            "medios_pago": medios_pago_resumen,
+
+            "ingresos_efectivo": ingresos_efectivo,
+            "egresos_efectivo": egresos_efectivo,
+            "saldo_efectivo": saldo_efectivo,
+        }
+    )
 
 @login_required
 def cajas_cerradas(request):
