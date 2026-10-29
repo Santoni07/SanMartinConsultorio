@@ -1613,65 +1613,55 @@ def master_obra_social_presentar(request, obra_social_id, master_id):
 # MASTER DE OBRA SOCIAL
 # REGISTRAR PAGO
 # ==========================================================
+
 @login_required
 def master_obra_social_registrar_pago(
     request,
     obra_social_id,
-    master_id
+    master_id,
 ):
-
-    # ======================================================
-    # ACCESO EXCLUSIVO CINTIA
-    # ======================================================
+    from datetime import date
+    from django.utils.dateparse import parse_date
 
     if not usuario_autorizado_obras_sociales(request.user):
         raise PermissionDenied(
             "No tiene permisos para registrar cobros de Masters."
         )
 
-    # ======================================================
-    # OBRA SOCIAL
-    # ======================================================
-
     obra_social = get_object_or_404(
         ObraSocial,
         pk=obra_social_id,
-        es_particular=False
+        es_particular=False,
     )
-
-    # ======================================================
-    # MASTER
-    # ======================================================
 
     master = get_object_or_404(
         MasterObraSocial,
         pk=master_id,
-        obra_social=obra_social
+        obra_social=obra_social,
     )
 
-    # ======================================================
-    # SOLO MASTER PRESENTADO
-    # ======================================================
-
     if master.estado != "PRESENTADO":
-
         messages.warning(
             request,
             "Solamente se puede registrar el cobro "
-            "de un Master presentado."
+            "de un Master presentado.",
         )
-
         return redirect(
             "obrasocial:master_obra_social_detalle",
             obra_social_id=obra_social.id,
-            master_id=master.id
+            master_id=master.id,
         )
 
-    # ======================================================
-    # DETALLES DEL MASTER
-    # ======================================================
+    cero = Decimal("0.00")
+    cien = Decimal("100")
 
-    detalles = (
+    estados_validos = {
+        "ACEPTADO",
+        "DEBITO_PARCIAL",
+        "RECHAZADO",
+    }
+
+    detalles = list(
         master.detalles
         .select_related(
             "detalle_movimiento",
@@ -1686,199 +1676,137 @@ def master_obra_social_registrar_pago(
         )
         .order_by(
             "detalle_movimiento__fecha_prestacion",
-            "id"
+            "id",
         )
     )
 
-    # ======================================================
-    # VERIFICAR QUE EXISTA LIQUIDACIÓN
-    # ======================================================
-
-    estados_validos = [
-        "ACEPTADO",
-        "DEBITO_PARCIAL",
-        "RECHAZADO",
-    ]
-
-    if not detalles.exists():
-
+    if not detalles:
         messages.warning(
             request,
-            "El Master no contiene prestaciones."
+            "El Master no contiene prestaciones.",
         )
-
         return redirect(
             "obrasocial:master_obra_social_detalle",
             obra_social_id=obra_social.id,
-            master_id=master.id
+            master_id=master.id,
         )
 
-    for item in detalles:
+    if any(item.estado not in estados_validos for item in detalles):
+        messages.warning(
+            request,
+            "Debe cargar completamente la liquidación "
+            "de la Obra Social antes de registrar el cobro.",
+        )
+        return redirect(
+            "obrasocial:master_obra_social_detalle",
+            obra_social_id=obra_social.id,
+            master_id=master.id,
+        )
 
-        if item.estado not in estados_validos:
-
-            messages.warning(
-                request,
-                "Debe cargar completamente la liquidación "
-                "de la Obra Social antes de registrar el cobro."
-            )
-
-            return redirect(
-                "obrasocial:master_obra_social_detalle",
-                obra_social_id=obra_social.id,
-                master_id=master.id
-            )
-
-    # ======================================================
-    # PREPARAR DATOS PARA MOSTRAR
-    # ======================================================
-
-    total_presentado = Decimal("0.00")
-    total_reconocido = Decimal("0.00")
-    total_debitado = Decimal("0.00")
+    total_presentado = cero
+    total_reconocido = cero
+    total_debitado = cero
 
     cantidad_aceptadas = 0
     cantidad_debitadas = 0
     cantidad_rechazadas = 0
 
-    # ======================================================
-    # RECORRER RESULTADOS
-    # ======================================================
-
     for item in detalles:
-
-        importe_presentado = (
-            item.importe_presentado
-            or Decimal("0.00")
-        )
-
-        importe_reconocido = (
-            item.importe_reconocido
-            or Decimal("0.00")
-        )
-
-        importe_debitado = (
-            item.importe_debitado
-            or Decimal("0.00")
-        )
-
         item.importe_presentado_calculado = (
-            importe_presentado
+            item.importe_presentado or cero
         )
-
         item.importe_reconocido_calculado = (
-            importe_reconocido
+            item.importe_reconocido or cero
         )
-
         item.diferencia_calculada = (
-            importe_debitado
+            item.importe_debitado or cero
         )
 
-        total_presentado += importe_presentado
-        total_reconocido += importe_reconocido
-        total_debitado += importe_debitado
+        total_presentado += item.importe_presentado_calculado
+        total_reconocido += item.importe_reconocido_calculado
+        total_debitado += item.diferencia_calculada
 
         if item.estado == "ACEPTADO":
             cantidad_aceptadas += 1
-
         elif item.estado == "DEBITO_PARCIAL":
             cantidad_debitadas += 1
-
         elif item.estado == "RECHAZADO":
             cantidad_rechazadas += 1
 
-    # ======================================================
-    # POST - CONFIRMAR COBRO
-    # ======================================================
-
     if request.method == "POST":
+        fecha_texto = request.POST.get("fecha_cobro", "")
 
-        fecha_cobro = request.POST.get(
-            "fecha_cobro"
-        )
+        try:
+            fecha_cobro = parse_date(fecha_texto)
+        except (ValueError, TypeError):
+            fecha_cobro = None
 
-        # ==================================================
-        # VALIDAR FECHA
-        # ==================================================
-
-        if not fecha_cobro:
-
+        if fecha_cobro is None:
             messages.error(
                 request,
-                "Debe indicar la fecha de cobro."
+                "Debe indicar una fecha de cobro válida.",
             )
-
             return redirect(
                 "obrasocial:master_obra_social_registrar_pago",
                 obra_social_id=obra_social.id,
-                master_id=master.id
+                master_id=master.id,
             )
 
         try:
-
             with transaction.atomic():
-
-                # ==========================================
-                # BLOQUEAR MASTER
-                # ==========================================
-
                 master_bloqueado = (
                     MasterObraSocial.objects
                     .select_for_update()
                     .get(
                         pk=master.id,
-                        estado="PRESENTADO"
+                        obra_social=obra_social,
+                        estado="PRESENTADO",
                     )
                 )
 
-                # ==========================================
-                # DETALLES BLOQUEADOS
-                # ==========================================
-
-                detalles_bloqueados = (
+                # Se bloquean los detalles sin unir relaciones
+                # opcionales en la consulta de bloqueo.
+                detalles_bloqueados = list(
                     DetalleMasterObraSocial.objects
                     .select_for_update()
-                    .select_related(
-                        "detalle_movimiento",
-                        "detalle_movimiento__prestacion_obra_social",
-                        "detalle_origen",
-                    )
-                    .filter(
-                        master=master_bloqueado
-                    )
+                    .filter(master=master_bloqueado)
+                    .order_by("pk")
                 )
 
-                # ==========================================
-                # PROCESAR COBRO
-                # ==========================================
-
-                for item in detalles_bloqueados:
-
-                    detalle = item.detalle_movimiento
-
-                    importe_reconocido = (
-                        item.importe_reconocido
-                        or Decimal("0.00")
+                if not detalles_bloqueados:
+                    raise ValueError(
+                        "El Master no contiene prestaciones."
                     )
 
-                    honorario_os = Decimal("0.00")
-                    importe_consultorio = Decimal("0.00")
+                if any(
+                    item.estado not in estados_validos
+                    for item in detalles_bloqueados
+                ):
+                    raise ValueError(
+                        "La liquidación del Master está incompleta."
+                    )
 
-                    # ======================================
-                    # ACEPTADO / DÉBITO PARCIAL
-                    # ======================================
+                total_cobrado_confirmado = cero
 
-                    if (
-                        item.estado in [
+                for item in detalles_bloqueados:
+                    detalle = item.detalle_movimiento
+                    importe_reconocido = (
+                        item.importe_reconocido or cero
+                    )
+
+                    honorario_os = cero
+                    importe_consultorio = cero
+
+                    es_cobro_positivo = (
+                        item.estado in {
                             "ACEPTADO",
                             "DEBITO_PARCIAL",
-                        ]
-                        and importe_reconocido > Decimal("0.00")
-                    ):
+                        }
+                        and importe_reconocido > cero
+                    )
 
-                        prestacion = (
-                            detalle.prestacion_obra_social
-                        )
+                    if es_cobro_positivo:
+                        prestacion = detalle.prestacion_obra_social
 
                         if prestacion is None:
                             raise ValueError(
@@ -1886,335 +1814,134 @@ def master_obra_social_registrar_pago(
                                 "de Obra Social."
                             )
 
-                        # ==================================
-                        # COSEGURO
-                        # ==================================
-
+                        # Componentes cobrados al paciente.
                         coseguro = (
-                            detalle.importe_coseguro
-                            or Decimal("0.00")
+                            (detalle.importe_coseguro or cero)
+                            if detalle.coseguro_cobrado
+                            else cero
                         )
 
-                        # ==================================
-                        # RECONOCIMIENTOS ANTERIORES
-                        # ==================================
+                        copago = (
+                            (detalle.importe_copago or cero)
+                            if detalle.copago_cobrado
+                            else cero
+                        )
 
-                        detalles_anteriores = (
+                        anteriores = (
                             DetalleMasterObraSocial.objects
                             .filter(
                                 detalle_movimiento=detalle,
                                 master__estado="COBRADO",
                             )
-                            .exclude(
-                                pk=item.pk
+                            .exclude(pk=item.pk)
+                        )
+
+                        importe_os_anterior = cero
+                        honorario_os_anterior = cero
+                        consultorio_anterior = cero
+
+                        for anterior in anteriores:
+                            importe_os_anterior += (
+                                anterior.importe_reconocido or cero
                             )
-                        )
-
-                        importe_os_reconocido_anterior = (
-                            Decimal("0.00")
-                        )
-
-                        honorario_os_generado_anterior = (
-                            Decimal("0.00")
-                        )
-
-                        consultorio_generado_anterior = (
-                            Decimal("0.00")
-                        )
-
-                        for anterior in detalles_anteriores:
-
-                            importe_os_reconocido_anterior += (
-                                anterior.importe_reconocido
-                                or Decimal("0.00")
-                            )
-
-                            honorario_os_generado_anterior += (
+                            honorario_os_anterior += (
                                 anterior.honorario_medico_reconocido
-                                or Decimal("0.00")
+                                or cero
                             )
-
-                            consultorio_generado_anterior += (
+                            consultorio_anterior += (
                                 anterior.importe_consultorio_reconocido
-                                or Decimal("0.00")
+                                or cero
                             )
 
-                        # ==================================
-                        # TOTAL OS RECONOCIDO ACUMULADO
-                        # ==================================
-
-                        importe_os_reconocido_acumulado = (
-                            importe_os_reconocido_anterior
-                            + importe_reconocido
-                        )
-
-                        # ==================================
-                        # TOTAL ECONÓMICO RECUPERADO
-                        # ==================================
-                        #
-                        # El coseguro forma parte del valor
-                        # económico de la prestación.
-                        #
-                        # Se agrega una sola vez al acumulado.
-                        # ==================================
-
+                        # OS reconocida acumulada + componentes
+                        # cobrados al paciente, una sola vez.
                         importe_total_recuperado = (
-                            importe_os_reconocido_acumulado
+                            importe_os_anterior
+                            + importe_reconocido
                             + coseguro
+                            + copago
                         )
 
-                        # ==================================
-                        # IVA
-                        # ==================================
-
-                        porcentaje_iva = (
-                            prestacion.porcentaje_iva
-                            or Decimal("0.00")
-                        )
-
-                        importe_iva_total = (
-                            importe_total_recuperado
-                            * porcentaje_iva
-                            / Decimal("100")
-                        )
-
-                        # ==================================
-                        # PROVEEDOR
-                        # ==================================
+                        # Obra Social sin IVA.
+                        importe_iva_total = cero
 
                         importe_proveedor = (
-                            prestacion.importe_proveedor
-                            or Decimal("0.00")
+                            prestacion.importe_proveedor or cero
                         )
 
-                        # ==================================
-                        # BASE DISTRIBUIBLE ACUMULADA
-                        # ==================================
-
-                        base_distribuible_total = (
+                        base_distribuible_total = max(
                             importe_total_recuperado
                             - importe_iva_total
-                            - importe_proveedor
+                            - importe_proveedor,
+                            cero,
                         )
-
-                        if (
-                            base_distribuible_total
-                            < Decimal("0.00")
-                        ):
-                            base_distribuible_total = (
-                                Decimal("0.00")
-                            )
-
-                        # ==================================
-                        # PORCENTAJE CONSULTORIO
-                        # ==================================
 
                         porcentaje_consultorio = (
-                            prestacion.porcentaje_consultorio
-                            or Decimal("0.00")
+                            prestacion.porcentaje_consultorio or cero
                         )
 
-                        # ==================================
-                        # HONORARIO MÉDICO TOTAL ACUMULADO
-                        # ==================================
-
-                        if (
-                            prestacion.tipo_calculo
-                            == "FIJO_MEDICO"
-                        ):
-
+                        if prestacion.tipo_calculo == "FIJO_MEDICO":
                             honorario_total_acumulado = (
                                 prestacion.honorario_fijo_medico
-                                or Decimal("0.00")
+                                or cero
                             )
-
                         else:
-
                             porcentaje_medico = (
-                                prestacion.porcentaje_medico
-                                or Decimal("0.00")
+                                prestacion.porcentaje_medico or cero
                             )
 
                             honorario_total_acumulado = (
                                 base_distribuible_total
                                 * porcentaje_medico
-                                / Decimal("100")
+                                / cien
                             )
 
-                        # ==================================
-                        # CONSULTORIO TOTAL ACUMULADO
-                        # ==================================
-                        #
-                        # Utilizamos el porcentaje de
-                        # consultorio configurado en la
-                        # PrestacionPlan.
-                        # ==================================
-
+                        # Conserva el porcentaje configurado
+                        # para el consultorio.
                         consultorio_total_acumulado = (
                             base_distribuible_total
                             * porcentaje_consultorio
-                            / Decimal("100")
+                            / cien
                         )
 
-                        # ==================================
-                        # COMPONENTE MÉDICO DE OBRA SOCIAL
-                        # ==================================
-                        #
-                        # El coseguro ya tiene su propio
+                        # Copago y coseguro tienen su propio
                         # circuito de liquidación médica.
-                        # Por eso se descuenta del honorario
-                        # médico de OS.
-                        # ==================================
-
-                        honorario_os_acumulado = (
+                        honorario_os_acumulado = max(
                             honorario_total_acumulado
                             - coseguro
+                            - copago,
+                            cero,
                         )
 
-                        if (
+                        # Solo genera lo que no fue reconocido
+                        # en cobros anteriores de esta prestación.
+                        honorario_os = max(
                             honorario_os_acumulado
-                            < Decimal("0.00")
-                        ):
-                            honorario_os_acumulado = (
-                                Decimal("0.00")
-                            )
-
-                        # ==================================
-                        # HONORARIO MÉDICO DE ESTA COBRANZA
-                        # ==================================
-
-                        honorario_os = (
-                            honorario_os_acumulado
-                            - honorario_os_generado_anterior
+                            - honorario_os_anterior,
+                            cero,
                         )
 
-                        if honorario_os < Decimal("0.00"):
-                            honorario_os = Decimal("0.00")
-
-                        # ==================================
-                        # CONSULTORIO DE ESTA COBRANZA
-                        # ==================================
-                        #
-                        # Igual que con el médico:
-                        #
-                        # total acumulado que corresponde
-                        # menos lo ya generado anteriormente.
-                        #
-                        # Esto permite recuperar débitos sin
-                        # duplicar el 30% del consultorio.
-                        # ==================================
-
-                        importe_consultorio = (
+                        importe_consultorio = max(
                             consultorio_total_acumulado
-                            - consultorio_generado_anterior
+                            - consultorio_anterior,
+                            cero,
                         )
-
-                        if (
-                            importe_consultorio
-                            < Decimal("0.00")
-                        ):
-                            importe_consultorio = (
-                                Decimal("0.00")
-                            )
-
-                        # ==================================
-                        # SNAPSHOT DEL DETALLE DEL MASTER
-                        # MÉDICO + CONSULTORIO
-                        # ==================================
-
-                        item.honorario_medico_reconocido = (
-                            honorario_os
-                        )
-
-                        item.honorario_medico_liquidado = False
-
-                        item.fecha_liquidacion_honorario = None
-
-                        item.importe_consultorio_reconocido = (
-                            importe_consultorio
-                        )
-
-                        item.consultorio_ingresado_caja = False
-
-                        item.fecha_ingreso_consultorio = None
-
-                        item.movimiento_ingreso_consultorio = None
-
-                        item.save(
-                            update_fields=[
-                                "honorario_medico_reconocido",
-                                "honorario_medico_liquidado",
-                                "fecha_liquidacion_honorario",
-                                "importe_consultorio_reconocido",
-                                "consultorio_ingresado_caja",
-                                "fecha_ingreso_consultorio",
-                                "movimiento_ingreso_consultorio",
-                            ]
-                        )
-
-                        # ==================================
-                        # COMPATIBILIDAD SISTEMA ACTUAL
-                        # ==================================
 
                         detalle.obra_social_cobrada = True
-
-                        detalle.fecha_cobro_obra_social = (
-                            fecha_cobro
-                        )
+                        detalle.fecha_cobro_obra_social = fecha_cobro
 
                         detalle.importe_reconocido_obra_social = (
                             importe_reconocido
                         )
-
                         detalle.honorario_reconocido_obra_social = (
                             honorario_os
                         )
 
-                    # ======================================
-                    # RECHAZADO / RECONOCIDO EN CERO
-                    # ======================================
+                        total_cobrado_confirmado += importe_reconocido
 
                     else:
-
-                        # ==================================
-                        # ESTE MASTER NO GENERA HONORARIO
-                        # NI CRÉDITO PARA EL CONSULTORIO
-                        # ==================================
-
-                        item.honorario_medico_reconocido = (
-                            Decimal("0.00")
-                        )
-
-                        item.honorario_medico_liquidado = False
-
-                        item.fecha_liquidacion_honorario = None
-
-                        item.importe_consultorio_reconocido = (
-                            Decimal("0.00")
-                        )
-
-                        item.consultorio_ingresado_caja = False
-
-                        item.fecha_ingreso_consultorio = None
-
-                        item.movimiento_ingreso_consultorio = None
-
-                        item.save(
-                            update_fields=[
-                                "honorario_medico_reconocido",
-                                "honorario_medico_liquidado",
-                                "fecha_liquidacion_honorario",
-                                "importe_consultorio_reconocido",
-                                "consultorio_ingresado_caja",
-                                "fecha_ingreso_consultorio",
-                                "movimiento_ingreso_consultorio",
-                            ]
-                        )
-
-                        # ==================================
-                        # ¿HUBO ALGÚN COBRO ANTERIOR?
-                        # ==================================
-
+                        # Un rechazo no elimina los datos de
+                        # un cobro anterior de la misma prestación.
                         cobro_anterior = (
                             DetalleMasterObraSocial.objects
                             .filter(
@@ -2222,67 +1949,63 @@ def master_obra_social_registrar_pago(
                                 master__estado="COBRADO",
                                 importe_reconocido__gt=0,
                             )
-                            .exclude(
-                                pk=item.pk
-                            )
+                            .exclude(pk=item.pk)
+                            .select_related("master")
                             .order_by(
                                 "-master__fecha_cobro",
-                                "-id"
+                                "-id",
                             )
                             .first()
                         )
 
                         if cobro_anterior:
-
-                            # ==============================
-                            # CONSERVAR MOVIMIENTO COBRADO
-                            # ==============================
-
                             detalle.obra_social_cobrada = True
 
-                            if (
-                                detalle.fecha_cobro_obra_social
-                                is None
-                            ):
+                            if detalle.fecha_cobro_obra_social is None:
                                 detalle.fecha_cobro_obra_social = (
                                     cobro_anterior.master.fecha_cobro
                                 )
 
-                            # ==============================
-                            # COMPATIBILIDAD
-                            # ==============================
-
                             detalle.importe_reconocido_obra_social = (
                                 cobro_anterior.importe_reconocido
-                                or Decimal("0.00")
+                                or cero
                             )
-
                             detalle.honorario_reconocido_obra_social = (
                                 cobro_anterior.honorario_medico_reconocido
-                                or Decimal("0.00")
+                                or cero
                             )
-
                         else:
-
-                            # ==============================
-                            # NUNCA HUBO COBRO
-                            # ==============================
-
                             detalle.obra_social_cobrada = False
-
                             detalle.fecha_cobro_obra_social = None
+                            detalle.importe_reconocido_obra_social = cero
+                            detalle.honorario_reconocido_obra_social = cero
 
-                            detalle.importe_reconocido_obra_social = (
-                                Decimal("0.00")
-                            )
+                    # Fotografía económica de ESTE Master.
+                    item.honorario_medico_reconocido = honorario_os
+                    item.honorario_medico_liquidado = False
+                    item.fecha_liquidacion_honorario = None
 
-                            detalle.honorario_reconocido_obra_social = (
-                                Decimal("0.00")
-                            )
+                    item.importe_consultorio_reconocido = (
+                        importe_consultorio
+                    )
 
-                    # ======================================
-                    # GUARDAR DETALLE MOVIMIENTO
-                    # ======================================
+                    # El ingreso se registra desde la pantalla
+                    # de ingresos por sede.
+                    item.consultorio_ingresado_caja = False
+                    item.fecha_ingreso_consultorio = None
+                    item.movimiento_ingreso_consultorio = None
+
+                    item.save(
+                        update_fields=[
+                            "honorario_medico_reconocido",
+                            "honorario_medico_liquidado",
+                            "fecha_liquidacion_honorario",
+                            "importe_consultorio_reconocido",
+                            "consultorio_ingresado_caja",
+                            "fecha_ingreso_consultorio",
+                            "movimiento_ingreso_consultorio",
+                        ]
+                    )
 
                     detalle.save(
                         update_fields=[
@@ -2293,15 +2016,8 @@ def master_obra_social_registrar_pago(
                         ]
                     )
 
-                # ==========================================
-                # MASTER COBRADO
-                # ==========================================
-
                 master_bloqueado.estado = "COBRADO"
-
-                master_bloqueado.fecha_cobro = (
-                    fecha_cobro
-                )
+                master_bloqueado.fecha_cobro = fecha_cobro
 
                 master_bloqueado.save(
                     update_fields=[
@@ -2312,41 +2028,35 @@ def master_obra_social_registrar_pago(
                 )
 
         except MasterObraSocial.DoesNotExist:
-
             messages.error(
                 request,
-                "El Master ya fue procesado "
-                "o cambió de estado."
+                "El Master ya fue procesado o cambió de estado.",
             )
-
             return redirect(
                 "obrasocial:master_obra_social_detalle",
                 obra_social_id=obra_social.id,
-                master_id=master.id
+                master_id=master.id,
             )
 
-        # ==================================================
-        # OK
-        # ==================================================
+        except ValueError as error:
+            messages.error(request, str(error))
+            return redirect(
+                "obrasocial:master_obra_social_detalle",
+                obra_social_id=obra_social.id,
+                master_id=master.id,
+            )
 
         messages.success(
             request,
-            (
-                "El cobro del Master fue registrado "
-                f"correctamente por "
-                f"${total_reconocido:,.2f}."
-            )
+            "El cobro del Master fue registrado correctamente "
+            f"por ${total_cobrado_confirmado:,.2f}.",
         )
 
         return redirect(
             "obrasocial:master_obra_social_detalle",
             obra_social_id=obra_social.id,
-            master_id=master.id
+            master_id=master.id,
         )
-
-    # ======================================================
-    # GET
-    # ======================================================
 
     return render(
         request,
@@ -2355,25 +2065,17 @@ def master_obra_social_registrar_pago(
             "obra_social": obra_social,
             "master": master,
             "detalles": detalles,
-
             "total_presentado": total_presentado,
             "total_reconocido": total_reconocido,
             "total_debitado": total_debitado,
-
             "cantidad_pagadas": cantidad_aceptadas,
-
             "cantidad_aceptadas": cantidad_aceptadas,
             "cantidad_debitadas": cantidad_debitadas,
             "cantidad_rechazadas": cantidad_rechazadas,
-
             "hoy": date.today(),
-        }
+        },
     )
 
-# ==========================================================
-# MASTER DE OBRA SOCIAL
-# CARGAR LIQUIDACIÓN / AUDITORÍA DE LA OBRA SOCIAL
-# ==========================================================
 
 @login_required
 def master_obra_social_cargar_liquidacion(
@@ -3034,44 +2736,30 @@ def master_obra_social_imprimir(request, obra_social_id, master_id):
 from core.models import CentroMedico
 from core.models import CentroMedico
 
-
 @login_required
 def ingresos_consultorio_os(request):
 
-    # ======================================================
-    # ACCESO EXCLUSIVO CINTIA
-    # ======================================================
-
     if not usuario_autorizado_obras_sociales(request.user):
         raise PermissionDenied(
-            "No tiene permisos para acceder a los ingresos "
-            "del consultorio por Obras Sociales."
+            "No tiene permisos para acceder a los cobros "
+            "de Obras Sociales."
         )
-
-    # ======================================================
-    # CENTRO MÉDICO ACTUAL
-    # ======================================================
 
     centro_id = request.session.get("centro_id")
 
     if not centro_id:
-        messages.warning(
-            request,
-            "Debe seleccionar una sede."
-        )
+        messages.warning(request, "Debe seleccionar una sede.")
         return redirect("home")
 
     centro_medico = get_object_or_404(
         CentroMedico,
-        pk=centro_id
+        pk=centro_id,
     )
 
-     # ======================================================
-    # CAJAS ABIERTAS DE HOY - SEDE ACTIVA
-    # ======================================================
-
     hoy = timezone.localdate()
+    cero = Decimal("0.00")
 
+    # Cajas disponibles para registrar el cobro en esta sede.
     cajas_abiertas = list(
         CajaDiaria.objects.filter(
             centro_medico=centro_medico,
@@ -3080,44 +2768,28 @@ def ingresos_consultorio_os(request):
         ).order_by("turno")
     )
 
-    cantidad_cajas_abiertas = len(cajas_abiertas)
-
-
-    # ======================================================
-    # MEDIOS DE PAGO ACTIVOS
-    # ======================================================
-
     medios_pago = MedioPago.objects.filter(
-        activo=True
+        activo=True,
     ).order_by("nombre")
 
-    # ======================================================
-    # DETALLES PENDIENTES DE ESTA SEDE
-    # ======================================================
-
+    # Prestaciones cobradas por OS cuyo ingreso en caja
+    # todavía no fue registrado.
     pendientes = (
         DetalleMasterObraSocial.objects
         .filter(
             master__estado="COBRADO",
-
-            # Siempre respetamos la sede activa
             detalle_movimiento__movimiento__centro_medico=centro_medico,
-
-            importe_consultorio_reconocido__isnull=False,
-            importe_consultorio_reconocido__gt=0,
-
+            importe_reconocido__gt=0,
             consultorio_ingresado_caja=False,
         )
         .select_related(
             "master",
             "master__obra_social",
-
             "detalle_movimiento",
             "detalle_movimiento__movimiento",
             "detalle_movimiento__movimiento__paciente",
             "detalle_movimiento__movimiento__turno",
             "detalle_movimiento__movimiento__turno__medico",
-
             "detalle_movimiento__prestacion_obra_social",
             "detalle_origen",
         )
@@ -3128,58 +2800,40 @@ def ingresos_consultorio_os(request):
         )
     )
 
-    # ======================================================
-    # AGRUPAR PENDIENTES POR MASTER
-    # ======================================================
-
     masters_dict = {}
 
     for item in pendientes:
-
         master = item.master
 
         if master.id not in masters_dict:
-
             masters_dict[master.id] = {
                 "master": master,
                 "prestaciones": [],
                 "cantidad": 0,
-                "total_consultorio": Decimal("0.00"),
+                # Conservamos la clave utilizada por la plantilla.
+                "total_consultorio": cero,
             }
 
-        masters_dict[master.id]["prestaciones"].append(
-            item
+        grupo = masters_dict[master.id]
+        grupo["prestaciones"].append(item)
+        grupo["cantidad"] += 1
+
+        # Total cobrado por OS, no solamente la parte del centro.
+        grupo["total_consultorio"] += (
+            item.importe_reconocido or cero
         )
 
-        masters_dict[master.id]["cantidad"] += 1
-
-        masters_dict[master.id]["total_consultorio"] += (
-            item.importe_consultorio_reconocido
-            or Decimal("0.00")
-        )
-
-    masters_pendientes = list(
-        masters_dict.values()
-    )
-
-    # ======================================================
-    # TOTAL GENERAL PENDIENTE
-    # ======================================================
+    masters_pendientes = list(masters_dict.values())
 
     total_pendiente = sum(
         (
             grupo["total_consultorio"]
             for grupo in masters_pendientes
         ),
-        Decimal("0.00")
+        cero,
     )
 
-    # ======================================================
-    # FILTROS DEL HISTORIAL
-    # ======================================================
-
-    hoy = timezone.localdate()
-
+    # Filtros del historial.
     try:
         mes_historial = int(
             request.GET.get("mes", hoy.month)
@@ -3194,50 +2848,37 @@ def ingresos_consultorio_os(request):
     except (TypeError, ValueError):
         anio_historial = hoy.year
 
-    # Validaciones simples
-    if mes_historial < 1 or mes_historial > 12:
+    if not 1 <= mes_historial <= 12:
         mes_historial = hoy.month
 
-    if anio_historial < 2000 or anio_historial > 2100:
+    if not 2000 <= anio_historial <= 2100:
         anio_historial = hoy.year
 
-    # ======================================================
-    # HISTORIAL DE INGRESOS DEL CONSULTORIO
-    #
-    # Importante:
-    # filtramos por FECHA REAL DE INGRESO A CAJA,
-    # no por el período del Master.
-    # ======================================================
-
+    # Historial por fecha real de ingreso a caja.
     historial = (
         DetalleMasterObraSocial.objects
         .filter(
             consultorio_ingresado_caja=True,
-
             movimiento_ingreso_consultorio__isnull=False,
-
             detalle_movimiento__movimiento__centro_medico=centro_medico,
-
             fecha_ingreso_consultorio__year=anio_historial,
             fecha_ingreso_consultorio__month=mes_historial,
         )
         .select_related(
             "master",
             "master__obra_social",
-
             "detalle_movimiento",
             "detalle_movimiento__movimiento",
             "detalle_movimiento__movimiento__paciente",
             "detalle_movimiento__movimiento__turno",
             "detalle_movimiento__movimiento__turno__medico",
             "detalle_movimiento__prestacion_obra_social",
-
             "movimiento_ingreso_consultorio",
             "movimiento_ingreso_consultorio__creado_por",
         )
         .prefetch_related(
-            "movimiento_ingreso_consultorio__detalles_medios_pago",
-            "movimiento_ingreso_consultorio__detalles_medios_pago__medio_pago",
+            "movimiento_ingreso_consultorio"
+            "__detalles_medios_pago__medio_pago",
         )
         .order_by(
             "-fecha_ingreso_consultorio",
@@ -3246,99 +2887,47 @@ def ingresos_consultorio_os(request):
         )
     )
 
-    # ======================================================
-    # AGRUPAR HISTORIAL POR MOVIMIENTO DE CAJA
-    #
-    # Esto es importante porque un mismo ingreso puede
-    # contener varias prestaciones del mismo Master.
-    # ======================================================
-
     historial_dict = {}
 
     for item in historial:
-
         movimiento = item.movimiento_ingreso_consultorio
 
         if not movimiento:
             continue
 
-        movimiento_id = movimiento.id
+        if movimiento.id not in historial_dict:
+            medios = [
+                {
+                    "nombre": pago.medio_pago.nombre,
+                    "importe": pago.importe,
+                }
+                for pago in movimiento.detalles_medios_pago.all()
+            ]
 
-        if movimiento_id not in historial_dict:
-
-            # ----------------------------------------------
-            # MEDIOS DE PAGO DEL MOVIMIENTO
-            # ----------------------------------------------
-
-            detalles_medios = list(
-                movimiento.detalles_medios_pago.all()
-            )
-
-            medios = []
-
-            for detalle_medio in detalles_medios:
-
-                medios.append({
-                    "nombre": detalle_medio.medio_pago.nombre,
-                    "importe": detalle_medio.importe,
-                })
-
-            historial_dict[movimiento_id] = {
-
+            historial_dict[movimiento.id] = {
                 "movimiento": movimiento,
-
                 "master": item.master,
-
                 "obra_social": item.master.obra_social,
-
                 "fecha_ingreso": item.fecha_ingreso_consultorio,
-
                 "prestaciones": [],
-
                 "cantidad": 0,
-
-                "total_consultorio": Decimal("0.00"),
-
+                # Se cuenta una sola vez por movimiento.
+                "total_consultorio": movimiento.importe,
                 "medios_pago": medios,
             }
 
-        # ----------------------------------------------
-        # PRESTACIÓN
-        # ----------------------------------------------
+        grupo = historial_dict[movimiento.id]
+        grupo["prestaciones"].append(item)
+        grupo["cantidad"] += 1
 
-        historial_dict[movimiento_id][
-            "prestaciones"
-        ].append(item)
-
-        historial_dict[movimiento_id][
-            "cantidad"
-        ] += 1
-
-        historial_dict[movimiento_id][
-            "total_consultorio"
-        ] += (
-            item.importe_consultorio_reconocido
-            or Decimal("0.00")
-        )
-
-    historial_ingresos = list(
-        historial_dict.values()
-    )
-
-    # ======================================================
-    # RESUMEN DEL HISTORIAL
-    # ======================================================
+    historial_ingresos = list(historial_dict.values())
 
     total_ingresado_historial = sum(
         (
             grupo["total_consultorio"]
             for grupo in historial_ingresos
         ),
-        Decimal("0.00")
-    )
-
-    cantidad_ingresos_historial = len(
-        historial_ingresos
+        cero,
     )
 
     cantidad_prestaciones_historial = sum(
@@ -3346,67 +2935,42 @@ def ingresos_consultorio_os(request):
         for grupo in historial_ingresos
     )
 
-    # ======================================================
-    # CANTIDAD DE MASTERS DIFERENTES
-    # ======================================================
-
-    masters_historial_ids = {
+    cantidad_masters_historial = len({
         grupo["master"].id
         for grupo in historial_ingresos
-    }
-
-    cantidad_masters_historial = len(
-        masters_historial_ids
-    )
-
-    # ======================================================
-    # RESUMEN POR MEDIO DE PAGO
-    # ======================================================
+    })
 
     resumen_medios_dict = {}
 
     for grupo in historial_ingresos:
-
         for medio in grupo["medios_pago"]:
-
             nombre = medio["nombre"]
-            importe = medio["importe"] or Decimal("0.00")
-
-            if nombre not in resumen_medios_dict:
-                resumen_medios_dict[nombre] = Decimal("0.00")
-
-            resumen_medios_dict[nombre] += importe
+            resumen_medios_dict[nombre] = (
+                resumen_medios_dict.get(nombre, cero)
+                + (medio["importe"] or cero)
+            )
 
     resumen_medios_pago = [
         {
             "nombre": nombre,
             "importe": importe,
         }
-        for nombre, importe
-        in sorted(resumen_medios_dict.items())
+        for nombre, importe in sorted(
+            resumen_medios_dict.items()
+        )
     ]
-
-    # ======================================================
-    # AÑOS DISPONIBLES PARA EL SELECT
-    # ======================================================
 
     anios_disponibles = list(
         range(
             hoy.year,
             max(2024, hoy.year - 5) - 1,
-            -1
+            -1,
         )
     )
 
-    # Si estamos consultando manualmente un año que no está
-    # dentro del rango, también lo agregamos.
     if anio_historial not in anios_disponibles:
         anios_disponibles.append(anio_historial)
         anios_disponibles.sort(reverse=True)
-
-    # ======================================================
-    # MESES
-    # ======================================================
 
     meses = [
         (1, "Enero"),
@@ -3423,47 +2987,28 @@ def ingresos_consultorio_os(request):
         (12, "Diciembre"),
     ]
 
-    # ======================================================
-    # RENDER
-    # ======================================================
-
     return render(
         request,
         "obrasocial/consultorio/ingresos_pendientes.html",
         {
-            # SEDE
             "centro_medico": centro_medico,
-
-            # PENDIENTES
             "masters_pendientes": masters_pendientes,
             "total_pendiente": total_pendiente,
-
-            # PARA EL MODAL DE INGRESO
             "medios_pago": medios_pago,
-
-            # CAJAS ABIERTAS DE HOY
             "cajas_abiertas": cajas_abiertas,
-            "cantidad_cajas_abiertas": cantidad_cajas_abiertas,
-
-            # HISTORIAL
+            "cantidad_cajas_abiertas": len(cajas_abiertas),
             "historial_ingresos": historial_ingresos,
             "total_ingresado_historial": total_ingresado_historial,
-            "cantidad_ingresos_historial": cantidad_ingresos_historial,
+            "cantidad_ingresos_historial": len(historial_ingresos),
             "cantidad_masters_historial": cantidad_masters_historial,
             "cantidad_prestaciones_historial": cantidad_prestaciones_historial,
-
-            # RESUMEN MEDIOS DE PAGO
             "resumen_medios_pago": resumen_medios_pago,
-
-            # FILTROS
             "mes_historial": mes_historial,
             "anio_historial": anio_historial,
             "meses": meses,
             "anios_disponibles": anios_disponibles,
-        }
+        },
     )
-
-
 from caja.models import CajaDiaria, MovimientoCaja
 
 
@@ -3471,71 +3016,42 @@ from caja.models import CajaDiaria, MovimientoCaja
 @transaction.atomic
 def ingresar_master_consultorio_caja(request, master_id):
 
-    # ======================================================
-    # ACCESO EXCLUSIVO CINTIA
-    # ======================================================
-
     if not usuario_autorizado_obras_sociales(request.user):
         raise PermissionDenied(
-            "No tiene permisos para registrar ingresos "
-            "del consultorio por Obras Sociales."
+            "No tiene permisos para registrar cobros "
+            "de Obras Sociales."
         )
-
-    # ======================================================
-    # SOLO POST
-    # ======================================================
 
     if request.method != "POST":
-        return redirect(
-            "obrasocial:ingresos_consultorio_os"
-        )
-
-    # ======================================================
-    # CENTRO MÉDICO ACTIVO
-    # ======================================================
+        return redirect("obrasocial:ingresos_consultorio_os")
 
     centro_id = request.session.get("centro_id")
 
     if not centro_id:
-        messages.error(
-            request,
-            "Debe seleccionar una sede."
-        )
-        return redirect(
-            "obrasocial:ingresos_consultorio_os"
-        )
+        messages.error(request, "Debe seleccionar una sede.")
+        return redirect("obrasocial:ingresos_consultorio_os")
 
     centro_medico = get_object_or_404(
         CentroMedico,
-        pk=centro_id
+        pk=centro_id,
     )
 
-    # ======================================================
-    # MASTER COBRADO
-    # ======================================================
-
+    # Serializa los registros del mismo Master.
+    # Evita que dos solicitudes ingresen los mismos detalles.
     master = get_object_or_404(
-        MasterObraSocial.objects.select_related(
-            "obra_social"
-        ),
+        MasterObraSocial.objects.select_for_update(),
         pk=master_id,
         estado="COBRADO",
     )
-
-    # ======================================================
-    # MEDIO DE PAGO
-    # ======================================================
 
     medio_pago_id = request.POST.get("medio_pago")
 
     if not medio_pago_id:
         messages.error(
             request,
-            "Debe seleccionar un medio de pago."
+            "Debe seleccionar un medio de pago.",
         )
-        return redirect(
-            "obrasocial:ingresos_consultorio_os"
-        )
+        return redirect("obrasocial:ingresos_consultorio_os")
 
     medio_pago = get_object_or_404(
         MedioPago,
@@ -3543,158 +3059,101 @@ def ingresar_master_consultorio_caja(request, master_id):
         activo=True,
     )
 
-    # ======================================================
-    # CAJAS ABIERTAS DE LA SEDE Y FECHA ACTUAL
-    # ======================================================
-
-    hoy = timezone.localdate()
-
     cajas_abiertas = list(
         CajaDiaria.objects
         .select_for_update()
         .filter(
             centro_medico=centro_medico,
-            fecha=hoy,
+            fecha=timezone.localdate(),
             estado="ABIERTA",
         )
         .order_by("turno")
     )
 
-    # ======================================================
-    # SIN CAJAS ABIERTAS
-    # ======================================================
-
     if not cajas_abiertas:
         messages.error(
             request,
-            f"No existe una caja abierta hoy en "
-            f"{centro_medico.nombre}. "
-            f"Debe abrir una caja antes de registrar "
-            f"el ingreso."
+            f"Debe abrir una caja hoy en {centro_medico.nombre} "
+            "antes de registrar el cobro.",
         )
-        return redirect(
-            "obrasocial:ingresos_consultorio_os"
-        )
-
-    # ======================================================
-    # UNA SOLA CAJA ABIERTA
-    # ======================================================
+        return redirect("obrasocial:ingresos_consultorio_os")
 
     if len(cajas_abiertas) == 1:
         caja = cajas_abiertas[0]
-
-    # ======================================================
-    # DOS CAJAS ABIERTAS
-    # ======================================================
-
     else:
         caja_id = request.POST.get("caja_id")
 
-        if not caja_id:
-            messages.error(
-                request,
-                "Hay dos cajas abiertas para hoy. "
-                "Debe seleccionar la caja de mañana "
-                "o tarde antes de registrar el ingreso."
-            )
-            return redirect(
-                "obrasocial:ingresos_consultorio_os"
-            )
-
         caja = next(
             (
-                c for c in cajas_abiertas
-                if str(c.pk) == str(caja_id)
+                item
+                for item in cajas_abiertas
+                if str(item.pk) == str(caja_id)
             ),
-            None
+            None,
         )
 
         if caja is None:
             messages.error(
                 request,
-                "La caja seleccionada no es válida "
-                "o ya no se encuentra abierta."
+                "Debe seleccionar una caja abierta válida "
+                "para registrar el cobro.",
             )
-            return redirect(
-                "obrasocial:ingresos_consultorio_os"
-            )
+            return redirect("obrasocial:ingresos_consultorio_os")
 
-    # ======================================================
-    # PRESTACIONES PENDIENTES DEL MASTER
-    # ======================================================
-
+    # Solo las prestaciones correspondientes a la sede activa.
     detalles = list(
         DetalleMasterObraSocial.objects
         .select_for_update()
         .filter(
             master=master,
             detalle_movimiento__movimiento__centro_medico=centro_medico,
-            importe_consultorio_reconocido__isnull=False,
-            importe_consultorio_reconocido__gt=0,
+            importe_reconocido__gt=0,
             consultorio_ingresado_caja=False,
         )
-        .select_related(
-            "detalle_movimiento",
-            "detalle_movimiento__movimiento",
-        )
+        .order_by("pk")
     )
-
-    # ======================================================
-    # VALIDAR PENDIENTES
-    # ======================================================
 
     if not detalles:
         messages.warning(
             request,
-            f"El Master #{master.id} no tiene importes "
-            f"del consultorio pendientes de ingresar "
-            f"para {centro_medico.nombre}. "
-            f"Es posible que ya hayan sido ingresados."
+            f"El Master #{master.id} no tiene cobros pendientes "
+            f"de ingresar para {centro_medico.nombre}. "
+            "Es posible que ya hayan sido registrados.",
         )
-        return redirect(
-            "obrasocial:ingresos_consultorio_os"
-        )
+        return redirect("obrasocial:ingresos_consultorio_os")
 
-    # ======================================================
-    # CALCULAR TOTAL EN EL SERVIDOR
-    # ======================================================
+    cero = Decimal("0.00")
 
-    total_consultorio = sum(
+    # Se ingresa el total reconocido por OS.
+    # No se descuenta el honorario del médico.
+    # No se agrega nuevamente el copago ni el coseguro.
+    total_cobrado = sum(
         (
-            detalle.importe_consultorio_reconocido
-            or Decimal("0.00")
+            detalle.importe_reconocido or cero
             for detalle in detalles
         ),
-        Decimal("0.00")
+        cero,
     )
 
-    if total_consultorio <= Decimal("0.00"):
+    if total_cobrado <= cero:
         messages.error(
             request,
-            "El importe a ingresar debe ser mayor a cero."
+            "El importe a ingresar debe ser mayor a cero.",
         )
-        return redirect(
-            "obrasocial:ingresos_consultorio_os"
-        )
-
-    # ======================================================
-    # CREAR MOVIMIENTO DE CAJA
-    # ======================================================
+        return redirect("obrasocial:ingresos_consultorio_os")
 
     movimiento = MovimientoCaja.objects.create(
         caja=caja,
         centro_medico=centro_medico,
         tipo="INGRESO",
-        importe=total_consultorio,
+        importe=total_cobrado,
         concepto=(
-            f"Ingreso Consultorio Obra Social - "
-            f"{master.obra_social.nombre} - "
-            f"Master #{master.id}"
+            f"Cobro Master Obra Social - "
+            f"{master.obra_social.nombre} - Master #{master.id}"
         ),
         observacion=(
-            f"Ingreso correspondiente al consultorio por "
-            f"Master #{master.id} - "
-            f"{master.obra_social.nombre} - "
+            f"Cobro reconocido por la Obra Social. "
+            f"Master #{master.id}. "
             f"Período {master.mes:02d}/{master.anio}. "
             f"Sede: {centro_medico.nombre}. "
             f"Turno: {caja.get_turno_display()}. "
@@ -3705,158 +3164,105 @@ def ingresar_master_consultorio_caja(request, master_id):
         creado_por=request.user,
     )
 
-    # ======================================================
-    # REGISTRAR MEDIO DE PAGO
-    # ======================================================
-
     DetalleMedioPago.objects.create(
         movimiento=movimiento,
         medio_pago=medio_pago,
-        importe=total_consultorio,
+        importe=total_cobrado,
         observacion=(
-            f"Cobro Obra Social - "
-            f"{master.obra_social.nombre} - "
-            f"Master #{master.id}"
+            f"Cobro Master #{master.id} - "
+            f"{master.obra_social.nombre}"
         ),
         orden=1,
     )
 
-    # ======================================================
-    # MARCAR PRESTACIONES COMO INGRESADAS
-    # ======================================================
-
-    ahora = timezone.now()
-
+    # Conservamos los campos existentes como control
+    # del ingreso y vínculo con el movimiento de caja.
     DetalleMasterObraSocial.objects.filter(
-        pk__in=[
-            detalle.pk
-            for detalle in detalles
-        ]
+        pk__in=[detalle.pk for detalle in detalles]
     ).update(
         consultorio_ingresado_caja=True,
-        fecha_ingreso_consultorio=ahora,
+        fecha_ingreso_consultorio=timezone.now(),
         movimiento_ingreso_consultorio=movimiento,
     )
 
-    # ======================================================
-    # MENSAJE DE ÉXITO
-    # ======================================================
-
     messages.success(
         request,
-        (
-            f"Ingreso registrado correctamente. "
-            f"Master #{master.id} - "
-            f"{master.obra_social.nombre} - "
-            f"{centro_medico.nombre} - "
-            f"Turno {caja.get_turno_display()} - "
-            f"{len(detalles)} prestación/es - "
-            f"${total_consultorio:,.2f} - "
-            f"{medio_pago.nombre}."
-        )
+        f"Cobro registrado. Master #{master.id} - "
+        f"{master.obra_social.nombre} - "
+        f"{centro_medico.nombre} - "
+        f"Turno {caja.get_turno_display()} - "
+        f"{len(detalles)} prestación/es - "
+        f"${total_cobrado:,.2f} - {medio_pago.nombre}.",
     )
 
-    return redirect(
-        "obrasocial:ingresos_consultorio_os"
-    )
-
-
+    return redirect("obrasocial:ingresos_consultorio_os")
 
 
 
 @login_required
 def historial_ingresos_consultorio_os(request):
 
-    # ======================================================
-    # ACCESO EXCLUSIVO CINTIA
-    # ======================================================
-
     if not usuario_autorizado_obras_sociales(request.user):
         raise PermissionDenied(
             "No tiene permisos para acceder al historial "
-            "de ingresos del consultorio."
+            "de cobros de Obras Sociales.",
         )
-
-    # ======================================================
-    # CENTRO MÉDICO ACTUAL
-    # ======================================================
 
     centro_id = request.session.get("centro_id")
 
     if not centro_id:
-        messages.warning(
-            request,
-            "Debe seleccionar una sede."
-        )
+        messages.warning(request, "Debe seleccionar una sede.")
         return redirect("home")
 
     centro_medico = get_object_or_404(
         CentroMedico,
-        pk=centro_id
+        pk=centro_id,
     )
 
-    # ======================================================
-    # FILTROS MES / AÑO
-    # ======================================================
-
     hoy = timezone.localdate()
+    cero = Decimal("0.00")
 
     try:
-        mes = int(
-            request.GET.get("mes", hoy.month)
-        )
+        mes = int(request.GET.get("mes", hoy.month))
     except (TypeError, ValueError):
         mes = hoy.month
 
     try:
-        anio = int(
-            request.GET.get("anio", hoy.year)
-        )
+        anio = int(request.GET.get("anio", hoy.year))
     except (TypeError, ValueError):
         anio = hoy.year
 
-    if mes < 1 or mes > 12:
+    if not 1 <= mes <= 12:
         mes = hoy.month
 
-    if anio < 2000 or anio > 2100:
+    if not 2000 <= anio <= 2100:
         anio = hoy.year
 
-    # ======================================================
-    # HISTORIAL
-    #
-    # Se filtra por la fecha REAL en que el dinero
-    # fue ingresado a Caja.
-    # ======================================================
-
+    # Fecha real del ingreso en caja, no período del Master.
     historial = (
         DetalleMasterObraSocial.objects
         .filter(
             consultorio_ingresado_caja=True,
-
             movimiento_ingreso_consultorio__isnull=False,
-
             detalle_movimiento__movimiento__centro_medico=centro_medico,
-
             fecha_ingreso_consultorio__year=anio,
             fecha_ingreso_consultorio__month=mes,
         )
         .select_related(
             "master",
             "master__obra_social",
-
             "detalle_movimiento",
             "detalle_movimiento__movimiento",
             "detalle_movimiento__movimiento__paciente",
             "detalle_movimiento__movimiento__turno",
             "detalle_movimiento__movimiento__turno__medico",
             "detalle_movimiento__prestacion_obra_social",
-
             "movimiento_ingreso_consultorio",
             "movimiento_ingreso_consultorio__creado_por",
         )
         .prefetch_related(
-            "movimiento_ingreso_consultorio__detalles_medios_pago",
-            "movimiento_ingreso_consultorio__detalles_medios_pago__medio_pago",
+            "movimiento_ingreso_consultorio"
+            "__detalles_medios_pago__medio_pago",
         )
         .order_by(
             "-fecha_ingreso_consultorio",
@@ -3865,88 +3271,47 @@ def historial_ingresos_consultorio_os(request):
         )
     )
 
-    # ======================================================
-    # AGRUPAR POR MOVIMIENTO DE CAJA
-    # ======================================================
-
     historial_dict = {}
 
     for item in historial:
-
         movimiento = item.movimiento_ingreso_consultorio
 
         if not movimiento:
             continue
 
-        movimiento_id = movimiento.id
+        if movimiento.id not in historial_dict:
+            medios = [
+                {
+                    "nombre": pago.medio_pago.nombre,
+                    "importe": pago.importe,
+                }
+                for pago in movimiento.detalles_medios_pago.all()
+            ]
 
-        if movimiento_id not in historial_dict:
-
-            detalles_medios = list(
-                movimiento.detalles_medios_pago.all()
-            )
-
-            medios = []
-
-            for detalle_medio in detalles_medios:
-
-                medios.append({
-                    "nombre": detalle_medio.medio_pago.nombre,
-                    "importe": detalle_medio.importe,
-                })
-
-            historial_dict[movimiento_id] = {
-
+            historial_dict[movimiento.id] = {
                 "movimiento": movimiento,
-
                 "master": item.master,
-
                 "obra_social": item.master.obra_social,
-
                 "fecha_ingreso": item.fecha_ingreso_consultorio,
-
                 "prestaciones": [],
-
                 "cantidad": 0,
-
-                "total_consultorio": Decimal("0.00"),
-
+                # Importe real registrado, una vez por movimiento.
+                "total_consultorio": movimiento.importe,
                 "medios_pago": medios,
             }
 
-        historial_dict[movimiento_id][
-            "prestaciones"
-        ].append(item)
+        grupo = historial_dict[movimiento.id]
+        grupo["prestaciones"].append(item)
+        grupo["cantidad"] += 1
 
-        historial_dict[movimiento_id][
-            "cantidad"
-        ] += 1
-
-        historial_dict[movimiento_id][
-            "total_consultorio"
-        ] += (
-            item.importe_consultorio_reconocido
-            or Decimal("0.00")
-        )
-
-    historial_ingresos = list(
-        historial_dict.values()
-    )
-
-    # ======================================================
-    # TOTALES
-    # ======================================================
+    historial_ingresos = list(historial_dict.values())
 
     total_ingresado = sum(
         (
             grupo["total_consultorio"]
             for grupo in historial_ingresos
         ),
-        Decimal("0.00")
-    )
-
-    cantidad_ingresos = len(
-        historial_ingresos
+        cero,
     )
 
     cantidad_prestaciones = sum(
@@ -3954,49 +3319,30 @@ def historial_ingresos_consultorio_os(request):
         for grupo in historial_ingresos
     )
 
-    masters_ids = {
+    cantidad_masters = len({
         grupo["master"].id
         for grupo in historial_ingresos
-    }
-
-    cantidad_masters = len(
-        masters_ids
-    )
-
-    # ======================================================
-    # RESUMEN MEDIOS DE PAGO
-    # ======================================================
+    })
 
     resumen_medios_dict = {}
 
     for grupo in historial_ingresos:
-
         for medio in grupo["medios_pago"]:
-
             nombre = medio["nombre"]
-
-            importe = (
-                medio["importe"]
-                or Decimal("0.00")
+            resumen_medios_dict[nombre] = (
+                resumen_medios_dict.get(nombre, cero)
+                + (medio["importe"] or cero)
             )
-
-            if nombre not in resumen_medios_dict:
-                resumen_medios_dict[nombre] = Decimal("0.00")
-
-            resumen_medios_dict[nombre] += importe
 
     resumen_medios_pago = [
         {
             "nombre": nombre,
             "importe": importe,
         }
-        for nombre, importe
-        in sorted(resumen_medios_dict.items())
+        for nombre, importe in sorted(
+            resumen_medios_dict.items()
+        )
     ]
-
-    # ======================================================
-    # MESES
-    # ======================================================
 
     meses = [
         (1, "Enero"),
@@ -4013,53 +3359,32 @@ def historial_ingresos_consultorio_os(request):
         (12, "Diciembre"),
     ]
 
-    # ======================================================
-    # AÑOS
-    # ======================================================
-
     anios_disponibles = list(
         range(
             hoy.year,
             max(2024, hoy.year - 5) - 1,
-            -1
+            -1,
         )
     )
 
     if anio not in anios_disponibles:
-
         anios_disponibles.append(anio)
-
-        anios_disponibles.sort(
-            reverse=True
-        )
-
-    # ======================================================
-    # RENDER
-    # ======================================================
+        anios_disponibles.sort(reverse=True)
 
     return render(
         request,
         "obrasocial/consultorio/historial_ingresos.html",
         {
             "centro_medico": centro_medico,
-
             "historial_ingresos": historial_ingresos,
-
             "total_ingresado": total_ingresado,
-
-            "cantidad_ingresos": cantidad_ingresos,
-
+            "cantidad_ingresos": len(historial_ingresos),
             "cantidad_masters": cantidad_masters,
-
             "cantidad_prestaciones": cantidad_prestaciones,
-
             "resumen_medios_pago": resumen_medios_pago,
-
             "mes": mes,
             "anio": anio,
-
             "meses": meses,
-
             "anios_disponibles": anios_disponibles,
-        }
+        },
     )

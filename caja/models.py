@@ -467,57 +467,94 @@ class MovimientoCaja(models.Model):
     # ==================================================
 
     def recalcular_totales(self):
-        """
-        Recalcula todos los importes del movimiento
-        a partir de sus detalles.
-        """
+            """
+            Conserva los valores económicos de las prestaciones.
 
-        detalles = self.detalles.exclude(
-            estado="ANULADO"
-        )
+            El importe del movimiento representa lo cobrado:
+            - Particular: importe completo.
+            - Obra social: coseguro y copago efectivamente cobrados.
 
-        self.importe_bruto = sum(
-            (detalle.importe for detalle in detalles),
-            Decimal("0.00")
-        )
+            El cobro posterior del Master corresponde a otro movimiento.
+            """
 
-        self.importe_iva = sum(
-            (detalle.importe_iva for detalle in detalles),
-            Decimal("0.00")
-        )
+            cero = Decimal("0.00")
 
-        self.importe_neto = sum(
-            (detalle.importe_neto for detalle in detalles),
-            Decimal("0.00")
-        )
+            # Los movimientos manuales y pagos de honorarios
+            # no tienen prestaciones: conservan su importe.
+            if not self.detalles.exists():
+                return
 
-        self.importe_medico = sum(
-            (detalle.importe_medico for detalle in detalles),
-            Decimal("0.00")
-        )
+            detalles = list(
+                self.detalles.exclude(
+                    estado="ANULADO"
+                )
+            )
 
-        self.importe_consultorio = sum(
-            (
-                detalle.importe_consultorio
-                for detalle in detalles
-            ),
-            Decimal("0.00")
-        )
+            self.importe_bruto = sum(
+                (detalle.importe for detalle in detalles),
+                cero,
+            )
 
-        # El importe total del movimiento será el bruto
+            self.importe_iva = sum(
+                (detalle.importe_iva for detalle in detalles),
+                cero,
+            )
 
-        self.importe = self.importe_bruto
+            self.importe_neto = sum(
+                (detalle.importe_neto for detalle in detalles),
+                cero,
+            )
 
-        self.save(
-            update_fields=[
-                "importe",
-                "importe_bruto",
-                "importe_iva",
-                "importe_neto",
-                "importe_medico",
-                "importe_consultorio",
-            ]
-        )
+            self.importe_medico = sum(
+                (detalle.importe_medico for detalle in detalles),
+                cero,
+            )
+
+            self.importe_consultorio = sum(
+                (
+                    detalle.importe_consultorio
+                    for detalle in detalles
+                ),
+                cero,
+            )
+
+            # Dinero efectivamente cobrado en esta atención.
+            importe_cobrado = cero
+
+            for detalle in detalles:
+
+                if detalle.prestacion_obra_social_id is not None:
+
+                    if detalle.coseguro_cobrado:
+                        importe_cobrado += (
+                            detalle.importe_coseguro or cero
+                        )
+
+                    if detalle.copago_cobrado:
+                        importe_cobrado += (
+                            detalle.importe_copago or cero
+                        )
+
+                else:
+
+                    importe_cobrado += (
+                        detalle.importe or cero
+                    )
+
+            self.importe = importe_cobrado
+
+            self.save(
+                update_fields=[
+                    "importe",
+                    "importe_bruto",
+                    "importe_iva",
+                    "importe_neto",
+                    "importe_medico",
+                    "importe_consultorio",
+                ]
+            )
+
+
 
 class HistorialMovimientoCaja(models.Model):
     ACCIONES = [
@@ -938,82 +975,105 @@ class DetalleMovimientoCaja(models.Model):
 
     def calcular_importes(self):
         """
-        Calcula todos los importes del detalle de la prestación.
-        Trabaja únicamente con la fotografía almacenada en el detalle.
+        Calcula los importes usando la configuración histórica
+        guardada en el detalle.
+
+        Particular:
+            Conserva el cálculo existente.
+
+        Obra social:
+            - IVA cero.
+            - Conserva self.importe para el Master.
+            - Suma el copago cobrado a la base del reparto.
+            - No suma nuevamente el coseguro, porque ya está
+            incluido en el valor de la prestación.
+            - importe_medico guarda el honorario total, antes
+            de separar copagos y coseguros para su liquidación.
         """
 
-        # ==========================================
-        # IMPORTE BRUTO
-        # ==========================================
+        cero = Decimal("0.00")
+        cien = Decimal("100")
 
-        self.importe = Decimal(self.importe)
+        self.importe = Decimal(self.importe or cero)
+
+        es_obra_social = (
+            self.prestacion_obra_social_id is not None
+        )
 
         # ==========================================
         # IVA
         # ==========================================
 
-        self.importe_iva = (
-            self.importe *
-            self.porcentaje_iva
-        ) / Decimal("100")
+        if es_obra_social:
+            self.porcentaje_iva = cero
+            self.importe_iva = cero
+        else:
+            self.importe_iva = (
+                self.importe
+                * self.porcentaje_iva
+                / cien
+            )
 
-        # ==========================================
-        # IMPORTE NETO
-        # ==========================================
-
+        # Conserva el importe neto de la prestación.
+        # El copago se incorpora a la base del reparto,
+        # sin modificar el importe destinado al Master.
         self.importe_neto = (
-            self.importe -
-            self.importe_iva
+            self.importe
+            - self.importe_iva
         )
 
         # ==========================================
         # BASE PARA DISTRIBUCIÓN
-        # (Neto menos proveedor)
         # ==========================================
 
         base_distribucion = (
-            self.importe_neto -
-            self.importe_proveedor
+            self.importe_neto
+            - Decimal(self.importe_proveedor or cero)
         )
 
-        # Evita valores negativos si un concepto está mal configurado
-        if base_distribucion < Decimal("0.00"):
-            base_distribucion = Decimal("0.00")
+        if es_obra_social and self.copago_cobrado:
+            base_distribucion += Decimal(
+                self.importe_copago or cero
+            )
+
+        base_distribucion = max(
+            base_distribucion,
+            cero,
+        )
 
         # ==========================================
-        # HONORARIOS
+        # HONORARIO MÉDICO TOTAL Y CONSULTORIO
         # ==========================================
 
         if self.tipo_calculo == "PORCENTAJE":
-
             self.importe_medico = (
-                base_distribucion *
-                self.porcentaje_medico
-            ) / Decimal("100")
-
-            self.importe_consultorio = (
-                base_distribucion *
-                self.porcentaje_consultorio
-            ) / Decimal("100")
-
-        elif self.tipo_calculo == "FIJO_MEDICO":
-
-            self.importe_medico = self.honorario_fijo_medico
-
-            self.importe_consultorio = (
-                base_distribucion -
-                self.importe_medico
+                base_distribucion
+                * self.porcentaje_medico
+                / cien
             )
 
-            if self.importe_consultorio < Decimal("0.00"):
-                self.importe_consultorio = Decimal("0.00")
+            self.importe_consultorio = (
+                base_distribucion
+                * self.porcentaje_consultorio
+                / cien
+            )
+
+        elif self.tipo_calculo == "FIJO_MEDICO":
+            # Conserva el tratamiento existente
+            # del honorario fijo.
+            self.importe_medico = self.honorario_fijo_medico
+
+            self.importe_consultorio = max(
+                base_distribucion
+                - self.importe_medico,
+                cero,
+            )
 
         else:
-
-            self.importe_medico = Decimal("0.00")
+            self.importe_medico = cero
             self.importe_consultorio = base_distribucion
-
-
+        
+        
     def copiar_desde_prestacion_obra_social(self, prestacion):
         """
         Copia la configuración completa de PrestacionPlan.
@@ -1467,20 +1527,52 @@ class ExtraCoseguro(models.Model):
             f"${self.importe_extra}"
         )
 
+
     def calcular_distribucion(self):
-        """El extra se adelanta íntegramente al médico.
+            """
+            El extra se adelanta íntegramente al médico.
 
-        Su recuperación se registra al liquidar la obra social,
-        no como un reparto del cobro inicial.
-        """
-        importe = Decimal(self.importe_extra or "0.00").quantize(
-            Decimal("0.01")
-        )
-        self.porcentaje_medico = Decimal("100.00")
-        self.porcentaje_consultorio = Decimal("0.00")
-        self.importe_medico = importe
-        self.importe_consultorio = Decimal("0.00")
+            Los porcentajes 100/0 describen ese adelanto inicial.
+            importe_consultorio guarda la parte a recuperar
+            posteriormente en la liquidación de la obra social.
+            """
+            from decimal import ROUND_HALF_UP
 
+            # Una retención ya aplicada conserva su importe.
+            if self.liquidacion_retencion_id:
+                return
+
+            cero = Decimal("0.00")
+            centavos = Decimal("0.01")
+
+            importe = Decimal(
+                self.importe_extra or cero
+            ).quantize(
+                centavos,
+                rounding=ROUND_HALF_UP,
+            )
+
+            # Utilizar el porcentaje guardado en la atención,
+            # no el porcentaje actual del nomenclador.
+            porcentaje_recuperacion = Decimal(
+                self.detalle_prestacion.porcentaje_consultorio
+                or cero
+            )
+
+            # Adelanto inicial: todo el extra al médico.
+            self.porcentaje_medico = Decimal("100.00")
+            self.porcentaje_consultorio = cero
+            self.importe_medico = importe
+
+            # Recuperación posterior a favor del consultorio.
+            self.importe_consultorio = (
+                importe
+                * porcentaje_recuperacion
+                / Decimal("100.00")
+            ).quantize(
+                centavos,
+                rounding=ROUND_HALF_UP,
+            )
     def save(self, *args, **kwargs):
 
         self.calcular_distribucion()

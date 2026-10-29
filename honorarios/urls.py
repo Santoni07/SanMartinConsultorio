@@ -41,11 +41,7 @@ path(
     views.liquidaciones_pendientes,
     name='liquidaciones_pendientes'
 ),
- path(
-    "confirmar-liquidacion-obra-social/",
-    views.confirmar_liquidacion_obra_social,
-    name="confirmar_liquidacion_obra_social",
-),
+
  path(
     "confirmar-liquidacion-obra-social/",
     views.confirmar_liquidacion_obra_social,
